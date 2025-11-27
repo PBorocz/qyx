@@ -23,6 +23,17 @@ verbosity = 0
 cmd = "dbmate --migrations-dir ./src/pcq/models/migrations/ --env DB_RDB --no-dump-schema"
 help = "Run arbitrary dbmate on the local development database"
 
+[tool.poe.tasks.ruff-check]
+shell = """
+  ruff check --output-format=json | uv run pcq ingest --module ruff_check
+  uv run pcq report --module ruff_check
+  """
+help = "Run current ruff check and report on results."
+
+[tool.poe.tasks.ruff-check-report]
+cmd = "uv run pcq report --module ruff_check"
+help = "Report on most recent ruff check"
+
 [tool.poe.tasks.sql]
 envfile = ".env"
 shell = """

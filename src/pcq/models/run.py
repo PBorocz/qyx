@@ -1,5 +1,8 @@
 """..."""
 
+import zoneinfo
+from datetime import datetime
+
 from peewee import CharField, DateTimeField, Model
 
 
@@ -15,3 +18,8 @@ class Run(Model):
     source_dir      = CharField    (help_text="Pointer to respective sport's id attribute, e.g. 'cycling'")
     run_module      = CharField    (help_text="Match SchedulesDirect, usually '<yyyymmdd>.<awayTeam>@<homeTeam>'")
     # fmt: on
+
+    @property
+    def timestamp_local(self) -> datetime:
+        """..."""
+        return self.timestamp.replace(tzinfo=zoneinfo.ZoneInfo("UTC")).astimezone()
