@@ -1,0 +1,23 @@
+version = 1
+revision = 3
+requires-python = ">=3.11.9"
+
+[[package]]
+name = "argman"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/42/39b9933a6067c811716c14440f66fa6ebf6bf11ebeefe5027076583c753d/argman-0.3.0.tar.gz", hash = "sha256:23789dd1ad10c21444ca772768edd6afb30cdfc96e065a45bfcf55ceffd14e8e", size = 16641, upload-time = "2025-11-09T10:54:01.62Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/46/002495befb979cb7accad9d12d040d6b21259bf61d0b1582bafd4f856b9f/argman-0.3.0-py3-none-any.whl", hash = "sha256:6022e3dd39bd60dd7b30425ca2c1deb2d73ab6aff09a599e2795b129b82cb167", size = 11554, upload-time = "2025-11-09T10:53:58.586Z" },
+]
+
+[[package]]
+name = "pcq"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "argman" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "argman", specifier = ">=0.3.0" }]

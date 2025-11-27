@@ -1,0 +1,2 @@
+# Globals
+db = None
