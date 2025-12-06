@@ -7,9 +7,11 @@ from pathlib import Path
 from argman import ArgMan
 from argman.argman import _ArgResult
 from peewee import SqliteDatabase
+from rich import print
 
-from pcq.models import Run, RuffCheck
+from pcq.models import Run
 from pcq.modules import db as db_module
+from pcq.modules.ruff_check.models import RuffCheck
 
 
 def _setup_sqlite(args: _ArgResult) -> None:

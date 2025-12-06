@@ -4,9 +4,12 @@ import json
 import sys
 from argman.argman import _ArgResult
 from peewee import fn, SqliteDatabase
+from rich import print
+from rich.console import Console
+from rich.table import Table
 
-from pcq.models import RuffCheck, Run
-from pcq.models.ruff_check import remove_common_prefixes
+from pcq.models import Run
+from pcq.modules.ruff_check.models import remove_common_prefixes, RuffCheck
 from pcq.utilities.git import get_git_commit_hash
 
 
@@ -55,7 +58,7 @@ def report(args: _ArgResult, db: SqliteDatabase) -> None:
         return
     if args.report.verbosity == 0:
         count = RuffCheck.select().where(RuffCheck.run_id == run).count()
-        print(f"{run.timestamp_local} : {count} ruff checks encountered.")
+        print(f"{run.timestamp_local} : {count} ruff check issues encountered.")
     elif args.report.verbosity == 1:
         results = (
             RuffCheck.select(RuffCheck.rule_code, RuffCheck.message, fn.COUNT(RuffCheck.id).alias("count"))
@@ -63,14 +66,23 @@ def report(args: _ArgResult, db: SqliteDatabase) -> None:
             .group_by(RuffCheck.rule_code)
             .order_by(fn.COUNT(RuffCheck.id).desc())
         )
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Rule")
+        table.add_column("Count", justify="center")
+        table.add_column("Message")
         for result in results:
-            print(f"{result.rule_code}: {result.count} [{result.message}]")
+            table.add_row(result.rule_code, str(result.count), result.message)
+        Console().print(table)
+
     elif args.report.verbosity == 2:
         print(f"{run.timestamp_local} : Following ruff checks encountered:")
         rows = RuffCheck.select().where(RuffCheck.run_id == run).order_by(RuffCheck.filename, RuffCheck.rule_code)
         foobar = 1
         rows = remove_common_prefixes(rows)
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Rule")
+        table.add_column("File (line)")
+        table.add_column("Message")
         for row in rows:
-            print(f"{row.rule_code} ", end="")
-            print(f"{row.filename} [{row.line}] ", end="")
-            print(f"{row.message}")
+            table.add_row(row.rule_code, f"{row.filename} [{row.line}] ", row.message)
+        Console().print(table)

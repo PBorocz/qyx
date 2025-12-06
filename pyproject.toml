@@ -7,6 +7,7 @@ requires-python = ">=3.11.9"
 authors = [{name = "Your Name", email = "your.email@example.com"}]
 dependencies = [
     "argman>=0.3.0",
+    "rich>=14.2.0",
 ]
 
 [project.scripts]
@@ -22,6 +23,10 @@ verbosity = 0
 [tool.poe.tasks.dbm]
 cmd = "dbmate --migrations-dir ./src/pcq/models/migrations/ --env DB_RDB --no-dump-schema"
 help = "Run arbitrary dbmate on the local development database"
+
+[tool.poe.tasks.flush]
+cmd = "uv run pcq flush"
+help = "Flush the database entirely"
 
 [tool.poe.tasks.ruff-check]
 shell = """

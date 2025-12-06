@@ -3,7 +3,8 @@
 from argman.argman import _ArgResult
 from peewee import SqliteDatabase
 
-from pcq.models import RuffCheck, Run
+from pcq.models import Run
+from pcq.modules.ruff_check import RuffCheck
 
 
 def flush(args: _ArgResult, db: SqliteDatabase) -> None:
