@@ -12,17 +12,19 @@ from pcq.models import Run
 from pcq.modules.ruff_check.models import remove_common_prefixes, RuffCheck
 from pcq.utilities.git import get_git_commit_hash
 
+MODULE = "ruff_check"
+
 
 def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
     gch = get_git_commit_hash()
-    run = Run(git_commit_hash=gch, run_module="ruff_check")
+    run = Run(git_commit_hash=gch, run_module=MODULE)
     run.save()
 
     if not sys.stdin.isatty():
         # Pipeline mode - parse JSON from stdin
         data = json.loads(sys.stdin.read())
-        ruff_checks = _parse_ruff_json(data)
-        num = _save_results(run, ruff_checks)
+        results = _parse_ruff_json(data)
+        num = _save_results(run, results)
         print(f"Ingested {num} results from ruff check.")
     else:
         print("We're not ready for this yet!")
@@ -52,7 +54,7 @@ def _save_results(run: Run, rows: list[RuffCheck]) -> int:
 
 
 def report(args: _ArgResult, db: SqliteDatabase) -> None:
-    run = Run.select().order_by(Run.timestamp.desc()).first()
+    run = Run.select().order_by(Run.timestamp.desc()).where(Run.run_module == MODULE).first()
     if not run:
         print("No runs yet.")
         return

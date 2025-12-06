@@ -60,7 +60,7 @@ def _save_results(run: Run, rows: list[Cloc]) -> int:
 
 
 def report(args: _ArgResult, db: SqliteDatabase) -> None:
-    run = Run.select().order_by(Run.timestamp.desc()).first()
+    run = Run.select().order_by(Run.timestamp.desc()).where(Run.run_module == MODULE).first()
     if not run:
         print("No runs yet.")
         return
