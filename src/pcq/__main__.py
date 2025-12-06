@@ -12,11 +12,11 @@ from rich import print
 from pcq.models import Run
 from pcq.modules import db as db_module
 from pcq.modules.cloc import Cloc
-from pcq.modules.ruff_check.models import RuffCheck
+from pcq.modules.ruff.models import Ruff
 
 
 def _setup_sqlite(args: _ArgResult) -> None:
-    models = [Run, Cloc, RuffCheck]
+    models = [Run, Cloc, Ruff]
     db_path = Path("__data__/db.sqlite3")
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False})
     db.bind(models)
@@ -28,14 +28,14 @@ def _setup_sqlite(args: _ArgResult) -> None:
 def main():
     am = ArgMan()
     ingest_cmd = am.add_cmd("ingest")
-    ingest_cmd.arg_str(long="module", desc="Module to execute, e.g. ruff-check, cloc etc")
+    ingest_cmd.arg_str(long="module", desc="Module to execute, e.g. ruff, cloc etc")
 
     report_cmd = am.add_cmd("report")
     report_cmd.arg_str(long="module", desc="Module to report on.")
     report_cmd.arg_int(long="verbosity", default=0, desc="Verbosity/depth to report on (starting from 0 for top-level)")
 
     flush_cmd = am.add_cmd("flush")
-    flush_cmd.arg_str(long="module", desc="Optional module to flush data for, e.g. ruff-check, source-lines etc")
+    flush_cmd.arg_str(long="module", desc="Optional module to flush data for, e.g. ruff, source-lines etc")
 
     args = am.parse()
 
@@ -46,10 +46,10 @@ def main():
             from pcq.modules import cloc
 
             cloc.ingest(args, db)
-        elif args.ingest.module == "ruff_check":
-            from pcq.modules import ruff_check
+        elif args.ingest.module == "ruff":
+            from pcq.modules import ruff
 
-            ruff_check.ingest(args, db)
+            ruff.ingest(args, db)
         else:
             print(f"Sorry, we don't know how to ingest from {args.ingest.module} yet!")
 
@@ -58,10 +58,10 @@ def main():
             from pcq.modules import cloc
 
             cloc.report(args, db)
-        elif args.report.module == "ruff_check":
-            from pcq.modules import ruff_check
+        elif args.report.module == "ruff":
+            from pcq.modules import ruff
 
-            ruff_check.report(args, db)
+            ruff.report(args, db)
         else:
             print(f"Sorry, we don't know how to report on data from {args.report.module} yet!")
 

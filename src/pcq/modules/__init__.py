@@ -1,3 +1,3 @@
 """..."""
 
-# from pcq.modules.ruff_check import ruff_check
+# from pcq.modules.ruff import ruff

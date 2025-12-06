@@ -9,10 +9,10 @@ from rich.console import Console
 from rich.table import Table
 
 from pcq.models import Run
-from pcq.modules.ruff_check.models import remove_common_prefixes, RuffCheck
+from pcq.modules.ruff.models import remove_common_prefixes, Ruff
 from pcq.utilities.git import get_git_commit_hash
 
-MODULE = "ruff_check"
+MODULE = "ruff"
 
 
 def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
@@ -33,20 +33,20 @@ def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
         # data = json.loads(result.stdout)
 
 
-def _parse_ruff_json(data: list) -> list[RuffCheck]:
-    def _json_to_row(ruff_check_result: dict) -> RuffCheck:
-        return RuffCheck(
-            filename=ruff_check_result["filename"],
-            line=ruff_check_result["location"]["row"],
-            column=ruff_check_result["location"]["column"],
-            message=ruff_check_result["message"],
-            rule_code=ruff_check_result["code"],
+def _parse_ruff_json(data: list) -> list[Ruff]:
+    def _json_to_row(ruff_result: dict) -> Ruff:
+        return Ruff(
+            filename=ruff_result["filename"],
+            line=ruff_result["location"]["row"],
+            column=ruff_result["location"]["column"],
+            message=ruff_result["message"],
+            rule_code=ruff_result["code"],
         )
 
     return [_json_to_row(check) for check in data]
 
 
-def _save_results(run: Run, rows: list[RuffCheck]) -> int:
+def _save_results(run: Run, rows: list[Ruff]) -> int:
     for row in rows:
         row.run_id = run.id
         row.save()
@@ -59,14 +59,11 @@ def report(args: _ArgResult, db: SqliteDatabase) -> None:
         print("No runs yet.")
         return
     if args.report.verbosity == 0:
-        count = RuffCheck.select().where(RuffCheck.run_id == run).count()
-        print(f"{run.timestamp_local} : {count} ruff check issues encountered.")
-    elif args.report.verbosity == 1:
         results = (
-            RuffCheck.select(RuffCheck.rule_code, RuffCheck.message, fn.COUNT(RuffCheck.id).alias("count"))
-            .where(RuffCheck.run_id == run)
-            .group_by(RuffCheck.rule_code)
-            .order_by(fn.COUNT(RuffCheck.id).desc())
+            Ruff.select(Ruff.rule_code, Ruff.message, fn.COUNT(Ruff.id).alias("count"))
+            .where(Ruff.run_id == run)
+            .group_by(Ruff.rule_code)
+            .order_by(fn.COUNT(Ruff.id).desc())
         )
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Rule")
@@ -76,9 +73,9 @@ def report(args: _ArgResult, db: SqliteDatabase) -> None:
             table.add_row(result.rule_code, str(result.count), result.message)
         Console().print(table)
 
-    elif args.report.verbosity == 2:
+    elif args.report.verbosity == 1:
         print(f"{run.timestamp_local} : Following ruff checks encountered:")
-        rows = RuffCheck.select().where(RuffCheck.run_id == run).order_by(RuffCheck.filename, RuffCheck.rule_code)
+        rows = Ruff.select().where(Ruff.run_id == run).order_by(Ruff.filename, Ruff.rule_code)
         foobar = 1
         rows = remove_common_prefixes(rows)
         table = Table(show_header=True, header_style="bold magenta")

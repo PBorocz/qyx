@@ -29,12 +29,29 @@ cmd = "uv run pcq flush"
 help = "Flush the database entirely"
 
 #-------------------------------------------------------------------------------
+# all
+#-------------------------------------------------------------------------------
+[tool.poe.tasks.ingest_all]
+shell = """
+  poe cloc
+  poe ruff
+  """
+help = "Run/ingest all modules."
+
+[tool.poe.tasks.report_all]
+shell = """
+  poe cloc-report
+  poe ruff-report
+  """
+help = "Report all modules."
+
+#-------------------------------------------------------------------------------
 # cloc
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.cloc]
 shell = """
   cloc --include-lang=Python src/ --by-file --json | uv run pcq ingest --module cloc
-  # uv run pcq report --module cloc
+  uv run pcq report --module cloc
   """
 help = "Run cloc and report on results."
 
@@ -45,15 +62,16 @@ help = "Report on most recent cloc run"
 #-------------------------------------------------------------------------------
 # Ruff - Check
 #-------------------------------------------------------------------------------
-[tool.poe.tasks.ruff-check]
+[tool.poe.tasks.ruff]
 shell = """
-  ruff check --output-format=json | uv run pcq ingest --module ruff_check
-  uv run pcq report --module ruff_check
+  ruff check --output-format=json | uv run pcq ingest --module ruff
+  uv run pcq report --module ruff
   """
 help = "Run current ruff check and report on results."
-[tool.poe.tasks.ruff-check-report]
-cmd = "uv run pcq report --module ruff_check"
-help = "Report on most recent ruff-check run"
+
+[tool.poe.tasks.ruff-report]
+cmd = "uv run pcq report --module ruff"
+help = "Report on most recent ruff run"
 
 [tool.poe.tasks.sql]
 envfile = ".env"

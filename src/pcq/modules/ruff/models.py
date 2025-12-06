@@ -7,7 +7,7 @@ from peewee import CharField, IntegerField, ForeignKeyField, Model
 from pcq.models import Run
 
 
-class RuffCheck(Model):
+class Ruff(Model):
     """..."""
 
     # fmt: off
@@ -25,10 +25,10 @@ class RuffCheck(Model):
     class Meta:
         """..."""
 
-        table_name = "ruff_check"
+        table_name = "ruff"
 
 
-def remove_common_prefixes(rows: list[RuffCheck]) -> list[RuffCheck]:
+def remove_common_prefixes(rows: list[Ruff]) -> list[Ruff]:
     """Remove common prefix from a list of file paths."""
     if not rows:
         return []
