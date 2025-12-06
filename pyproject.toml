@@ -28,16 +28,32 @@ help = "Run arbitrary dbmate on the local development database"
 cmd = "uv run pcq flush"
 help = "Flush the database entirely"
 
+#-------------------------------------------------------------------------------
+# cloc
+#-------------------------------------------------------------------------------
+[tool.poe.tasks.cloc]
+shell = """
+  cloc --include-lang=Python src/ --by-file --json | uv run pcq ingest --module cloc
+  # uv run pcq report --module cloc
+  """
+help = "Run cloc and report on results."
+
+[tool.poe.tasks.cloc-report]
+cmd = "uv run pcq report --module cloc"
+help = "Report on most recent cloc run"
+
+#-------------------------------------------------------------------------------
+# Ruff - Check
+#-------------------------------------------------------------------------------
 [tool.poe.tasks.ruff-check]
 shell = """
   ruff check --output-format=json | uv run pcq ingest --module ruff_check
   uv run pcq report --module ruff_check
   """
 help = "Run current ruff check and report on results."
-
 [tool.poe.tasks.ruff-check-report]
 cmd = "uv run pcq report --module ruff_check"
-help = "Report on most recent ruff check"
+help = "Report on most recent ruff-check run"
 
 [tool.poe.tasks.sql]
 envfile = ".env"

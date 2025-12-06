@@ -11,11 +11,12 @@ from rich import print
 
 from pcq.models import Run
 from pcq.modules import db as db_module
+from pcq.modules.cloc import Cloc
 from pcq.modules.ruff_check.models import RuffCheck
 
 
 def _setup_sqlite(args: _ArgResult) -> None:
-    models = [Run, RuffCheck]
+    models = [Run, Cloc, RuffCheck]
     db_path = Path("__data__/db.sqlite3")
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False})
     db.bind(models)
@@ -27,10 +28,10 @@ def _setup_sqlite(args: _ArgResult) -> None:
 def main():
     am = ArgMan()
     ingest_cmd = am.add_cmd("ingest")
-    ingest_cmd.arg_str(long="module", default="ruff_check", desc="Module to execute, e.g. ruff-check, source-lines etc")
+    ingest_cmd.arg_str(long="module", desc="Module to execute, e.g. ruff-check, cloc etc")
 
     report_cmd = am.add_cmd("report")
-    report_cmd.arg_str(long="module", default="ruff_check", desc="Module to report on.")
+    report_cmd.arg_str(long="module", desc="Module to report on.")
     report_cmd.arg_int(long="verbosity", default=0, desc="Verbosity/depth to report on (starting from 0 for top-level)")
 
     flush_cmd = am.add_cmd("flush")
@@ -41,7 +42,11 @@ def main():
     db = _setup_sqlite(args)
 
     if args.sub_cmd == "ingest":
-        if args.ingest.module == "ruff_check":
+        if args.ingest.module == "cloc":
+            from pcq.modules import cloc
+
+            cloc.ingest(args, db)
+        elif args.ingest.module == "ruff_check":
             from pcq.modules import ruff_check
 
             ruff_check.ingest(args, db)
@@ -49,7 +54,11 @@ def main():
             print(f"Sorry, we don't know how to ingest from {args.ingest.module} yet!")
 
     elif args.sub_cmd == "report":
-        if args.report.module == "ruff_check":
+        if args.report.module == "cloc":
+            from pcq.modules import cloc
+
+            cloc.report(args, db)
+        elif args.report.module == "ruff_check":
             from pcq.modules import ruff_check
 
             ruff_check.report(args, db)
