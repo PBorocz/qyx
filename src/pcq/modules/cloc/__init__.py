@@ -13,7 +13,7 @@ from rich import print
 from rich.console import Console
 from rich.table import Table
 
-from pcq.models import Run
+from pcq.models import Project, Run
 from pcq.modules.cloc.models import Cloc
 from pcq.utilities.git import get_git_commit_hash
 
@@ -22,7 +22,8 @@ MODULE = "cloc"
 
 def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
     gch = get_git_commit_hash()
-    run = Run(git_commit_hash=gch, run_module=MODULE)
+    project = Project.get_or_insert(args.ingest.project)
+    run = Run(project_id=project.id, module=MODULE, git_commit_hash=gch)
     run.save()
 
     if not sys.stdin.isatty():
@@ -60,7 +61,9 @@ def _save_results(run: Run, rows: list[Cloc]) -> int:
 
 
 def report(args: _ArgResult, db: SqliteDatabase) -> None:
-    run = Run.select().order_by(Run.timestamp.desc()).where(Run.run_module == MODULE).first()
+    project = Project.get(source_dir=args.report.project)
+    run = Run.select().order_by(Run.timestamp.desc()).where(Run.project_id == project.id, Run.module == MODULE).first()
+    # run = Run.select().order_by(Run.timestamp.desc()).where(Run.module == MODULE).first()
     if not run:
         print("No runs yet.")
         return

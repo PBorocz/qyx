@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11.9"
 authors = [{name = "Your Name", email = "your.email@example.com"}]
 dependencies = [
-    "argman>=0.3.0",
+    "argman>=0.3.3,<4.0",
     "rich>=14.2.0",
 ]
 
@@ -31,14 +31,14 @@ help = "Flush the database entirely"
 #-------------------------------------------------------------------------------
 # all
 #-------------------------------------------------------------------------------
-[tool.poe.tasks.ingest_all]
+[tool.poe.tasks.ingest]
 shell = """
   poe cloc
   poe ruff
   """
 help = "Run/ingest all modules."
 
-[tool.poe.tasks.report_all]
+[tool.poe.tasks.report]
 shell = """
   poe cloc-report
   poe ruff-report
@@ -51,7 +51,6 @@ help = "Report all modules."
 [tool.poe.tasks.cloc]
 shell = """
   cloc --include-lang=Python src/ --by-file --json | uv run pcq ingest --module cloc
-  uv run pcq report --module cloc
   """
 help = "Run cloc and report on results."
 
@@ -65,7 +64,6 @@ help = "Report on most recent cloc run"
 [tool.poe.tasks.ruff]
 shell = """
   ruff check --output-format=json | uv run pcq ingest --module ruff
-  uv run pcq report --module ruff
   """
 help = "Run current ruff check and report on results."
 

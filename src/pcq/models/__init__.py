@@ -1,22 +1,37 @@
 """..."""
 
+from __future__ import annotations
+
 import zoneinfo
 from datetime import datetime
 
-from peewee import CharField, DateTimeField, Model
+import peewee as pw
 
 
-class Run(Model):
+class Project(pw.Model):
+    """..."""
+
+    source_dir = pw.CharField(help_text="Pointer to respective project's root directory")
+
+    @classmethod
+    def get_or_insert(cls, source_dir: str) -> Project:
+        """Get the project at the specified source directory, even if we have to insert."""
+        try:
+            project = Project.get(Project.source_dir == source_dir)
+        except pw.DoesNotExist:
+            project = Project(source_dir=source_dir)
+        project.save()
+        return project
+
+
+class Run(pw.Model):
     """..."""
 
     # fmt: off
-    ################################################################################
-    # Required (remember that "id" attribute will be automatically added by peewee)
-    ################################################################################
-    timestamp       = DateTimeField(help_text="GMT/UTC datetime the ingest occurred")
-    git_commit_hash = CharField    (help_text="ID from respective sport's site")
-    source_dir      = CharField    (help_text="Pointer to respective sport's id attribute, e.g. 'cycling'")
-    run_module      = CharField    (help_text="Match SchedulesDirect, usually '<yyyymmdd>.<awayTeam>@<homeTeam>'")
+    project_id      = pw.ForeignKeyField(Project, backref="Runs")
+    timestamp       = pw.DateTimeField() # "GMT/UTC datetime the ingest occurred"
+    git_commit_hash = pw.CharField()     # ID from respective sport's site")
+    module          = pw.CharField()     # Module gathered for, e.g. ruff, cloc, radon etc.
     # fmt: on
 
     @property

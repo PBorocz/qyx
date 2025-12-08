@@ -29,10 +29,12 @@ def main():
     am = ArgMan()
     ingest_cmd = am.add_cmd("ingest")
     ingest_cmd.arg_str(long="module", desc="Module to execute, e.g. ruff, cloc etc")
+    ingest_cmd.arg_str(long="project", desc='Base path to project to ingest from, defaults to "."', default=".")
 
     report_cmd = am.add_cmd("report")
     report_cmd.arg_str(long="module", desc="Module to report on.")
     report_cmd.arg_int(long="verbosity", default=0, desc="Verbosity/depth to report on (starting from 0 for top-level)")
+    report_cmd.arg_str(long="project", desc='Base path to project to report on behalf of, defaults to "."', default=".")
 
     flush_cmd = am.add_cmd("flush")
     flush_cmd.arg_str(long="module", desc="Optional module to flush data for, e.g. ruff, source-lines etc")
