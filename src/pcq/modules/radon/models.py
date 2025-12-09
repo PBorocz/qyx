@@ -2,7 +2,7 @@
 
 import os
 
-from peewee import CharField, IntegerField, ForeignKeyField, Model
+from peewee import CharField, FloatField, IntegerField, ForeignKeyField, Model
 
 from pcq.models import Run
 
@@ -29,7 +29,24 @@ class RadonRaw(Model):
         table_name = "radon_raw"
 
 
-def remove_common_prefixes(rows: list[RadonRaw]) -> list[RadonRaw]:
+class RadonMi(Model):
+    """..."""
+
+    # fmt: off
+    run_id   = ForeignKeyField(Run, backref="Radon Maintainability checks")
+    dir      = CharField()
+    filename = CharField()
+    mi       = FloatField()
+    rank     = CharField()
+    # fmt: on
+
+    class Meta:
+        """..."""
+
+        table_name = "radon_mi"
+
+
+def remove_common_prefixes(rows: list) -> list:
     """Remove common prefix from a list of file paths."""
     if not rows:
         return []

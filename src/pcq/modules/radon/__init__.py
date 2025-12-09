@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from pcq.models import Project, Run
-from pcq.modules.radon.models import remove_common_prefixes, RadonRaw
+from pcq.modules.radon.models import remove_common_prefixes, RadonMi, RadonRaw
 from pcq.utilities.git import get_git_commit_hash
 
 MODULE = "radon"
@@ -33,6 +33,8 @@ def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
 
     if args.ingest.submodule == "raw":
         results = _parse_radon_raw_json(data)
+    elif args.ingest.submodule == "mi":
+        results = _parse_radon_mi_json(data)
     else:
         print(f"Sorry, we don't support submodule: {args.ingest.submodule} yet!")
 
@@ -53,6 +55,17 @@ def _parse_radon_raw_json(data: dict[str, int]) -> list[RadonRaw]:
             multi=radon_result["multi"],
             blank=radon_result["blank"],
             single_comments=radon_result["single_comments"],
+        )
+
+
+def _parse_radon_mi_json(data: dict[str, int]) -> list[RadonRaw]:
+    def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
+        fn_path = Path(fn_)
+        return RadonMi(
+            dir=fn_path.parent,
+            filename=fn_path.name,
+            mi=radon_result["mi"],
+            rank=radon_result["rank"],
         )
 
     return [_json_to_row(fn_, results) for fn_, results in data.items()]
