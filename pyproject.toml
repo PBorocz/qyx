@@ -35,6 +35,7 @@ help = "Flush the database entirely"
 shell = """
   poe cloc
   poe ruff
+  poe radon
   """
 help = "Run/ingest all modules."
 
@@ -42,8 +43,25 @@ help = "Run/ingest all modules."
 shell = """
   poe cloc-report
   poe ruff-report
+  poe radon-report
   """
 help = "Report all modules."
+
+#-------------------------------------------------------------------------------
+# radon
+#-------------------------------------------------------------------------------
+[tool.poe.tasks.radon]
+shell = """
+  # radon cc  --json | uv run pcq ingest --module radon --submodule cc
+  # radon mi  --json | uv run pcq ingest --module radon --submodule mi
+  # radon hal --json | uv run pcq ingest --module radon --submodule hal
+    uvx radon raw . --json | uv run pcq ingest --module radon --submodule raw
+  """
+help = "Ingest radon checks"
+
+[tool.poe.tasks.radon-report]
+cmd = "uv run pcq report --module radon"
+help = "Report on most recent radon run"
 
 #-------------------------------------------------------------------------------
 # cloc

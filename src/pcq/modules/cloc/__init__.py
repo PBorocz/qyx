@@ -44,7 +44,7 @@ def _parse_json(data: dict) -> list[Cloc]:
         fn_path = Path(fn_)
         return Cloc(
             dir=fn_path.parent,
-            file_name=fn_path.name,
+            filename=fn_path.name,
             lines_blank=cloc_result["blank"],
             lines_code=cloc_result["code"],
             lines_comment=cloc_result["comment"],

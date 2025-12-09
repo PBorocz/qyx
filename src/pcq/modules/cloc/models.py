@@ -13,12 +13,12 @@ class Cloc(Model):
     # Required (remember that "id" attribute will be automatically added by peewee)
     ################################################################################
     run_id        = ForeignKeyField(Run, backref="Cloc")
-    dir           = CharField      (help_text="Directory under root")
-    file_name     = CharField      (help_text="Filename within dir")
-    lines_blank   = IntegerField   (help_text="Number of blank lines")
-    lines_code    = IntegerField   (help_text="Number of code lines")
-    lines_comment = IntegerField   (help_text="Number of comment lines")
-    scale_factor  = IntegerField   (help_text="cloc scale factor")
+    dir           = CharField()
+    file_name     = CharField()
+    lines_blank   = IntegerField()
+    lines_code    = IntegerField()
+    lines_comment = IntegerField()
+    scale_factor  = IntegerField()
     # fmt: on
 
     class Meta:

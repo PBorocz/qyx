@@ -9,6 +9,7 @@
 .env_dev
 .env_prod
 *.org
+*.json
 requirements.txt
 pylint.out
 zArchive/
