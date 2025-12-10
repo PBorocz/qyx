@@ -14,7 +14,7 @@ class Cloc(Model):
     ################################################################################
     run_id        = ForeignKeyField(Run, backref="Cloc")
     dir           = CharField()
-    file_name     = CharField()
+    filename      = CharField()
     lines_blank   = IntegerField()
     lines_code    = IntegerField()
     lines_comment = IntegerField()

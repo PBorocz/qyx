@@ -9,7 +9,8 @@ from rich.console import Console
 from rich.table import Table
 
 from pcq.models import Project, Run
-from pcq.modules.ruff.models import remove_common_prefixes, Ruff
+from pcq.modules.ruff.models import Ruff
+from pcq.utilities import remove_common_prefixes
 from pcq.utilities.git import get_git_commit_hash
 
 MODULE = "ruff"

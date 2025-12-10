@@ -42,6 +42,7 @@ def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
 def _parse_json(data: dict) -> list[Cloc]:
     def _json_to_row(fn_: str, cloc_result: dict) -> Cloc:
         fn_path = Path(fn_)
+        assert fn_path.name
         return Cloc(
             dir=fn_path.parent,
             filename=fn_path.name,
@@ -90,7 +91,7 @@ def report(args: _ArgResult, db: SqliteDatabase) -> None:
         Console().print(table)
 
     elif args.report.verbosity == 1:
-        rows = Cloc.select().where(Cloc.run_id == run).order_by(Cloc.dir, Cloc.file_name)
+        rows = Cloc.select().where(Cloc.run_id == run).order_by(Cloc.dir, Cloc.filename)
         sums = defaultdict(int)
         for row in rows:
             sums["blank"] += row.lines_blank
@@ -109,7 +110,7 @@ def report(args: _ArgResult, db: SqliteDatabase) -> None:
         table.add_column("Blank", justify="right", footer=str(sums["blank"]))
         for row in rows:
             table.add_row(
-                f"{row.dir}/{row.file_name}",
+                f"{row.dir}/{row.filename}",
                 str(row.lines_code),
                 str(row.lines_comment),
                 str(row.lines_blank),

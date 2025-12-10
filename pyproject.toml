@@ -52,10 +52,10 @@ help = "Report all modules."
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.radon]
 shell = """
-  # radon cc  --json | uv run pcq ingest --module radon --submodule cc
-  # radon hal --json | uv run pcq ingest --module radon --submodule hal
-    uvx radon mi  . --json | uv run pcq ingest --module radon --submodule mi
-    uvx radon raw . --json | uv run pcq ingest --module radon --submodule raw
+  uvx radon cc  . --json | uv run pcq ingest --module radon --submodule cc
+  uvx radon hal . --json | uv run pcq ingest --module radon --submodule hal
+  uvx radon mi  . --json | uv run pcq ingest --module radon --submodule mi
+  uvx radon raw . --json | uv run pcq ingest --module radon --submodule raw
   """
 help = "Ingest radon checks"
 

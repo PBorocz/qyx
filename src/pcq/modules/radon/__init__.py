@@ -11,16 +11,17 @@ from rich.console import Console
 from rich.table import Table
 
 from pcq.models import Project, Run
-from pcq.modules.radon.models import remove_common_prefixes, RadonMi, RadonRaw
+from pcq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
+from pcq.utilities import remove_common_prefixes
 from pcq.utilities.git import get_git_commit_hash
 
 MODULE = "radon"
 
 
 def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
-    gch = get_git_commit_hash()
-    project = Project.get_or_insert(args.ingest.project)
-    run = Run(project_id=project.id, module=MODULE, sub_module=args.ingest.submodule, git_commit_hash=gch)
+    gch: str = get_git_commit_hash()
+    project: Project = Project.get_or_insert(args.ingest.project)
+    run: Run = Run(project_id=project.id, module=MODULE, sub_module=args.ingest.submodule, git_commit_hash=gch)
     run.save()
 
     if not sys.stdin.isatty():
@@ -31,18 +32,27 @@ def ingest(args: _ArgResult, db: SqliteDatabase) -> None:
         sub_out = subprocess.run(["uvx", "radon", args.ingest.submodule, ".", "--json"], capture_output=True)
         data = json.loads(sub_out.stdout)
 
+    # FIXME: Can we make the determination of which module dynamic based on json contents??
+    num_functions = None
     if args.ingest.submodule == "raw":
-        results = _parse_radon_raw_json(data)
+        num_files = _parse_save_radon_raw_json(run, data)
+        msg = f"Ingested {num_files} results from radon check: RAW"
     elif args.ingest.submodule == "mi":
-        results = _parse_radon_mi_json(data)
+        num_files = _parse_save_radon_mi_json(run, data)
+        msg = f"Ingested {num_files} results from radon check: MI"
+    elif args.ingest.submodule == "hal":
+        num_files, num_functions = _parse_save_radon_hal_json(run, data)
+        msg = f"Ingested {num_files} files and with {num_functions} functions from radon check: HAL"
+    elif args.ingest.submodule == "cc":
+        num_files, num_entities = _parse_save_radon_cc_json(run, data)
+        msg = f"Ingested {num_files} files and with {num_entities} entities from radon check: CC"
     else:
         print(f"Sorry, we don't support submodule: {args.ingest.submodule} yet!")
 
-    num = _save_results(run, results)
-    print(f"Ingested {num} results from radon check.")
+    print(msg)
 
 
-def _parse_radon_raw_json(data: dict[str, int]) -> list[RadonRaw]:
+def _parse_save_radon_raw_json(run: Run, data: dict[str, int]) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
         return RadonRaw(
@@ -57,8 +67,11 @@ def _parse_radon_raw_json(data: dict[str, int]) -> list[RadonRaw]:
             single_comments=radon_result["single_comments"],
         )
 
+    rows = [_json_to_row(fn_, results) for fn_, results in data.items()]
+    return _save_results(run, rows)
 
-def _parse_radon_mi_json(data: dict[str, int]) -> list[RadonRaw]:
+
+def _parse_save_radon_mi_json(run: Run, data: dict[str, int]) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
         return RadonMi(
@@ -68,7 +81,79 @@ def _parse_radon_mi_json(data: dict[str, int]) -> list[RadonRaw]:
             rank=radon_result["rank"],
         )
 
-    return [_json_to_row(fn_, results) for fn_, results in data.items()]
+    rows = [_json_to_row(fn_, results) for fn_, results in data.items()]
+    return _save_results(run, rows)
+
+
+def _parse_save_radon_cc_json(run: Run, data: dict[str, int]) -> [int, int]:
+    num_files, num_entities = 0, 0
+    for fn_, entities in data.items():
+        fn_path = Path(fn_)
+        for entity in entities:
+            row = RadonCc(
+                run_id=run.id,
+                dir=fn_path.parent,
+                filename=fn_path.name,
+                entity_type=entity["type"][0].upper(),
+                entity_name=entity["name"],
+                line_start=entity["lineno"],
+                line_end=entity["endline"],
+                column_offset=entity["col_offset"],
+                complexity=entity["complexity"],
+                rank=entity["rank"],
+            )
+            row.save()
+            num_entities += 1
+        num_files += 1
+    return num_files, num_entities
+
+
+def _parse_save_radon_hal_json(run: Run, data: dict[str, int]) -> [int, int]:
+    # Have to do this nested to reflect json file structure:
+    num_files, num_functions = 0, 0
+    for fn_, results in data.items():
+        total = results["total"]
+        fn_path = Path(fn_)
+        radon_hal = RadonHal(
+            run_id=run.id,
+            dir=fn_path.parent,
+            filename=fn_path.name,
+            h1=total["h1"],
+            h2=total["h2"],
+            N1=total["N1"],
+            N2=total["N2"],
+            program_vocabulary=total["vocabulary"],
+            program_length=total["length"],
+            calculated_length=total["calculated_length"],
+            volume=total["volume"],
+            difficulty=total["difficulty"],
+            effort=total["effort"],
+            time=total["time"],
+            bugs=total["bugs"],
+        )
+        radon_hal.save()
+        num_files += 1
+
+        for func_name, func_results in results.get("functions", {}).items():
+            radon_hal_func = RadonHalFunction(
+                radon_hal_id=radon_hal.id,
+                name=func_name,
+                h1=total["h1"],
+                h2=total["h2"],
+                N1=total["N1"],
+                N2=total["N2"],
+                program_vocabulary=total["vocabulary"],
+                program_length=total["length"],
+                calculated_length=total["calculated_length"],
+                volume=total["volume"],
+                difficulty=total["difficulty"],
+                effort=total["effort"],
+                time=total["time"],
+                bugs=total["bugs"],
+            )
+            radon_hal_func.save()
+            num_functions += 1
+    return num_files, num_functions
 
 
 def _save_results(run: Run, rows: list[RadonRaw]) -> int:
@@ -78,36 +163,36 @@ def _save_results(run: Run, rows: list[RadonRaw]) -> int:
     return len(rows)
 
 
-def report(args: _ArgResult, db: SqliteDatabase) -> None:
-    project = Project.get(source_dir=args.report.project)
-    run = Run.select().order_by(Run.timestamp.desc()).where(Run.project_id == project.id, Run.module == MODULE).first()
-    if not run:
-        print("No runs yet.")
-        return
-    if args.report.verbosity == 0:
-        results = (
-            Radon.select(Radon.rule_code, Radon.message, fn.COUNT(Radon.id).alias("count"))
-            .where(Radon.run_id == run)
-            .group_by(Radon.rule_code)
-            .order_by(fn.COUNT(Radon.id).desc())
-        )
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Rule")
-        table.add_column("Count", justify="center")
-        table.add_column("Message")
-        for result in results:
-            table.add_row(result.rule_code, str(result.count), result.message)
-        Console().print(table)
+# def report(args: _ArgResult, db: SqliteDatabase) -> None:
+#     project = Project.get(source_dir=args.report.project)
+#     run = Run.select().order_by(Run.timestamp.desc()).where(Run.project_id == project.id, Run.module == MODULE).first()
+#     if not run:
+#         print("No runs yet.")
+#         return
+#     if args.report.verbosity == 0:
+#         results = (
+#             Radon.select(Radon.rule_code, Radon.message, fn.COUNT(Radon.id).alias("count"))
+#             .where(Radon.run_id == run)
+#             .group_by(Radon.rule_code)
+#             .order_by(fn.COUNT(Radon.id).desc())
+#         )
+#         table = Table(show_header=True, header_style="bold magenta")
+#         table.add_column("Rule")
+#         table.add_column("Count", justify="center")
+#         table.add_column("Message")
+#         for result in results:
+#             table.add_row(result.rule_code, str(result.count), result.message)
+#         Console().print(table)
 
-    elif args.report.verbosity == 1:
-        print(f"{run.timestamp_local} : Following radon checks encountered:")
-        rows = Radon.select().where(Radon.run_id == run).order_by(Radon.filename, Radon.rule_code)
-        foobar = 1
-        rows = remove_common_prefixes(rows)
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Rule")
-        table.add_column("File (line)")
-        table.add_column("Message")
-        for row in rows:
-            table.add_row(row.rule_code, f"{row.filename} [{row.line}] ", row.message)
-        Console().print(table)
+#     elif args.report.verbosity == 1:
+#         print(f"{run.timestamp_local} : Following radon checks encountered:")
+#         rows = Radon.select().where(Radon.run_id == run).order_by(Radon.filename, Radon.rule_code)
+#         foobar = 1
+#         rows = remove_common_prefixes(rows)
+#         table = Table(show_header=True, header_style="bold magenta")
+#         table.add_column("Rule")
+#         table.add_column("File (line)")
+#         table.add_column("Message")
+#         for row in rows:
+#             table.add_row(row.rule_code, f"{row.filename} [{row.line}] ", row.message)
+#         Console().print(table)
