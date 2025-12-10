@@ -4,11 +4,11 @@ requires-python = ">=3.11.9"
 
 [[package]]
 name = "argman"
-version = "0.3.3"
+version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3c/36/346f2da6919b33d84ea41fab2a624c11f2517ad338ee250c1e61a0ba8667/argman-0.3.3.tar.gz", hash = "sha256:2b2283a16d9f36ff88b2955bd500e7fb2767ff560f76f438796370b284361e8d", size = 18445, upload-time = "2025-12-08T15:40:35.814Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/2f/5da474b7f3cb49581cbc4bb9cc9fd4555a0680d14dc28e4ef2ef98c76a43/argman-0.3.5.tar.gz", hash = "sha256:3c347eed74989453c96c78041d3bbf56925c696ed76d4fdb5abba9cbb33053cf", size = 19438, upload-time = "2025-12-09T20:15:26.476Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/b6/2b3266fda278ab926b5f4e4643e79ef8c8677e88cbfadfd486645448b625/argman-0.3.3-py3-none-any.whl", hash = "sha256:ca2892c136c8dd61e69a42d8ea5983523af8bd06a5942ff34930c63dbf3e4d75", size = 12353, upload-time = "2025-12-08T15:40:34.331Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/be/60df2390263001c15d2d0010dbf969abca2d0813373401f1009ded939410/argman-0.3.5-py3-none-any.whl", hash = "sha256:229a531db3e8f8e8935063d07f4af2a4ea346d29bc627e5ea7ee42c439008d7a", size = 12830, upload-time = "2025-12-09T20:15:24.918Z" },
 ]
 
 [[package]]
@@ -43,7 +43,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "argman", specifier = ">=0.3.3,<4.0" },
+    { name = "argman", specifier = ">=0.3.5,<4" },
     { name = "rich", specifier = ">=14.2.0" },
 ]
 

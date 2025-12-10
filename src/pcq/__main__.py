@@ -26,15 +26,15 @@ def _setup_sqlite(args: _ArgResult) -> None:
     return db
 
 
-def main():
-    am = ArgMan()
-    cmd_i = am.add_cmd("ingest")
+def get_args():
+    am = ArgMan(prog="PCQ - Python Code Quality Store")
+    cmd_i = am.add_cmd("ingest", desc="Ingest code quality results from supported tools.")
     cmd_i.arg_str(short="p", long="project", desc='Base path to project to ingest from, defaults to "."', default=".")
     cmd_i.arg_str(short="m", long="module", desc="Module to execute, e.g. radon, ruff, cloc etc")
     cmd_i.arg_str(short="s", long="submodule", desc="Optional sub-module, e.g. cc for Radon.")
     cmd_i.arg_int(short="v", long="verbosity", default=0, desc="Logging verbosity")
 
-    cmd_r = am.add_cmd("report")
+    cmd_r = am.add_cmd("report", desc="Report on code quality for the specified (or all) projects.")
     cmd_r.arg_str(short="p", long="project", desc='Base path to project to report for, defaults to "."', default=".")
     cmd_r.arg_str(short="m", long="module", desc="Module to report on.")
     cmd_r.arg_str(short="s", long="submodule", desc="Optional sub-module, e.g. cc for Radon.")
@@ -42,10 +42,18 @@ def main():
         short="v", long="verbosity", default=0, desc="Verbosity/depth to report (starting from 0 for top-level)"
     )
 
-    flush_cmd = am.add_cmd("flush")
+    flush_cmd = am.add_cmd("flush", desc="Flush store either for all or specified modules.")
     flush_cmd.arg_str(long="module", desc="Optional module to flush data for, e.g. ruff, source-lines etc")
 
-    args = am.parse()
+    purge_cmd = am.add_cmd("purge", desc="Purge store either for all or specified modules, leaving the most recent run")
+    purge_cmd.arg_str(long="module", desc="Optional module to purge data for, e.g. ruff, source-lines etc")
+    purge_cmd.arg_bool(long="debug", desc="Print debugging information", default=False)
+
+    return am.parse()
+
+
+def main():
+    args = get_args()
 
     db = _setup_sqlite(args)
 
@@ -83,6 +91,9 @@ def main():
 
     elif args.sub_cmd == "flush":
         db_module.flush(args, db)
+
+    elif args.sub_cmd == "purge":
+        db_module.purge(args, db)
 
     else:
         print("Sorry, you must provide a base command to execute.")

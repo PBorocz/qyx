@@ -100,6 +100,7 @@ class RadonHalFunction(Model):
     """..."""
 
     # fmt: off
+    run_id            = ForeignKeyField(Run, backref="Radon Run")
     radon_hal_id      = ForeignKeyField(RadonHal, backref="Radon Maintainability checks")
     name              = CharField(help_text="function name")
 

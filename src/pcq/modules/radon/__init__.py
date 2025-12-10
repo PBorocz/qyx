@@ -136,6 +136,7 @@ def _parse_save_radon_hal_json(run: Run, data: dict[str, int]) -> [int, int]:
 
         for func_name, func_results in results.get("functions", {}).items():
             radon_hal_func = RadonHalFunction(
+                run_id=run.id,
                 radon_hal_id=radon_hal.id,
                 name=func_name,
                 h1=total["h1"],
