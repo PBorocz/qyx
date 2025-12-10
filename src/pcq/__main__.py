@@ -1,13 +1,14 @@
 """Primary driver script."""
 
-import logging
+import argparse
+import importlib
 import sys
 from pathlib import Path
 
-from argman import ArgMan
-from argman.argman import _ArgResult
+from argparse import Namespace
+from loguru import logger
 from peewee import SqliteDatabase
-from rich import print
+from rich.traceback import install
 
 from pcq.models import Run
 from pcq.modules import db as db_module
@@ -16,89 +17,151 @@ from pcq.modules.radon.models import RadonRaw  # RadonCC, RadonMI, RadonHAL
 from pcq.modules.ruff.models import Ruff
 
 
-def _setup_sqlite(args: _ArgResult) -> None:
+def get_args():
+    # Create parent parser with common arguments
+    parser_root = argparse.ArgumentParser(add_help=False)
+    parser_root.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
+    parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.")
+
+    parser = argparse.ArgumentParser(prog="PCQ - Python Code Quality Store")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    ################################################################################
+    # Ingest command
+    ################################################################################
+    parse_ingest = subparsers.add_parser(
+        "ingest",
+        parents=[parser_root],
+        help="Ingest code quality results from supported tools.",
+    )
+    parse_ingest.add_argument(
+        "-p",
+        "--project",
+        default=".",
+        help='Base path to project to ingest from, defaults to "."',
+    )
+    parse_ingest.add_argument("-s", "--submodule", help="Optional sub-module, e.g. cc for Radon.")
+    parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
+    # Make module required for ingest
+    parse_ingest.set_defaults(module_required=True)
+
+    ################################################################################
+    # Report command
+    ################################################################################
+    parse_report = subparsers.add_parser(
+        "report",
+        parents=[parser_root],
+        help="Report on code quality for the specified (or all) projects.",
+    )
+    parse_report.add_argument(
+        "-p",
+        "--project",
+        default=".",
+        help='Base path to project to report for, defaults to "."',
+    )
+    parse_report.add_argument("-s", "--submodule", help="Optional sub-module, e.g. cc for Radon.")
+    parse_report.add_argument(
+        "-v",
+        "--verbosity",
+        type=int,
+        default=0,
+        help="Verbosity/depth to report (starting from 0 for top-level)",
+    )
+    # Make module required for report
+    parse_report.set_defaults(module_required=True)
+
+    ################################################################################
+    # Flush command
+    ################################################################################
+    subparsers.add_parser(
+        "flush",
+        parents=[parser_root],
+        help="Flush store either for all or specified modules.",
+    )
+
+    ################################################################################
+    # Purge command
+    ################################################################################
+    subparsers.add_parser(
+        "purge",
+        parents=[parser_root],
+        help="Purge store either for all or specified modules, leaving the most recent run",
+    )
+
+    args = parser.parse_args()
+
+    # Check if module is required for certain commands
+    if hasattr(args, "module_required") and args.module_required and not args.module:
+        parser.error(f"The {args.command} command requires --module argument")
+
+    return args
+
+
+def get_method(module: str, method: str):
+    try:
+        module_path = f"pcq.modules.{module}.{method}"  # Construct the path to the specific
+        module = importlib.import_module(module_path)  # .py file in the respective module and import it.
+        return getattr(module, method)  # Return the method from the module
+
+    except ImportError as e:
+        logger.error(f"Could not import {module_path}: {e}")
+        return None
+    except AttributeError as e:
+        logger.error(f"Method {method} not found in {module_path}: {e}")
+        return None
+
+
+def _setup_sqlite(args: Namespace) -> None:
     models = [Run, Cloc, Ruff, RadonRaw]  # RadonCC, RadonMI, RadonHAL, RadonRAW
     db_path = Path("__data__/db.sqlite3")
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
     db.bind(models)
     db.connect()
-    logging.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")
+    logger.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")
     return db
 
 
-def get_args():
-    am = ArgMan(prog="PCQ - Python Code Quality Store")
-    cmd_i = am.add_cmd("ingest", desc="Ingest code quality results from supported tools.")
-    cmd_i.arg_str(short="p", long="project", desc='Base path to project to ingest from, defaults to "."', default=".")
-    cmd_i.arg_str(short="m", long="module", desc="Module to execute, e.g. radon, ruff, cloc etc")
-    cmd_i.arg_str(short="s", long="submodule", desc="Optional sub-module, e.g. cc for Radon.")
-    cmd_i.arg_int(short="v", long="verbosity", default=0, desc="Logging verbosity")
-
-    cmd_r = am.add_cmd("report", desc="Report on code quality for the specified (or all) projects.")
-    cmd_r.arg_str(short="p", long="project", desc='Base path to project to report for, defaults to "."', default=".")
-    cmd_r.arg_str(short="m", long="module", desc="Module to report on.")
-    cmd_r.arg_str(short="s", long="submodule", desc="Optional sub-module, e.g. cc for Radon.")
-    cmd_r.arg_int(
-        short="v", long="verbosity", default=0, desc="Verbosity/depth to report (starting from 0 for top-level)"
+def _setup_logging(args: Namespace) -> None:
+    logger.remove()
+    log_level = "DEBUG" if args.debug else "INFO"
+    logger.add(
+        sys.stderr,
+        level=log_level,
+        # format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
     )
-
-    flush_cmd = am.add_cmd("flush", desc="Flush store either for all or specified modules.")
-    flush_cmd.arg_str(long="module", desc="Optional module to flush data for, e.g. ruff, source-lines etc")
-
-    purge_cmd = am.add_cmd("purge", desc="Purge store either for all or specified modules, leaving the most recent run")
-    purge_cmd.arg_str(long="module", desc="Optional module to purge data for, e.g. ruff, source-lines etc")
-    purge_cmd.arg_bool(long="debug", desc="Print debugging information", default=False)
-
-    return am.parse()
 
 
 def main():
     args = get_args()
+    _setup_logging(args)
 
+    # Lookup the appropriate method to run based on the sub-command desired:
+    match args.command:
+        case "ingest" | "report":
+            method = get_method(args.module, args.command)
+            if not method:
+                logger.error(f"Sorry, we don't know how to {args.command} yet on behalf of {args.module} yet!")
+                return sys.exit(1)
+        case "flush":
+            method = db_module.flush
+        case "purge":
+            method = db_module.purge
+        case _:
+            logger.error("Sorry, you must provide a valid base command to execute, use the --help option.")
+            sys.exit(1)
+
+    ################################################################################
+    # Setup up our database and call the method to do our work!
+    ################################################################################
     db = _setup_sqlite(args)
+    method(args, db)
 
-    if args.sub_cmd == "ingest":
-        if args.ingest.module == "cloc":
-            from pcq.modules import cloc
-
-            cloc.ingest(args, db)
-        elif args.ingest.module == "radon":
-            from pcq.modules import radon
-
-            radon.ingest(args, db)
-        elif args.ingest.module == "ruff":
-            from pcq.modules import ruff
-
-            ruff.ingest(args, db)
-        else:
-            print(f"Sorry, we don't know how to ingest from {args.ingest.module} yet!")
-
-    elif args.sub_cmd == "report":
-        if args.report.module == "cloc":
-            from pcq.modules import cloc
-
-            cloc.report(args, db)
-        elif args.report.module == "radon":
-            from pcq.modules import radon
-
-            radon.report(args, db)
-        elif args.report.module == "ruff":
-            from pcq.modules import ruff
-
-            ruff.report(args, db)
-        else:
-            print(f"Sorry, we don't know how to report on data from {args.report.module} yet!")
-
-    elif args.sub_cmd == "flush":
-        db_module.flush(args, db)
-
-    elif args.sub_cmd == "purge":
-        db_module.purge(args, db)
-
-    else:
-        print("Sorry, you must provide a base command to execute.")
-        sys.exit(1)
+    ################################################################################
+    # Do any/all database housekeeping
+    ################################################################################
+    db_module.housekeeping(args)
 
 
 if __name__ == "__main__":
+    install(show_locals=True)  # Before anything else, setup rich obo tracebacks..
     main()

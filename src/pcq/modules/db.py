@@ -1,30 +1,57 @@
 """..."""
 
-from argman.argman import _ArgResult
+from argparse import Namespace
+from loguru import logger
 from peewee import fn, SqliteDatabase
 
 from pcq.models import Project, Run
-from pcq.modules import MODULES
+from pcq.modules import models_for_module, MODELS
 
 
-def flush(args: _ArgResult, db: SqliteDatabase) -> None:
-    if args.flush.module:
-        assert args.flush.module in MODULES
+def housekeeping(args: Namespace) -> None:
+    """Clean out extraneous Runs that don't have data and Projects that don't have Runs."""
+
+    def _unused_runs(args: Namespace):
+        """Delete orphaned Run rows."""
+        # Gather all the current run id's
+        run_ids_used = set()
+        for model in MODELS:
+            models_run_ids = model.select(model.run_id).distinct()
+            run_ids_used.update([row.run_id for row in models_run_ids])
+
+        # Delete Runs that aren't currently used
+        if run_ids_used:
+            logger.debug(f"We have {len(run_ids_used)} active Runs currently.")
+            num = Run.delete().where(Run.id.not_in(run_ids_used)).execute()
+            if num:
+                logger.debug(f"Cleaned up {num} Run(s) that weren't referenced.")
+
+    def _unused_projects(args: Namespace):
+        """Delete orphaned Project rows."""
+        num = Project.delete().where(Project.id.not_in(Run.select(Run.project_id).distinct())).execute()
+        if num:
+            logger.debug(f"Cleaned up {num} Projects that had no Runs defined.")
+
+    _unused_runs(args)
+    _unused_projects(args)
+
+
+def flush(args: Namespace, db: SqliteDatabase) -> None:
+    if args.module:
         # Delete all the data associated with the specified module.
         for project in Project.select():
-            for run in Run.select().where(Run.module == args.flush.module):
-                for model in MODULES[args.flush.module]:
+            for run in Run.select().where(Run.module == args.module):
+                for model in models_for_module(args.module):
                     model.delete().where(model.run_id == run.id).execute()
-            Run.delete().where(Run.module == args.flush.module).execute()
+            Run.delete().where(Run.module == args.module).execute()
     else:
-        for name, modules in MODULES.items():
-            for model in modules:
-                model.delete().execute()
+        for model in MODELS:
+            model.delete().execute()
         Run.delete().execute()
         Project.delete().execute()
 
 
-def purge(args: _ArgResult, db: SqliteDatabase) -> None:
+def purge(args: Namespace, db: SqliteDatabase) -> None:
     """Purge/delete all data associated with "old" runs, ie, lose history but keep most recent!"""
     # First, gather the most recent run for each module/sub-module we've got data for..
     runs_to_keep = Run.select(
@@ -37,16 +64,18 @@ def purge(args: _ArgResult, db: SqliteDatabase) -> None:
         Run.module,
         Run.sub_module,
     )
-    if args.purge.debug:
-        print(f"{runs_to_keep=}")
 
     # Now, we can delete data associated with runs that AREN'T the most recent:
     for run in Run.select():
         if run.id not in [run.id for run in runs_to_keep]:
-            for model in MODULES[run.module]:
-                num_deleted = model.delete().where(model.run_id == run.id).execute()
-                if num_deleted:
-                    print(
-                        f"Deleted {num_deleted} rows from {run.module}/{run.sub_module} obo {run.id} ({run.timestamp})"
-                    )
+            if args.module and args.module != run.module:
+                continue
+
+            num_deleted = 0
+            for model in models_for_module(run.module):
+                num_deleted += model.delete().where(model.run_id == run.id).execute()
+            if num_deleted:
+                logger.debug(f"Deleted {num_deleted:3d} rows {run.module:5s} from {run.timestamp}")
+
+            # Cleanup the run itself as well.
             Run.delete().where(Run.id == run.id).execute()

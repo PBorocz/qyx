@@ -6,7 +6,8 @@ readme = "README.md"
 requires-python = ">=3.11.9"
 authors = [{name = "Your Name", email = "your.email@example.com"}]
 dependencies = [
-    "argman>=0.3.5,<4",
+    "loguru>=0.7.3",
+    "peewee>=3.18.3",
     "rich>=14.2.0",
 ]
 
@@ -26,7 +27,11 @@ help = "Run arbitrary dbmate on the local development database"
 
 [tool.poe.tasks.flush]
 cmd = "uv run pcq flush"
-help = "Flush the database entirely"
+help = "Flush the database entirely."
+
+[tool.poe.tasks.purge]
+cmd = "uv run pcq purge"
+help = "Purge old runs from the database."
 
 [tool.poe.tasks.sql]
 envfile = ".env"
@@ -34,7 +39,7 @@ shell = """
   echo ${DB_RDB}
   litecli ${DB_RDB}
 """
-help = "Run litecli against our database"
+help = "Run litecli against our database."
 
 #-------------------------------------------------------------------------------
 # all
