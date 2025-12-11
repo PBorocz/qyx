@@ -86,16 +86,21 @@ def get_args():
 
     args = parser.parse_args()
 
+    # Set defaults for the case where we don't have a command yet to execute..
+    if not hasattr(args, "debug"):
+        args.debug = False
+    if not hasattr(args, "module"):
+        args.module = None
+
     # We want a command for now!
     if not hasattr(args, "command") or args.command is None:
         print("Sorry, please specify a command:\n")
         parser.print_help()
         sys.exit(1)
 
-    if not hasattr(args, "debug"):
-        args.debug = False
-    if not hasattr(args, "module"):
-        args.module = None
+    # Cleanup the project argument to always represent the full path
+    if hasattr(args, "project") or args.project is not None:
+        args.project = str(Path(args.project).resolve())
 
     # Check if module is required for certain commands
     if hasattr(args, "module_required") and args.module_required and not args.module:
@@ -137,7 +142,7 @@ def _setup_logging(args: Namespace) -> None:
 
 
 def main():
-    install(show_locals=True)  # Before anything else, setup rich obo tracebacks
+    # install(show_locals=True)  # Before anything else, setup rich obo tracebacks
     args = get_args()  # Get/process all command-line arguments
     _setup_logging(args)  # Setup logging (now that we know what potential level to log to)
     db = _setup_sqlite(args)  # Setup our data-store and respective tables.
@@ -154,8 +159,7 @@ def main():
         case "purge":
             method = db_module.purge
         case _:
-            logger.error("Sorry, you must provide a valid base command to execute, use the --help option.")
-            sys.exit(1)
+            raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
     ################################################################################
     # Setup up our database and call the method to do our work!
