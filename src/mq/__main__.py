@@ -12,19 +12,16 @@ from rich.traceback import install
 
 from mq.modules import MODULE_MODELS
 from mq.modules import db as db_module
-from mq.modules.cloc.models import Cloc
 from mq.modules.models import Project, Run
-from mq.modules.radon.models import RadonRaw  # RadonCC, RadonMI, RadonHAL
-from mq.modules.ruff.models import Ruff
 
 
 def get_args():
     # Create parent parser with common arguments
     parser_root = argparse.ArgumentParser(add_help=False)
     parser_root.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
-    parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.")
+    parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.", default=False)
 
-    parser = argparse.ArgumentParser(prog="MQ - Python Code Quality Meta Environment")
+    parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     ################################################################################
@@ -41,10 +38,9 @@ def get_args():
         default=".",
         help='Base path to project to ingest from, defaults to "."',
     )
-    parse_ingest.add_argument("-s", "--submodule", help="Optional sub-module, e.g. cc for Radon.")
+    parse_ingest.add_argument("-s", "--submodule", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
-    # Make module required for ingest
-    parse_ingest.set_defaults(module_required=True)
+    parse_ingest.set_defaults(module_required=True)  # Make module required for ingest
 
     ################################################################################
     # Report command
@@ -68,8 +64,7 @@ def get_args():
         default=0,
         help="Verbosity/depth to report (starting from 0 for top-level)",
     )
-    # Make module required for report
-    parse_report.set_defaults(module_required=True)
+    parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)
 
     ################################################################################
     # Flush command
@@ -90,6 +85,17 @@ def get_args():
     )
 
     args = parser.parse_args()
+
+    # We want a command for now!
+    if not hasattr(args, "command") or args.command is None:
+        print("Sorry, please specify a command:\n")
+        parser.print_help()
+        sys.exit(1)
+
+    if not hasattr(args, "debug"):
+        args.debug = False
+    if not hasattr(args, "module"):
+        args.module = None
 
     # Check if module is required for certain commands
     if hasattr(args, "module_required") and args.module_required and not args.module:
@@ -113,35 +119,28 @@ def get_method(module: str, method: str):
 
 
 def _setup_sqlite(args: Namespace) -> None:
-    models = [Run, Cloc, Ruff, RadonRaw]  # RadonCC, RadonMI, RadonHAL, RadonRAW
     db_path = Path("__data__/db.sqlite3")
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
-
-    # Make sure our models have tables defined for 'em!
-    for model_class in [Project, Run] + MODULE_MODELS:
+    for ith, model_class in enumerate(
+        [Project, Run] + MODULE_MODELS,
+    ):  # Make sure our models have tables defined for 'em!
         model_class._meta.database = db
         model_class.create_table(safe=True)
-
-    # db.bind(models)
-    # db.connect()
-    logger.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")
+    logger.debug(f"...connected to {db_path.name=} with {ith + 1} models defined.")
     return db
 
 
 def _setup_logging(args: Namespace) -> None:
     logger.remove()
     log_level = "DEBUG" if args.debug else "INFO"
-    logger.add(
-        sys.stderr,
-        level=log_level,
-        # format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
-    )
+    logger.add(sys.stderr, level=log_level)
 
 
 def main():
-    args = get_args()
-    _setup_logging(args)
-    db = _setup_sqlite(args)
+    install(show_locals=True)  # Before anything else, setup rich obo tracebacks
+    args = get_args()  # Get/process all command-line arguments
+    _setup_logging(args)  # Setup logging (now that we know what potential level to log to)
+    db = _setup_sqlite(args)  # Setup our data-store and respective tables.
 
     # Lookup the appropriate method to run based on the sub-command desired:
     match args.command:
@@ -167,8 +166,3 @@ def main():
     # Do any/all database housekeeping
     ################################################################################
     db_module.housekeeping(args)
-
-
-if __name__ == "__main__":
-    install(show_locals=True)  # Before anything else, setup rich obo tracebacks..
-    main()
