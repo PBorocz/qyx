@@ -1,27 +1,22 @@
 """..."""
 
-from peewee import CharField, IntegerField, ForeignKeyField, Model
+from peewee import IntegerField
 
-from mq.models import Run
+from mq.models import BaseModuleModel
 
 
-class Cloc(Model):
+class Cloc(BaseModuleModel):
     """..."""
 
     # fmt: off
-    ################################################################################
-    # Required (remember that "id" attribute will be automatically added by peewee)
-    ################################################################################
-    run_id        = ForeignKeyField(Run, backref="Cloc")
-    dir           = CharField()
-    filename      = CharField()
-    lines_blank   = IntegerField()
-    lines_code    = IntegerField()
-    lines_comment = IntegerField()
-    scale_factor  = IntegerField()
+    lines_blank   = IntegerField(null=False)
+    lines_code    = IntegerField(null=False)
+    lines_comment = IntegerField(null=False)
+    scale_factor  = IntegerField(null=False)
     # fmt: on
 
     class Meta:
-        """..."""
+        """Define peewee meta data."""
 
         table_name = "cloc"
+        indexes = (("run_id", "dir", "filename"), True)
