@@ -4,7 +4,7 @@ import os
 
 from peewee import CharField, IntegerField, ForeignKeyField, Model
 
-from pcq.models import Run
+from mq.models import Run
 
 
 class Ruff(Model):

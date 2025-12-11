@@ -10,11 +10,11 @@ from loguru import logger
 from peewee import SqliteDatabase
 from rich.traceback import install
 
-from pcq.models import Run
-from pcq.modules import db as db_module
-from pcq.modules.cloc.models import Cloc
-from pcq.modules.radon.models import RadonRaw  # RadonCC, RadonMI, RadonHAL
-from pcq.modules.ruff.models import Ruff
+from mq.models import Run
+from mq.modules import db as db_module
+from mq.modules.cloc.models import Cloc
+from mq.modules.radon.models import RadonRaw  # RadonCC, RadonMI, RadonHAL
+from mq.modules.ruff.models import Ruff
 
 
 def get_args():
@@ -23,7 +23,7 @@ def get_args():
     parser_root.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
     parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.")
 
-    parser = argparse.ArgumentParser(prog="PCQ - Python Code Quality Store")
+    parser = argparse.ArgumentParser(prog="MQ - Python Code Quality Meta Environment")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     ################################################################################
@@ -99,7 +99,7 @@ def get_args():
 
 def get_method(module: str, method: str):
     try:
-        module_path = f"pcq.modules.{module}.{method}"  # Construct the path to the specific
+        module_path = f"mq.modules.{module}.{method}"  # Construct the path to the specific
         module = importlib.import_module(module_path)  # .py file in the respective module and import it.
         return getattr(module, method)  # Return the method from the module
 

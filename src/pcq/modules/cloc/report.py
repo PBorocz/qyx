@@ -8,9 +8,9 @@ from peewee import fn, SqliteDatabase
 from rich.console import Console
 from rich.table import Table
 
-from pcq.models import Project, Run
-from pcq.modules.cloc import MODULE
-from pcq.modules.cloc.models import Cloc
+from mq.models import Project, Run
+from mq.modules.cloc import MODULE
+from mq.modules.cloc.models import Cloc
 
 
 def report(args: Namespace, db: SqliteDatabase) -> None:

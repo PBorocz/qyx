@@ -1,5 +1,5 @@
 [project]
-name = "pcq"
+name = "mq"
 version = "0.1.0"
 description = "Python Code Quality Data Warehouse"
 readme = "README.md"
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pcq = "pcq.__main__:main"
+mq = "mq.__main__:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -22,15 +22,15 @@ build-backend = "setuptools.build_meta"
 verbosity = 0
 
 [tool.poe.tasks.dbm]
-cmd = "dbmate --migrations-dir ./src/pcq/models/migrations/ --env DB_RDB --no-dump-schema"
+cmd = "dbmate --migrations-dir ./src/mq/models/migrations/ --env DB_RDB --no-dump-schema"
 help = "Run arbitrary dbmate on the local development database"
 
 [tool.poe.tasks.flush]
-cmd = "uv run pcq flush"
+cmd = "uv run mq flush"
 help = "Flush the database entirely."
 
 [tool.poe.tasks.purge]
-cmd = "uv run pcq purge"
+cmd = "uv run mq purge"
 help = "Purge old runs from the database."
 
 [tool.poe.tasks.sql]
@@ -65,15 +65,15 @@ help = "Report all modules."
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.radon]
 shell = """
-  uvx radon cc  . --json | uv run pcq ingest --module radon --submodule cc
-  uvx radon hal . --json | uv run pcq ingest --module radon --submodule hal
-  uvx radon mi  . --json | uv run pcq ingest --module radon --submodule mi
-  uvx radon raw . --json | uv run pcq ingest --module radon --submodule raw
+  uvx radon cc  . --json | uv run mq ingest --module radon --submodule cc
+  uvx radon hal . --json | uv run mq ingest --module radon --submodule hal
+  uvx radon mi  . --json | uv run mq ingest --module radon --submodule mi
+  uvx radon raw . --json | uv run mq ingest --module radon --submodule raw
   """
 help = "Ingest radon checks"
 
 [tool.poe.tasks.radon-report]
-cmd = "uv run pcq report --module radon"
+cmd = "uv run mq report --module radon"
 help = "Report on most recent radon run"
 
 #-------------------------------------------------------------------------------
@@ -81,12 +81,12 @@ help = "Report on most recent radon run"
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.cloc]
 shell = """
-  cloc --include-lang=Python src/ --by-file --json | uv run pcq ingest --module cloc
+  cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --module cloc
   """
 help = "Run cloc and report on results."
 
 [tool.poe.tasks.cloc-report]
-cmd = "uv run pcq report --module cloc"
+cmd = "uv run mq report --module cloc"
 help = "Report on most recent cloc run"
 
 #-------------------------------------------------------------------------------
@@ -94,10 +94,10 @@ help = "Report on most recent cloc run"
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.ruff]
 shell = """
-  ruff check --output-format=json | uv run pcq ingest --module ruff
+  ruff check --output-format=json | uv run mq ingest --module ruff
   """
 help = "Run current ruff check and report on results."
 
 [tool.poe.tasks.ruff-report]
-cmd = "uv run pcq report --module ruff"
+cmd = "uv run mq report --module ruff"
 help = "Report on most recent ruff run"

@@ -6,10 +6,10 @@ from peewee import fn, SqliteDatabase
 from rich.console import Console
 from rich.table import Table
 
-from pcq.models import Project, Run
-from pcq.modules.ruff import MODULE
-from pcq.modules.ruff.models import Ruff
-from pcq.utilities import remove_common_prefixes
+from mq.models import Project, Run
+from mq.modules.ruff import MODULE
+from mq.modules.ruff.models import Ruff
+from mq.utilities import remove_common_prefixes
 
 
 def report(args: Namespace, db: SqliteDatabase) -> None:

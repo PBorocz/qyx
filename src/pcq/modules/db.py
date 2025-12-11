@@ -4,8 +4,8 @@ from argparse import Namespace
 from loguru import logger
 from peewee import fn, SqliteDatabase
 
-from pcq.models import Project, Run
-from pcq.modules import models_for_module, MODELS
+from mq.models import Project, Run
+from mq.modules import models_for_module, MODELS
 
 
 def housekeeping(args: Namespace) -> None:

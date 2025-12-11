@@ -10,10 +10,10 @@ from argparse import Namespace
 from loguru import logger
 from peewee import SqliteDatabase
 
-from pcq.models import Project, Run
-from pcq.modules.cloc.models import Cloc
-from pcq.modules.cloc import MODULE
-from pcq.utilities.git import get_git_commit_hash
+from mq.models import Project, Run
+from mq.modules.cloc.models import Cloc
+from mq.modules.cloc import MODULE
+from mq.utilities.git import get_git_commit_hash
 
 
 def ingest(args: Namespace, db: SqliteDatabase) -> None:

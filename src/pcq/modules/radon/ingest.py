@@ -9,10 +9,10 @@ from argparse import Namespace
 from loguru import logger
 from peewee import SqliteDatabase
 
-from pcq.models import Project, Run
-from pcq.modules.radon import MODULE
-from pcq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
-from pcq.utilities.git import get_git_commit_hash
+from mq.models import Project, Run
+from mq.modules.radon import MODULE
+from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
+from mq.utilities.git import get_git_commit_hash
 
 
 def ingest(args: Namespace, db: SqliteDatabase) -> None:

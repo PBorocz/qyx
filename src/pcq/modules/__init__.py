@@ -9,7 +9,7 @@ from peewee import Model
 
 
 def __get_modules_and_models():
-    modules_dir = Path("src/pcq/modules")
+    modules_dir = Path("src/mq/modules")
     results = {}
 
     # Iterate over /app/modules and get handles to each module
@@ -19,7 +19,7 @@ def __get_modules_and_models():
 
             try:
                 # Import the models.py file from each module
-                models_module = importlib.import_module(f"pcq.modules.{module_name}.models")
+                models_module = importlib.import_module(f"mq.modules.{module_name}.models")
 
                 # Find all classes that inherit from peewee.Model
                 peewee_models = []

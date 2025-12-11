@@ -4,7 +4,7 @@ import os
 
 from peewee import CharField, FloatField, IntegerField, ForeignKeyField, Model
 
-from pcq.models import Run
+from mq.models import Run
 
 
 class RadonRaw(Model):
