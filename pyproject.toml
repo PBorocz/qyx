@@ -21,6 +21,15 @@ build-backend = "setuptools.build_meta"
 [tool.poe]
 verbosity = 0
 
+[tool.poe.tasks.Deploy]
+help = "Deploy to github."
+interpreter = "fish"
+shell = """
+  jj bookmark set --revision  @- trunk
+  jj git push     --revisions @-
+  echo "Done!"
+  """
+
 [tool.poe.tasks.dbm]
 cmd = "dbmate --migrations-dir ./src/mq/models/migrations/ --env DB_RDB --no-dump-schema"
 help = "Run arbitrary dbmate on the local development database"
