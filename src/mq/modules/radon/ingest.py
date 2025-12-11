@@ -9,7 +9,7 @@ from argparse import Namespace
 from loguru import logger
 from peewee import SqliteDatabase
 
-from mq.models import Project, Run
+from mq.modules.models import Project, Run
 from mq.modules.radon import MODULE
 from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from mq.utilities.git import get_git_commit_hash
@@ -46,7 +46,7 @@ def ingest(args: Namespace, db: SqliteDatabase) -> None:
     else:
         logger.error(f"Sorry, we don't support submodule: {args.submodule} yet!")
 
-    logger.error(msg)
+    logger.info(msg)
 
 
 def _parse_save_radon_raw_json(run: Run, data: dict[str, int]) -> int:

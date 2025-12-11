@@ -6,7 +6,7 @@ from peewee import fn, SqliteDatabase
 from rich.console import Console
 from rich.table import Table
 
-from mq.models import Project, Run
+from mq.modules.models import Project, Run
 from mq.modules.radon import MODULE
 from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from mq.utilities import remove_common_prefixes

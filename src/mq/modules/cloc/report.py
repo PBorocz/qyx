@@ -8,7 +8,7 @@ from peewee import fn, SqliteDatabase
 from rich.console import Console
 from rich.table import Table
 
-from mq.models import Project, Run
+from mq.modules.models import Project, Run
 from mq.modules.cloc import MODULE
 from mq.modules.cloc.models import Cloc
 

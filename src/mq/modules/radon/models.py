@@ -2,62 +2,62 @@
 
 from peewee import CharField, FloatField, IntegerField, ForeignKeyField
 
-from mq.models import BaseModuleModel
+from mq.modules.models import BaseModel, BaseModuleModel, Run
 
 
 class RadonRaw(BaseModuleModel):
     """Radon "RAW" metric storage."""
 
     # fmt: off
-    loc             = IntegerField(null=False, help_text="Lines of code")
-    lloc            = IntegerField(null=False, help_text="Logical lines of code")
-    sloc            = IntegerField(null=False, help_text="Source lines of code")
-    comments        = IntegerField(null=False, help_text="Comment lines")
-    multi           = IntegerField(null=False, help_text="Multi-line strings")
-    blank           = IntegerField(null=False, help_text="Blank lines")
-    single_comments = IntegerField(null=False, help_text="Single-line comments")
+    loc             = IntegerField(help_text="Lines of code")
+    lloc            = IntegerField(help_text="Logical lines of code")
+    sloc            = IntegerField(help_text="Source lines of code")
+    comments        = IntegerField(help_text="Comment lines")
+    multi           = IntegerField(help_text="Multi-line strings")
+    blank           = IntegerField(help_text="Blank lines")
+    single_comments = IntegerField(help_text="Single-line comments")
     # fmt: on
 
     class Meta:
         """Define peewee meta data."""
 
         table_name = "radon_raw"
-        indexes = (("run_id", "dir", "filename"), True)
+        indexes = ((("run_id", "dir", "filename"), True),)
 
 
 class RadonMi(BaseModuleModel):
     """Radon "MI" metric storage."""
 
     # fmt: off
-    mi   = FloatField(null=False, help_text="Maintainability index")
-    rank = CharField(null=False, help_text="Grade, ie. A, B, C, etc.")
+    mi   = FloatField(help_text="Maintainability index")
+    rank = CharField(help_text="Grade, ie. A, B, C, etc.")
     # fmt: on
 
     class Meta:
         """Define peewee meta data."""
 
         table_name = "radon_mi"
-        indexes = (("run_id", "dir", "filename"), True)
+        indexes = ((("run_id", "dir", "filename"), True),)
 
 
 class RadonCc(BaseModuleModel):
     """Radon "CC" metric storage."""
 
     # fmt: off
-    entity_type   = CharField(help_text="F, M or C (function, method or class)", null=False)
-    entity_name   = CharField(help_text="main, <class>.method, etc.", null=False)
-    line_start    = IntegerField(null=False)
-    line_end      = IntegerField(null=False)
-    column_offset = IntegerField(null=False)
-    rank          = CharField(help_text="Complexity grade, ie. A, B, C...", null=False)
-    complexity    = IntegerField(help_text="Raw complexity score", null=False)
+    entity_type   = CharField(help_text="F, M or C (function, method or class)")
+    entity_name   = CharField(help_text="main, <class>.method, etc.")
+    line_start    = IntegerField()
+    line_end      = IntegerField()
+    column_offset = IntegerField()
+    rank          = CharField(help_text="Complexity grade, ie. A, B, C...")
+    complexity    = IntegerField(help_text="Raw complexity score")
     # fmt: on
 
     class Meta:
         """Define peewee meta data."""
 
         table_name = "radon_cc"
-        indexes = (("run_id", "dir", "filename", "entity_type", "entity_name"), True)
+        indexes = ((("run_id", "dir", "filename", "entity_type", "entity_name"), True),)
 
 
 class RadonHal(BaseModuleModel):
@@ -82,16 +82,17 @@ class RadonHal(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_hal"
-        indexes = (("run_id", "dir", "filename"), True)
+        indexes = ((("run_id", "dir", "filename"), True),)
 
 
-class RadonHalFunction(BaseModuleModel):
+class RadonHalFunction(BaseModel):
     """Radon "HAL" Function metric storage."""
 
     # fmt: off
-    radon_hal_id      = ForeignKeyField(RadonHal, backref="Radon Maintainability checks", null=False)
+    run_id            = ForeignKeyField(Run, backref="run")
+    radon_hal_id      = ForeignKeyField(RadonHal, backref="radon_hal")
 
-    name              = CharField(help_text="function name", null=False)
+    name              = CharField(help_text="function name")
     h1		      = IntegerField(help_text="Total distinct operators")
     h2		      = IntegerField(help_text="Total distinct operands")
     N1		      = IntegerField(help_text="Total operators in file")
@@ -110,4 +111,4 @@ class RadonHalFunction(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_hal_function"
-        indexes = (("radon_hal_id", "name"), True)
+        indexes = ((("radon_hal_id", "name"), True),)

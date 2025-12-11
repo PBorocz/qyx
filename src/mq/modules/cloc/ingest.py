@@ -10,7 +10,7 @@ from argparse import Namespace
 from loguru import logger
 from peewee import SqliteDatabase
 
-from mq.models import Project, Run
+from mq.modules.models import Project, Run
 from mq.modules.cloc.models import Cloc
 from mq.modules.cloc import MODULE
 from mq.utilities.git import get_git_commit_hash

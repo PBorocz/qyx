@@ -3,16 +3,17 @@
 import argparse
 import importlib
 import sys
+from argparse import Namespace
 from pathlib import Path
 
-from argparse import Namespace
 from loguru import logger
 from peewee import SqliteDatabase
 from rich.traceback import install
 
-from mq.models import Run
+from mq.modules import MODULE_MODELS
 from mq.modules import db as db_module
 from mq.modules.cloc.models import Cloc
+from mq.modules.models import Project, Run
 from mq.modules.radon.models import RadonRaw  # RadonCC, RadonMI, RadonHAL
 from mq.modules.ruff.models import Ruff
 
@@ -115,8 +116,14 @@ def _setup_sqlite(args: Namespace) -> None:
     models = [Run, Cloc, Ruff, RadonRaw]  # RadonCC, RadonMI, RadonHAL, RadonRAW
     db_path = Path("__data__/db.sqlite3")
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
-    db.bind(models)
-    db.connect()
+
+    # Make sure our models have tables defined for 'em!
+    for model_class in [Project, Run] + MODULE_MODELS:
+        model_class._meta.database = db
+        model_class.create_table(safe=True)
+
+    # db.bind(models)
+    # db.connect()
     logger.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")
     return db
 
@@ -134,6 +141,7 @@ def _setup_logging(args: Namespace) -> None:
 def main():
     args = get_args()
     _setup_logging(args)
+    db = _setup_sqlite(args)
 
     # Lookup the appropriate method to run based on the sub-command desired:
     match args.command:
@@ -153,7 +161,6 @@ def main():
     ################################################################################
     # Setup up our database and call the method to do our work!
     ################################################################################
-    db = _setup_sqlite(args)
     method(args, db)
 
     ################################################################################

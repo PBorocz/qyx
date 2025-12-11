@@ -4,8 +4,8 @@ from argparse import Namespace
 from loguru import logger
 from peewee import fn, SqliteDatabase
 
-from mq.models import Project, Run
-from mq.modules import models_for_module, MODELS
+from mq.modules.models import Project, Run
+from mq.modules import models_for_module, MODULE_MODELS
 
 
 def housekeeping(args: Namespace) -> None:
@@ -15,7 +15,7 @@ def housekeeping(args: Namespace) -> None:
         """Delete orphaned Run rows."""
         # Gather all the current run id's
         run_ids_used = set()
-        for model in MODELS:
+        for model in MODULE_MODELS:
             models_run_ids = model.select(model.run_id).distinct()
             run_ids_used.update([row.run_id for row in models_run_ids])
 
@@ -45,7 +45,7 @@ def flush(args: Namespace, db: SqliteDatabase) -> None:
                     model.delete().where(model.run_id == run.id).execute()
             Run.delete().where(Run.module == args.module).execute()
     else:
-        for model in MODELS:
+        for model in MODULE_MODELS:
             model.delete().execute()
         Run.delete().execute()
         Project.delete().execute()

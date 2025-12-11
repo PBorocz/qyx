@@ -22,11 +22,7 @@ class Project(BaseModel):
     """Root of result storage, a 'project' is essentially just a project root directory."""
 
     id = pw.AutoField()  # Explicitly add for clarity
-    source_dir = pw.CharField(
-        help_text="Pointer to respective project's root directory",
-        null=False,
-        unique=True,
-    )
+    source_dir = pw.CharField(help_text="Pointer to respective project's root directory", unique=True)
 
     @classmethod
     def get_or_insert(cls, source_dir: str) -> Project:
@@ -45,11 +41,11 @@ class Run(BaseModel):
 
     # fmt: off
     id              = pw.AutoField()      # Explicitly add for clarity
-    project_id      = pw.ForeignKeyField(Project, null=False, backref="project")
-    timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", null=False)
-    module          = pw.CharField(help_text="Module gathered for, e.g. ruff, cloc, radon etc.", null=False)
-    sub_module      = pw.CharField(help_text="Optional sub-module, e.g. cc or raw obo radon.")
-    git_commit_hash = pw.CharField(help_text="ID from respective sport's site")
+    project_id      = pw.ForeignKeyField(Project, backref="project")
+    timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", default=datetime.now)
+    module          = pw.CharField(help_text="Module gathered for, e.g. ruff, cloc, radon etc.")
+    sub_module      = pw.CharField(help_text="Optional sub-module, e.g. cc or raw obo radon.", null=True)
+    git_commit_hash = pw.CharField(help_text="ID from respective sport's site", null=True)
     # fmt: on
 
     class Meta:
@@ -68,13 +64,7 @@ class BaseModuleModel(pw.Model):
 
     # fmt: off
     id       = pw.AutoField()      # Explicitly add for clarity
-    run_id   = pw.ForeignKeyField(Run, backref="run", null=False)
-    dir      = pw.CharField(help="Relative directory of file under evaluation.", null=False)
-    filename = pw.CharField(help="Name of file under evaluation.", null=False)
+    run_id   = pw.ForeignKeyField(Run, backref="run")
+    filename = pw.CharField(help_text="Name of file under evaluation.")
+    dir      = pw.CharField(help_text="Relative directory of file under evaluation.")
     # fmt: on
-
-    @classmethod
-    def initialize_for_database(cls, database):
-        """Define dynamic table creation without dedicated SQL script(s)."""
-        cls._meta.database = database
-        cls.create_table(safe=True)
