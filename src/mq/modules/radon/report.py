@@ -34,7 +34,7 @@ def report(args: Namespace, db: SqliteDatabase) -> None:
         Console().print(table)
 
     elif args.verbosity == 1:
-        logger.info(f"{run.timestamp_local} : Following radon checks encountered:")
+        logger.info(f"{run.timestamp_display} : Following radon checks encountered:")
         rows = RadonCc.select().where(RadonCc.run_id == run).order_by(RadonCc.filename, RadonCc.rule_code)
         foobar = 1
         rows = remove_common_prefixes(rows)

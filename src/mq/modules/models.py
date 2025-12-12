@@ -19,20 +19,42 @@ class BaseModel(pw.Model):
 
 
 class Project(BaseModel):
-    """Root of result storage, a 'project' is essentially just a project root directory."""
+    """Root of result storage, a 'project' is essentially just a project root directory.
 
-    id = pw.AutoField()  # Explicitly add for clarity
-    source_dir = pw.CharField(help_text="Pointer to respective project's root directory", unique=True)
+    We store this two ways:
+    - As the user entered it (relative or absolute), ie. both are possible:
+      1. "."
+      2. /user/me/development/projects/myproject
+
+    - As the absolute (ie. resolved) path, for the 2 cases above, this might be:
+      1. /user/me/development/projects/myproject
+      2. /user/me/development/projects/myproject
+
+    We use the relative path for display purposes to match user's initial entry
+    while the absolute
+    """
+
+    id = pw.AutoField()  # (explicitly add for clarity)
+    source_dir_relative = pw.CharField(
+        help_text="Path to respective project's root directory as entered by user.",
+    )
+    source_dir_absolute = pw.CharField(
+        help_text="Path to respective project's root directory, resolved to absolute path",
+        unique=True,
+    )
 
     @classmethod
-    def get_or_insert(cls, source_dir: str) -> Project:
+    def get_or_insert(cls, arg_source_dir: str) -> Project:
         """Get the project at the specified source directory, even if we have to insert."""
-        path_source_dir = Path(source_dir).resolve()
+        path_source_dir_absolute = Path(arg_source_dir).resolve()
         try:
-            project = Project.get(Project.source_dir == path_source_dir)
+            project = Project.get(Project.source_dir_absolute == path_source_dir_absolute)
         except pw.DoesNotExist:
-            project = Project(source_dir=path_source_dir)
-        project.save()
+            project = Project(
+                source_dir_relative=arg_source_dir,
+                source_dir_absolute=path_source_dir_absolute,
+            )
+            project.save()
         return project
 
 
@@ -42,7 +64,7 @@ class Run(BaseModel):
     # fmt: off
     id              = pw.AutoField()      # Explicitly add for clarity
     project_id      = pw.ForeignKeyField(Project, backref="project")
-    timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", default=datetime.now)
+    timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", default=datetime.utcnow)
     module          = pw.CharField(help_text="Module gathered for, e.g. ruff, cloc, radon etc.")
     sub_module      = pw.CharField(help_text="Optional sub-module, e.g. cc or raw obo radon.", null=True)
     git_commit_hash = pw.CharField(help_text="ID from respective sport's site", null=True)
@@ -54,9 +76,23 @@ class Run(BaseModel):
         indexes = ((("project_id", "timestamp", "module", "sub_module"), True),)
 
     @property
-    def timestamp_local(self) -> datetime:
+    def timestamp_display(self) -> str:
         """..."""
-        return self.timestamp.replace(tzinfo=zoneinfo.ZoneInfo("UTC")).astimezone()
+        dt_local: datetime = self.timestamp.replace(tzinfo=zoneinfo.ZoneInfo("UTC")).astimezone()
+        return dt_local.strftime("%Y-%m-%d %H:%M")
+
+    @classmethod
+    def get_most_recent(cls, project: Project, module: str) -> Run | None:
+        """Find the most recent run for the specified project and module."""
+        run = (
+            Run.select()
+            .order_by(Run.timestamp.desc())
+            .where(Run.project_id == project.id, Run.module == module)
+            .first()
+        )
+        if run:
+            return run
+        return None
 
 
 class BaseModuleModel(pw.Model):

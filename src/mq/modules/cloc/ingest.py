@@ -28,7 +28,7 @@ def ingest(args: Namespace, db: SqliteDatabase) -> None:
     else:
         # Direct mode - run cloc ourselves
         result = subprocess.run(
-            ["cloc", "--include-lang=Python", "--by-file", "--json", args.project],
+            ["cloc", "--include-lang=Python", "--by-file", "--json", "--exclude-dir=.venv", args.project],
             capture_output=True,
         )
         data = json.loads(result.stdout)

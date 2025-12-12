@@ -19,6 +19,7 @@ def get_args():
     # Create parent parser with common arguments
     parser_root = argparse.ArgumentParser(add_help=False)
     parser_root.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
+    parser_root.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
     parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.", default=False)
 
     parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment")
@@ -32,12 +33,6 @@ def get_args():
         parents=[parser_root],
         help="Ingest code quality results from supported tools.",
     )
-    parse_ingest.add_argument(
-        "-p",
-        "--project",
-        default=".",
-        help='Base path to project to ingest from, defaults to "."',
-    )
     parse_ingest.add_argument("-s", "--submodule", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
     parse_ingest.set_defaults(module_required=True)  # Make module required for ingest
@@ -50,21 +45,12 @@ def get_args():
         parents=[parser_root],
         help="Report on code quality for the specified (or all) projects.",
     )
-    parse_report.add_argument(
-        "-p",
-        "--project",
-        default=".",
-        help='Base path to project to report for, defaults to "."',
-    )
-    parse_report.add_argument("-s", "--submodule", help="Optional sub-module, e.g. cc for Radon.")
-    parse_report.add_argument(
-        "-v",
-        "--verbosity",
-        type=int,
-        default=0,
-        help="Verbosity/depth to report (starting from 0 for top-level)",
-    )
     parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)
+    parse_report.add_argument("-s", "--submodule", help="Optional sub-module (if applicable, e.g. cc for Radon).")
+    parse_report.add_argument("--last", type=int, help="Report on last <n> weeks of history.")
+    parse_report.add_argument(
+        "-l", "--level", help="Level to report on, e.g. summary (default), detailed or full.", default="summary"
+    )
 
     ################################################################################
     # Flush command
@@ -92,15 +78,14 @@ def get_args():
     if not hasattr(args, "module"):
         args.module = None
 
+    # TODO: Ensure here that a valid submodule has been provided (from MODULES_AND_MODELS)
+    # TODO: Ensure here that a valid level has been provided..
+
     # We want a command for now!
     if not hasattr(args, "command") or args.command is None:
         print("Sorry, please specify a command:\n")
         parser.print_help()
         sys.exit(1)
-
-    # Cleanup the project argument to always represent the full path
-    if hasattr(args, "project") or args.project is not None:
-        args.project = str(Path(args.project).resolve())
 
     # Check if module is required for certain commands
     if hasattr(args, "module_required") and args.module_required and not args.module:

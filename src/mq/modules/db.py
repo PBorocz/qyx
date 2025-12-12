@@ -2,7 +2,7 @@
 
 from argparse import Namespace
 from loguru import logger
-from peewee import fn, SqliteDatabase
+from peewee import fn, IntegrityError, SqliteDatabase
 
 from mq.modules.models import Project, Run
 from mq.modules import models_for_module, MODULE_MODELS
@@ -45,8 +45,18 @@ def flush(args: Namespace, db: SqliteDatabase) -> None:
                     model.delete().where(model.run_id == run.id).execute()
             Run.delete().where(Run.module == args.module).execute()
     else:
+        # Delete from the bottom of our data hierarchy on up
         for model in MODULE_MODELS:
-            model.delete().execute()
+            try:
+                model.delete().execute()
+            except IntegrityError:
+                ...
+        for model in MODULE_MODELS:
+            try:
+                model.delete().execute()
+            except IntegrityError:
+                ...
+
         Run.delete().execute()
         Project.delete().execute()
 

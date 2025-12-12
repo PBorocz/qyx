@@ -27,7 +27,6 @@ interpreter = "fish"
 shell = """
   jj bookmark set --revision  @- trunk
   jj git push     --revisions @-
-  echo "Done!"
   """
 
 [tool.poe.tasks.mq]
