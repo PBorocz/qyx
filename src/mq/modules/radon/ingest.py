@@ -18,7 +18,7 @@ from mq.utilities.git import get_git_commit_hash
 def ingest(args: Namespace, db: SqliteDatabase) -> None:
     gch: str = get_git_commit_hash()
     project: Project = Project.get_or_insert(args.project)
-    run: Run = Run(project_id=project.id, module=MODULE, sub_module=args.submodule, git_commit_hash=gch)
+    run: Run = Run(project_id=project.id, module=MODULE, sub_module=args.sub_module, git_commit_hash=gch)
     run.save()
 
     if not sys.stdin.isatty():
@@ -26,25 +26,25 @@ def ingest(args: Namespace, db: SqliteDatabase) -> None:
         data = json.loads(sys.stdin.read())
     else:
         # Direct mode - run radon ourselves
-        sub_out = subprocess.run(["uvx", "radon", args.submodule, args.project, "--json"], capture_output=True)
+        sub_out = subprocess.run(["uvx", "radon", args.sub_module, args.project, "--json"], capture_output=True)
         data = json.loads(sub_out.stdout)
 
     # FIXME: Can we make the determination of which module dynamic based on json contents??
     num_functions = None
-    if args.submodule == "raw":
+    if args.sub_module == "raw":
         num_files = _parse_save_radon_raw_json(run, data)
         msg = f"Ingested {num_files} results from radon check: RAW"
-    elif args.submodule == "mi":
+    elif args.sub_module == "mi":
         num_files = _parse_save_radon_mi_json(run, data)
         msg = f"Ingested {num_files} results from radon check: MI"
-    elif args.submodule == "hal":
+    elif args.sub_module == "hal":
         num_files, num_functions = _parse_save_radon_hal_json(run, data)
         msg = f"Ingested {num_files} files and with {num_functions} functions from radon check: HAL"
-    elif args.submodule == "cc":
+    elif args.sub_module == "cc":
         num_files, num_entities = _parse_save_radon_cc_json(run, data)
         msg = f"Ingested {num_files} files and with {num_entities} entities from radon check: CC"
     else:
-        logger.error(f"Sorry, we don't support submodule: {args.submodule} yet!")
+        logger.error(f"Sorry, we don't support sub_module: {args.sub_module} yet!")
 
     logger.info(msg)
 

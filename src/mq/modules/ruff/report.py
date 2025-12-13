@@ -22,7 +22,7 @@ def report(args: Namespace, db: SqliteDatabase) -> None:
 
     # Get most recent Run for simple "current-state" reporting..
     if not (run := Run.get_most_recent(project, MODULE)):
-        logger.error("Sorry, we haven't performed a RUFF measurement yet for this project.")
+        logger.error(f"Sorry, we haven't performed a {MODULE.upper()} measurement yet for this project.")
         return None
 
     if args.last:

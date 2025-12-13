@@ -1,5 +1,6 @@
 """..."""
 
+import sys
 from argparse import Namespace
 from loguru import logger
 from peewee import fn, SqliteDatabase
@@ -13,35 +14,121 @@ from mq.utilities import remove_common_prefixes
 
 
 def report(args: Namespace, db: SqliteDatabase) -> None:
-    project = Project.get(source_dir=args.project)
-    run = Run.select().order_by(Run.timestamp.desc()).where(Run.project_id == project.id, Run.module == MODULE).first()
-    if not run:
-        logger.info("No runs yet.")
-        return
-    if args.verbosity == 0:
-        results = (
-            RadonCc.select(RadonCc.rule_code, RadonCc.message, fn.COUNT(RadonCc.id).alias("count"))
-            .where(RadonCc.run_id == run)
-            .group_by(RadonCc.rule_code)
-            .order_by(fn.COUNT(RadonCc.id).desc())
-        )
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Rule")
-        table.add_column("Count", justify="center")
-        table.add_column("Message")
-        for result in results:
-            table.add_row(result.rule_code, str(result.count), result.message)
-        Console().print(table)
+    try:
+        project = Project.get(source_dir_relative=args.project)
+    except Project.DoesNotExist:
+        logger.error(f"Sorry, we didn't find any data yet for project: {args.project}")
+        return None
 
-    elif args.verbosity == 1:
-        logger.info(f"{run.timestamp_display} : Following radon checks encountered:")
-        rows = RadonCc.select().where(RadonCc.run_id == run).order_by(RadonCc.filename, RadonCc.rule_code)
-        foobar = 1
-        rows = remove_common_prefixes(rows)
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Rule")
-        table.add_column("File (line)")
-        table.add_column("Message")
-        for row in rows:
-            table.add_row(row.rule_code, f"{row.filename} [{row.line}] ", row.message)
-        Console().print(table)
+    # Get most recent Run for simple "current-state" reporting..
+    if not (run := Run.get_most_recent(project, MODULE, args.sub_module)):
+        logger.error(f"Sorry, we haven't performed a {MODULE.upper()} measurement yet for this project.")
+        return None
+
+    if args.last:
+        ...
+        # _report_history(args, project)
+    else:
+        # Dispatch "intelligently"...
+        _dispatch(args, run)
+
+
+def _dispatch(args: Namespace, run: Run) -> None:
+    # Get current module
+    current_module = sys.modules[__name__]
+
+    # Construct method name
+    method_name = f"_{args.level}_{args.sub_module}"
+
+    # Get the method if it exists
+    if hasattr(current_module, method_name):
+        method = getattr(current_module, method_name)
+        method(args, run)
+    else:
+        logger.warning(f"Sorry, unable to report yet on level='{args.level}' & sub_module='{args.sub_module}'.")
+
+
+def _summary_cc(args: Namespace, run: Run) -> None:
+    results = (
+        RadonCc.select(
+            RadonCc.entity_type.alias("entity_type"),
+            fn.COUNT(RadonCc.id).alias("count"),
+        )
+        .where(RadonCc.run_id == run.id)
+        .group_by(RadonCc.entity_type)
+        .order_by(fn.COUNT(RadonCc.id).desc())
+        .objects()
+    )
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        header_style="bold magenta",
+    )
+    table.add_column("Entity Type")
+    table.add_column("Count", justify="center")
+    for result in results:
+        table.add_row(result.entity_type, str(result.count))
+    Console().print(table)
+
+
+def _detailed_cc(args: Namespace, run: Run) -> None:
+    results = (
+        RadonCc.select(
+            RadonCc.dir,
+            RadonCc.entity_type,
+            fn.COUNT(RadonCc.id).alias("count"),
+        )
+        .where(RadonCc.run_id == run.id)
+        .group_by(RadonCc.dir, RadonCc.entity_type)
+        .order_by(RadonCc.dir, RadonCc.entity_type)
+    )
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        header_style="bold magenta",
+    )
+    table.add_column("Directory", justify="left")
+    table.add_column("Entity Type", justify="left")
+    table.add_column("Count", justify="center")
+    for result in results:
+        table.add_row(
+            result.dir,
+            result.filename,
+            result.entity_type,
+            str(result.count),
+        )
+    Console().print(table)
+
+
+def _full_cc(args: Namespace, run: Run) -> None:
+    results = (
+        RadonCc.select(
+            RadonCc.dir,
+            RadonCc.filename,
+            RadonCc.entity_type,
+            fn.COUNT(RadonCc.id).alias("count"),
+        )
+        .where(RadonCc.run_id == run.id)
+        .group_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
+        .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
+    )
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        header_style="bold magenta",
+    )
+    table.add_column("Directory", justify="left")
+    table.add_column("File", justify="left")
+    table.add_column("Entity Type", justify="left")
+    table.add_column("Count", justify="center")
+    for result in results:
+        table.add_row(
+            result.dir,
+            result.filename,
+            result.entity_type,
+            str(result.count),
+        )
+    Console().print(table)

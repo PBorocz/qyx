@@ -82,15 +82,12 @@ class Run(BaseModel):
         return dt_local.strftime("%Y-%m-%d %H:%M")
 
     @classmethod
-    def get_most_recent(cls, project: Project, module: str) -> Run | None:
-        """Find the most recent run for the specified project and module."""
-        run = (
-            Run.select()
-            .order_by(Run.timestamp.desc())
-            .where(Run.project_id == project.id, Run.module == module)
-            .first()
-        )
-        if run:
+    def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Run | None:
+        """Find the most recent run for the specified project and module (or sub_module)."""
+        query = Run.select().order_by(Run.timestamp.desc()).where(Run.project_id == project.id, Run.module == module)
+        if sub_module:
+            query = query.where(Run.sub_module == sub_module)
+        if run := query.first():
             return run
         return None
 

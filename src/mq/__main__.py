@@ -8,7 +8,7 @@ from pathlib import Path
 
 from loguru import logger
 from peewee import SqliteDatabase
-from rich.traceback import install
+from rich.traceback import install as install_traceback
 
 from mq.modules import MODULE_MODELS
 from mq.modules import db as db_module
@@ -33,7 +33,7 @@ def get_args():
         parents=[parser_root],
         help="Ingest code quality results from supported tools.",
     )
-    parse_ingest.add_argument("-s", "--submodule", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
+    parse_ingest.add_argument("-s", "--sub_module", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
     parse_ingest.set_defaults(module_required=True)  # Make module required for ingest
 
@@ -46,7 +46,7 @@ def get_args():
         help="Report on code quality for the specified (or all) projects.",
     )
     parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)
-    parse_report.add_argument("-s", "--submodule", help="Optional sub-module (if applicable, e.g. cc for Radon).")
+    parse_report.add_argument("-s", "--sub_module", help="Optional sub-module (if applicable, e.g. cc for Radon).")
     parse_report.add_argument("--last", type=int, help="Report on last <n> weeks of history.")
     parse_report.add_argument(
         "-l", "--level", help="Level to report on, e.g. summary (default), detailed or full.", default="summary"
@@ -78,7 +78,7 @@ def get_args():
     if not hasattr(args, "module"):
         args.module = None
 
-    # TODO: Ensure here that a valid submodule has been provided (from MODULES_AND_MODELS)
+    # TODO: Ensure here that a valid sub_module has been provided (from MODULES_AND_MODELS)
     # TODO: Ensure here that a valid level has been provided..
 
     # We want a command for now!
@@ -111,9 +111,9 @@ def get_method(module: str, method: str):
 def _setup_sqlite(args: Namespace) -> None:
     db_path = Path("__data__/db.sqlite3")
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
-    for ith, model_class in enumerate(
-        [Project, Run] + MODULE_MODELS,
-    ):  # Make sure our models have tables defined for 'em!
+
+    # Make sure our models have tables defined for 'em!
+    for ith, model_class in enumerate([Project, Run] + MODULE_MODELS):
         model_class._meta.database = db
         model_class.create_table(safe=True)
     logger.debug(f"...connected to {db_path.name=} with {ith + 1} models defined.")
@@ -123,11 +123,12 @@ def _setup_sqlite(args: Namespace) -> None:
 def _setup_logging(args: Namespace) -> None:
     logger.remove()
     log_level = "DEBUG" if args.debug else "INFO"
-    logger.add(sys.stderr, level=log_level)
+    # TODO: For production/packaging deploy: change diagnose to False
+    logger.add(sys.stderr, level=log_level, backtrace=True, diagnose=True)
 
 
 def main():
-    # install(show_locals=True)  # Before anything else, setup rich obo tracebacks
+    install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
     args = get_args()  # Get/process all command-line arguments
     _setup_logging(args)  # Setup logging (now that we know what potential level to log to)
     db = _setup_sqlite(args)  # Setup our data-store and respective tables.
@@ -147,11 +148,11 @@ def main():
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
     ################################################################################
-    # Setup up our database and call the method to do our work!
+    # Dispatch to our respective method to do our work!
     ################################################################################
     method(args, db)
 
     ################################################################################
-    # Do any/all database housekeeping
+    # Do database housekeeping
     ################################################################################
     db_module.housekeeping(args)
