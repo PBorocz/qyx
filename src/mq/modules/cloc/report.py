@@ -32,8 +32,8 @@ def report(args: Namespace) -> None:
         match args.level.lower():
             case "summary":
                 _report_summary(args, run)
-            case "detailed":
-                _report_detailed(args, run)
+            case "detail":
+                _report_detail(args, run)
             case "full":
                 _report_full(args, run)
             case _:
@@ -126,7 +126,7 @@ def _report_summary(args: Namespace, run: Run) -> None:
     Console().print(table)
 
 
-def _report_detailed(args: Namespace, run: Run) -> None:
+def _report_detail(args: Namespace, run: Run) -> None:
     results = (
         Cloc.select(
             Cloc.dir,

@@ -31,10 +31,10 @@ def report(args: Namespace) -> None:
         match args.level.lower():
             case "summary":
                 _report_summary(args, run)
-            case "detailed":
-                _report_detailed(args, run)
+            case "detail":
+                _report_detail(args, run)
             case _:
-                logger.warning(f"Sorry, invalid report level {args.level}, must be one of 'summary' or 'detailed'.")
+                logger.warning(f"Sorry, invalid report level {args.level}, must be one of 'summary' or 'detail'.")
 
 
 def _report_summary(args: Namespace, run: Run) -> None:
@@ -58,7 +58,7 @@ def _report_summary(args: Namespace, run: Run) -> None:
     Console().print(table)
 
 
-def _report_detailed(args: Namespace, run: Run) -> None:
+def _report_detail(args: Namespace, run: Run) -> None:
     rows = Ruff.select().where(Ruff.run_id == run).order_by(Ruff.filename, Ruff.rule_code)
     foobar = 1
     rows = remove_common_prefixes(rows)

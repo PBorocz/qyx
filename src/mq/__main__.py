@@ -49,7 +49,7 @@ def get_args():
     parse_report.add_argument("-s", "--sub_module", help="Optional sub-module (if applicable, e.g. cc for Radon).")
     parse_report.add_argument("--last", type=int, help="Report on last <n> weeks of history.")
     parse_report.add_argument(
-        "-l", "--level", help="Level to report on, e.g. summary (default), detailed or full.", default="summary"
+        "-l", "--level", help="Level to report on, e.g. summary (default), detail or full.", default="summary"
     )
 
     ################################################################################
