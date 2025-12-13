@@ -2,6 +2,7 @@
 
 import sys
 from argparse import Namespace
+from collections import defaultdict
 
 from loguru import logger
 from peewee import fn
@@ -47,10 +48,111 @@ def _dispatch_level_submodule(args: Namespace, run: Run) -> None:
 ################################################################################################
 # Summary methods
 ################################################################################################
-def _summary_raw(args: Namespace, run: Run) -> None: ...
+def _summary_raw(args: Namespace, run: Run) -> None:
+    rows = RadonRaw.select(
+        fn.SUM(RadonRaw.loc).alias("loc"),
+        fn.SUM(RadonRaw.lloc).alias("lloc"),
+        fn.SUM(RadonRaw.sloc).alias("sloc"),
+        fn.SUM(RadonRaw.comments).alias("comments"),
+        fn.SUM(RadonRaw.multi).alias("multi"),
+        fn.SUM(RadonRaw.blank).alias("blank"),
+        fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+    ).where(RadonRaw.run_id == run.id)
+
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        header_style="bold magenta",
+    )
+    # fmt: off
+    table.add_column("LOC"             , justify="right")
+    table.add_column("LLOC"            , justify="right")
+    table.add_column("SLOC"            , justify="right")
+    table.add_column("Comments"        , justify="right")
+    table.add_column("Multi"           , justify="right")
+    table.add_column("Blank"           , justify="right")
+    table.add_column("Single Comments" , justify="right")
+    # fmt: on
+    for row in rows:
+        table.add_row(
+            f"{row.loc:,}",
+            f"{row.lloc:,}",
+            f"{row.sloc:,}",
+            f"{row.comments:,}",
+            f"{row.multi:,}",
+            f"{row.blank:,}",
+            f"{row.single_comments:,}",
+        )
+    Console().print(table)
 
 
-def _summary_hal(args: Namespace, run: Run) -> None: ...
+def _summary_hal(args: Namespace, run: Run) -> None:
+    rows = (
+        RadonHal.select(
+            RadonHal.dir,
+            fn.AVG(RadonHal.h1).alias("h1"),
+            fn.AVG(RadonHal.h2).alias("h2"),
+            fn.AVG(RadonHal.N1).alias("N1"),
+            fn.AVG(RadonHal.N2).alias("N2"),
+            fn.AVG(RadonHal.program_vocabulary).alias("program_vocabulary"),
+            fn.AVG(RadonHal.program_length).alias("program_length"),
+            fn.AVG(RadonHal.calculated_length).alias("calculated_length"),
+            fn.AVG(RadonHal.volume).alias("volume"),
+            fn.AVG(RadonHal.difficulty).alias("difficulty"),
+            fn.AVG(RadonHal.effort).alias("effort"),
+            fn.AVG(RadonHal.time).alias("time"),
+            fn.AVG(RadonHal.bugs).alias("bugs"),
+        )
+        .group_by(RadonHal.dir)
+        .where(RadonHal.run_id == run.id)
+        .order_by(RadonHal.dir)
+    )
+    # Calculate mean metric values
+    means = {}
+    for attr in RadonHal.attributes():
+        values = [getattr(row, attr) for row in rows]
+        means[attr] = sum(values) / len(values) if values else None
+
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        show_footer=True,
+        header_style="bold magenta",
+    )
+    # fmt: off
+    table.add_column("Directory"          , justify="left" , footer="Means")
+    table.add_column("h1"                 , justify="right", footer=f"{means['h1']:.2f}")
+    table.add_column("h2"                 , justify="right", footer=f"{means['h2']:.2f}")
+    table.add_column("N1"                 , justify="right", footer=f"{means['N1']:.2f}")
+    table.add_column("N2"                 , justify="right", footer=f"{means['N2']:.2f}")
+    table.add_column("Program Vocabulary" , justify="right", footer=f"{means['program_vocabulary']:.2f}")
+    table.add_column("Program Length"     , justify="right", footer=f"{means['program_length']:.2f}")
+    table.add_column("Calculated Length"  , justify="right", footer=f"{means['calculated_length']:.2f}")
+    table.add_column("Volume"             , justify="right", footer=f"{means['volume']:.2f}")
+    table.add_column("Difficulty"         , justify="right", footer=f"{means['difficulty']:.2f}")
+    table.add_column("Effort"             , justify="right", footer=f"{means['effort']:.2f}")
+    table.add_column("Time"               , justify="right", footer=f"{means['time']:.2f}")
+    table.add_column("Bugs"               , justify="right", footer=f"{means['bugs']:.2f}")
+    # fmt: on
+    for row in rows:
+        table.add_row(
+            row.dir,
+            f"{row.h1:.2f}",
+            f"{row.h2:.2f}",
+            f"{row.N1:.2f}",
+            f"{row.N2:.2f}",
+            f"{row.program_vocabulary:.2f}",
+            f"{row.program_length:.2f}",
+            f"{row.calculated_length:.2f}",
+            f"{row.volume:.2f}",
+            f"{row.difficulty:.2f}",
+            f"{row.effort:.2f}",
+            f"{row.time:.2f}",
+            f"{row.bugs:.2f}",
+        )
+    Console().print(table)
 
 
 def _summary_mi(args: Namespace, run: Run) -> None:
@@ -95,10 +197,108 @@ def _summary_cc(args: Namespace, run: Run) -> None:
 ################################################################################################
 # Detail methods
 ################################################################################################
-def _detail_raw(args: Namespace, run: Run) -> None: ...
+def _detail_raw(args: Namespace, run: Run) -> None:
+    rows = (
+        RadonRaw.select(
+            RadonRaw.dir,
+            fn.SUM(RadonRaw.loc).alias("loc"),
+            fn.SUM(RadonRaw.lloc).alias("lloc"),
+            fn.SUM(RadonRaw.sloc).alias("sloc"),
+            fn.SUM(RadonRaw.comments).alias("comments"),
+            fn.SUM(RadonRaw.multi).alias("multi"),
+            fn.SUM(RadonRaw.blank).alias("blank"),
+            fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+        )
+        .where(RadonRaw.run_id == run.id)
+        .group_by(RadonRaw.dir)
+        .order_by(RadonRaw.dir)
+    )
+
+    # Calculate grand totals
+    totals = defaultdict(int)
+    for row in rows:
+        for attr in ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments"):
+            totals[attr] += getattr(row, attr)
+
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        show_footer=True,
+        header_style="bold magenta",
+    )
+    # fmt: off
+    table.add_column("Directory"       , justify="left")
+    table.add_column("LOC"             , justify="right", footer=f"{totals['loc'             ]:,}")
+    table.add_column("LLOC"            , justify="right", footer=f"{totals['lloc'            ]:,}")
+    table.add_column("SLOC"            , justify="right", footer=f"{totals['sloc'            ]:,}")
+    table.add_column("Comments"        , justify="right", footer=f"{totals['comments'        ]:,}")
+    table.add_column("Multi"           , justify="right", footer=f"{totals['multi'           ]:,}")
+    table.add_column("Blank"           , justify="right", footer=f"{totals['blank'           ]:,}")
+    table.add_column("Single Comments" , justify="right", footer=f"{totals['single_comments' ]:,}")
+    # fmt: on
+    for row in rows:
+        table.add_row(
+            row.dir,
+            f"{row.loc:,}",
+            f"{row.lloc:,}",
+            f"{row.sloc:,}",
+            f"{row.comments:,}",
+            f"{row.multi:,}",
+            f"{row.blank:,}",
+            f"{row.single_comments:,}",
+        )
+    Console().print(table)
 
 
-def _detail_hal(args: Namespace, run: Run) -> None: ...
+def _detail_hal(args: Namespace, run: Run) -> None:
+    rows = RadonHal.select().where(RadonHal.run_id == run.id).order_by(RadonHal.dir, RadonHal.filename)
+
+    # Calculate means
+    means = {}
+    for attr in RadonHal.attributes():
+        values = [getattr(row, attr) for row in rows]
+        means[attr] = sum(values) / len(values) if values else None
+
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        show_footer=True,
+        header_style="bold magenta",
+    )
+    # fmt: off
+    table.add_column("File"               , justify="left" , footer="Means")
+    table.add_column("h1"                 , justify="right", footer=f"{means['h1']:.2f}")
+    table.add_column("h2"                 , justify="right", footer=f"{means['h2']:.2f}")
+    table.add_column("N1"                 , justify="right", footer=f"{means['N1']:.2f}")
+    table.add_column("N2"                 , justify="right", footer=f"{means['N2']:.2f}")
+    table.add_column("Program Vocabulary" , justify="right", footer=f"{means['program_vocabulary']:.2f}")
+    table.add_column("Program Length"     , justify="right", footer=f"{means['program_length']:.2f}")
+    table.add_column("Calculated Length"  , justify="right", footer=f"{means['calculated_length']:.2f}")
+    table.add_column("Volume"             , justify="right", footer=f"{means['volume']:.2f}")
+    table.add_column("Difficulty"         , justify="right", footer=f"{means['difficulty']:.2f}")
+    table.add_column("Effort"             , justify="right", footer=f"{means['effort']:.2f}")
+    table.add_column("Time"               , justify="right", footer=f"{means['time']:.2f}")
+    table.add_column("Bugs"               , justify="right", footer=f"{means['bugs']:.2f}")
+    # fmt: on
+    for row in rows:
+        table.add_row(
+            f"{row.dir}/{row.filename}",
+            f"{row.h1:,}",
+            f"{row.h2:,}",
+            f"{row.N1:,}",
+            f"{row.N2:,}",
+            f"{row.program_vocabulary:,}",
+            f"{row.program_length:,}",
+            f"{row.calculated_length:,}",
+            f"{row.volume:.2f}",
+            f"{row.difficulty:.2f}",
+            f"{row.effort:.2f}",
+            f"{row.time:.2f}",
+            f"{row.bugs:.2f}",
+        )
+    Console().print(table)
 
 
 def _detail_mi(args: Namespace, run: Run) -> None:
@@ -169,10 +369,119 @@ def _detail_cc(args: Namespace, run: Run) -> None:
 ################################################################################################
 # "Full" methods
 ################################################################################################
-def _full_raw(args: Namespace, run: Run) -> None: ...
+def _full_raw(args: Namespace, run: Run) -> None:
+    rows = RadonRaw.select().where(RadonRaw.run_id == run.id).order_by(RadonRaw.dir, RadonRaw.filename)
+
+    # Calculate grand totals
+    totals = defaultdict(int)
+    for row in rows:
+        for attr in ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments"):
+            totals[attr] += getattr(row, attr)
+
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        show_footer=True,
+        header_style="bold magenta",
+    )
+    # fmt: off
+    table.add_column("Directory"       , justify="left")
+    table.add_column("File"            , justify="left")
+    table.add_column("LOC"             , justify="right", footer=f"{totals['loc'             ]:,}")
+    table.add_column("LLOC"            , justify="right", footer=f"{totals['lloc'            ]:,}")
+    table.add_column("SLOC"            , justify="right", footer=f"{totals['sloc'            ]:,}")
+    table.add_column("Comments"        , justify="right", footer=f"{totals['comments'        ]:,}")
+    table.add_column("Multi"           , justify="right", footer=f"{totals['multi'           ]:,}")
+    table.add_column("Blank"           , justify="right", footer=f"{totals['blank'           ]:,}")
+    table.add_column("Single Comments" , justify="right", footer=f"{totals['single_comments' ]:,}")
+    # fmt: on
+    for row in rows:
+        table.add_row(
+            row.dir,
+            row.filename,
+            f"{row.loc:,}",
+            f"{row.lloc:,}",
+            f"{row.sloc:,}",
+            f"{row.comments:,}",
+            f"{row.multi:,}",
+            f"{row.blank:,}",
+            f"{row.single_comments:,}",
+        )
+    Console().print(table)
 
 
-def _full_hal(args: Namespace, run: Run) -> None: ...
+def _full_hal(args: Namespace, run: Run) -> None:
+    rows = (
+        RadonHalFunction.select(
+            RadonHal.dir,
+            RadonHal.filename,
+            RadonHalFunction.name,
+            RadonHalFunction.h1,
+            RadonHalFunction.h2,
+            RadonHalFunction.N1,
+            RadonHalFunction.N2,
+            RadonHalFunction.program_vocabulary,
+            RadonHalFunction.program_length,
+            RadonHalFunction.calculated_length,
+            RadonHalFunction.volume,
+            RadonHalFunction.difficulty,
+            RadonHalFunction.effort,
+            RadonHalFunction.time,
+            RadonHalFunction.bugs,
+        )
+        .join(RadonHal)
+        .where(RadonHal.run_id == run.id)
+        .order_by(RadonHal.dir, RadonHal.filename, RadonHalFunction.name)
+        .objects()
+    )
+    # Calculate mean metric values
+    means = {}
+    for attr in RadonHal.attributes():
+        values = [getattr(row, attr) for row in rows]
+        means[attr] = sum(values) / len(values) if values else None
+
+    table = Table(
+        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title_style="bold green",
+        show_header=True,
+        show_footer=True,
+        header_style="bold magenta",
+    )
+    # fmt: off
+    table.add_column("File"               , justify="left" , footer="Means")
+    table.add_column("Name"               , justify="left")
+    table.add_column("h1"                 , justify="right", footer=f"{means['h1']:.2f}")
+    table.add_column("h2"                 , justify="right", footer=f"{means['h2']:.2f}")
+    table.add_column("N1"                 , justify="right", footer=f"{means['N1']:.2f}")
+    table.add_column("N2"                 , justify="right", footer=f"{means['N2']:.2f}")
+    table.add_column("Program Vocabulary" , justify="right", footer=f"{means['program_vocabulary']:.2f}")
+    table.add_column("Program Length"     , justify="right", footer=f"{means['program_length']:.2f}")
+    table.add_column("Calculated Length"  , justify="right", footer=f"{means['calculated_length']:.2f}")
+    table.add_column("Volume"             , justify="right", footer=f"{means['volume']:.2f}")
+    table.add_column("Difficulty"         , justify="right", footer=f"{means['difficulty']:.2f}")
+    table.add_column("Effort"             , justify="right", footer=f"{means['effort']:.2f}")
+    table.add_column("Time"               , justify="right", footer=f"{means['time']:.2f}")
+    table.add_column("Bugs"               , justify="right", footer=f"{means['bugs']:.2f}")
+    # fmt: on
+    for row in rows:
+        table.add_row(
+            f"{row.dir}/{row.filename}",
+            row.name,
+            f"{row.h1:,}",
+            f"{row.h2:,}",
+            f"{row.N1:,}",
+            f"{row.N2:,}",
+            f"{row.program_vocabulary:,}",
+            f"{row.program_length:,}",
+            f"{row.calculated_length:,}",
+            f"{row.volume:.2f}",
+            f"{row.difficulty:.2f}",
+            f"{row.effort:.2f}",
+            f"{row.time:.2f}",
+            f"{row.bugs:.2f}",
+        )
+    Console().print(table)
 
 
 def _full_mi(args: Namespace, run: Run) -> None:

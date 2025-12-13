@@ -78,6 +78,24 @@ class RadonHal(BaseModuleModel):
     bugs               = FloatField(help_text="Estimated bugs for file (B = V / 3000)")
     # fmt:
 
+    @classmethod
+    def attributes(cls) -> list[str]:
+        """Return a list of the attributes/metrics for the model."""
+        return (
+            "h1",
+            "h2",
+            "N1",
+            "N2",
+            "program_vocabulary",
+            "program_length",
+            "calculated_length",
+            "volume",
+            "difficulty",
+            "effort",
+            "time",
+            "bugs",
+        )
+
     class Meta:
         """Define peewee meta data."""
 
