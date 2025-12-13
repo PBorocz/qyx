@@ -13,7 +13,7 @@ from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi
 from mq.utilities import remove_common_prefixes
 
 
-def report(args: Namespace, db: SqliteDatabase) -> None:
+def report(args: Namespace) -> None:
     try:
         project = Project.get(source_dir_relative=args.project)
     except Project.DoesNotExist:

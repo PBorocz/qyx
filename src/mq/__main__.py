@@ -117,7 +117,6 @@ def _setup_sqlite(args: Namespace) -> None:
         model_class._meta.database = db
         model_class.create_table(safe=True)
     logger.debug(f"...connected to {db_path.name=} with {ith + 1} models defined.")
-    return db
 
 
 def _setup_logging(args: Namespace) -> None:
@@ -131,7 +130,7 @@ def main():
     install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
     args = get_args()  # Get/process all command-line arguments
     _setup_logging(args)  # Setup logging (now that we know what potential level to log to)
-    db = _setup_sqlite(args)  # Setup our data-store and respective tables.
+    _setup_sqlite(args)  # Setup our data-store and respective tables.
 
     # Lookup the appropriate method to run based on the sub-command desired:
     match args.command:
@@ -150,7 +149,7 @@ def main():
     ################################################################################
     # Dispatch to our respective method to do our work!
     ################################################################################
-    method(args, db)
+    method(args)
 
     ################################################################################
     # Do database housekeeping

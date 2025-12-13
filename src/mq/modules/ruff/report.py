@@ -13,7 +13,7 @@ from mq.modules.ruff.models import Ruff
 from mq.utilities import format_timestamp_headers, remove_common_prefixes
 
 
-def report(args: Namespace, db: SqliteDatabase) -> None:
+def report(args: Namespace) -> None:
     try:
         project = Project.get(source_dir_relative=args.project)
     except Project.DoesNotExist:

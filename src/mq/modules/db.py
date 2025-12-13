@@ -36,7 +36,7 @@ def housekeeping(args: Namespace) -> None:
     _unused_projects(args)
 
 
-def flush(args: Namespace, db: SqliteDatabase) -> None:
+def flush(args: Namespace) -> None:
     if args.module:
         # Delete all the data associated with the specified module.
         for project in Project.select():
@@ -61,7 +61,7 @@ def flush(args: Namespace, db: SqliteDatabase) -> None:
         Project.delete().execute()
 
 
-def purge(args: Namespace, db: SqliteDatabase) -> None:
+def purge(args: Namespace) -> None:
     """Purge/delete all data associated with "old" runs, ie, lose history but keep most recent!"""
     # First, gather the most recent run for each module/sub-module we've got data for..
     runs_to_keep = Run.select(

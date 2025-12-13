@@ -16,7 +16,7 @@ from mq.modules.cloc import MODULE
 from mq.utilities.git import get_git_commit_hash
 
 
-def ingest(args: Namespace, db: SqliteDatabase) -> None:
+def ingest(args: Namespace) -> None:
     gch = get_git_commit_hash()
     project = Project.get_or_insert(args.project)
     run = Run(project_id=project.id, module=MODULE, git_commit_hash=gch)

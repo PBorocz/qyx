@@ -14,7 +14,7 @@ from mq.modules.cloc.models import Cloc
 from mq.utilities import format_timestamp_headers
 
 
-def report(args: Namespace, db: SqliteDatabase) -> None:
+def report(args: Namespace) -> None:
     try:
         project = Project.get(Project.source_dir_relative == args.project)
     except Project.DoesNotExist:

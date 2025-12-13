@@ -15,7 +15,7 @@ from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi
 from mq.utilities.git import get_git_commit_hash
 
 
-def ingest(args: Namespace, db: SqliteDatabase) -> None:
+def ingest(args: Namespace) -> None:
     gch: str = get_git_commit_hash()
     project: Project = Project.get_or_insert(args.project)
     run: Run = Run(project_id=project.id, module=MODULE, sub_module=args.sub_module, git_commit_hash=gch)
