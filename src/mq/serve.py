@@ -1,7 +1,6 @@
 """..."""
 
 import json
-import sys
 from argparse import Namespace
 
 import uvicorn
@@ -16,40 +15,77 @@ app, rt = fh.fast_app()
 
 @rt("/")
 def get():
-    print("- here in get...", file=sys.stderr, flush=True)
     return fh.Titled(
         "Meta Quality",
         fh.Div(
-            fh.H2("Modules"),
+            fh.H2("Project Selection"),
             fh.Select(
-                fh.Option("Select Module...", value="", selected=True),
-                *[fh.Option(module, value=module) for module in MODULES],
-                name="module_select",
-                hx_get="/module-data",
-                hx_target="#module-table",
+                fh.Option("Select Project...", value="", selected=True),
+                # TODO: populate with actual projects from database
+                *[fh.Option(f"Project {i}", value=f"project_{i}") for i in range(1, 4)],
+                name="project_select",
+                hx_get="/runs",
+                hx_target="#run-selector",
                 hx_trigger="change",
             ),
+            fh.Div(id="run-selector", cls="mt-4"),
+            fh.Div(id="module-selector", cls="mt-4"),
             fh.Div(id="module-table", cls="mt-4"),
-            # Div(
-            #     id="stats",
-            #     hx_get="/stats-display",
-            #     hx_trigger="every 60s",
-            # ),
+        ),
+    )
+
+
+@rt("/runs")
+def get_runs(project_select: str = ""):
+    if not project_select:
+        return ""
+
+    # TODO: Query database for runs based on project_select
+    runs = [f"Run_{i}" for i in range(1, 5)]  # Mock data
+
+    return fh.Div(
+        fh.H3("Run Selection"),
+        fh.Select(
+            fh.Option("Select Run...", value="", selected=True),
+            *[fh.Option(run, value=run) for run in runs],
+            name="run_select",
+            hx_get="/modules",
+            hx_target="#module-selector",
+            hx_trigger="change",
+            hx_vals=f'{{"project_select": "{project_select}"}}',  # Pass project along
+        ),
+    )
+
+
+@rt("/modules")
+def get_modules(project_select: str = "", run_select: str = ""):
+    if not project_select or not run_select:
+        return ""
+
+    return fh.Div(
+        fh.H3("Module Selection"),
+        fh.Select(
+            fh.Option("Select Module...", value="", selected=True),
+            *[fh.Option(module, value=module) for module in MODULES],
+            name="module_select",
+            hx_get="/module-data",
+            hx_target="#module-table",
+            hx_trigger="change",
+            hx_vals=f'{{"project_select": "{project_select}", "run_select": "{run_select}"}}',
         ),
     )
 
 
 @rt("/module-data")
-def get_module_data(module_select: str = ""):
+def get_module_data(project_select: str = "", run_select: str = "", module_select: str = ""):
     match module_select:
         case "cloc":
-            return _render_cloc_summary()
+            return _render_cloc_summary(project_select, run_select)
         case _:
             return ""
 
 
-def _render_cloc_summary():
-    # results = render_summary()
+def _render_cloc_summary(project_select: str = "", run_select: str = ""):
     module_select = "cloc"
     # Replace with your actual data fetching logic
     return fh.Table(
@@ -72,7 +108,7 @@ def _render_cloc_summary():
 
 @rt("/stats-display")
 def get():  # noqa: F811
-    return Pre(json.dumps(dict(last_run=None, total_processed=0, status="idle")))
+    return fh.Pre(json.dumps(dict(last_run=None, total_processed=0, status="idle")))
 
 
 def run_server(args: Namespace) -> None:
