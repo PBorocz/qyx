@@ -1,8 +1,9 @@
 """..."""
 
 from argparse import Namespace
+
 from loguru import logger
-from peewee import fn, IntegrityError, SqliteDatabase
+from peewee import fn, IntegrityError
 
 from mq.modules.models import Project, Run
 from mq.modules import models_for_module, MODULE_MODELS

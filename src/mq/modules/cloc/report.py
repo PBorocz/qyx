@@ -4,7 +4,6 @@ from collections import defaultdict
 
 from argparse import Namespace
 from loguru import logger
-from peewee import fn, SqliteDatabase
 from rich.console import Console
 from rich.table import Table
 

@@ -10,8 +10,9 @@ from loguru import logger
 from peewee import SqliteDatabase
 from rich.traceback import install as install_traceback
 
+from mq.serve import run_server
+from mq.db import flush, housekeeping, purge
 from mq.modules import MODULE_MODELS
-from mq.modules import db as db_module
 from mq.modules.models import Project, Run
 
 
@@ -24,6 +25,16 @@ def get_args():
 
     parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    ################################################################################
+    # Ingest command
+    ################################################################################
+    parse_serve = subparsers.add_parser(
+        "serve",
+        parents=[parser_root],
+        help="Run built-in web server for reporting.",
+    )
+    parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
 
     ################################################################################
     # Ingest command
@@ -49,7 +60,10 @@ def get_args():
     parse_report.add_argument("-s", "--sub_module", help="Optional sub-module (if applicable, e.g. cc for Radon).")
     parse_report.add_argument("--last", type=int, help="Report on last <n> weeks of history.")
     parse_report.add_argument(
-        "-l", "--level", help="Level to report on, e.g. summary (default), detail or full.", default="summary"
+        "-l",
+        "--level",
+        help="Level to report on, e.g. summary (default), detail or full.",
+        default="summary",
     )
 
     ################################################################################
@@ -139,10 +153,12 @@ def main():
             if not method:
                 logger.error(f"Sorry, we don't know how to {args.command} yet on behalf of {args.module} yet!")
                 return sys.exit(1)
+        case "serve":
+            method = run_server
         case "flush":
-            method = db_module.flush
+            method = flush
         case "purge":
-            method = db_module.purge
+            method = purge
         case _:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
@@ -154,4 +170,4 @@ def main():
     ################################################################################
     # Do database housekeeping
     ################################################################################
-    db_module.housekeeping(args)
+    housekeeping(args)

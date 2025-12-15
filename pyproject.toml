@@ -8,6 +8,7 @@ authors = [{name = "Your Name", email = "your.email@example.com"}]
 dependencies = [
     "loguru>=0.7.3",
     "peewee>=3.18.3",
+    "python-fasthtml>=0.12.36",
     "rich>=14.2.0",
 ]
 
