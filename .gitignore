@@ -2,6 +2,7 @@
 .flaskenv
 .DS_Store
 .sd_token
+.sesskey
 .python-version
 .envrc
 .env

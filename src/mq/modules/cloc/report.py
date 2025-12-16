@@ -4,12 +4,13 @@ from collections import defaultdict
 
 from argparse import Namespace
 from loguru import logger
+from peewee import fn
 from rich.console import Console
 from rich.table import Table
 
 from mq.modules.models import Project, Run
 from mq.modules.cloc import MODULE
-from mq.modules.cloc.models import Cloc
+from mq.modules.cloc.models import query_history, query_summary, Cloc
 from mq.utilities import format_timestamp_headers
 
 
@@ -41,39 +42,46 @@ def report(args: Namespace) -> None:
 
 def _report_history(args: Namespace, project: Project) -> None:
     # Get the args.last number of cloc Runs for this project.
-    run_subquery = Run.select(Run.id).where(Run.project_id == project.id, Run.module == MODULE).limit(args.last)
+    # run_subquery = (
+    #     Run.select(Run.id)
+    #     .where(Run.project_id == project.id, Run.module == MODULE)
+    #     .order_by(Run.timestamp.desc())
+    #     .limit(args.last)
+    # )
 
-    ################################################################################################
-    # Query
-    ################################################################################################
-    results = (
-        Cloc.select(
-            Run.timestamp.alias("timestamp"),
-            fn.SUM(Cloc.lines_code).alias("total_code"),
-            fn.SUM(Cloc.lines_comment).alias("total_comment"),
-            fn.SUM(Cloc.lines_blank).alias("total_blank"),
-        )
-        .join(Run)
-        .join(Project)
-        .where(Project.id == project.id, Run.id.in_(run_subquery))
-        .group_by(Run.timestamp)
-        .order_by(Run.timestamp)
-        .objects()
-    )
+    # ################################################################################################
+    # # Query
+    # ################################################################################################
+    # results = (
+    #     Cloc.select(
+    #         Run.timestamp.alias("timestamp"),
+    #         fn.SUM(Cloc.lines_code).alias("total_code"),
+    #         fn.SUM(Cloc.lines_comment).alias("total_comment"),
+    #         fn.SUM(Cloc.lines_blank).alias("total_blank"),
+    #     )
+    #     .join(Run)
+    #     .join(Project)
+    #     .where(Project.id == project.id, Run.id.in_(run_subquery))
+    #     .group_by(Run.timestamp)
+    #     .order_by(Run.timestamp)
+    #     .objects()
+    # )
+    # query = render_history(project, last=args.last)
+    # ################################################################################################
+    # # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+    # ################################################################################################
+    # timestamps = [result.timestamp for result in query]
+    # transposed = defaultdict(lambda: defaultdict(dict))
+    # grand_totals = defaultdict(int)
+    # for result in query:
+    #     transposed["Code"][result.timestamp] = result.total_code
+    #     transposed["Comment"][result.timestamp] = result.total_comment
+    #     transposed["Blank"][result.timestamp] = result.total_blank
 
-    ################################################################################################
-    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
-    ################################################################################################
-    timestamps = [result.timestamp for result in results]
-    transposed = defaultdict(lambda: defaultdict(dict))
-    grand_totals = defaultdict(int)
-    for result in results:
-        transposed["Code"][result.timestamp] = result.total_code
-        transposed["Comment"][result.timestamp] = result.total_comment
-        transposed["Blank"][result.timestamp] = result.total_blank
+    #     # Calculate grand totals for each timestamp as we go
+    #     grand_totals[result.timestamp] += result.total_code + result.total_comment + result.total_blank
 
-        # Calculate grand totals for each timestamp as we go
-        grand_totals[result.timestamp] += result.total_code + result.total_comment + result.total_blank
+    timestamps, transposed, grand_totals = query_history(project)
 
     ################################################################################################
     # Render the table
@@ -104,11 +112,12 @@ def _report_history(args: Namespace, project: Project) -> None:
 
 
 def _report_summary(args: Namespace, run: Run) -> None:
-    results = Cloc.select(
-        fn.SUM(Cloc.lines_blank).alias("lines_blank"),
-        fn.SUM(Cloc.lines_code).alias("lines_code"),
-        fn.SUM(Cloc.lines_comment).alias("lines_comment"),
-    ).get()
+    # results = Cloc.select(
+    #     fn.SUM(Cloc.lines_blank).alias("lines_blank"),
+    #     fn.SUM(Cloc.lines_code).alias("lines_code"),
+    #     fn.SUM(Cloc.lines_comment).alias("lines_comment"),
+    # ).get()
+    results = query_summary(run)
     table = Table(
         title=f"cloc: {run.timestamp_display}",
         show_header=True,

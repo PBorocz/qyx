@@ -1,5 +1,6 @@
 """Report data obo running 'cloc' tool."""
 
+from collections import defaultdict
 from loguru import logger
 from peewee import fn
 
@@ -31,3 +32,48 @@ def render_summary() -> None:
         fn.SUM(Cloc.lines_comment).alias("lines_comment"),
     ).get()
     return results
+
+
+def render_history(project: Project, last: int = 99999):
+    run_subquery = (
+        Run.select(Run.id)
+        .where(
+            Run.project_id == project.id,
+            Run.module == MODULE,
+        )
+        .order_by(Run.timestamp.desc())
+        .limit(99)
+    )
+
+    query = (
+        Cloc.select(
+            Run.timestamp.alias("timestamp"),
+            fn.SUM(Cloc.lines_code).alias("total_code"),
+            fn.SUM(Cloc.lines_comment).alias("total_comment"),
+            fn.SUM(Cloc.lines_blank).alias("total_blank"),
+        )
+        .join(Run)
+        .join(Project)
+        .where(
+            Project.id == project.id,
+            Run.id.in_(run_subquery),
+        )
+        .group_by(Run.timestamp)
+        .order_by(Run.timestamp)
+        .objects()
+    )
+
+    # START HERE!
+    ################################################################################################
+    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+    ################################################################################################
+    timestamps = [result.timestamp for result in query]
+    transposed = defaultdict(lambda: defaultdict(dict))
+    grand_totals = defaultdict(int)
+    for result in query:
+        transposed["Code"][result.timestamp] = result.total_code
+        transposed["Comment"][result.timestamp] = result.total_comment
+        transposed["Blank"][result.timestamp] = result.total_blank
+
+        # Calculate grand totals for each timestamp as we go
+        grand_totals[result.timestamp] += result.total_code + result.total_comment + result.total_blank

@@ -301,6 +301,7 @@ source = { editable = "." }
 dependencies = [
     { name = "loguru" },
     { name = "peewee" },
+    { name = "platformdirs" },
     { name = "python-fasthtml" },
     { name = "rich" },
 ]
@@ -309,6 +310,7 @@ dependencies = [
 requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "peewee", specifier = ">=3.18.3" },
+    { name = "platformdirs", specifier = ">=4.5.1" },
     { name = "python-fasthtml", specifier = ">=0.12.36" },
     { name = "rich", specifier = ">=14.2.0" },
 ]
@@ -336,6 +338,15 @@ name = "peewee"
 version = "3.18.3"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/6f/60/58e7a307a24044e0e982b99042fcd5a58d0cd928d9c01829574d7553ee8d/peewee-3.18.3.tar.gz", hash = "sha256:62c3d93315b1a909360c4b43c3a573b47557a1ec7a4583a71286df2a28d4b72e", size = 3026296, upload-time = "2025-11-03T16:43:46.678Z" }
+
+[[package]]
+name = "platformdirs"
+version = "4.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/86/0248f086a84f01b37aaec0fa567b397df1a119f73c16f6c7a9aac73ea309/platformdirs-4.5.1.tar.gz", hash = "sha256:61d5cdcc6065745cdd94f0f878977f8de9437be93de97c1c12f853c9c0cdcbda", size = 21715, upload-time = "2025-12-05T13:52:58.638Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/28/3bfe2fa5a7b9c46fe7e13c97bda14c895fb10fa2ebf1d0abb90e0cea7ee1/platformdirs-4.5.1-py3-none-any.whl", hash = "sha256:d03afa3963c806a9bed9d5125c8f4cb2fdaf74a55ab60e5d59b3fde758104d31", size = 18731, upload-time = "2025-12-05T13:52:56.823Z" },
+]
 
 [[package]]
 name = "pygments"

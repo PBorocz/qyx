@@ -78,7 +78,12 @@ def _report_detail(args: Namespace, run: Run) -> None:
 
 def _report_history(args: Namespace, project: Project) -> None:
     """Report on the args.last number of runs "across"."""
-    runs = Run.select(Run.id).where(Run.project_id == project.id, Run.module == MODULE).limit(args.last)
+    runs = (
+        Run.select(Run.id)
+        .where(Run.project_id == project.id, Run.module == MODULE)
+        .order_by(Run.timestamp.desc())
+        .limit(args.last)
+    )
 
     ################################################################################################
     # Query

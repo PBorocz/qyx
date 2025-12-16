@@ -3,17 +3,14 @@
 import argparse
 import importlib
 import sys
-from argparse import Namespace
-from pathlib import Path
+
 
 from loguru import logger
-from peewee import SqliteDatabase
 from rich.traceback import install as install_traceback
 
 from mq.serve import run_server
+from mq import setup_logging, setup_sqlite
 from mq.db import flush, housekeeping, purge
-from mq.modules import MODULE_MODELS
-from mq.modules.models import Project, Run
 
 
 def get_args():
@@ -35,6 +32,7 @@ def get_args():
         help="Run built-in web server for reporting.",
     )
     parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
+    parse_serve.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
 
     ################################################################################
     # Ingest command
@@ -122,29 +120,11 @@ def get_method(module: str, method: str):
         return None
 
 
-def _setup_sqlite(args: Namespace) -> None:
-    db_path = Path("__data__/db.sqlite3")
-    db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
-
-    # Make sure our models have tables defined for 'em!
-    for ith, model_class in enumerate([Project, Run] + MODULE_MODELS):
-        model_class._meta.database = db
-        model_class.create_table(safe=True)
-    logger.debug(f"...connected to {db_path.name=} with {ith + 1} models defined.")
-
-
-def _setup_logging(args: Namespace) -> None:
-    logger.remove()
-    log_level = "DEBUG" if args.debug else "INFO"
-    # TODO: For production/packaging deploy: change diagnose to False
-    logger.add(sys.stderr, level=log_level, backtrace=True, diagnose=True)
-
-
 def main():
     install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
     args = get_args()  # Get/process all command-line arguments
-    _setup_logging(args)  # Setup logging (now that we know what potential level to log to)
-    _setup_sqlite(args)  # Setup our data-store and respective tables.
+    setup_logging(args, logger)  # Setup logging (now that we know what potential level to log to)
+    setup_sqlite(args, logger)  # Setup our data-store and respective tables.
 
     # Lookup the appropriate method to run based on the sub-command desired:
     match args.command:

@@ -8,6 +8,7 @@ authors = [{name = "Your Name", email = "your.email@example.com"}]
 dependencies = [
     "loguru>=0.7.3",
     "peewee>=3.18.3",
+    "platformdirs>=4.5.1",
     "python-fasthtml>=0.12.36",
     "rich>=14.2.0",
 ]
@@ -43,12 +44,16 @@ cmd = "uv run mq purge"
 help = "Purge old runs from the database."
 
 [tool.poe.tasks.sql]
-envfile = ".env"
-shell = """
-  echo ${DB_RDB}
-  litecli ${DB_RDB}
-"""
-help = "Run litecli against our database."
+cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""
+help = "Run the litecli command against our database"
+
+# [tool.poe.tasks.sql]
+# envfile = ".env"
+# shell = """
+#   echo ${DB_RDB}
+#   litecli ${DB_RDB}
+# """
+# help = "Run litecli against our database."
 
 #-------------------------------------------------------------------------------
 # all
