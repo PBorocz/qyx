@@ -100,8 +100,13 @@ shell = """
 help = "Run cloc and report on results."
 
 [tool.poe.tasks.cloc-report]
-cmd = "uv run mq report --module cloc"
-help = "Report on most recent cloc run"
+shell = """
+  uv run mq report --module cloc --level summary
+  uv run mq report --module cloc --level detail
+  uv run mq report --module cloc --level full
+  uv run mq report --module cloc --last  999
+  """
+help = "Report on most recent cloc run and history."
 
 #-------------------------------------------------------------------------------
 # Ruff (Check)

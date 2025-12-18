@@ -1,6 +1,5 @@
 """..."""
 
-from argparse import Namespace
 from collections import defaultdict
 
 from peewee import fn, IntegerField
@@ -26,19 +25,49 @@ class Cloc(BaseModuleModel):
         indexes = ((("run_id", "dir", "filename"), True),)
 
 
-def query_summary(run: Run):
+def query_summary(run: Run) -> Cloc:
     return (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
             fn.SUM(Cloc.lines_code).alias("lines_code"),
             fn.SUM(Cloc.lines_comment).alias("lines_comment"),
+            (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias("lines_total"),
         )
         .where(Cloc.run_id == run.id)
         .get()
     )
 
 
-def query_history(project: Project, last: int = 99999):
+def query_detail(run: Run) -> list[Cloc]:
+    results = (
+        Cloc.select(
+            Cloc.dir,
+            fn.SUM(Cloc.lines_blank).alias("lines_blank"),
+            fn.SUM(Cloc.lines_code).alias("lines_code"),
+            fn.SUM(Cloc.lines_comment).alias("lines_comment"),
+            (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias("lines_total"),
+        )
+        .where(Cloc.run_id == run.id)
+        .group_by(Cloc.dir)
+        .order_by(Cloc.dir)
+    )
+    return list(results)
+
+
+def query_full(run: Run) -> [list[Cloc], dict[str, int], int]:
+    results = Cloc.select().where(Cloc.run_id == run).order_by(Cloc.dir, Cloc.filename)
+    grand_totals = defaultdict(int)
+    for row in results:
+        grand_totals["blank"] += row.lines_blank
+        grand_totals["comment"] += row.lines_comment
+        grand_totals["code"] += row.lines_code
+        row.lines_total = row.lines_blank + row.lines_comment + row.lines_code
+
+    grand_grand_total = sum(list(grand_totals.values()))
+    return results, dict(grand_totals), grand_grand_total
+
+
+def query_history(project: Project, last: int = 99999) -> tuple[list[str], defaultdict, defaultdict]:
     run_subquery = (
         Run.select(Run.id)
         .where(
@@ -46,7 +75,7 @@ def query_history(project: Project, last: int = 99999):
             Run.module == MODULE,
         )
         .order_by(Run.timestamp.desc())
-        .limit(99)
+        .limit(last)
     )
 
     query = (

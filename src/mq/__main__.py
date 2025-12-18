@@ -3,14 +3,14 @@
 import argparse
 import importlib
 import sys
-
+from typing import Callable
 
 from loguru import logger
 from rich.traceback import install as install_traceback
 
-from mq.serve import run_server
 from mq import setup_logging, setup_sqlite
-from mq.db import flush, housekeeping, purge
+from mq.utilities.db import flush, housekeeping, purge
+from mq.web_ui.server import run_server
 
 
 def get_args():
@@ -91,6 +91,7 @@ def get_args():
         args.module = None
 
     # TODO: Ensure here that a valid sub_module has been provided (from MODULES_AND_MODELS)
+
     # TODO: Ensure here that a valid level has been provided..
 
     # We want a command for now!
@@ -106,15 +107,17 @@ def get_args():
     return args
 
 
-def get_method(module: str, method: str):
+def get_method(module: str, py_module: str, method: str) -> Callable | None:
+    logger.debug(f"{module=} {py_module=} {method=}")
     try:
-        module_path = f"mq.modules.{module}.{method}"  # Construct the path to the specific
-        module = importlib.import_module(module_path)  # .py file in the respective module and import it.
-        return getattr(module, method)  # Return the method from the module
-
+        module_path = f"mq.modules.{module}.{py_module}"  # Construct the path to the specific .py file
+        module = importlib.import_module(module_path)  # ...and import it.
     except ImportError as e:
         logger.error(f"Could not import {module_path}: {e}")
         return None
+
+    try:
+        return getattr(module, method)  # Return the method from the module
     except AttributeError as e:
         logger.error(f"Method {method} not found in {module_path}: {e}")
         return None
@@ -128,10 +131,23 @@ def main():
 
     # Lookup the appropriate method to run based on the sub-command desired:
     match args.command:
-        case "ingest" | "report":
-            method = get_method(args.module, args.command)
+        case "ingest":
+            method = get_method(
+                args.module,
+                "ingest",
+                "ingest",
+            )
             if not method:
-                logger.error(f"Sorry, we don't know how to {args.command} yet on behalf of {args.module} yet!")
+                logger.error(f"Sorry, we don't know how to 'ingest' data from {args.module} yet!")
+                return sys.exit(1)
+        case "report":
+            method = get_method(
+                args.module,
+                args.command + "_cli",
+                "report",
+            )  # Add suffix to distinguish from report_web.!
+            if not method:
+                logger.error(f"Sorry, we don't know how to report data from {args.module} yet!")
                 return sys.exit(1)
         case "serve":
             method = run_server
