@@ -14,6 +14,7 @@ def status(args: Namespace) -> None:
     ################################################################################################
     # Query and transpose/aggregate
     ################################################################################################
+    # TODO: Implement args.project filtering!
     rows = (
         Run.select(Run, Project, fn.COUNT(Run.id).alias("run_count"))
         .join(Project)
@@ -27,10 +28,11 @@ def status(args: Namespace) -> None:
     grand_total: int = 0
     module_sub_modules = set()
     for row in rows:
+        project_full = f"{row.project_id.source_dir_absolute}/{row.project_id.source_dir_relative}"
         module_sub_module = row.module if not row.sub_module else f"{row.module}/{row.sub_module}"
         module_sub_modules.add(module_sub_module)
-        run_count_by_project_module[row.project_id.source_dir_relative][module_sub_module] = row.run_count
-        run_count_by_project[row.project_id.source_dir_relative] += row.run_count
+        run_count_by_project_module[project_full][module_sub_module] = row.run_count
+        run_count_by_project[project_full] += row.run_count
         run_count_by_module[module_sub_module] += row.run_count
         grand_total += row.run_count
 
@@ -48,7 +50,7 @@ def status(args: Namespace) -> None:
         show_footer=show_footer,
         header_style="bold magenta",
     )
-    table.add_column("Project", justify="right", footer="TOTAL")
+    table.add_column("Project", justify="left", footer="TOTAL")
     for module in sorted(module_sub_modules):
         table.add_column(module, justify="right", footer=f"{run_count_by_module[module]}")
     table.add_column("TOTAL", justify="right", footer=f"{grand_total}")
