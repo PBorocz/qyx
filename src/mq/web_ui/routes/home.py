@@ -59,7 +59,7 @@ def partial_module_selector(project_id: int = "") -> Any:
 
 
 def partial_run_selector(project_id: int = "", module: str = "") -> Any:
-    uvicorn_logger.info(f"partial_run_selector {project_id=} {module=}")
+    # uvicorn_logger.info(f"partial_run_selector {project_id=} {module=}")
     runs = Run.select().where(Run.project_id == project_id, Run.module == module).order_by(Run.timestamp.desc())
     return ft.Div(
         ft.H3("Run"),
@@ -77,7 +77,7 @@ def partial_run_selector(project_id: int = "", module: str = "") -> Any:
 
 def partial_report_selector(project_id: int, module: str, run_id: int) -> Any:
     # TODO: Make this sensitive to which reports are implemented by module
-    uvicorn_logger.info(f"partial_report_selector {project_id=} {module=} {run_id=}")
+    # uvicorn_logger.info(f"partial_report_selector {project_id=} {module=} {run_id=}")
     reports = ("summary", "detail", "full", "history")
     return ft.Div(
         ft.H3("Reports Available"),
@@ -104,10 +104,10 @@ def partial_report_selector(project_id: int, module: str, run_id: int) -> Any:
 
 
 def partial_do_report(project_id: int, module: str, run_id: int, report: str) -> Any:
-    uvicorn_logger.info(f"partial_query_results {project_id=} {module=} {run_id=} {report=}")
+    # uvicorn_logger.info(f"partial_query_results {project_id=} {module=} {run_id=} {report=}")
     run = Run.select().where(Run.id == run_id).get()
     project = Project.select().where(Project.id == run.project_id).get()
-    uvicorn_logger.info(f"partial_query_results {run.id=} {project.id=}")
+    # uvicorn_logger.info(f"partial_query_results {run.id=} {project.id=}")
 
     match run.module:
         case "cloc":
@@ -118,6 +118,10 @@ def partial_do_report(project_id: int, module: str, run_id: int, report: str) ->
                     return report_web.render_history(project)
                 case "summary":
                     return report_web.render_summary(run)
+                case "detail":
+                    return report_web.render_detail(run)
+                case "full":
+                    return report_web.render_full(run)
                 case _:
                     return ft.Div(ft.P(f"Sorry, we don't support {report=} yet!"))
         case _:

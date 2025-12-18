@@ -56,15 +56,15 @@ def query_detail(run: Run) -> list[Cloc]:
 
 def query_full(run: Run) -> [list[Cloc], dict[str, int], int]:
     results = Cloc.select().where(Cloc.run_id == run).order_by(Cloc.dir, Cloc.filename)
-    grand_totals = defaultdict(int)
+    column_totals = defaultdict(int)
     for row in results:
-        grand_totals["blank"] += row.lines_blank
-        grand_totals["comment"] += row.lines_comment
-        grand_totals["code"] += row.lines_code
+        column_totals["lines_blank"] += row.lines_blank
+        column_totals["lines_comment"] += row.lines_comment
+        column_totals["lines_code"] += row.lines_code
         row.lines_total = row.lines_blank + row.lines_comment + row.lines_code
 
-    grand_grand_total = sum(list(grand_totals.values()))
-    return results, dict(grand_totals), grand_grand_total
+    grand_total = sum(list(column_totals.values()))
+    return results, dict(column_totals), grand_total
 
 
 def query_history(project: Project, last: int = 99999) -> tuple[list[str], defaultdict, defaultdict]:

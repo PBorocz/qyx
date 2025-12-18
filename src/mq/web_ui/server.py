@@ -23,8 +23,6 @@ from mq.web_ui.routes.home import (
 
 app, rt = fh.fast_app(debug=True)
 
-uvicorn_logger = logging.getLogger("uvicorn")
-
 
 def run_server(args: Namespace) -> None:
     """Run our web server."""
@@ -46,6 +44,7 @@ def run_server(args: Namespace) -> None:
         log_level="debug",
         access_log=True,
         use_colors=True,
+        # reload=True,
     )
 
 
@@ -76,11 +75,12 @@ def query(project_id: int, module: str, run_id: int, report: str) -> Any:
 
 # Only necessary to diagnose issues when running server from within CLI.
 # If so: % uv run python "src/mq/web_ui/server.py"
-# if __name__ == "__main__":
-#     from mq import setup_sqlite
-#     parser = argparse.ArgumentParser(add_help=False)
-#     parser.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-#     parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
-#     args = parser.parse_args()
-#     setup_sqlite(args, logger)
-#     run_server(args)
+if __name__ == "__main__":
+    from mq import setup_sqlite
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--port", help="Optional port, default is 5011.", default=5011)
+    parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
+    args = parser.parse_args()
+    setup_sqlite(args, logger)
+    run_server(args)

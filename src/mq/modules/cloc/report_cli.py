@@ -1,7 +1,5 @@
 """CLI report rendering obo 'cloc' tool."""
 
-from collections import defaultdict
-
 from argparse import Namespace
 from loguru import logger
 from rich.console import Console
@@ -86,7 +84,7 @@ def _detail(args: Namespace, run: Run) -> None:
 
 
 def _full(args: Namespace, run: Run) -> None:
-    results, grand_totals, grand_grand_total = query_full(run)
+    rows, column_totals, grand_total = query_full(run)
 
     table = Table(
         title=f"CLOC Full - {run.timestamp_display}",
@@ -96,11 +94,11 @@ def _full(args: Namespace, run: Run) -> None:
         footer_style="bold cyan",
     )
     table.add_column("File", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=str(grand_totals["code"]))
-    table.add_column("Comment", justify="right", footer=str(grand_totals["comment"]))
-    table.add_column("Blank", justify="right", footer=str(grand_totals["blank"]))
-    table.add_column("TOTAL", justify="right", footer=str(grand_grand_total))
-    for row in results:
+    table.add_column("Code", justify="right", footer=str(column_totals["lines_code"]))
+    table.add_column("Comment", justify="right", footer=str(column_totals["lines_comment"]))
+    table.add_column("Blank", justify="right", footer=str(column_totals["lines_blank"]))
+    table.add_column("TOTAL", justify="right", footer=str(grand_total))
+    for row in rows:
         table.add_row(
             f"{row.dir}/{row.filename}",
             str(row.lines_code),
