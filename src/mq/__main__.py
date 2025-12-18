@@ -9,8 +9,9 @@ from loguru import logger
 from rich.traceback import install as install_traceback
 
 from mq import setup_logging, setup_sqlite
-from mq.utilities.db import flush, housekeeping, purge
-from mq.web_ui.server import run_server
+from mq.utils.db import flush, housekeeping, purge
+from mq.cli.status import status
+from mq.web.server import run_server
 
 
 def get_args():
@@ -24,15 +25,13 @@ def get_args():
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     ################################################################################
-    # Ingest command
+    # Status command
     ################################################################################
-    parse_serve = subparsers.add_parser(
-        "serve",
+    subparsers.add_parser(
+        "status",
         parents=[parser_root],
-        help="Run built-in web server for reporting.",
+        help="Report current status for all or specific project.",
     )
-    parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-    parse_serve.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
 
     ################################################################################
     # Ingest command
@@ -65,6 +64,17 @@ def get_args():
     )
 
     ################################################################################
+    # Serve command
+    ################################################################################
+    parse_serve = subparsers.add_parser(
+        "serve",
+        parents=[parser_root],
+        help="Run built-in web server for reporting.",
+    )
+    parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
+    parse_serve.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
+
+    ################################################################################
     # Flush command
     ################################################################################
     subparsers.add_parser(
@@ -94,11 +104,9 @@ def get_args():
 
     # TODO: Ensure here that a valid level has been provided..
 
-    # We want a command for now!
+    # If no explicit command was issued, default to simply printing a status.
     if not hasattr(args, "command") or args.command is None:
-        print("Sorry, please specify a command:\n")
-        parser.print_help()
-        sys.exit(1)
+        args.command = "status"
 
     # Check if module is required for certain commands
     if hasattr(args, "module_required") and args.module_required and not args.module:
@@ -107,10 +115,10 @@ def get_args():
     return args
 
 
-def get_method(module: str, py_module: str, method: str) -> Callable | None:
-    logger.debug(f"{module=} {py_module=} {method=}")
+def get_method(module_dir: str, py_filename: str, method: str) -> Callable | None:
+    logger.debug(f"{module_dir=} {py_filename=} {method=}")
     try:
-        module_path = f"mq.modules.{module}.{py_module}"  # Construct the path to the specific .py file
+        module_path = f"mq.modules.{module_dir}.{py_filename}"  # Construct the path to the specific .py file
         module = importlib.import_module(module_path)  # ...and import it.
     except ImportError as e:
         logger.error(f"Could not import {module_path}: {e}")
@@ -149,6 +157,8 @@ def main():
             if not method:
                 logger.error(f"Sorry, we don't know how to report data from {args.module} yet!")
                 return sys.exit(1)
+        case "status":
+            method = status
         case "serve":
             method = run_server
         case "flush":

@@ -7,7 +7,7 @@ from fasthtml import ft
 
 from mq.modules.models import Project, Run
 from mq.modules.cloc.models import query_detail, query_full, query_history, query_summary
-from mq.utilities import format_timestamp_headers
+from mq.utils import format_timestamp_headers
 
 
 def _th_r(value: str) -> ft.Th:
@@ -138,20 +138,20 @@ def render_full(run: Run) -> Any:
 
 def render_history(project: Project) -> Any:
     timestamps, transposed, grand_totals = query_history(project)
-
+    timestamps_formatted = format_timestamp_headers(timestamps)
     th_s = [_th("Metric")]
-    for i, header in enumerate(format_timestamp_headers(timestamps)):
-        th_s.append(_th_r(header))
+    for timestamp in sorted(timestamps):
+        th_s.append(_th_r(timestamps_formatted[timestamp]))
 
     tr_s = []
     for metric, dt_rows in transposed.items():
         td_s = [_th(metric)]
-        for timestamp in timestamps:
+        for timestamp in sorted(timestamps):
             td_s.append(_td_r(str(dt_rows[timestamp])))
         tr_s.append(ft.Tr(*td_s))
 
     tfoot_s = [_th("TOTAL")]
-    for timestamp in timestamps:
+    for timestamp in sorted(timestamps):
         tfoot_s.append(_td_r(str(grand_totals[timestamp])))
 
     return ft.Div(

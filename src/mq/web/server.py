@@ -1,7 +1,6 @@
 """..."""
 
 import argparse
-import logging
 import threading
 import time
 import webbrowser
@@ -13,7 +12,7 @@ import uvicorn
 from fasthtml import common as fh
 from loguru import logger
 
-from mq.web_ui.routes.home import (
+from mq.web.routes.home import (
     page,
     partial_do_report,
     partial_module_selector,
@@ -38,7 +37,7 @@ def run_server(args: Namespace) -> None:
 
     logger.info(f"Starting server at https://localhost/{int(args.port)}")
     uvicorn.run(
-        "mq.web_ui.server:app",
+        "mq.web.server:app",
         host="0.0.0.0",
         port=int(args.port),
         log_level="debug",
@@ -74,7 +73,7 @@ def query(project_id: int, module: str, run_id: int, report: str) -> Any:
 
 
 # Only necessary to diagnose issues when running server from within CLI.
-# If so: % uv run python "src/mq/web_ui/server.py"
+# If so: % uv run python "src/mq/web/server.py"
 if __name__ == "__main__":
     from mq import setup_sqlite
 

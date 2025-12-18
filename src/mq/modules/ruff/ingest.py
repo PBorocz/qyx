@@ -7,12 +7,11 @@ from argparse import Namespace
 from pathlib import Path
 
 from loguru import logger
-from peewee import SqliteDatabase
 
 from mq.modules.models import Project, Run
 from mq.modules.ruff import MODULE
 from mq.modules.ruff.models import Ruff
-from mq.utilities.git import get_git_commit_hash
+from mq.utils.git import get_git_commit_hash
 
 
 def ingest(args: Namespace) -> None:

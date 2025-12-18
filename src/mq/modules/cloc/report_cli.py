@@ -8,7 +8,7 @@ from rich.table import Table
 from mq.modules.models import Project, Run
 from mq.modules.cloc import MODULE
 from mq.modules.cloc.models import query_detail, query_full, query_history, query_summary
-from mq.utilities import format_timestamp_headers
+from mq.utils import format_timestamp_headers
 
 
 def report(args: Namespace) -> None:
@@ -111,6 +111,7 @@ def _full(args: Namespace, run: Run) -> None:
 
 def _history(args: Namespace, project: Project) -> None:
     timestamps, transposed, grand_totals = query_history(project)
+    timestamps_formatted = format_timestamp_headers(timestamps)
     table = Table(
         title="CLOC Over Time",
         show_header=True,
@@ -119,17 +120,17 @@ def _history(args: Namespace, project: Project) -> None:
     )
 
     table.add_column("Metric", justify="left", footer="-")
-    for i, header in enumerate(format_timestamp_headers(timestamps)):
+    for timestamp in sorted(timestamps):
         table.add_column(
-            header,
+            timestamps_formatted[timestamp],
             justify="right",
-            footer=str(grand_totals[timestamps[i]]),
+            footer=str(grand_totals[timestamp]),
             footer_style="bold cyan",
         )
 
     for metric, dt_rows in transposed.items():
         row = [metric]
-        for timestamp in timestamps:
+        for timestamp in sorted(timestamps):
             row.append(str(dt_rows[timestamp]))
         table.add_row(*row)
 

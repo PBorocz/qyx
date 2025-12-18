@@ -25,14 +25,14 @@ def remove_common_prefixes(rows: list) -> list:
     return rows
 
 
-def format_timestamp_headers(timestamps):
+def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     """Format timestamp headers based on distribution across days/times..
 
     Args:
         timestamps: List of datetime objects
 
     Returns:
-        List of formatted header strings
+        Dict of formatted header strings keyed by original timestamp provided
     """
 
     def __local(dt: datetime) -> datetime:
@@ -72,4 +72,4 @@ def format_timestamp_headers(timestamps):
         fmt_ = fmt_date_time  # Single date, single time
         logger.debug("- case 4")
 
-    return [__local(ts).strftime(fmt_) for ts in timestamps]
+    return {ts: __local(ts).strftime(fmt_) for ts in timestamps}

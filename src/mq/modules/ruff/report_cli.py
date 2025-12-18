@@ -3,14 +3,14 @@
 from argparse import Namespace
 from collections import defaultdict
 from loguru import logger
-from peewee import fn, SqliteDatabase
+from peewee import fn
 from rich.console import Console
 from rich.table import Table
 
 from mq.modules.models import Project, Run
 from mq.modules.ruff import MODULE
 from mq.modules.ruff.models import Ruff
-from mq.utilities import format_timestamp_headers, remove_common_prefixes
+from mq.utils import format_timestamp_headers, remove_common_prefixes
 
 
 def report(args: Namespace) -> None:
@@ -125,17 +125,17 @@ def _report_history(args: Namespace, project: Project) -> None:
     table.add_column("Message", justify="left", footer="-")
     timestamps = list({row.timestamp for row in rows})
     timestamps_formatted = format_timestamp_headers(timestamps)
-    for i, header in enumerate(timestamps_formatted):
+    for timestamp in sorted(timestamps):
         table.add_column(
-            header,
+            timestamps_formatted[timestamp],
             justify="right",
-            footer=str(grand_totals[timestamps[i]]),
+            footer=str(grand_totals[timestamp]),
             footer_style="bold cyan",
         )
 
     for rule_code, dt_rows in transposed.items():
         row = [rule_code, messages[rule_code]]
-        for timestamp in timestamps:
+        for timestamp in sorted(timestamps):
             row.append(str(dt_rows[timestamp]))
         table.add_row(*row)
 

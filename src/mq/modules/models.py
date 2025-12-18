@@ -63,7 +63,7 @@ class Run(BaseModel):
 
     # fmt: off
     id              = pw.AutoField()      # Explicitly add for clarity
-    project_id      = pw.ForeignKeyField(Project, backref="project")
+    project_id      = pw.ForeignKeyField(Project, backref="runs")
     timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", default=datetime.utcnow)
     module          = pw.CharField(help_text="Module gathered for, e.g. ruff, cloc, radon etc.")
     sub_module      = pw.CharField(help_text="Optional sub-module, e.g. cc or raw obo radon.", null=True)
