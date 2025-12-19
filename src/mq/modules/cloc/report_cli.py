@@ -2,9 +2,8 @@
 
 from argparse import Namespace
 from loguru import logger
-from rich.console import Console
-from rich.table import Table
 
+from mq.cli import cli_table, cli_console
 from mq.modules.models import Project, Run
 from mq.modules.cloc import MODULE
 from mq.modules.cloc.models import query_detail, query_full, query_history, query_summary
@@ -39,13 +38,7 @@ def report(args: Namespace) -> None:
 
 def _summary(args: Namespace, run: Run) -> None:
     results = query_summary(run)
-    table = Table(
-        title=f"CLOC: {run.timestamp_display}",
-        title_style="bold green",
-        title_justify="left",
-        show_header=True,
-        header_style="bold magenta",
-    )
+    table = cli_table(title=f"CLOC: {run.timestamp_display}")
     table.add_column("Code", justify="right")
     table.add_column("Comment", justify="right")
     table.add_column("Blank", justify="right")
@@ -56,19 +49,13 @@ def _summary(args: Namespace, run: Run) -> None:
         f"{results.lines_blank}",
         f"{results.lines_total}",
     )
-    Console().print(table)
+    cli_console.print(table)
 
 
 def _detail(args: Namespace, run: Run) -> None:
     grand_total = query_summary(run)
     detail_rows = query_detail(run)
-    table = Table(
-        title=f"CLOC Detail - {run.timestamp_display}",
-        show_header=True,
-        show_footer=True,
-        header_style="bold magenta",
-        footer_style="bold cyan",
-    )
+    table = cli_table(title=f"CLOC: {run.timestamp_display}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
     table.add_column("Code", justify="right", footer=f"{grand_total.lines_code}")
     table.add_column("Comment", justify="right", footer=f"{grand_total.lines_comment}")
@@ -82,21 +69,13 @@ def _detail(args: Namespace, run: Run) -> None:
             f"{result.lines_blank}",
             f"{result.lines_total}",
         )
-    Console().print(table)
+    cli_console.print(table)
 
 
 def _full(args: Namespace, run: Run) -> None:
     rows, column_totals, grand_total = query_full(run)
 
-    table = Table(
-        title=f"CLOC: {run.timestamp_display}",
-        title_style="bold green",
-        title_justify="left",
-        show_header=True,
-        show_footer=True,
-        header_style="bold magenta",
-        footer_style="bold cyan",
-    )
+    table = cli_table(title=f"CLOC: {run.timestamp_display}", show_footer=True)
     table.add_column("File", footer="TOTAL")
     table.add_column("Code", justify="right", footer=str(column_totals["lines_code"]))
     table.add_column("Comment", justify="right", footer=str(column_totals["lines_comment"]))
@@ -110,19 +89,13 @@ def _full(args: Namespace, run: Run) -> None:
             str(row.lines_blank),
             str(row.lines_total),
         )
-    Console().print(table)
+    cli_console.print(table)
 
 
 def _history(args: Namespace, project: Project) -> None:
     timestamps, transposed, grand_totals = query_history(project)
     timestamps_formatted = format_timestamp_headers(timestamps)
-    table = Table(
-        title="CLOC Over Time",
-        show_header=True,
-        show_footer=True,
-        header_style="bold magenta",
-    )
-
+    table = cli_table(title="CLOC Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")
     for timestamp in sorted(timestamps):
         table.add_column(
@@ -138,4 +111,4 @@ def _history(args: Namespace, project: Project) -> None:
             row.append(str(dt_rows[timestamp]))
         table.add_row(*row)
 
-    Console().print(table)
+    cli_console.print(table)

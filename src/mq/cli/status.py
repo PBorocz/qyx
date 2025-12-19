@@ -4,9 +4,8 @@ from argparse import Namespace
 from collections import defaultdict
 
 from peewee import fn
-from rich.console import Console
-from rich.table import Table
 
+from mq.cli import cli_console, cli_table
 from mq.modules.models import Project, Run
 
 
@@ -22,7 +21,7 @@ def status(args: Namespace) -> None:
         .order_by(Project.path_input, Run.module, Run.sub_module)
     )
     if not rows:
-        Console().print('[yellow]No data is available, perform an [green]"mq ingest"[/green] first.[/yellow]')
+        cli_console.print('[yellow]No data is available, perform an [green]"mq ingest"[/green] first.[/yellow]')
         return
 
     # Transpose
@@ -47,13 +46,7 @@ def status(args: Namespace) -> None:
     show_footer = True if len(run_count_by_project) > 1 else False
 
     # Render our summary status table.
-    table = Table(
-        title="MQ Status",
-        title_justify="left",
-        show_header=True,
-        show_footer=show_footer,
-        header_style="bold magenta",
-    )
+    table = cli_table(title="MQ Status", show_footer=show_footer)
     table.add_column("Project", justify="left", footer="TOTAL")
     for module in sorted(module_sub_modules):
         table.add_column(module, justify="right", footer=f"{run_count_by_module[module]}")
@@ -66,4 +59,4 @@ def status(args: Namespace) -> None:
         row.append(f"{run_count_by_project[project]}")
         table.add_row(*row)
 
-    Console().print(table)
+    cli_console.print(table)

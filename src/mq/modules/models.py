@@ -97,7 +97,7 @@ class Run(BaseModel):
 
     # fmt: off
     id              = pw.AutoField()
-    project         = pw.ForeignKeyField(Project, backref="runs")
+    project         = pw.ForeignKeyField(Project, backref="runs", on_delete="CASCADE")
     timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", default=datetime.utcnow)
     module          = pw.CharField(help_text="Module gathered for, e.g. ruff, cloc, radon etc.")
     sub_module      = pw.CharField(help_text="Optional sub-module, e.g. cc or raw obo radon.", null=True)
@@ -132,7 +132,7 @@ class BaseModuleModel(pw.Model):
 
     # fmt: off
     id       = pw.AutoField()
-    run      = pw.ForeignKeyField(Run, backref="modules")
+    run      = pw.ForeignKeyField(Run, backref="modules", on_delete="CASCADE")
     filename = pw.CharField(help_text="Name of file under evaluation.")
     dir      = pw.CharField(help_text="Relative directory of file under evaluation.")
     # fmt: on

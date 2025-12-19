@@ -6,9 +6,9 @@ from pathlib import Path
 from loguru import logger
 from peewee import fn
 from platformdirs import user_data_dir
-from rich.console import Console
 from rich.prompt import Confirm
 
+from mq.cli import cli_console
 from mq.modules.models import Project, Run
 from mq.modules import models_for_module, MODULE_MODELS
 
@@ -58,16 +58,15 @@ def clear(args: Namespace) -> None:
         # useful if we want to apply an updated schema *AND* don't care
         # about losing existing data)
         should_delete = args.no_confirm
-        console = Console()
         if not should_delete:
-            console.print("[bold red]⚠️  WARNING: This will delete ALL data![/bold red]")
+            cli_console.print("[bold red]⚠️  WARNING: This will delete ALL data![/bold red]")
             should_delete = Confirm.ask("[yellow]Are you sure you want to continue?[/yellow]", default=False)
 
         if should_delete:
             __delete_database()
-            console.print("[green]✓ Data cleared successfully[/green]")
+            cli_console.print("[green]✓ Data cleared successfully[/green]")
         else:
-            console.print("[blue]Ok, nothing done[/blue]")
+            cli_console.print("[blue]Ok, nothing done[/blue]")
 
 
 def trim(args: Namespace) -> None:

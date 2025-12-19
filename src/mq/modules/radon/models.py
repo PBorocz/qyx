@@ -107,8 +107,8 @@ class RadonHalFunction(BaseModel):
     """Radon "HAL" Function metric storage."""
 
     # fmt: off
-    run               = ForeignKeyField(Run, backref="radon_hal_functions_run")
-    radon_hal_id      = ForeignKeyField(RadonHal, backref="radon_hal_functions")
+    run               = ForeignKeyField(Run, backref="radon_hal_functions_run", on_delete="CASCADE")
+    radon_hal_id      = ForeignKeyField(RadonHal, backref="radon_hal_functions", on_delete="CASCADE")
 
     name              = CharField(help_text="function name")
     h1		      = IntegerField(help_text="Total distinct operators")
