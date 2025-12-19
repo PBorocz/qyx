@@ -22,7 +22,7 @@ class Cloc(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "cloc"
-        indexes = ((("run_id", "dir", "filename"), True),)
+        indexes = ((("run", "dir", "filename"), True),)
 
 
 def query_summary(run: Run) -> Cloc:
@@ -33,7 +33,7 @@ def query_summary(run: Run) -> Cloc:
             fn.SUM(Cloc.lines_comment).alias("lines_comment"),
             (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias("lines_total"),
         )
-        .where(Cloc.run_id == run.id)
+        .where(Cloc.run == run.id)
         .get()
     )
 
@@ -47,7 +47,7 @@ def query_detail(run: Run) -> list[Cloc]:
             fn.SUM(Cloc.lines_comment).alias("lines_comment"),
             (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias("lines_total"),
         )
-        .where(Cloc.run_id == run.id)
+        .where(Cloc.run == run.id)
         .group_by(Cloc.dir)
         .order_by(Cloc.dir)
     )
@@ -55,7 +55,7 @@ def query_detail(run: Run) -> list[Cloc]:
 
 
 def query_full(run: Run) -> [list[Cloc], dict[str, int], int]:
-    results = Cloc.select().where(Cloc.run_id == run).order_by(Cloc.dir, Cloc.filename)
+    results = Cloc.select().where(Cloc.run == run).order_by(Cloc.dir, Cloc.filename)
     column_totals = defaultdict(int)
     for row in results:
         column_totals["lines_blank"] += row.lines_blank
@@ -71,7 +71,7 @@ def query_history(project: Project, last: int = 99999) -> tuple[list[str], defau
     run_subquery = (
         Run.select(Run.id)
         .where(
-            Run.project_id == project.id,
+            Run.project == project.id,
             Run.module == MODULE,
         )
         .order_by(Run.timestamp.desc())

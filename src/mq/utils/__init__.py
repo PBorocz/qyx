@@ -4,6 +4,7 @@ import os
 import zoneinfo
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 
 from loguru import logger
 
@@ -73,3 +74,35 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
         logger.debug("- case 4")
 
     return {ts: __local(ts).strftime(fmt_) for ts in timestamps}
+
+
+def detect_project_name(resolved_path: str) -> str | None:
+    """Detect Python project name from common config files."""
+    path = Path(resolved_path)
+
+    # Walk up the directory tree looking for project indicators
+    for parent in [path] + list(path.parents):
+        # Git repository name
+        if (parent / ".git").exists():
+            return parent.name
+
+        # pyproject.toml
+        pyproject = parent / "pyproject.toml"
+        if pyproject.exists():
+            try:
+                import tomllib
+
+                with open(pyproject, "rb") as f:
+                    data = tomllib.load(f)
+                    if name := data.get("project", {}).get("name"):
+                        return name
+                    if name := data.get("tool", {}).get("poetry", {}).get("name"):
+                        return name
+            except Exception:
+                pass
+
+        # setup.py fallback
+        if (parent / "setup.py").exists():
+            return parent.name
+
+    return None

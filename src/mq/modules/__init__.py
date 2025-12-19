@@ -53,7 +53,8 @@ def __get_modules_and_models(debug: bool = True) -> dict:  # noqa: C901
 __MODULES_AND_MODELS = __get_modules_and_models(debug=False)
 
 # Also create "flattened" versions for various uses (one of strings and the other of peewee models)
-MODULES: list[str] = [module_name for module_name in __MODULES_AND_MODELS.keys()]
+MODULES: list[str] = sorted([module_name for module_name in __MODULES_AND_MODELS.keys()])
+
 MODULE_MODELS: list[list] = []
 for data in __MODULES_AND_MODELS.values():
     MODULE_MODELS.extend(data["models"])

@@ -9,7 +9,8 @@ from loguru import logger
 from rich.traceback import install as install_traceback
 
 from mq import setup_logging, setup_sqlite
-from mq.utils.db import flush, housekeeping, purge
+from mq.modules import MODULES
+from mq.utils.db import clear, housekeeping, trim
 from mq.cli.status import status
 from mq.web.server import run_server
 
@@ -17,8 +18,6 @@ from mq.web.server import run_server
 def get_args():
     # Create parent parser with common arguments
     parser_root = argparse.ArgumentParser(add_help=False)
-    parser_root.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
-    parser_root.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
     parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.", default=False)
 
     parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment")
@@ -41,9 +40,12 @@ def get_args():
         parents=[parser_root],
         help="Ingest code quality results from supported tools.",
     )
+    parse_ingest.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
+    parse_ingest.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
     parse_ingest.add_argument("-s", "--sub_module", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
+    parse_ingest.add_argument("--stdin", action="store_true", help="Read JSON from stdin instead of running subprocess")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
-    parse_ingest.set_defaults(module_required=True)  # Make module required for ingest
+    # parse_ingest.set_defaults(module_required=True)  # Make module required for ingest
 
     ################################################################################
     # Report command
@@ -53,7 +55,8 @@ def get_args():
         parents=[parser_root],
         help="Report on code quality for the specified (or all) projects.",
     )
-    parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)
+    parse_report.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
+    parse_report.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
     parse_report.add_argument("-s", "--sub_module", help="Optional sub-module (if applicable, e.g. cc for Radon).")
     parse_report.add_argument("--last", type=int, help="Report on last <n> weeks of history.")
     parse_report.add_argument(
@@ -62,6 +65,7 @@ def get_args():
         help="Level to report on, e.g. summary (default), detail or full.",
         default="summary",
     )
+    # parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)
 
     ################################################################################
     # Serve command
@@ -72,26 +76,33 @@ def get_args():
         help="Run built-in web server for reporting.",
     )
     parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-    parse_serve.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
+    parse_serve.add_argument("--nobrowser", action="store_true", help="Don't auto-open browser")
 
     ################################################################################
-    # Flush command
+    # Trim command
     ################################################################################
-    subparsers.add_parser(
-        "flush",
+    parse_trim = subparsers.add_parser(
+        "trim",
         parents=[parser_root],
-        help="Flush store either for all or specified modules.",
+        help="Trim old data, leaving the most recent run for each module",
     )
+    # TODO: Implement these!
+    # parse_trim.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
+    # parse_trim.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
 
     ################################################################################
-    # Purge command
+    # Clear command
     ################################################################################
-    subparsers.add_parser(
-        "purge",
+    parse_clear = subparsers.add_parser(
+        "clear",
         parents=[parser_root],
-        help="Purge store either for all or specified modules, leaving the most recent run",
+        help="Clear the database, either for all modules (default) or a specified module.",
     )
+    parse_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
 
+    ################################################################################################
+    # PARSE!!!
+    ################################################################################################
     args = parser.parse_args()
 
     # Set defaults for the case where we don't have a command yet to execute..
@@ -115,20 +126,18 @@ def get_args():
     return args
 
 
-def get_method(module_dir: str, py_filename: str, method: str) -> Callable | None:
-    logger.debug(f"{module_dir=} {py_filename=} {method=}")
+def get_method(module_dir: str, py_filename: str, method: str) -> tuple[Callable | None, str | None]:
+    module_path = f"mq.modules.{module_dir}.{py_filename}"  # Construct the path to the specific .py file
+    logger.debug(f"Using {module_path=}")
     try:
-        module_path = f"mq.modules.{module_dir}.{py_filename}"  # Construct the path to the specific .py file
         module = importlib.import_module(module_path)  # ...and import it.
     except ImportError as e:
-        logger.error(f"Could not import {module_path}: {e}")
-        return None
+        return None, f"Could not import {module_path}: {e}"
 
     try:
-        return getattr(module, method)  # Return the method from the module
+        return getattr(module, method), None  # Return the method from the module
     except AttributeError as e:
-        logger.error(f"Method {method} not found in {module_path}: {e}")
-        return None
+        return None, f"Method {method} not found in {module_path}: {e}"
 
 
 def main():
@@ -140,40 +149,52 @@ def main():
     # Lookup the appropriate method to run based on the sub-command desired:
     match args.command:
         case "ingest":
-            method = get_method(
-                args.module,
-                "ingest",
-                "ingest",
-            )
-            if not method:
-                logger.error(f"Sorry, we don't know how to 'ingest' data from {args.module} yet!")
-                return sys.exit(1)
+            _dispatch_ingest(args)
         case "report":
-            method = get_method(
-                args.module,
-                args.command + "_cli",
-                "report",
-            )  # Add suffix to distinguish from report_web.!
-            if not method:
-                logger.error(f"Sorry, we don't know how to report data from {args.module} yet!")
-                return sys.exit(1)
+            _dispatch_report(args)
         case "status":
-            method = status
+            status(args)
         case "serve":
-            method = run_server
-        case "flush":
-            method = flush
-        case "purge":
-            method = purge
+            run_server(args)
+        case "trim":
+            trim(args)
+        case "clear":
+            clear(args)
         case _:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
-    ################################################################################
-    # Dispatch to our respective method to do our work!
-    ################################################################################
-    method(args)
+    housekeeping(args)  # Do database housekeeping
 
-    ################################################################################
-    # Do database housekeeping
-    ################################################################################
-    housekeeping(args)
+
+def _dispatch_ingest(args: argparse.Namespace) -> None:
+    def __do_ingest(module: str) -> None:
+        method, msg = get_method(module, "ingest", "ingest")
+        if not method and msg:
+            logger.error(msg)
+            return sys.exit(1)
+        method(args)
+
+    if args.module:
+        # Single ingest request, lookup the method and do it!
+        __do_ingest(args.module)
+    else:
+        # Ingest over ALL available modules..
+        for module in MODULES:
+            __do_ingest(module)
+
+
+def _dispatch_report(args: argparse.Namespace) -> None:
+    def __do_report(module: str) -> None:
+        method, msg = get_method(module, "report_cli", "report")
+        if not method and msg:
+            logger.error(msg)
+            return sys.exit(1)
+        method(args)
+
+    if args.module:
+        # Single report request, lookup the method and do it!
+        __do_report(args.module)
+    else:
+        # Report over ALL available modules..
+        for module in MODULES:
+            __do_report(module)

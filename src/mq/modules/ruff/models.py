@@ -1,7 +1,5 @@
 """..."""
 
-import os
-
 from peewee import CharField, IntegerField
 
 from mq.modules.models import BaseModuleModel
@@ -22,4 +20,4 @@ class Ruff(BaseModuleModel):
         """..."""
 
         table_name = "ruff"
-        indexes = ((("run_id", "dir", "filename", "line", "column", "rule_code"), True),)
+        indexes = ((("run", "dir", "filename", "line", "column", "rule_code"), True),)

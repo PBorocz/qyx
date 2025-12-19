@@ -8,6 +8,8 @@ from pathlib import Path
 
 import peewee as pw
 
+from mq.utils import detect_project_name
+
 
 class BaseModel(pw.Model):
     """Root of our "tree" of models."""
@@ -21,7 +23,7 @@ class BaseModel(pw.Model):
 class Project(BaseModel):
     """Root of result storage, a 'project' is essentially just a project root directory.
 
-    We store this two ways:
+    We store this 3 ways:
     - As the user entered it (relative or absolute), ie. both are possible:
       1. "."
       2. /user/me/development/projects/myproject
@@ -30,40 +32,72 @@ class Project(BaseModel):
       1. /user/me/development/projects/myproject
       2. /user/me/development/projects/myproject
 
-    We use the relative path for display purposes to match user's initial entry
-    while the absolute
+    - As a "display" name for use in reporting
+      (this uses logic at creation time)
     """
 
-    id = pw.AutoField()  # (explicitly add for clarity)
-    source_dir_relative = pw.CharField(
-        help_text="Path to respective project's root directory as entered by user.",
+    id = pw.AutoField()
+    path_input = pw.CharField(
+        help_text="Path as entered by user (e.g., '.', '../src', '/abs/path').",
     )
-    source_dir_absolute = pw.CharField(
-        help_text="Path to respective project's root directory, resolved to absolute path",
+    path_absolute = pw.CharField(
+        help_text="Resolved absolute path to project root directory.",
         unique=True,
+    )
+    path_display = pw.CharField(
+        help_text="Human-friendly display name for reports and UI.",
+    )
+    created = pw.DateTimeField(
+        help_text="GMT/UTC datetime the project was created.",
+        default=datetime.utcnow,
     )
 
     @classmethod
-    def get_or_insert(cls, arg_source_dir: str) -> Project:
+    def get_or_insert(cls, arg_input_dir: str) -> Project:
         """Get the project at the specified source directory, even if we have to insert."""
-        path_source_dir_absolute = Path(arg_source_dir).resolve()
+        path_absolute = str(Path(arg_input_dir).resolve())
+
         try:
-            project = Project.get(Project.source_dir_absolute == path_source_dir_absolute)
+            project = cls.get(cls.path_absolute == path_absolute)
         except pw.DoesNotExist:
-            project = Project(
-                source_dir_relative=arg_source_dir,
-                source_dir_absolute=path_source_dir_absolute,
+            path_display = generate_display_name(path_absolute)
+            project = cls.create(
+                path_input=arg_input_dir,
+                path_absolute=path_absolute,
+                path_display=path_display,
             )
-            project.save()
         return project
+
+
+def generate_display_name(path_absolute: str) -> str:
+    """Generate a human-friendly display name for the project."""
+    # Try project name from config files
+    if project_name := detect_project_name(path_absolute):
+        return project_name
+
+    # Use relative path if shorter and not too many levels up
+    try:
+        abs_path = Path(path_absolute)
+        cwd = Path.cwd()
+        rel_path = abs_path.relative_to(cwd)
+
+        # Use relative if reasonable length and not too nested
+        if len(str(rel_path)) < len(str(abs_path)) and len(rel_path.parts) <= 3:
+            return str(rel_path)
+    except ValueError:
+        # abs_path is not relative to cwd
+        pass
+
+    # Fall back to directory name
+    return Path(path_absolute).name
 
 
 class Run(BaseModel):
     """A 'Run' is the execution of a particular module at a particular time for a project."""
 
     # fmt: off
-    id              = pw.AutoField()      # Explicitly add for clarity
-    project_id      = pw.ForeignKeyField(Project, backref="runs")
+    id              = pw.AutoField()
+    project         = pw.ForeignKeyField(Project, backref="runs")
     timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", default=datetime.utcnow)
     module          = pw.CharField(help_text="Module gathered for, e.g. ruff, cloc, radon etc.")
     sub_module      = pw.CharField(help_text="Optional sub-module, e.g. cc or raw obo radon.", null=True)
@@ -73,18 +107,19 @@ class Run(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        indexes = ((("project_id", "timestamp", "module", "sub_module"), True),)
+        indexes = ((("project", "timestamp", "module", "sub_module"), True),)
 
     @property
     def timestamp_display(self) -> str:
         """..."""
         dt_local: datetime = self.timestamp.replace(tzinfo=zoneinfo.ZoneInfo("UTC")).astimezone()
-        return dt_local.strftime("%Y-%m-%d %H:%M")
+        format = "%H:%M" if dt_local.date() == datetime.now().date() else "%Y-%m-%d %H:%M"
+        return dt_local.strftime(format)
 
     @classmethod
     def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Run | None:
         """Find the most recent run for the specified project and module (or sub_module)."""
-        query = Run.select().order_by(Run.timestamp.desc()).where(Run.project_id == project.id, Run.module == module)
+        query = Run.select().order_by(Run.timestamp.desc()).where(Run.project == project.id, Run.module == module)
         if sub_module:
             query = query.where(Run.sub_module == sub_module)
         if run := query.first():
@@ -96,8 +131,8 @@ class BaseModuleModel(pw.Model):
     """Define an base model definition from which all the module's storage model(s) will inherit."""
 
     # fmt: off
-    id       = pw.AutoField()      # Explicitly add for clarity
-    run_id   = pw.ForeignKeyField(Run, backref="run")
+    id       = pw.AutoField()
+    run      = pw.ForeignKeyField(Run, backref="modules")
     filename = pw.CharField(help_text="Name of file under evaluation.")
     dir      = pw.CharField(help_text="Relative directory of file under evaluation.")
     # fmt: on

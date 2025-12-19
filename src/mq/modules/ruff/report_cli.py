@@ -15,7 +15,7 @@ from mq.utils import format_timestamp_headers, remove_common_prefixes
 
 def report(args: Namespace) -> None:
     try:
-        project = Project.get(source_dir_relative=args.project)
+        project = Project.get(path_input=args.project)
     except Project.DoesNotExist:
         logger.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
@@ -40,13 +40,14 @@ def report(args: Namespace) -> None:
 def _report_summary(args: Namespace, run: Run) -> None:
     results = (
         Ruff.select(Ruff.rule_code, Ruff.message, fn.COUNT(Ruff.id).alias("count"))
-        .where(Ruff.run_id == run)
+        .where(Ruff.run == run)
         .group_by(Ruff.rule_code)
         .order_by(fn.COUNT(Ruff.id).desc())
     )
     table = Table(
-        title=f"ruff: {run.timestamp_display}",
+        title=f"RUFF: {run.timestamp_display}",
         title_style="bold green",
+        title_justify="left",
         show_header=True,
         header_style="bold magenta",
     )
@@ -59,12 +60,13 @@ def _report_summary(args: Namespace, run: Run) -> None:
 
 
 def _report_detail(args: Namespace, run: Run) -> None:
-    rows = Ruff.select().where(Ruff.run_id == run).order_by(Ruff.filename, Ruff.rule_code)
+    rows = Ruff.select().where(Ruff.run == run).order_by(Ruff.filename, Ruff.rule_code)
     foobar = 1
     rows = remove_common_prefixes(rows)
     table = Table(
-        title=f"ruff: {run.timestamp_display}",
+        title=f"RUFF: {run.timestamp_display}",
         title_style="bold green",
+        title_justify="left",
         show_header=True,
         header_style="bold magenta",
     )
@@ -80,7 +82,7 @@ def _report_history(args: Namespace, project: Project) -> None:
     """Report on the args.last number of runs "across"."""
     runs = (
         Run.select(Run.id)
-        .where(Run.project_id == project.id, Run.module == MODULE)
+        .where(Run.project == project.id, Run.module == MODULE)
         .order_by(Run.timestamp.desc())
         .limit(args.last)
     )
@@ -116,6 +118,8 @@ def _report_history(args: Namespace, project: Project) -> None:
     ################################################################################################
     table = Table(
         title="RUFF Results Over Time",
+        title_style="bold green",
+        title_justify="left",
         show_header=True,
         show_footer=True,
         header_style="bold magenta",

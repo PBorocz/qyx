@@ -1,27 +1,26 @@
 """Ingest data obo running 'cloc' tool."""
 
 import json
-import sys
 import subprocess
+import sys
+from argparse import Namespace
 from pathlib import Path
 
+from rich import print
 
-from argparse import Namespace
-from loguru import logger
-
-from mq.modules.models import Project, Run
-from mq.modules.cloc.models import Cloc
 from mq.modules.cloc import MODULE
+from mq.modules.cloc.models import Cloc
+from mq.modules.models import Project, Run
 from mq.utils.git import get_git_commit_hash
 
 
 def ingest(args: Namespace) -> None:
     gch = get_git_commit_hash()
     project = Project.get_or_insert(args.project)
-    run = Run(project_id=project.id, module=MODULE, git_commit_hash=gch)
+    run = Run(project=project.id, module=MODULE, git_commit_hash=gch)
     run.save()
 
-    if not sys.stdin.isatty():
+    if args.stdin:
         # Pipeline mode - parse JSON from stdin
         data = json.loads(sys.stdin.read())
     else:
@@ -34,7 +33,7 @@ def ingest(args: Namespace) -> None:
 
     results = _parse_json(data)
     num = _save_results(run, results)
-    logger.info(f"Ingested {num} results from {MODULE}.")
+    print(f"[green]✓ Ingested [bold]{num}[/bold] results from {MODULE.upper()}[/green]")
 
 
 def _parse_json(data: dict) -> list[Cloc]:
@@ -54,6 +53,6 @@ def _parse_json(data: dict) -> list[Cloc]:
 
 def _save_results(run: Run, rows: list[Cloc]) -> int:
     for row in rows:
-        row.run_id = run.id
+        row.run = run.id
         row.save()
     return len(rows)

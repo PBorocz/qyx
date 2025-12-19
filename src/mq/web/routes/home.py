@@ -12,15 +12,15 @@ uvicorn_logger = logging.getLogger("uvicorn")
 
 
 def page() -> Any:
-    projects = Project.select().order_by(Project.source_dir_relative)
+    projects = Project.select().order_by(Project.path_input)
     return ft.Titled(
         "Meta Quality",
         ft.Div(
             ft.H3("Project"),
             ft.Select(
                 ft.Option("Select Project...", value="", selected=True),
-                *[ft.Option(f"{project.source_dir_relative}", value=f"{project.id}") for project in projects],
-                name="project_id",
+                *[ft.Option(f"{project.path_input}", value=f"{project.id}") for project in projects],
+                name="project",
                 hx_get="/modules",
                 hx_target="#module-selector",
                 hx_trigger="change",
@@ -33,7 +33,7 @@ def page() -> Any:
     )
 
 
-def partial_module_selector(project_id: int = "") -> Any:
+def partial_module_selector(project: int = "") -> Any:
     return ft.Div(
         ft.H3("Module(s)"),
         ft.Div(
@@ -46,7 +46,7 @@ def partial_module_selector(project_id: int = "") -> Any:
                         hx_get="/runs",
                         hx_target="#run-selector",
                         hx_trigger="change",
-                        hx_include="[name='project_id']",  # Include project in request.
+                        hx_include="[name='project']",  # Include project in request.
                     ),
                     f" {module.title()}",
                     cls="mr-4",
@@ -58,26 +58,26 @@ def partial_module_selector(project_id: int = "") -> Any:
     )
 
 
-def partial_run_selector(project_id: int = "", module: str = "") -> Any:
-    # uvicorn_logger.info(f"partial_run_selector {project_id=} {module=}")
-    runs = Run.select().where(Run.project_id == project_id, Run.module == module).order_by(Run.timestamp.desc())
+def partial_run_selector(project: int = "", module: str = "") -> Any:
+    # uvicorn_logger.info(f"partial_run_selector {project=} {module=}")
+    runs = Run.select().where(Run.project == project, Run.module == module).order_by(Run.timestamp.desc())
     return ft.Div(
         ft.H3("Run"),
         ft.Select(
             ft.Option("Select Run...", value="", selected=True),
             *[ft.Option(run.timestamp_display, value=run.id) for run in runs],
-            name="run_id",
+            name="run",
             hx_get="/reports",
             hx_target="#report-selector",
             hx_trigger="change",
-            hx_include="[name='project_id'], [name='module']",
+            hx_include="[name='project'], [name='module']",
         ),
     )
 
 
-def partial_report_selector(project_id: int, module: str, run_id: int) -> Any:
+def partial_report_selector(project: int, module: str, run_id: int) -> Any:
     # TODO: Make this sensitive to which reports are implemented by module
-    # uvicorn_logger.info(f"partial_report_selector {project_id=} {module=} {run_id=}")
+    # uvicorn_logger.info(f"partial_report_selector {project=} {module=} {run_id=}")
     reports = ("summary", "detail", "full", "history")
     return ft.Div(
         ft.H3("Reports Available"),
@@ -91,7 +91,7 @@ def partial_report_selector(project_id: int, module: str, run_id: int) -> Any:
                         hx_get="/query",
                         hx_target="#query",
                         hx_trigger="change",
-                        hx_include="[name='project_id'], [name='module'], [name='run_id']",
+                        hx_include="[name='project'], [name='module'], [name='run_id']",
                     ),
                     f" {report.title()}",
                     cls="mr-4",
@@ -103,10 +103,10 @@ def partial_report_selector(project_id: int, module: str, run_id: int) -> Any:
     )
 
 
-def partial_do_report(project_id: int, module: str, run_id: int, report: str) -> Any:
-    # uvicorn_logger.info(f"partial_query_results {project_id=} {module=} {run_id=} {report=}")
-    run = Run.select().where(Run.id == run_id).get()
-    project = Project.select().where(Project.id == run.project_id).get()
+def partial_do_report(project: int, module: str, run_id: int, report: str) -> Any:
+    # uvicorn_logger.info(f"partial_query_results {project=} {module=} {run_id=} {report=}")
+    run = Run.select().where(Run.id == run).get()
+    project = Project.select().where(Project.id == run.project).get()
     # uvicorn_logger.info(f"partial_query_results {run.id=} {project.id=}")
 
     match run.module:

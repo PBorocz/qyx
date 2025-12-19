@@ -53,23 +53,23 @@ def index() -> Any:
 
 
 @rt
-def modules(project_id: int = None) -> Any:
-    return partial_module_selector(project_id)
+def modules(project: int = None) -> Any:
+    return partial_module_selector(project)
 
 
 @rt
-def runs(project_id: int = None, module: str = "") -> Any:
-    return partial_run_selector(project_id, module)
+def runs(project: int = None, module: str = "") -> Any:
+    return partial_run_selector(project, module)
 
 
 @rt
-def reports(project_id: str, module: str, run_id: int) -> Any:
-    return partial_report_selector(project_id, module, run_id)
+def reports(project: str, module: str, run_id: int) -> Any:
+    return partial_report_selector(project, module, run_id)
 
 
 @rt
-def query(project_id: int, module: str, run_id: int, report: str) -> Any:
-    return partial_do_report(project_id, module, run_id, report)
+def query(project: int, module: str, run_id: int, report: str) -> Any:
+    return partial_do_report(project, module, run_id, report)
 
 
 # Only necessary to diagnose issues when running server from within CLI.

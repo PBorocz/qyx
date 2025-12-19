@@ -18,9 +18,13 @@ def status(args: Namespace) -> None:
     rows = (
         Run.select(Run, Project, fn.COUNT(Run.id).alias("run_count"))
         .join(Project)
-        .group_by(Project.source_dir_relative, Run.module, Run.sub_module)
-        .order_by(Project.source_dir_relative, Run.module, Run.sub_module)
+        .group_by(Project.path_input, Run.module, Run.sub_module)
+        .order_by(Project.path_input, Run.module, Run.sub_module)
     )
+    if not rows:
+        Console().print('[yellow]No data is available, perform an [green]"mq ingest"[/green] first.[/yellow]')
+        return
+
     # Transpose
     run_count_by_project_module = defaultdict(lambda: defaultdict(int))
     run_count_by_project = defaultdict(int)
@@ -28,11 +32,11 @@ def status(args: Namespace) -> None:
     grand_total: int = 0
     module_sub_modules = set()
     for row in rows:
-        project_full = f"{row.project_id.source_dir_absolute}/{row.project_id.source_dir_relative}"
+        s_project = row.project.path_display
         module_sub_module = row.module if not row.sub_module else f"{row.module}/{row.sub_module}"
         module_sub_modules.add(module_sub_module)
-        run_count_by_project_module[project_full][module_sub_module] = row.run_count
-        run_count_by_project[project_full] += row.run_count
+        run_count_by_project_module[s_project][module_sub_module] = row.run_count
+        run_count_by_project[s_project] += row.run_count
         run_count_by_module[module_sub_module] += row.run_count
         grand_total += row.run_count
 

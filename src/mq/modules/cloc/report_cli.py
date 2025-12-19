@@ -13,7 +13,7 @@ from mq.utils import format_timestamp_headers
 
 def report(args: Namespace) -> None:
     try:
-        project = Project.get(Project.source_dir_relative == args.project)
+        project = Project.get(Project.path_input == args.project)
     except Project.DoesNotExist:
         logger.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
@@ -40,7 +40,9 @@ def report(args: Namespace) -> None:
 def _summary(args: Namespace, run: Run) -> None:
     results = query_summary(run)
     table = Table(
-        title=f"CLOC Summary - {run.timestamp_display}",
+        title=f"CLOC: {run.timestamp_display}",
+        title_style="bold green",
+        title_justify="left",
         show_header=True,
         header_style="bold magenta",
     )
@@ -87,7 +89,9 @@ def _full(args: Namespace, run: Run) -> None:
     rows, column_totals, grand_total = query_full(run)
 
     table = Table(
-        title=f"CLOC Full - {run.timestamp_display}",
+        title=f"CLOC: {run.timestamp_display}",
+        title_style="bold green",
+        title_justify="left",
         show_header=True,
         show_footer=True,
         header_style="bold magenta",

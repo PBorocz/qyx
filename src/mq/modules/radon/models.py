@@ -22,7 +22,7 @@ class RadonRaw(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_raw"
-        indexes = ((("run_id", "dir", "filename"), True),)
+        indexes = ((("run", "dir", "filename"), True),)
 
 
 class RadonMi(BaseModuleModel):
@@ -37,7 +37,7 @@ class RadonMi(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_mi"
-        indexes = ((("run_id", "dir", "filename"), True),)
+        indexes = ((("run", "dir", "filename"), True),)
 
 
 class RadonCc(BaseModuleModel):
@@ -57,7 +57,7 @@ class RadonCc(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_cc"
-        indexes = ((("run_id", "dir", "filename", "entity_type", "entity_name"), True),)
+        indexes = ((("run", "dir", "filename", "entity_type", "entity_name"), True),)
 
 
 class RadonHal(BaseModuleModel):
@@ -100,15 +100,15 @@ class RadonHal(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_hal"
-        indexes = ((("run_id", "dir", "filename"), True),)
+        indexes = ((("run", "dir", "filename"), True),)
 
 
 class RadonHalFunction(BaseModel):
     """Radon "HAL" Function metric storage."""
 
     # fmt: off
-    run_id            = ForeignKeyField(Run, backref="run")
-    radon_hal_id      = ForeignKeyField(RadonHal, backref="radon_hal")
+    run               = ForeignKeyField(Run, backref="radon_hal_functions_run")
+    radon_hal_id      = ForeignKeyField(RadonHal, backref="radon_hal_functions")
 
     name              = CharField(help_text="function name")
     h1		      = IntegerField(help_text="Total distinct operators")

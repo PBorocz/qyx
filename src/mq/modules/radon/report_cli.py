@@ -13,33 +13,40 @@ from mq.modules.models import Project, Run
 from mq.modules.radon import MODULE
 from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
+RADON_SUB_MODULES = ("raw", "mi", "hal", "cc")
+
 
 def report(args: Namespace) -> None:
     try:
-        project = Project.get(source_dir_relative=args.project)
+        project = Project.get(path_input=args.project)
     except Project.DoesNotExist:
         logger.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 
-    # Get most recent Run for simple "current-state" reporting..
-    if not (run := Run.get_most_recent(project, MODULE, args.sub_module)):
-        logger.error(f"Sorry, we haven't performed a {MODULE.upper()} measurement yet for this project.")
-        return None
-
     if args.last:
         ...
+        # TODO: Implement me!!
+        raise RuntimeError("TODO!")
         # _report_history(args, project)
     else:
-        # Dispatch "intelligently"...
-        _dispatch_level_submodule(args, run)
+        if args.sub_module:
+            if not (run := Run.get_most_recent(project, MODULE, args.sub_module)):
+                logger.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
+            _dispatch_level_submodule(args, args.sub_module, run)
+        else:
+            for sub_module in RADON_SUB_MODULES:
+                # Get most recent Run for simple "current-state" reporting..
+                if not (run := Run.get_most_recent(project, MODULE, sub_module)):
+                    logger.info(f"Sorry, we haven't performed a {sub_module} measurement yet for this project.")
+                    continue
+                _dispatch_level_submodule(args, sub_module, run)
 
 
-def _dispatch_level_submodule(args: Namespace, run: Run) -> None:
+def _dispatch_level_submodule(args: Namespace, sub_module: str, run: Run) -> None:
     """Dispatch to the report method using the report level and sub_module requested."""
     current_module = sys.modules[__name__]
-    method_name = f"_{args.level}_{args.sub_module}"
-    if hasattr(current_module, method_name):
-        method = getattr(current_module, method_name)
+    method_name = f"_{args.level}_{sub_module}"
+    if method := getattr(current_module, method_name):
         method(args, run)
     else:
         logger.warning(f"Sorry, unable to report yet on level='{args.level}' & sub_module='{args.sub_module}'.")
@@ -57,11 +64,12 @@ def _summary_raw(args: Namespace, run: Run) -> None:
         fn.SUM(RadonRaw.multi).alias("multi"),
         fn.SUM(RadonRaw.blank).alias("blank"),
         fn.SUM(RadonRaw.single_comments).alias("single_comments"),
-    ).where(RadonRaw.run_id == run.id)
+    ).where(RadonRaw.run == run.id)
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-RAW: {run.timestamp_display}",
         title_style="bold green",
+        title_justify="left",
         show_header=True,
         header_style="bold magenta",
     )
@@ -105,7 +113,7 @@ def _summary_hal(args: Namespace, run: Run) -> None:
             fn.AVG(RadonHal.bugs).alias("bugs"),
         )
         .group_by(RadonHal.dir)
-        .where(RadonHal.run_id == run.id)
+        .where(RadonHal.run == run.id)
         .order_by(RadonHal.dir)
     )
     # Calculate mean metric values
@@ -115,8 +123,9 @@ def _summary_hal(args: Namespace, run: Run) -> None:
         means[attr] = sum(values) / len(values) if values else None
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-HAL: {run.timestamp_display}",
         title_style="bold green",
+        title_justify="left",
         show_header=True,
         show_footer=True,
         header_style="bold magenta",
@@ -156,10 +165,11 @@ def _summary_hal(args: Namespace, run: Run) -> None:
 
 
 def _summary_mi(args: Namespace, run: Run) -> None:
-    row = RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run_id == run.id).get()
+    row = RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-MI: {run.timestamp_display}",
         title_style="bold green",
+        title_justify="left",
         show_header=False,
     )
     table.add_column("_", style="bold magenta")
@@ -177,13 +187,14 @@ def _summary_cc(args: Namespace, run: Run) -> None:
             RadonCc.entity_type.alias("entity_type"),
             fn.COUNT(RadonCc.id).alias("count"),
         )
-        .where(RadonCc.run_id == run.id)
+        .where(RadonCc.run == run.id)
         .group_by(RadonCc.entity_type)
         .order_by(fn.COUNT(RadonCc.id).desc())
     )
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-CC: {run.timestamp_display}",
         title_style="bold green",
+        title_justify="left",
         show_header=True,
         header_style="bold magenta",
     )
@@ -209,7 +220,7 @@ def _detail_raw(args: Namespace, run: Run) -> None:
             fn.SUM(RadonRaw.blank).alias("blank"),
             fn.SUM(RadonRaw.single_comments).alias("single_comments"),
         )
-        .where(RadonRaw.run_id == run.id)
+        .where(RadonRaw.run == run.id)
         .group_by(RadonRaw.dir)
         .order_by(RadonRaw.dir)
     )
@@ -221,7 +232,7 @@ def _detail_raw(args: Namespace, run: Run) -> None:
             totals[attr] += getattr(row, attr)
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-RAW: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         show_footer=True,
@@ -252,7 +263,7 @@ def _detail_raw(args: Namespace, run: Run) -> None:
 
 
 def _detail_hal(args: Namespace, run: Run) -> None:
-    rows = RadonHal.select().where(RadonHal.run_id == run.id).order_by(RadonHal.dir, RadonHal.filename)
+    rows = RadonHal.select().where(RadonHal.run == run.id).order_by(RadonHal.dir, RadonHal.filename)
 
     # Calculate means
     means = {}
@@ -261,7 +272,7 @@ def _detail_hal(args: Namespace, run: Run) -> None:
         means[attr] = sum(values) / len(values) if values else None
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-HAL: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         show_footer=True,
@@ -304,7 +315,7 @@ def _detail_hal(args: Namespace, run: Run) -> None:
 def _detail_mi(args: Namespace, run: Run) -> None:
     rows = (
         RadonMi.select(RadonMi.dir, fn.AVG(RadonMi.mi).alias("mi_mean"))
-        .where(RadonMi.run_id == run.id)
+        .where(RadonMi.run == run.id)
         .order_by(fn.AVG(RadonMi.mi).asc(), RadonMi.dir)
         .group_by(RadonMi.dir)
     )
@@ -320,7 +331,7 @@ def _detail_mi(args: Namespace, run: Run) -> None:
         show_footer = False
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-MI: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         show_footer=show_footer,
@@ -343,12 +354,12 @@ def _detail_cc(args: Namespace, run: Run) -> None:
             RadonCc.entity_type,
             fn.COUNT(RadonCc.id).alias("count"),
         )
-        .where(RadonCc.run_id == run.id)
+        .where(RadonCc.run == run.id)
         .group_by(RadonCc.dir, RadonCc.entity_type)
         .order_by(RadonCc.dir, RadonCc.entity_type)
     )
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-CC: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         header_style="bold magenta",
@@ -370,7 +381,7 @@ def _detail_cc(args: Namespace, run: Run) -> None:
 # "Full" methods
 ################################################################################################
 def _full_raw(args: Namespace, run: Run) -> None:
-    rows = RadonRaw.select().where(RadonRaw.run_id == run.id).order_by(RadonRaw.dir, RadonRaw.filename)
+    rows = RadonRaw.select().where(RadonRaw.run == run.id).order_by(RadonRaw.dir, RadonRaw.filename)
 
     # Calculate grand totals
     totals = defaultdict(int)
@@ -379,7 +390,7 @@ def _full_raw(args: Namespace, run: Run) -> None:
             totals[attr] += getattr(row, attr)
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-RAW: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         show_footer=True,
@@ -431,7 +442,7 @@ def _full_hal(args: Namespace, run: Run) -> None:
             RadonHalFunction.bugs,
         )
         .join(RadonHal)
-        .where(RadonHal.run_id == run.id)
+        .where(RadonHal.run == run.id)
         .order_by(RadonHal.dir, RadonHal.filename, RadonHalFunction.name)
         .objects()
     )
@@ -442,7 +453,7 @@ def _full_hal(args: Namespace, run: Run) -> None:
         means[attr] = sum(values) / len(values) if values else None
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-HAL: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         show_footer=True,
@@ -485,7 +496,7 @@ def _full_hal(args: Namespace, run: Run) -> None:
 
 
 def _full_mi(args: Namespace, run: Run) -> None:
-    rows = RadonMi.select().where(RadonMi.run_id == run.id).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
+    rows = RadonMi.select().where(RadonMi.run == run.id).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
 
     # Calculate the average maintainability index
     mi_s = [row.mi for row in rows]
@@ -498,7 +509,7 @@ def _full_mi(args: Namespace, run: Run) -> None:
         show_footer = False
 
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-MI: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         show_footer=show_footer,
@@ -526,12 +537,12 @@ def _full_cc(args: Namespace, run: Run) -> None:
             RadonCc.entity_type,
             fn.COUNT(RadonCc.id).alias("count"),
         )
-        .where(RadonCc.run_id == run.id)
+        .where(RadonCc.run == run.id)
         .group_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
         .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
     )
     table = Table(
-        title=f"Radon-{args.sub_module.upper()}: {run.timestamp_display}",
+        title=f"RADON-CC: {run.timestamp_display}",
         title_style="bold green",
         show_header=True,
         header_style="bold magenta",
