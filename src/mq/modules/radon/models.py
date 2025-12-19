@@ -1,8 +1,13 @@
 """..."""
 
-from peewee import CharField, FloatField, IntegerField, ForeignKeyField
+from argparse import Namespace
+from collections import defaultdict
+from typing import Any
 
-from mq.modules.models import BaseModel, BaseModuleModel, Run
+from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
+
+from mq.modules.models import BaseModel, BaseModuleModel, Project, Run
+from mq.modules.ruff import MODULE
 
 
 class RadonRaw(BaseModuleModel):
@@ -130,3 +135,205 @@ class RadonHalFunction(BaseModel):
 
         table_name = "radon_hal_function"
         indexes = ((("radon_hal_id", "name"), True),)
+
+
+################################################################################################
+# Queries..
+################################################################################################
+def query_raw(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+    match level.lower():
+        case "summary":
+            return RadonRaw.select(
+                fn.SUM(RadonRaw.loc).alias("loc"),
+                fn.SUM(RadonRaw.lloc).alias("lloc"),
+                fn.SUM(RadonRaw.sloc).alias("sloc"),
+                fn.SUM(RadonRaw.comments).alias("comments"),
+                fn.SUM(RadonRaw.multi).alias("multi"),
+                fn.SUM(RadonRaw.blank).alias("blank"),
+                fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+            ).where(RadonRaw.run == run.id)
+
+        case "detail":
+            rows = (
+                RadonRaw.select(
+                    RadonRaw.dir,
+                    fn.SUM(RadonRaw.loc).alias("loc"),
+                    fn.SUM(RadonRaw.lloc).alias("lloc"),
+                    fn.SUM(RadonRaw.sloc).alias("sloc"),
+                    fn.SUM(RadonRaw.comments).alias("comments"),
+                    fn.SUM(RadonRaw.multi).alias("multi"),
+                    fn.SUM(RadonRaw.blank).alias("blank"),
+                    fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+                )
+                .where(RadonRaw.run == run.id)
+                .group_by(RadonRaw.dir)
+                .order_by(RadonRaw.dir)
+            )
+
+            # Calculate totals
+            totals = defaultdict(int)
+            for row in rows:
+                for attr in ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments"):
+                    totals[attr] += getattr(row, attr)
+            return rows, totals
+
+        case "full":
+            return RadonRaw.select().where(RadonRaw.run == run.id).order_by(RadonRaw.dir, RadonRaw.filename)
+
+        case _:
+            raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
+
+
+def query_hal(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+    match level.lower():
+        case "summary":
+            return (
+                RadonHal.select(
+                    RadonHal.dir,
+                    fn.AVG(RadonHal.h1).alias("h1"),
+                    fn.AVG(RadonHal.h2).alias("h2"),
+                    fn.AVG(RadonHal.N1).alias("N1"),
+                    fn.AVG(RadonHal.N2).alias("N2"),
+                    fn.AVG(RadonHal.program_vocabulary).alias("program_vocabulary"),
+                    fn.AVG(RadonHal.program_length).alias("program_length"),
+                    fn.AVG(RadonHal.calculated_length).alias("calculated_length"),
+                    fn.AVG(RadonHal.volume).alias("volume"),
+                    fn.AVG(RadonHal.difficulty).alias("difficulty"),
+                    fn.AVG(RadonHal.effort).alias("effort"),
+                    fn.AVG(RadonHal.time).alias("time"),
+                    fn.AVG(RadonHal.bugs).alias("bugs"),
+                )
+                .group_by(RadonHal.dir)
+                .where(RadonHal.run == run.id)
+                .order_by(RadonHal.dir)
+            )
+
+        case "detail":
+            rows = RadonHal.select().where(RadonHal.run == run.id).order_by(RadonHal.dir, RadonHal.filename)
+
+            # Calculate means
+            means = {}
+            for attr in RadonHal.attributes():
+                values = [getattr(row, attr) for row in rows]
+                means[attr] = sum(values) / len(values) if values else None
+            return rows, means
+
+        case "full":
+            rows = (
+                RadonHalFunction.select(
+                    RadonHal.dir,
+                    RadonHal.filename,
+                    RadonHalFunction.name,
+                    RadonHalFunction.h1,
+                    RadonHalFunction.h2,
+                    RadonHalFunction.N1,
+                    RadonHalFunction.N2,
+                    RadonHalFunction.program_vocabulary,
+                    RadonHalFunction.program_length,
+                    RadonHalFunction.calculated_length,
+                    RadonHalFunction.volume,
+                    RadonHalFunction.difficulty,
+                    RadonHalFunction.effort,
+                    RadonHalFunction.time,
+                    RadonHalFunction.bugs,
+                )
+                .join(RadonHal)
+                .where(RadonHal.run == run.id)
+                .order_by(RadonHal.dir, RadonHal.filename, RadonHalFunction.name)
+                .objects()
+            )
+            # Calculate mean metric values
+            means = {}
+            for attr in RadonHal.attributes():
+                values = [getattr(row, attr) for row in rows]
+                means[attr] = sum(values) / len(values) if values else None
+            return rows, means
+
+        case _:
+            raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
+
+
+def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+    match level.lower():
+        case "summary":
+            return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
+
+        case "detail":
+            rows = (
+                RadonMi.select(RadonMi.dir, fn.AVG(RadonMi.mi).alias("mi_mean"))
+                .where(RadonMi.run == run.id)
+                .order_by(fn.AVG(RadonMi.mi).asc(), RadonMi.dir)
+                .group_by(RadonMi.dir)
+            )
+
+            # Calculate the mean mean maintainability index
+            mi_mean_s = [row.mi_mean for row in rows]
+            if mi_mean_s:
+                mean_mi_mean = sum(mi_mean_s) / len(mi_mean_s)
+                mean_mi_mean_footer = f"{mean_mi_mean:.2f}"
+                show_footer = True
+            else:
+                mean_mi_mean_footer = ""
+                show_footer = False
+            return rows, mean_mi_mean, mean_mi_mean_footer, show_footer
+
+        case "full":
+            rows = (
+                RadonMi.select().where(RadonMi.run == run.id).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
+            )
+            # Calculate the average maintainability index
+            mi_s = [row.mi for row in rows]
+            if mi_s:
+                avg_mi = sum(mi_s) / len(mi_s)
+                avg_footer = f"{avg_mi:.2f}"
+                show_footer = True
+            else:
+                avg_footer = ""
+                show_footer = False
+            return rows, avg_footer, show_footer
+
+        case _:
+            raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
+
+
+def query_cc(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+    match level.lower():
+        case "summary":
+            return (
+                RadonCc.select(
+                    RadonCc.entity_type.alias("entity_type"),
+                    fn.COUNT(RadonCc.id).alias("count"),
+                )
+                .where(RadonCc.run == run.id)
+                .group_by(RadonCc.entity_type)
+                .order_by(fn.COUNT(RadonCc.id).desc())
+            )
+            return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
+
+        case "detail":
+            return (
+                RadonCc.select(
+                    RadonCc.dir,
+                    RadonCc.entity_type,
+                    fn.COUNT(RadonCc.id).alias("count"),
+                )
+                .where(RadonCc.run == run.id)
+                .group_by(RadonCc.dir, RadonCc.entity_type)
+                .order_by(RadonCc.dir, RadonCc.entity_type)
+            )
+
+        case "full":
+            return (
+                RadonCc.select(
+                    RadonCc.dir,
+                    RadonCc.filename,
+                    RadonCc.entity_type,
+                    fn.COUNT(RadonCc.id).alias("count"),
+                )
+                .where(RadonCc.run == run.id)
+                .group_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
+                .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
+            )
+
+        case _:
+            raise RuntimeError(f"Sorry, invalid query level encountered! {level}")

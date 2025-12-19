@@ -1,12 +1,13 @@
 """Common utilities."""
 
+import logging
 import os
 import zoneinfo
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-from loguru import logger
+log = logging.getLogger(__name__)
 
 
 def remove_common_prefixes(rows: list) -> list:
@@ -50,11 +51,11 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
         dates_to_times[date_key].append((ts, time_str))
 
     num_unique_dates = len(dates_to_times)
-    logger.debug(f"{num_unique_dates=}")
+    log.debug(f"{num_unique_dates=}")
 
     # Check if we have multiple times within any single date
     has_multiple_times_in_date = any(len(times) > 1 for times in dates_to_times.values())
-    logger.debug(f"{has_multiple_times_in_date=}")
+    log.debug(f"{has_multiple_times_in_date=}")
 
     # Determine format based on which case we have
     fmt_date = "%Y-%m-%d"
@@ -62,16 +63,16 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     fmt_date_time = fmt_date + " " + fmt_time
     if num_unique_dates > 1 and has_multiple_times_in_date:
         fmt_ = fmt_date_time  # Case 1: Multiple dates AND multiple times within dates
-        logger.debug("- case 1")
+        log.debug("- case 1")
     elif num_unique_dates > 1:
         fmt_ = fmt_date  # Case 2: Multiple dates but only 1 timestamp per date
-        logger.debug("- case 2")
+        log.debug("- case 2")
     elif has_multiple_times_in_date:
         fmt_ = fmt_time  # Case 3: Single date but multiple times
-        logger.debug("- case 3")
+        log.debug("- case 3")
     else:
         fmt_ = fmt_date_time  # Single date, single time
-        logger.debug("- case 4")
+        log.debug("- case 4")
 
     return {ts: __local(ts).strftime(fmt_) for ts in timestamps}
 

@@ -1,27 +1,27 @@
 """..."""
 
+import logging
 from argparse import Namespace
-from collections import defaultdict
-from loguru import logger
-from peewee import fn
 
 from mq.cli import cli_console, cli_table
 from mq.modules.models import Project, Run
 from mq.modules.ruff import MODULE
-from mq.modules.ruff.models import Ruff
+from mq.modules.ruff.models import query_detail, query_full, query_history, query_summary
 from mq.utils import format_timestamp_headers, remove_common_prefixes
+
+log = logging.getLogger(__name__)
 
 
 def report(args: Namespace) -> None:
     try:
         project = Project.get(path_input=args.project)
     except Project.DoesNotExist:
-        logger.error(f"Sorry, we didn't find any data yet for project: {args.project}")
+        log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 
     # Get most recent Run for simple "current-state" reporting..
     if not (run := Run.get_most_recent(project, MODULE)):
-        logger.error(f"Sorry, we haven't performed a {MODULE.upper()} measurement yet for this project.")
+        log.error(f"Sorry, we haven't performed a {MODULE.upper()} measurement yet for this project.")
         return None
 
     if args.last:
@@ -32,17 +32,23 @@ def report(args: Namespace) -> None:
                 _report_summary(args, run)
             case "detail":
                 _report_detail(args, run)
+            case "full":
+                _report_full(args, run)
             case _:
-                logger.warning(f"Sorry, invalid report level {args.level}, must be one of 'summary' or 'detail'.")
+                log.warning(f"Sorry, invalid report level {args.level}, must be one of 'summary' or 'detail'.")
 
 
 def _report_summary(args: Namespace, run: Run) -> None:
-    results = (
-        Ruff.select(Ruff.rule_code, Ruff.message, fn.COUNT(Ruff.id).alias("count"))
-        .where(Ruff.run == run)
-        .group_by(Ruff.rule_code)
-        .order_by(fn.COUNT(Ruff.id).desc())
-    )
+    row = query_summary(args, run)
+    table = cli_table(title=f"RUFF: {run.timestamp_display}", show_header=False)
+    table.add_column("_", style="bold magenta")
+    table.add_column("_", style="bold magenta")
+    table.add_row("Ruff Issues", str(row.count()))
+    cli_console.print(table)
+
+
+def _report_detail(args: Namespace, run: Run) -> None:
+    results = query_detail(args, run)
     table = cli_table(title=f"RUFF: {run.timestamp_display}")
     table.add_column("Rule")
     table.add_column("Count", justify="center")
@@ -52,8 +58,8 @@ def _report_summary(args: Namespace, run: Run) -> None:
     cli_console.print(table)
 
 
-def _report_detail(args: Namespace, run: Run) -> None:
-    rows = Ruff.select().where(Ruff.run == run).order_by(Ruff.filename, Ruff.rule_code)
+def _report_full(args: Namespace, run: Run) -> None:
+    rows = query_full(args, run)
     foobar = 1
     rows = remove_common_prefixes(rows)
     table = cli_table(title=f"RUFF: {run.timestamp_display}")
@@ -67,39 +73,7 @@ def _report_detail(args: Namespace, run: Run) -> None:
 
 def _report_history(args: Namespace, project: Project) -> None:
     """Report on the args.last number of runs "across"."""
-    runs = (
-        Run.select(Run.id)
-        .where(Run.project == project.id, Run.module == MODULE)
-        .order_by(Run.timestamp.desc())
-        .limit(args.last)
-    )
-
-    ################################################################################################
-    # Query
-    ################################################################################################
-    rows = (
-        Ruff.select(
-            Run.timestamp.alias("timestamp"),
-            Ruff.rule_code.alias("rule_code"),
-            Ruff.message.alias("message"),
-        )
-        .where(Project.id == project.id, Run.id.in_(runs))
-        .join(Run)
-        .join(Project)
-        .order_by(Run.timestamp)
-        .objects()
-    )
-    messages = {row.rule_code: row.message for row in rows}
-
-    ################################################################################################
-    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
-    ################################################################################################
-    transposed = defaultdict(lambda: defaultdict(int))
-    grand_totals = defaultdict(int)
-    for row in rows:
-        transposed[row.rule_code][row.timestamp] += 1
-        grand_totals[row.timestamp] += 1
-
+    rows, messages, transposed, grand_totals = query_history(args, project)
     ################################################################################################
     # Render the table
     ################################################################################################

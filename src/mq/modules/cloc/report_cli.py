@@ -1,7 +1,7 @@
 """CLI report rendering obo 'cloc' tool."""
 
+import logging
 from argparse import Namespace
-from loguru import logger
 
 from mq.cli import cli_table, cli_console
 from mq.modules.models import Project, Run
@@ -9,17 +9,19 @@ from mq.modules.cloc import MODULE
 from mq.modules.cloc.models import query_detail, query_full, query_history, query_summary
 from mq.utils import format_timestamp_headers
 
+log = logging.getLogger(__name__)
+
 
 def report(args: Namespace) -> None:
     try:
         project = Project.get(Project.path_input == args.project)
     except Project.DoesNotExist:
-        logger.error(f"Sorry, we didn't find any data yet for project: {args.project}")
+        log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 
     # Get most recent Run for simple "current-state" reporting..
     if not (run := Run.get_most_recent(project, MODULE)):
-        logger.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
+        log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
         return None
 
     if args.last:
@@ -33,7 +35,7 @@ def report(args: Namespace) -> None:
             case "full":
                 _full(args, run)
             case _:
-                logger.warning(f"Sorry, invalid report level provided {args.level}")
+                log.warning(f"Sorry, invalid report level provided {args.level}")
 
 
 def _summary(args: Namespace, run: Run) -> None:

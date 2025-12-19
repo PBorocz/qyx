@@ -2,10 +2,10 @@
 
 import argparse
 import importlib
+import logging
 import sys
 from typing import Callable
 
-from loguru import logger
 from rich.traceback import install as install_traceback
 
 from mq import setup_logging, setup_sqlite
@@ -86,9 +86,10 @@ def get_args():
         parents=[parser_root],
         help="Trim old data, leaving the most recent run for each module",
     )
-    # TODO: Implement these!
+    parse_trim.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
+    parse_trim.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
+    # TODO: Implement this:
     # parse_trim.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
-    # parse_trim.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
 
     ################################################################################
     # Clear command
@@ -128,7 +129,7 @@ def get_args():
 
 def get_method(module_dir: str, py_filename: str, method: str) -> tuple[Callable | None, str | None]:
     module_path = f"mq.modules.{module_dir}.{py_filename}"  # Construct the path to the specific .py file
-    logger.debug(f"Using {module_path=}")
+    logging.debug(f"Using {module_path=}")
     try:
         module = importlib.import_module(module_path)  # ...and import it.
     except ImportError as e:
@@ -143,8 +144,8 @@ def get_method(module_dir: str, py_filename: str, method: str) -> tuple[Callable
 def main():
     install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
     args = get_args()  # Get/process all command-line arguments
-    setup_logging(args, logger)  # Setup logging (now that we know what potential level to log to)
-    setup_sqlite(args, logger)  # Setup our data-store and respective tables.
+    setup_logging(args.debug, False)  # Setup logging (now that we know what potential level to log to)
+    setup_sqlite(args)  # Setup our data-store and respective tables.
 
     # Lookup the appropriate method to run based on the sub-command desired:
     match args.command:
@@ -170,7 +171,7 @@ def _dispatch_ingest(args: argparse.Namespace) -> None:
     def __do_ingest(module: str) -> None:
         method, msg = get_method(module, "ingest", "ingest")
         if not method and msg:
-            logger.error(msg)
+            logging.error(msg)
             return sys.exit(1)
         method(args)
 
@@ -187,7 +188,7 @@ def _dispatch_report(args: argparse.Namespace) -> None:
     def __do_report(module: str) -> None:
         method, msg = get_method(module, "report_cli", "report")
         if not method and msg:
-            logger.error(msg)
+            logging.error(msg)
             return sys.exit(1)
         method(args)
 

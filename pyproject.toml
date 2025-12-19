@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.11.9"
 authors = [{name = "Your Name", email = "your.email@example.com"}]
 dependencies = [
-    "loguru>=0.7.3",
     "peewee>=3.18.3",
     "platformdirs>=4.5.1",
     "python-fasthtml>=0.12.36",
@@ -154,22 +153,26 @@ shell = """
   uv run mq report --module radon --sub_module cc --level summary
   uv run mq report --module radon --sub_module cc --level detail
   uv run mq report --module radon --sub_module cc --level full
+  uv run mq report --module radon --sub_module cc --last 10
 
   uv run mq report --module radon --sub_module hal
   uv run mq report --module radon --sub_module hal --level summary
   uv run mq report --module radon --sub_module hal --level detail
   uv run mq report --module radon --sub_module hal --level full
+  # uv run mq report --module radon --sub_module hal --last 10
 
   uv run mq report --module radon --sub_module mi
   uv run mq report --module radon --sub_module mi --level summary
   uv run mq report --module radon --sub_module mi --level detail
   uv run mq report --module radon --sub_module mi --level full
+  # uv run mq report --module radon --sub_module mi --last 10
 
   uv run mq report --module radon --sub_module raw
   uv run mq report --module radon --sub_module raw --level summary
   uv run mq report --module radon --sub_module raw --level detail
   uv run mq report --module radon --sub_module raw --level full
+  # uv run mq report --module radon --sub_module raw --last 10
 
-  uv run mq trim
+  uv run mq trim --no_confirm
   """
 help = "Run smoke test suite"

@@ -1,9 +1,9 @@
 """..."""
 
+import logging
 from argparse import Namespace
 from pathlib import Path
 
-from loguru import logger
 from peewee import fn
 from platformdirs import user_data_dir
 from rich.prompt import Confirm
@@ -11,6 +11,8 @@ from rich.prompt import Confirm
 from mq.cli import cli_console
 from mq.modules.models import Project, Run
 from mq.modules import models_for_module, MODULE_MODELS
+
+log = logging.getLogger(__name__)
 
 
 def housekeeping(args: Namespace) -> None:
@@ -26,16 +28,16 @@ def housekeeping(args: Namespace) -> None:
 
         # Delete Runs that aren't currently used
         if run_ids_used:
-            logger.debug(f"We have {len(run_ids_used)} active Runs currently.")
+            log.debug(f"We have {len(run_ids_used)} active Runs currently.")
             num = Run.delete().where(Run.id.not_in(run_ids_used)).execute()
             if num:
-                logger.debug(f"Cleaned up {num} Run(s) that weren't referenced.")
+                log.debug(f"Cleaned up {num} Run(s) that weren't referenced.")
 
     def _unused_projects(args: Namespace):
         """Delete orphaned Project rows."""
         num = Project.delete().where(Project.id.not_in(Run.select(Run.project).distinct())).execute()
         if num:
-            logger.debug(f"Cleaned up {num} Projects that had no Runs defined.")
+            log.debug(f"Cleaned up {num} Projects that had no Runs defined.")
 
     _unused_runs(args)
     _unused_projects(args)
@@ -64,36 +66,41 @@ def clear(args: Namespace) -> None:
 
         if should_delete:
             __delete_database()
-            cli_console.print("[green]✓ Data cleared successfully[/green]")
+            cli_console.print("[green]✓ Data cleared successfully.[/green]")
         else:
-            cli_console.print("[blue]Ok, nothing done[/blue]")
+            cli_console.print("[blue]Ok, nothing done.[/blue]")
 
 
 def trim(args: Namespace) -> None:
     """Clear/delete all data associated with "old" runs, ie, lose history but keep most recent!"""
-    # First, gather the most recent run for each module/sub-module we've got data for..
+    should_trim = args.no_confirm
+    if not should_trim:
+        cli_console.print("[bold red]⚠️  WARNING: This will delete older data![/bold red]")
+        should_trim = Confirm.ask("[yellow]Ok to continue?[/yellow]", default=False)
+
+    if should_trim:
+        _trim(args)
+        cli_console.print("[green]✓ Older data cleared successfully.[/green]")
+    else:
+        cli_console.print("[blue]Ok, nothing done.[/blue]")
+
+
+def _trim(args: Namespace) -> None:
+    """Trim runs that are NOT the most recent for each project, module and sub-module."""
+    # Get the *most recent* run..
     runs_to_keep = Run.select(
         Run.id,
-        fn.MAX(Run.timestamp).alias(
-            "max_timestamp",
-        ),
+        fn.MAX(Run.timestamp).alias("max_timestamp"),
     ).group_by(
         Run.project,
         Run.module,
         Run.sub_module,
     )
 
-    # Now, we can delete data associated with runs that AREN'T the most recent:
+    # Delete runs that *ARE NOT* the most recent:
+    # (recognising that it might be for just a single module)
     for run in Run.select():
         if run.id not in [run.id for run in runs_to_keep]:
             if args.module and args.module != run.module:
                 continue
-
-            num_deleted = 0
-            for model in models_for_module(run.module):
-                num_deleted += model.delete().where(model.run == run.id).execute()
-            if num_deleted:
-                logger.debug(f"Deleted {num_deleted:3d} rows {run.module:5s} from {run.timestamp}")
-
-            # Cleanup the run itself as well.
             Run.delete().where(Run.id == run.id).execute()

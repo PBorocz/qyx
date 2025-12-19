@@ -1,12 +1,14 @@
 """..."""
 
 import importlib
+import logging
 import inspect
 import sys
 from pathlib import Path
 
-from loguru import logger
 from peewee import Model
+
+log = logging.getLogger(__name__)
 
 
 # TODO: Refactor to reduce complexity..
@@ -45,7 +47,7 @@ def __get_modules_and_models(debug: bool = True) -> dict:  # noqa: C901
                 results[module_name] = {"module": models_module, "models": peewee_models}
 
             except ImportError as e:
-                logger.error(f"Could not import models from {module_name}: {e}")
+                log.error(f"Could not import models from {module_name}: {e}")
                 results[module_name] = {"module": None, "models": []}
     return results
 

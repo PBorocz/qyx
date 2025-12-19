@@ -1,16 +1,15 @@
 """..."""
 
 import argparse
+import logging
 import threading
 import time
 import webbrowser
 from argparse import Namespace
 from typing import Any
 
-
 import uvicorn
 from fasthtml import common as fh
-from loguru import logger
 
 from mq.web.routes.home import (
     page,
@@ -19,6 +18,8 @@ from mq.web.routes.home import (
     partial_report_selector,
     partial_run_selector,
 )
+
+log = logging.getLogger(__name__)
 
 app, rt = fh.fast_app(debug=True)
 
@@ -29,13 +30,13 @@ def run_server(args: Namespace) -> None:
 
         def __open_browser():
             """Start browser (ultimately in a background thread)."""
-            logger.info(f"Starting browser to https://localhost/{int(args.port)}")
+            log.info(f"Starting browser to https://localhost/{int(args.port)}")
             time.sleep(1)  # Wait for server to start
             webbrowser.open(f"http://localhost:{args.port}")
 
             threading.Thread(target=__open_browser, daemon=True).start()
 
-    logger.info(f"Starting server at https://localhost/{int(args.port)}")
+    log.info(f"Starting server at https://localhost/{int(args.port)}")
     uvicorn.run(
         "mq.web.server:app",
         host="0.0.0.0",

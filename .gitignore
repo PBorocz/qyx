@@ -14,16 +14,10 @@
 requirements.txt
 pylint.out
 zArchive/
-src/pcq/models/migrations/*
+data/
 app/static/images/__support
 *.out
-data/broadcasting/~*
 *.toml.backup
-__data__/
-data/*.csv
-data/*.sqlite3
-data/teams/_*
-optimus_ludos_nfl_com.refreshableToken.txt
 
 # These are from the "production" environment.
 gunicorn.pid
