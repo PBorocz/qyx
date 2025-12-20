@@ -43,7 +43,7 @@ def report(args: Namespace) -> None:
 
 def _summary(args: Namespace, run: Run) -> None:
     result = query(args, "summary", run)
-    table = cli_table(title=f"CLOC: {run.timestamp_display}")
+    table = cli_table(title=f"CLOC @ {run.timestamp_display}")
     table.add_column("Code", justify="center")
     table.add_column("Comment", justify="center")
     table.add_column("Blank", justify="center")
@@ -60,7 +60,7 @@ def _summary(args: Namespace, run: Run) -> None:
 def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
     grand_total = query(args, "summary", run)
     detail_rows = query(args, "detail", run)
-    table = cli_table(title=f"CLOC: {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
     table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.percentages))
     table.add_column("Comment", justify="right", footer=fmt(grand_total.lines_comment, args.percentages))
@@ -81,7 +81,7 @@ def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
 def _full(args: Namespace, run: Run) -> None:
     rows, column_totals, grand_total = query(args, "full", run)
 
-    table = cli_table(title=f"CLOC: {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
     table.add_column("File", footer="TOTAL")
     table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], args.percentages))
     table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], args.percentages))

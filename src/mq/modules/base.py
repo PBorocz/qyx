@@ -113,7 +113,7 @@ class Run(BaseModel):
     def timestamp_display(self) -> str:
         """..."""
         dt_local: datetime = self.timestamp.replace(tzinfo=zoneinfo.ZoneInfo("UTC")).astimezone()
-        format = "%H:%M" if dt_local.date() == datetime.now().date() else "%Y-%m-%d %H:%M"
+        format = "%H:%M%p" if dt_local.date() == datetime.now().date() else "%Y-%m-%d %H:%M%p"
         return dt_local.strftime(format)
 
     @classmethod

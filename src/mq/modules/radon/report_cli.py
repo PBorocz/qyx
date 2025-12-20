@@ -15,6 +15,7 @@ from mq.modules.radon.models import (
     query_mi,
     query_raw,
 )
+from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
@@ -31,31 +32,41 @@ def report(args: Namespace) -> None:
     if args.sub_module:
         if not (run := Run.get_most_recent(project, MODULE, args.sub_module)):
             log.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
-        _dispatch_level_submodule(args, args.sub_module, run)
+        _dispatch_level_submodule(args, args.sub_module, run=run, project=project)
     else:
         for sub_module in RADON_SUB_MODULES:
             # Get most recent Run for simple "current-state" reporting..
             if not (run := Run.get_most_recent(project, MODULE, sub_module)):
                 log.info(f"Sorry, we haven't performed a {sub_module} measurement yet for this project.")
                 continue
-            _dispatch_level_submodule(args, sub_module, run)
+            _dispatch_level_submodule(args, sub_module, run=run, project=project)
 
 
-def _dispatch_level_submodule(args: Namespace, sub_module: str, run: Run) -> None:
+def _dispatch_level_submodule(args: Namespace, sub_module: str, run: Run = None, project: Project = None) -> None:
     """Dispatch to the report method using the report level and sub_module requested."""
     current_module = sys.modules[__name__]
-    method_name = f"_{args.level}_{sub_module}"
-    if method := getattr(current_module, method_name):
-        method(args, run)
-    else:
-        log.warning(f"Sorry, unable to report yet on level='{args.level}' & sub_module='{args.sub_module}'.")
+    match args.level.lower():
+        case "s" | "summary":
+            if method := getattr(current_module, f"_summary_{sub_module}"):
+                method(args, run=run)
+        case "d" | "detail":
+            if method := getattr(current_module, f"_detail_{sub_module}"):
+                method(args, run=run)
+        case "f" | "full":
+            if method := getattr(current_module, f"_full_{sub_module}"):
+                method(args, run=run)
+        case "h" | "history":
+            if method := getattr(current_module, f"_history_{sub_module}"):
+                method(args, project=project)
+        case _:
+            log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
 
 
 ################################################################################################
 # Summary methods
 ################################################################################################
 def _summary_raw(args: Namespace, run: Run) -> None:
-    table = cli_table(title=f"RADON-RAW: {run.timestamp_display}")
+    table = cli_table(title=f"RADON-RAW @ {run.timestamp_display}")
     # fmt: off
     table.add_column("LOC"             , justify="right")
     table.add_column("LLOC"            , justify="right")
@@ -86,7 +97,7 @@ def _summary_hal(args: Namespace, run: Run) -> None:
         values = [getattr(row, attr) for row in rows]
         means[attr] = sum(values) / len(values) if values else None
 
-    table = cli_table(title=f"RADON-HAL: {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"RADON-HAL @ {run.timestamp_display}", show_footer=True)
     # fmt: off
     table.add_column("Directory"          , justify="left" , footer="Means")
     table.add_column("h1"                 , justify="right", footer=f"{means['h1']:.2f}")
@@ -123,7 +134,7 @@ def _summary_hal(args: Namespace, run: Run) -> None:
 
 def _summary_mi(args: Namespace, run: Run) -> None:
     row = query_mi(args, "summary", run)
-    table = cli_table(title=f"RADON-MI: {run.timestamp_display}", show_header=False)
+    table = cli_table(title=f"RADON-MI @ {run.timestamp_display}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
     table.add_row(
@@ -135,7 +146,7 @@ def _summary_mi(args: Namespace, run: Run) -> None:
 
 def _summary_cc(args: Namespace, run: Run) -> None:
     rows = query_cc(args, "summary", run)
-    table = cli_table(title=f"RADON-CC: {run.timestamp_display}")
+    table = cli_table(title=f"RADON-CC @ {run.timestamp_display}")
     table.add_column("Entity Type")
     table.add_column("Count", justify="center")
     for row in rows:
@@ -149,7 +160,7 @@ def _summary_cc(args: Namespace, run: Run) -> None:
 def _detail_raw(args: Namespace, run: Run) -> None:
     rows, totals = query_raw(args, "detail", run)
 
-    table = cli_table(title=f"RADON-RAW: {run.timestamp_display}")
+    table = cli_table(title=f"RADON-RAW @ {run.timestamp_display}")
     # fmt: off
     table.add_column("Directory"       , justify="left")
     table.add_column("LOC"             , justify="right", footer=f"{totals['loc'             ]:,}")
@@ -177,7 +188,7 @@ def _detail_raw(args: Namespace, run: Run) -> None:
 def _detail_hal(args: Namespace, run: Run) -> None:
     rows, means = query_hal(args, "detail", run)
 
-    table = cli_table(title=f"RADON-HAL: {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"RADON-HAL @ {run.timestamp_display}", show_footer=True)
     # fmt: off
     table.add_column("File"               , justify="left" , footer="Means")
     table.add_column("h1"                 , justify="right", footer=f"{means['h1']:.2f}")
@@ -215,7 +226,7 @@ def _detail_hal(args: Namespace, run: Run) -> None:
 def _detail_mi(args: Namespace, run: Run) -> None:
     rows, mean_mi_mean, mean_mi_mean_footer, show_footer = query_mi(args, "detail", run)
 
-    table = cli_table(title=f"RADON-MI: {run.timestamp_display}", show_footer=show_footer)
+    table = cli_table(title=f"RADON-MI @ {run.timestamp_display}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
     table.add_column("Maintainability Index", justify="right", footer=mean_mi_mean_footer)
     for row in rows:
@@ -228,7 +239,7 @@ def _detail_mi(args: Namespace, run: Run) -> None:
 
 def _detail_cc(args: Namespace, run: Run) -> None:
     rows = query_cc(args, "detail", run)
-    table = cli_table(title=f"RADON-CC: {run.timestamp_display}")
+    table = cli_table(title=f"RADON-CC @ {run.timestamp_display}")
     table.add_column("Directory", justify="left")
     table.add_column("Entity Type", justify="left")
     table.add_column("Count", justify="center")
@@ -252,7 +263,7 @@ def _full_raw(args: Namespace, run: Run) -> None:
         for attr in ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments"):
             totals[attr] += getattr(row, attr)
 
-    table = cli_table(title=f"RADON-RAW: {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"RADON-RAW @ {run.timestamp_display}", show_footer=True)
     # fmt: off
     table.add_column("Directory"       , justify="left")
     table.add_column("File"            , justify="left")
@@ -282,7 +293,7 @@ def _full_raw(args: Namespace, run: Run) -> None:
 def _full_hal(args: Namespace, run: Run) -> None:
     rows, means = query_hal(args, "full", run)
 
-    table = cli_table(title=f"RADON-HAL: {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"RADON-HAL @ {run.timestamp_display}", show_footer=True)
     # fmt: off
     table.add_column("File"               , justify="left" , footer="Means")
     table.add_column("Name"               , justify="left")
@@ -322,7 +333,7 @@ def _full_hal(args: Namespace, run: Run) -> None:
 def _full_mi(args: Namespace, run: Run) -> None:
     rows, avg_footer, show_footer = query_mi(args, "full", run)
 
-    table = cli_table(title=f"RADON-MI: {run.timestamp_display}", show_footer=show_footer)
+    table = cli_table(title=f"RADON-MI @ {run.timestamp_display}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
     table.add_column("Filename", justify="left", footer="(simple mean)")
     table.add_column("Maintainability Index", justify="right", footer=avg_footer)
@@ -339,7 +350,7 @@ def _full_mi(args: Namespace, run: Run) -> None:
 
 def _full_cc(args: Namespace, run: Run) -> None:
     rows = query_cc(args, "full", run)
-    table = cli_table(title=f"RADON-CC: {run.timestamp_display}")
+    table = cli_table(title=f"RADON-CC @ {run.timestamp_display}")
     table.add_column("Directory", justify="left")
     table.add_column("File", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -352,3 +363,40 @@ def _full_cc(args: Namespace, run: Run) -> None:
             str(row.count),
         )
     cli_console.print(table)
+
+
+################################################################################################
+# History methods
+################################################################################################
+def _history_raw(args: Namespace, project: Project) -> None: ...
+
+
+def _history_mi(args: Namespace, project: Project) -> None:
+    timestamps, transposed, roc = query_mi(args, "history", project=project)
+    timestamps_formatted = format_timestamp_headers(timestamps)
+    table = cli_table(title="RADON-MI Results Over Time")
+    table.add_column("Metric")
+    for timestamp in sorted(timestamps):
+        table.add_column(timestamps_formatted[timestamp], justify="right")
+    table.add_column("Delta", justify="right")
+
+    for metric, dt_rows in transposed.items():
+        row = ["Maintainability Index"]
+        for timestamp in sorted(timestamps):
+            row.append(f"{dt_rows[timestamp]:.2f}")
+
+        if roc > 0.01:
+            row.append(f"[green][bold]{roc:+.2f}%[/bold][/green]")
+        elif roc < -0.01:
+            row.append(f"[red][bold]{roc:+.2f}%[/bold][/red]")
+        else:
+            row.append(f"{roc:+.2f}%")
+
+        table.add_row(*row)
+    cli_console.print(table)
+
+
+def _history_hal(args: Namespace, project: Project) -> None: ...
+
+
+def _history_cc(args: Namespace, project: Project) -> None: ...

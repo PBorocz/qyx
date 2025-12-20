@@ -7,7 +7,8 @@ from typing import Any
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
 from mq.modules.base import BaseModel, BaseModuleModel, Project, Run
-from mq.modules.ruff import MODULE
+from mq.modules.radon import MODULE
+from mq.utils import rate_of_change_percentage
 
 
 class RadonRaw(BaseModuleModel):
@@ -255,10 +256,10 @@ def query_hal(args: Namespace, level: str = "summary", run: Run = None, project:
 
 def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
     match level.lower():
-        case "summary":
+        case "s" | "summary":
             return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
 
-        case "detail":
+        case "d" | "detail":
             rows = (
                 RadonMi.select(RadonMi.dir, fn.AVG(RadonMi.mi).alias("mi_mean"))
                 .where(RadonMi.run == run.id)
@@ -277,7 +278,7 @@ def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: 
                 show_footer = False
             return rows, mean_mi_mean, mean_mi_mean_footer, show_footer
 
-        case "full":
+        case "f" | "full":
             rows = (
                 RadonMi.select().where(RadonMi.run == run.id).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
             )
@@ -292,13 +293,55 @@ def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: 
                 show_footer = False
             return rows, avg_footer, show_footer
 
+        case "h" | "history":
+            assert project
+            args_last = 2
+            runs = (
+                Run.select(Run.id)
+                .where(
+                    Run.project == project,
+                    Run.module == MODULE,
+                    Run.sub_module == "mi",
+                )
+                .order_by(Run.timestamp.desc())
+                .limit(args_last)
+            )
+            run_ids = [run.id for run in runs]
+
+            query = (
+                RadonMi.select(
+                    Run.timestamp.alias("timestamp"),
+                    fn.AVG(RadonMi.mi).alias("mi_mean"),
+                )
+                .where(
+                    RadonMi.run.in_(run_ids),
+                )
+                .join(Run)
+                .group_by(Run.timestamp)
+                .order_by(Run.timestamp.desc())
+                .objects()
+            )
+
+            ################################################################################################
+            # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+            ################################################################################################
+            timestamps = [result.timestamp for result in query]
+            transposed = defaultdict(lambda: defaultdict(dict))
+            for result in query:
+                transposed["mi"][result.timestamp] = result.mi_mean
+
+            # Calculate rate of change of last 2 entries..
+            roc = rate_of_change_percentage(transposed["mi"][timestamps[-2]], transposed["mi"][timestamps[-1]])
+
+            return timestamps, transposed, roc
+
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
 def query_cc(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
     match level.lower():
-        case "summary":
+        case "s" | "summary":
             return (
                 RadonCc.select(
                     RadonCc.entity_type.alias("entity_type"),
@@ -310,7 +353,7 @@ def query_cc(args: Namespace, level: str = "summary", run: Run = None, project: 
             )
             return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
 
-        case "detail":
+        case "d" | "detail":
             return (
                 RadonCc.select(
                     RadonCc.dir,
@@ -322,7 +365,7 @@ def query_cc(args: Namespace, level: str = "summary", run: Run = None, project: 
                 .order_by(RadonCc.dir, RadonCc.entity_type)
             )
 
-        case "full":
+        case "f" | "full":
             return (
                 RadonCc.select(
                     RadonCc.dir,

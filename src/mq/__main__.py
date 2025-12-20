@@ -142,7 +142,7 @@ def get_method(module_dir: str, py_filename: str, method: str) -> tuple[Callable
 
 
 def main():
-    install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
+    # install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
     args = get_args()  # Get/process all command-line arguments
     setup_logging(args.debug, False)  # Setup logging (now that we know what potential level to log to)
     setup_sqlite(args)  # Setup our data-store and respective tables.

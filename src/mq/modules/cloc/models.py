@@ -134,9 +134,7 @@ def _query_history(project: Project) -> tuple[list[str], defaultdict, defaultdic
             fn.SUM(Cloc.lines_blank).alias("total_blank"),
         )
         .join(Run)
-        .join(Project)
         .where(
-            Project.id == project.id,
             Run.id.in_(runs),
         )
         .group_by(Run.timestamp)

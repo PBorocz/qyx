@@ -27,6 +27,25 @@ def remove_common_prefixes(rows: list) -> list:
     return rows
 
 
+def rate_of_change_percentage(old_value, new_value):
+    """Calculate the rate of change percentage between two values.
+
+    Args:
+        old_value (float): The original value
+        new_value (float): The new value
+
+    Returns:
+        float: The rate of change as a percentage
+
+    Raises:
+        ZeroDivisionError: If old_value is zero
+    """
+    if old_value == 0:
+        raise ZeroDivisionError("Cannot calculate rate of change when old_value is zero")
+
+    return ((new_value - old_value) / old_value) * 100
+
+
 def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     """Format timestamp headers based on distribution across days/times..
 

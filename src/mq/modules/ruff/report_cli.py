@@ -39,7 +39,7 @@ def report(args: Namespace) -> None:
 
 def _report_summary(args: Namespace, run: Run) -> None:
     row = query(args, "summary", run)
-    table = cli_table(title=f"RUFF: {run.timestamp_display}", show_header=False)
+    table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
     table.add_row("Ruff Issues", str(row.count()))
@@ -49,7 +49,7 @@ def _report_summary(args: Namespace, run: Run) -> None:
 def _report_detail(args: Namespace, run: Run) -> None:
     summary = query(args, "summary", run)
     results = query(args, "detail", run)
-    table = cli_table(title=f"RUFF: {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_footer=True)
     table.add_column("Rule", footer="TOTAL")
     table.add_column("Count", justify="center", footer=f"{summary.count():,}")
     table.add_column("Message")
@@ -62,7 +62,7 @@ def _report_full(args: Namespace, run: Run) -> None:
     rows = query(args, "full", run)
     foobar = 1
     rows = remove_common_prefixes(rows)
-    table = cli_table(title=f"RUFF: {run.timestamp_display}")
+    table = cli_table(title=f"RUFF @ {run.timestamp_display}")
     table.add_column("Rule")
     table.add_column("File (line)")
     table.add_column("Message")
