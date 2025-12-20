@@ -58,11 +58,11 @@ def get_args():
     parse_report.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
     parse_report.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
     parse_report.add_argument("-s", "--sub_module", help="Optional sub-module (if applicable, e.g. cc for Radon).")
-    parse_report.add_argument("--last", type=int, help="Report on last <n> weeks of history.")
+    parse_report.add_argument("-o", "--options", help="Report option(s), eg. 'last:5,percentage' etc.")
     parse_report.add_argument(
         "-l",
         "--level",
-        help="Level to report on, e.g. summary (default), detail or full.",
+        help="Level to report on, e.g. s[ummary] (default), d[etail], f[ull] or h[istory].",
         default="summary",
     )
     # parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)

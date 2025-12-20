@@ -5,17 +5,11 @@ import sys
 from argparse import Namespace
 from collections import defaultdict
 
-from peewee import fn
-
 from mq.cli import cli_console, cli_table
-from mq.modules.models import Project, Run
+from mq.modules.base import Project, Run
 from mq.modules.radon import MODULE
 from mq.modules.radon.models import (
-    RadonCc,
     RadonHal,
-    RadonHalFunction,
-    RadonMi,
-    RadonRaw,
     query_cc,
     query_hal,
     query_mi,

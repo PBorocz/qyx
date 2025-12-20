@@ -9,7 +9,7 @@ from platformdirs import user_data_dir
 from rich.prompt import Confirm
 
 from mq.cli import cli_console
-from mq.modules.models import Project, Run
+from mq.modules.base import Project, Run
 from mq.modules import models_for_module, MODULE_MODELS
 
 log = logging.getLogger(__name__)

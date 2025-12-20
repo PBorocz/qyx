@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from mq.modules import MODULE_MODELS
-from mq.modules.models import Project, Run
+from mq.modules.base import Project, Run
 
 
 def setup_sqlite(args: Namespace) -> None:

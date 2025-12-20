@@ -64,3 +64,10 @@ for data in __MODULES_AND_MODELS.values():
 
 def models_for_module(module: str) -> list[Model]:
     return __MODULES_AND_MODELS[module]["models"]
+
+
+################################################################################################
+# Misc. utilities functions
+################################################################################################
+def format_int_or_percentage(value, as_percentage):
+    return f"{value:.0f}%" if as_percentage else f"{value:,}"

@@ -6,7 +6,7 @@ from typing import Any
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
-from mq.modules.models import BaseModel, BaseModuleModel, Project, Run
+from mq.modules.base import BaseModel, BaseModuleModel, Project, Run
 from mq.modules.ruff import MODULE
 
 

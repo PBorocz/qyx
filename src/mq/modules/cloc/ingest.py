@@ -10,7 +10,7 @@ from rich import print
 
 from mq.modules.cloc import MODULE
 from mq.modules.cloc.models import Cloc
-from mq.modules.models import Project, Run
+from mq.modules.base import Project, Run
 from mq.utils.git import get_git_commit_hash
 
 

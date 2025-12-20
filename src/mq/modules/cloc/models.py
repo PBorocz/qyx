@@ -1,10 +1,13 @@
 """..."""
 
+from argparse import Namespace
+from decimal import Decimal
 from collections import defaultdict
+from typing import Any
 
 from peewee import fn, IntegerField
 
-from mq.modules.models import BaseModuleModel, Project, Run
+from mq.modules.base import BaseModuleModel, Project, Run
 from mq.modules.cloc import MODULE
 
 
@@ -25,49 +28,93 @@ class Cloc(BaseModuleModel):
         indexes = ((("run", "dir", "filename"), True),)
 
 
-def query_summary(run: Run) -> Cloc:
-    return (
+def query(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+    match level.lower():
+        case "summary":
+            return _query_summary(run, percentages=args.percentages)
+        case "detail":
+            return _query_detail(run, percentages=args.percentages)
+        case "full":
+            return _query_full(run, percentages=args.percentages)
+        case "history":
+            return _query_history(project)
+
+
+def _query_summary(run: Run, percentages: bool = False) -> Any:
+    row = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
             fn.SUM(Cloc.lines_code).alias("lines_code"),
             fn.SUM(Cloc.lines_comment).alias("lines_comment"),
-            (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias("lines_total"),
+            (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias(
+                "lines_total",
+            ),
         )
         .where(Cloc.run == run.id)
         .get()
     )
+    if percentages:
+        # Convert to percentage of total:
+        row.lines_blank = (row.lines_blank / row.lines_total) * 100.0
+        row.lines_code = (row.lines_code / row.lines_total) * 100.0
+        row.lines_comment = (row.lines_comment / row.lines_total) * 100.0
+        row.lines_total = Decimal(100.0)
+    return row
 
 
-def query_detail(run: Run) -> list[Cloc]:
-    results = (
+def _query_detail(run: Run, percentages: bool = False) -> Any:
+    grand_total = _query_summary(run, percentages=False)
+    rows = (
         Cloc.select(
             Cloc.dir,
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
             fn.SUM(Cloc.lines_code).alias("lines_code"),
             fn.SUM(Cloc.lines_comment).alias("lines_comment"),
-            (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias("lines_total"),
+            (fn.SUM(Cloc.lines_blank) + fn.SUM(Cloc.lines_code) + fn.SUM(Cloc.lines_comment)).alias(
+                "lines_total",
+            ),
         )
         .where(Cloc.run == run.id)
         .group_by(Cloc.dir)
         .order_by(Cloc.dir)
     )
-    return list(results)
+    if percentages:
+        # Convert to percentage of total:
+        for row in rows:
+            row.lines_code = (row.lines_code / grand_total.lines_code) * 100.0
+            row.lines_blank = (row.lines_blank / grand_total.lines_blank) * 100.0
+            row.lines_comment = (row.lines_comment / grand_total.lines_comment) * 100.0
+            row.lines_total = (row.lines_total / grand_total.lines_total) * 100.0
+    return rows
 
 
-def query_full(run: Run) -> [list[Cloc], dict[str, int], int]:
-    results = Cloc.select().where(Cloc.run == run).order_by(Cloc.dir, Cloc.filename)
+def _query_full(run: Run, percentages: bool = False) -> [list[Cloc], dict[str, int], int]:
+    rows = Cloc.select().where(Cloc.run == run).order_by(Cloc.dir, Cloc.filename)
     column_totals = defaultdict(int)
-    for row in results:
+    for row in rows:
         column_totals["lines_blank"] += row.lines_blank
         column_totals["lines_comment"] += row.lines_comment
         column_totals["lines_code"] += row.lines_code
         row.lines_total = row.lines_blank + row.lines_comment + row.lines_code
-
     grand_total = sum(list(column_totals.values()))
-    return results, dict(column_totals), grand_total
+
+    if percentages:
+        for row in rows:
+            row.lines_code = (row.lines_code / column_totals["lines_code"]) * 100.0
+            row.lines_comment = (row.lines_comment / column_totals["lines_blank"]) * 100.0
+            row.lines_blank = (row.lines_blank / column_totals["lines_code"]) * 100.0
+            row.lines_total = (row.lines_total / grand_total) * 100.0
+
+        column_totals["lines_blank"] = (column_totals["lines_blank"] / grand_total) * 100.0
+        column_totals["lines_code"] = (column_totals["lines_code"] / grand_total) * 100.0
+        column_totals["lines_comment"] = (column_totals["lines_comment"] / grand_total) * 100.0
+        grand_total = 100.0
+    return rows, dict(column_totals), grand_total
 
 
-def query_history(project: Project, last: int = 99999) -> tuple[list[str], defaultdict, defaultdict]:
+def _query_history(project: Project) -> tuple[list[str], defaultdict, defaultdict]:
+    # FIXME: Add support for parsing args.options to pull out last:<d>
+    args_last = 2
     run_subquery = (
         Run.select(Run.id)
         .where(
@@ -75,7 +122,7 @@ def query_history(project: Project, last: int = 99999) -> tuple[list[str], defau
             Run.module == MODULE,
         )
         .order_by(Run.timestamp.desc())
-        .limit(last)
+        .limit(args_last)
     )
 
     query = (

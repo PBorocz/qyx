@@ -8,7 +8,7 @@ from pathlib import Path
 
 from rich import print
 
-from mq.modules.models import Project, Run
+from mq.modules.base import Project, Run
 from mq.modules.ruff import MODULE
 from mq.modules.ruff.models import Ruff
 from mq.utils.git import get_git_commit_hash

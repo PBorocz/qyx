@@ -133,21 +133,24 @@ shell = """
 
   uv run mq report --module cloc
   uv run mq report --module cloc --level summary
+  uv run mq report --module cloc --level summary --options "percentage"
   uv run mq report --module cloc --level detail
+  uv run mq report --module cloc --level detail --options "percentage"
   uv run mq report --module cloc --level full
-  uv run mq report --module cloc --last 10
+  uv run mq report --module cloc --level full --options "percentage"
+  uv run mq report --module cloc --level history
 
   uv run mq report --module ruff
   uv run mq report --module ruff --level summary
   uv run mq report --module ruff --level detail
   uv run mq report --module ruff --level full
-  uv run mq report --module ruff --last 10
+  uv run mq report --module ruff --level history
 
   uv run mq report --module radon
-  # uv run mq report --module radon --last 10
   uv run mq report --module radon --level summary
   uv run mq report --module radon --level detail
   uv run mq report --module radon --level full
+  # uv run mq report --module radon --level history
 
   uv run mq report --module radon --sub_module cc
   uv run mq report --module radon --sub_module cc --level summary

@@ -8,7 +8,7 @@ import sys
 from argparse import Namespace
 from rich import print
 
-from mq.modules.models import Project, Run
+from mq.modules.base import Project, Run
 from mq.modules.radon import MODULE
 from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from mq.utils.git import get_git_commit_hash

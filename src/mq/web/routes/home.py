@@ -6,7 +6,7 @@ from typing import Any
 from fasthtml import ft
 
 from mq.modules import MODULES
-from mq.modules.models import Project, Run
+from mq.modules.base import Project, Run
 
 uvicorn_logger = logging.getLogger("uvicorn")
 

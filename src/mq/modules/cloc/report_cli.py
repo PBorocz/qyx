@@ -4,9 +4,10 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_table, cli_console
-from mq.modules.models import Project, Run
+from mq.modules import format_int_or_percentage as fmt
+from mq.modules.base import Project, Run
 from mq.modules.cloc import MODULE
-from mq.modules.cloc.models import query_detail, query_full, query_history, query_summary
+from mq.modules.cloc.models import query
 from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -24,78 +25,81 @@ def report(args: Namespace) -> None:
         log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
         return None
 
-    if args.last:
-        _history(args, project)
-    else:
-        match args.level.lower():
-            case "summary":
-                _summary(args, run)
-            case "detail":
-                _detail(args, run)
-            case "full":
-                _full(args, run)
-            case _:
-                log.warning(f"Sorry, invalid report level provided {args.level}")
+    # Extract any/all module specific reporting options
+    args.percentages = True if args.options and "percentage" in args.options.lower() else False
+
+    match args.level.lower():
+        case "s" | "summary":
+            _summary(args, run)
+        case "d" | "detail":
+            _detail(args, run)
+        case "f" | "full":
+            _full(args, run)
+        case "h" | "history":
+            _history(args, run)
+        case _:
+            log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
 
 
 def _summary(args: Namespace, run: Run) -> None:
-    results = query_summary(run)
+    result = query(args, "summary", run)
     table = cli_table(title=f"CLOC: {run.timestamp_display}")
-    table.add_column("Code", justify="right")
-    table.add_column("Comment", justify="right")
-    table.add_column("Blank", justify="right")
-    table.add_column("TOTAL", justify="right")
+    table.add_column("Code", justify="center")
+    table.add_column("Comment", justify="center")
+    table.add_column("Blank", justify="center")
+    table.add_column("TOTAL", justify="center")
     table.add_row(
-        f"{results.lines_code}",
-        f"{results.lines_comment}",
-        f"{results.lines_blank}",
-        f"{results.lines_total}",
+        fmt(result.lines_code, args.percentages),
+        fmt(result.lines_comment, args.percentages),
+        fmt(result.lines_blank, args.percentages),
+        fmt(result.lines_total, args.percentages),
     )
     cli_console.print(table)
 
 
-def _detail(args: Namespace, run: Run) -> None:
-    grand_total = query_summary(run)
-    detail_rows = query_detail(run)
+def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
+    grand_total = query(args, "summary", run)
+    detail_rows = query(args, "detail", run)
     table = cli_table(title=f"CLOC: {run.timestamp_display}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=f"{grand_total.lines_code}")
-    table.add_column("Comment", justify="right", footer=f"{grand_total.lines_comment}")
-    table.add_column("Blank", justify="right", footer=f"{grand_total.lines_blank}")
-    table.add_column("TOTAL", justify="right", footer=f"{grand_total.lines_total}")
+    table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.percentages))
+    table.add_column("Comment", justify="right", footer=fmt(grand_total.lines_comment, args.percentages))
+    table.add_column("Blank", justify="right", footer=fmt(grand_total.lines_blank, args.percentages))
+    table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, args.percentages))
+
     for result in detail_rows:
         table.add_row(
-            f"{result.dir}",
-            f"{result.lines_code}",
-            f"{result.lines_comment}",
-            f"{result.lines_blank}",
-            f"{result.lines_total}",
+            result.dir,
+            fmt(result.lines_code, args.percentages),
+            fmt(result.lines_comment, args.percentages),
+            fmt(result.lines_blank, args.percentages),
+            fmt(result.lines_total, args.percentages),
         )
     cli_console.print(table)
 
 
 def _full(args: Namespace, run: Run) -> None:
-    rows, column_totals, grand_total = query_full(run)
+    rows, column_totals, grand_total = query(args, "full", run)
 
     table = cli_table(title=f"CLOC: {run.timestamp_display}", show_footer=True)
     table.add_column("File", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=str(column_totals["lines_code"]))
-    table.add_column("Comment", justify="right", footer=str(column_totals["lines_comment"]))
-    table.add_column("Blank", justify="right", footer=str(column_totals["lines_blank"]))
-    table.add_column("TOTAL", justify="right", footer=str(grand_total))
+    table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], args.percentages))
+    table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], args.percentages))
+    table.add_column("Blank", justify="right", footer=fmt(column_totals["lines_blank"], args.percentages))
+    table.add_column("TOTAL", justify="right", footer=fmt(grand_total, args.percentages))
     for row in rows:
         table.add_row(
             f"{row.dir}/{row.filename}",
-            str(row.lines_code),
-            str(row.lines_comment),
-            str(row.lines_blank),
-            str(row.lines_total),
+            fmt(row.lines_code, args.percentages),
+            fmt(row.lines_comment, args.percentages),
+            fmt(row.lines_blank, args.percentages),
+            fmt(row.lines_total, args.percentages),
         )
     cli_console.print(table)
 
 
 def _history(args: Namespace, project: Project) -> None:
-    timestamps, transposed, grand_totals = query_history(project)
+    timestamps, transposed, grand_totals = query(args, "history", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="CLOC Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")
