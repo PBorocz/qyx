@@ -29,11 +29,11 @@ def report(args: Namespace) -> None:
     args.percentages = True if args.options and "percentage" in args.options.lower() else False
 
     match args.level.lower():
-        case "s" | "summary":
+        case "0":
             _summary(args, run)
-        case "d" | "detail":
+        case "1" | "detail":
             _detail(args, run)
-        case "f" | "full":
+        case "2" | "full":
             _full(args, run)
         case "h" | "history":
             _history(args, project)

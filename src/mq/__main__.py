@@ -62,8 +62,8 @@ def get_args():
     parse_report.add_argument(
         "-l",
         "--level",
-        help="Level to report on, e.g. s[ummary] (default), d[etail], f[ull] or h[istory].",
-        default="summary",
+        help="Level to report on, e.g. 0 (summary & default), 1 (detail), 2 (full) or h (history).",
+        default="0",
     )
     # parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)
 

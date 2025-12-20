@@ -46,16 +46,16 @@ def _dispatch_level_submodule(args: Namespace, sub_module: str, run: Run = None,
     """Dispatch to the report method using the report level and sub_module requested."""
     current_module = sys.modules[__name__]
     match args.level.lower():
-        case "s" | "summary":
+        case "0":
             if method := getattr(current_module, f"_summary_{sub_module}"):
                 method(args, run=run)
-        case "d" | "detail":
+        case "1":
             if method := getattr(current_module, f"_detail_{sub_module}"):
                 method(args, run=run)
-        case "f" | "full":
+        case "2":
             if method := getattr(current_module, f"_full_{sub_module}"):
                 method(args, run=run)
-        case "h" | "history":
+        case "h":
             if method := getattr(current_module, f"_history_{sub_module}"):
                 method(args, project=project)
         case _:

@@ -25,13 +25,13 @@ def report(args: Namespace) -> None:
         return None
 
     match args.level.lower():
-        case "s" | "summary":
+        case "0":
             _report_summary(args, run)
-        case "d" | "detail":
+        case "1":
             _report_detail(args, run)
-        case "f" | "full":
+        case "2":
             _report_full(args, run)
-        case "h" | "history":
+        case "h":
             _report_history(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
