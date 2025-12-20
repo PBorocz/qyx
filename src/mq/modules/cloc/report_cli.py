@@ -36,7 +36,7 @@ def report(args: Namespace) -> None:
         case "f" | "full":
             _full(args, run)
         case "h" | "history":
-            _history(args, run)
+            _history(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
 

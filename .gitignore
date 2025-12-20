@@ -11,13 +11,12 @@
 .env_prod
 *.org
 *.json
+*.out
+*.toml.backup
 requirements.txt
-pylint.out
 zArchive/
 data/
 app/static/images/__support
-*.out
-*.toml.backup
 
 # These are from the "production" environment.
 gunicorn.pid

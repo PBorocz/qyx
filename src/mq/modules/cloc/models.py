@@ -113,12 +113,13 @@ def _query_full(run: Run, percentages: bool = False) -> [list[Cloc], dict[str, i
 
 
 def _query_history(project: Project) -> tuple[list[str], defaultdict, defaultdict]:
-    # FIXME: Add support for parsing args.options to pull out last:<d>
+    # TODO: Add support for parsing args.options to pull out last:<d>
+    # TODO: Add support for percentages here..
     args_last = 2
-    run_subquery = (
-        Run.select(Run.id)
+    runs = (
+        Run.select()
         .where(
-            Run.project == project.id,
+            Run.project == project,
             Run.module == MODULE,
         )
         .order_by(Run.timestamp.desc())
@@ -136,7 +137,7 @@ def _query_history(project: Project) -> tuple[list[str], defaultdict, defaultdic
         .join(Project)
         .where(
             Project.id == project.id,
-            Run.id.in_(run_subquery),
+            Run.id.in_(runs),
         )
         .group_by(Run.timestamp)
         .order_by(Run.timestamp)

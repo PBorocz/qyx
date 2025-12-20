@@ -115,29 +115,19 @@ help = "Report on most recent ruff run"
 #-------------------------------------------------------------------------------
 # test
 #-------------------------------------------------------------------------------
-[tool.poe.tasks.test_suite]
+[tool.poe.tasks.test_suite_reports]
 shell = """
-  uv run mq clear --no_confirm
-
-  uv run mq ingest --module cloc
-  uv run mq ingest --module ruff
-  uv run mq ingest --module radon --sub_module cc
-  uv run mq ingest --module radon --sub_module hal
-  uv run mq ingest --module radon --sub_module mi
-  uv run mq ingest --module radon --sub_module raw
-  uv run mq ingest --module radon
-  uv run mq ingest
-
+  set -e
   uv run mq
   uv run mq status
 
   uv run mq report --module cloc
   uv run mq report --module cloc --level summary
-  uv run mq report --module cloc --level summary --options "percentage"
+  uv run mq report --module cloc --level summary --options percentage
   uv run mq report --module cloc --level detail
-  uv run mq report --module cloc --level detail --options "percentage"
+  uv run mq report --module cloc --level detail --options percentage
   uv run mq report --module cloc --level full
-  uv run mq report --module cloc --level full --options "percentage"
+  uv run mq report --module cloc --level full --options percentage
   uv run mq report --module cloc --level history
 
   uv run mq report --module ruff
@@ -150,32 +140,30 @@ shell = """
   uv run mq report --module radon --level summary
   uv run mq report --module radon --level detail
   uv run mq report --module radon --level full
-  # uv run mq report --module radon --level history
+  #" uv run mq report --module radon --level history
 
   uv run mq report --module radon --sub_module cc
   uv run mq report --module radon --sub_module cc --level summary
   uv run mq report --module radon --sub_module cc --level detail
   uv run mq report --module radon --sub_module cc --level full
-  uv run mq report --module radon --sub_module cc --last 10
+  # uv run mq report --module radon --sub_module cc --level history
 
   uv run mq report --module radon --sub_module hal
   uv run mq report --module radon --sub_module hal --level summary
   uv run mq report --module radon --sub_module hal --level detail
   uv run mq report --module radon --sub_module hal --level full
-  # uv run mq report --module radon --sub_module hal --last 10
+  #" uv run mq report --module radon --sub_module hal --level history
 
   uv run mq report --module radon --sub_module mi
   uv run mq report --module radon --sub_module mi --level summary
   uv run mq report --module radon --sub_module mi --level detail
   uv run mq report --module radon --sub_module mi --level full
-  # uv run mq report --module radon --sub_module mi --last 10
+  #" uv run mq report --module radon --sub_module mi --level history
 
   uv run mq report --module radon --sub_module raw
   uv run mq report --module radon --sub_module raw --level summary
   uv run mq report --module radon --sub_module raw --level detail
   uv run mq report --module radon --sub_module raw --level full
-  # uv run mq report --module radon --sub_module raw --last 10
-
-  uv run mq trim --no_confirm
-  """
+  #" uv run mq report --module radon --sub_module raw --level history
+"""
 help = "Run smoke test suite"

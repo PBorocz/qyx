@@ -28,23 +28,17 @@ def report(args: Namespace) -> None:
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 
-    if args.last:
-        ...
-        # TODO: Implement me!!
-        raise RuntimeError("TODO!")
-        # _report_history(args, project)
+    if args.sub_module:
+        if not (run := Run.get_most_recent(project, MODULE, args.sub_module)):
+            log.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
+        _dispatch_level_submodule(args, args.sub_module, run)
     else:
-        if args.sub_module:
-            if not (run := Run.get_most_recent(project, MODULE, args.sub_module)):
-                log.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
-            _dispatch_level_submodule(args, args.sub_module, run)
-        else:
-            for sub_module in RADON_SUB_MODULES:
-                # Get most recent Run for simple "current-state" reporting..
-                if not (run := Run.get_most_recent(project, MODULE, sub_module)):
-                    log.info(f"Sorry, we haven't performed a {sub_module} measurement yet for this project.")
-                    continue
-                _dispatch_level_submodule(args, sub_module, run)
+        for sub_module in RADON_SUB_MODULES:
+            # Get most recent Run for simple "current-state" reporting..
+            if not (run := Run.get_most_recent(project, MODULE, sub_module)):
+                log.info(f"Sorry, we haven't performed a {sub_module} measurement yet for this project.")
+                continue
+            _dispatch_level_submodule(args, sub_module, run)
 
 
 def _dispatch_level_submodule(args: Namespace, sub_module: str, run: Run) -> None:

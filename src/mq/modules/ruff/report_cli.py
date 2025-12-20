@@ -72,7 +72,7 @@ def _report_full(args: Namespace, run: Run) -> None:
 
 
 def _report_history(args: Namespace, project: Project) -> None:
-    """Report on the args.last number of runs "across"."""
+    """Report on the history of runs "across"."""
     rows, messages, transposed, grand_totals = query(args, "history", project=project)
     ################################################################################################
     # Render the table
