@@ -26,6 +26,7 @@ verbosity = -1
 help = "Deploy to github."
 interpreter = "fish"
 shell = """
+  uvx cleanpy --verbose
   jj bookmark set --revision  @- trunk
   jj git push     --revisions @-
   """
@@ -33,26 +34,6 @@ shell = """
 [tool.poe.tasks.mq]
 cmd = "uv run mq"
 help = "Run the mq command."
-
-[tool.poe.tasks.flush]
-cmd = "uv run mq flush"
-help = "Flush the database entirely(!)."
-
-[tool.poe.tasks.purge]
-cmd = "uv run mq purge"
-help = "Purge old runs from the database."
-
-[tool.poe.tasks.sql]
-cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""
-help = "Run the litecli command against our database"
-
-# [tool.poe.tasks.sql]
-# envfile = ".env"
-# shell = """
-#   echo ${DB_RDB}
-#   litecli ${DB_RDB}
-# """
-# help = "Run litecli against our database."
 
 #-------------------------------------------------------------------------------
 # all
@@ -63,7 +44,7 @@ help = "Run/ingest all modules."
 
 [tool.poe.tasks.report]
 cmd = """uv run mq report"""
-help = "Report all modules."
+help = "Display summary report across all modules."
 
 #-------------------------------------------------------------------------------
 # Radon
@@ -77,10 +58,6 @@ shell = """
   """
 help = "Ingest radon checks"
 
-[tool.poe.tasks.radon-report]
-cmd = "uv run mq report --module radon"
-help = "Report on most recent radon run"
-
 #-------------------------------------------------------------------------------
 # Cloc
 #-------------------------------------------------------------------------------
@@ -89,15 +66,6 @@ shell = """
   cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --module clocw
   """
 help = "Run cloc and report on results."
-
-[tool.poe.tasks.cloc-report]
-shell = """
-  uv run mq report --module cloc --level summary
-  uv run mq report --module cloc --level detail
-  uv run mq report --module cloc --level full
-  uv run mq report --module cloc --last  999
-  """
-help = "Report on most recent cloc run and history."
 
 #-------------------------------------------------------------------------------
 # Ruff (Check)
@@ -108,9 +76,17 @@ shell = """
   """
 help = "Run current ruff check and report on results."
 
-[tool.poe.tasks.ruff-report]
-cmd = "uv run mq report --module ruff"
-help = "Report on most recent ruff run"
+[tool.poe.tasks.clear]
+cmd = "uv run mq clear"
+help = "Clear the database entirely(!)."
+
+[tool.poe.tasks.trim]
+cmd = "uv run mq trim"
+help = "Delete -old- runs from the database, leaving the most recent."
+
+[tool.poe.tasks.sql]
+cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""
+help = "Run the litecli command against our database"
 
 #-------------------------------------------------------------------------------
 # test
@@ -140,7 +116,7 @@ shell = """
   uv run mq report --module radon --level summary
   uv run mq report --module radon --level detail
   uv run mq report --module radon --level full
-  #" uv run mq report --module radon --level history
+  # uv run mq report --module radon --level history
 
   uv run mq report --module radon --sub_module cc
   uv run mq report --module radon --sub_module cc --level summary
@@ -152,18 +128,18 @@ shell = """
   uv run mq report --module radon --sub_module hal --level summary
   uv run mq report --module radon --sub_module hal --level detail
   uv run mq report --module radon --sub_module hal --level full
-  #" uv run mq report --module radon --sub_module hal --level history
+  # uv run mq report --module radon --sub_module hal --level history
 
   uv run mq report --module radon --sub_module mi
   uv run mq report --module radon --sub_module mi --level summary
   uv run mq report --module radon --sub_module mi --level detail
   uv run mq report --module radon --sub_module mi --level full
-  #" uv run mq report --module radon --sub_module mi --level history
+  uv run mq report --module radon --sub_module mi --level history
 
   uv run mq report --module radon --sub_module raw
   uv run mq report --module radon --sub_module raw --level summary
   uv run mq report --module radon --sub_module raw --level detail
   uv run mq report --module radon --sub_module raw --level full
-  #" uv run mq report --module radon --sub_module raw --level history
+  # uv run mq report --module radon --sub_module raw --level history
 """
 help = "Run smoke test suite"
