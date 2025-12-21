@@ -31,9 +31,9 @@ def report(args: Namespace) -> None:
     match args.level.lower():
         case "0":
             _summary(args, run)
-        case "1" | "detail":
+        case "1":
             _detail(args, run)
-        case "2" | "full":
+        case "2":
             _full(args, run)
         case "h" | "history":
             _history(args, project)
@@ -42,7 +42,7 @@ def report(args: Namespace) -> None:
 
 
 def _summary(args: Namespace, run: Run) -> None:
-    result = query(args, "summary", run)
+    result = query(args, "0", run)
     table = cli_table(title=f"CLOC @ {run.timestamp_display}")
     table.add_column("Code", justify="center")
     table.add_column("Comment", justify="center")
@@ -58,8 +58,8 @@ def _summary(args: Namespace, run: Run) -> None:
 
 
 def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
-    grand_total = query(args, "summary", run)
-    detail_rows = query(args, "detail", run)
+    grand_total = query(args, "0", run)
+    detail_rows = query(args, "1", run)
     table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
     table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.percentages))
@@ -79,7 +79,7 @@ def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
 
 
 def _full(args: Namespace, run: Run) -> None:
-    rows, column_totals, grand_total = query(args, "full", run)
+    rows, column_totals, grand_total = query(args, "2", run)
 
     table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
     table.add_column("File", footer="TOTAL")
@@ -99,7 +99,7 @@ def _full(args: Namespace, run: Run) -> None:
 
 
 def _history(args: Namespace, project: Project) -> None:
-    timestamps, transposed, grand_totals = query(args, "history", project=project)
+    timestamps, transposed, grand_totals, roc = query(args, "history", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="CLOC Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")
@@ -110,11 +110,13 @@ def _history(args: Namespace, project: Project) -> None:
             footer=str(grand_totals[timestamp]),
             footer_style="bold cyan",
         )
+    table.add_column("Delta", justify="left", footer=f"{roc['grand_total']:.2f}%")
 
     for metric, dt_rows in transposed.items():
         row = [metric]
         for timestamp in sorted(timestamps):
             row.append(str(dt_rows[timestamp]))
+        row.append(f"{roc[metric]:.2f}%")
         table.add_row(*row)
 
     cli_console.print(table)

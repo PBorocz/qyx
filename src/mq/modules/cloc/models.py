@@ -9,6 +9,7 @@ from peewee import fn, IntegerField
 
 from mq.modules.base import BaseModuleModel, Project, Run
 from mq.modules.cloc import MODULE
+from mq.utils import rate_of_change_percentage
 
 
 class Cloc(BaseModuleModel):
@@ -30,13 +31,13 @@ class Cloc(BaseModuleModel):
 
 def query(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
     match level.lower():
-        case "summary":
+        case "0":
             return _query_summary(run, percentages=args.percentages)
-        case "detail":
+        case "1":
             return _query_detail(run, percentages=args.percentages)
-        case "full":
+        case "2":
             return _query_full(run, percentages=args.percentages)
-        case "history":
+        case "h" | "history":
             return _query_history(project)
 
 
@@ -156,4 +157,15 @@ def _query_history(project: Project) -> tuple[list[str], defaultdict, defaultdic
         # Calculate grand totals for each timestamp as we go
         grand_totals[result.timestamp] += result.total_code + result.total_comment + result.total_blank
 
-    return timestamps, transposed, grand_totals
+    roc = dict()
+    for attr in ("Code", "Comment", "Blank"):
+        roc[attr] = rate_of_change_percentage(
+            transposed[attr][timestamps[-2]],
+            transposed[attr][timestamps[-1]],
+        )
+    roc["grand_total"] = rate_of_change_percentage(
+        grand_totals[timestamps[-2]],
+        grand_totals[timestamps[-1]],
+    )
+
+    return timestamps, transposed, grand_totals, roc

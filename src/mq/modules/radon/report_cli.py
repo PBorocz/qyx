@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from mq.cli import cli_console, cli_table
 from mq.modules.base import Project, Run
-from mq.modules.radon import MODULE
+from mq.modules.radon import COLORS, MODULE
 from mq.modules.radon.models import (
     RadonHal,
     query_cc,
@@ -76,7 +76,7 @@ def _summary_raw(args: Namespace, run: Run) -> None:
     table.add_column("Blank"           , justify="right")
     table.add_column("Single Comments" , justify="right")
     # fmt: on
-    for row in query_raw(args, "summary", run):
+    for row in query_raw(args, "0", run):
         table.add_row(
             f"{row.loc:,}",
             f"{row.lloc:,}",
@@ -90,7 +90,7 @@ def _summary_raw(args: Namespace, run: Run) -> None:
 
 
 def _summary_hal(args: Namespace, run: Run) -> None:
-    rows = query_hal(args, "summary", run)
+    rows = query_hal(args, "0", run)
     # Calculate mean metric values
     means = {}
     for attr in RadonHal.attributes():
@@ -133,7 +133,7 @@ def _summary_hal(args: Namespace, run: Run) -> None:
 
 
 def _summary_mi(args: Namespace, run: Run) -> None:
-    row = query_mi(args, "summary", run)
+    row = query_mi(args, "0", run)
     table = cli_table(title=f"RADON-MI @ {run.timestamp_display}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -145,7 +145,7 @@ def _summary_mi(args: Namespace, run: Run) -> None:
 
 
 def _summary_cc(args: Namespace, run: Run) -> None:
-    rows = query_cc(args, "summary", run)
+    rows = query_cc(args, "0", run)
     table = cli_table(title=f"RADON-CC @ {run.timestamp_display}")
     table.add_column("Entity Type")
     table.add_column("Count", justify="center")
@@ -158,7 +158,7 @@ def _summary_cc(args: Namespace, run: Run) -> None:
 # Detail methods
 ################################################################################################
 def _detail_raw(args: Namespace, run: Run) -> None:
-    rows, totals = query_raw(args, "detail", run)
+    rows, totals = query_raw(args, "1", run)
 
     table = cli_table(title=f"RADON-RAW @ {run.timestamp_display}")
     # fmt: off
@@ -186,7 +186,7 @@ def _detail_raw(args: Namespace, run: Run) -> None:
 
 
 def _detail_hal(args: Namespace, run: Run) -> None:
-    rows, means = query_hal(args, "detail", run)
+    rows, means = query_hal(args, "1", run)
 
     table = cli_table(title=f"RADON-HAL @ {run.timestamp_display}", show_footer=True)
     # fmt: off
@@ -224,7 +224,7 @@ def _detail_hal(args: Namespace, run: Run) -> None:
 
 
 def _detail_mi(args: Namespace, run: Run) -> None:
-    rows, mean_mi_mean, mean_mi_mean_footer, show_footer = query_mi(args, "detail", run)
+    rows, mean_mi_mean, mean_mi_mean_footer, show_footer = query_mi(args, "1", run)
 
     table = cli_table(title=f"RADON-MI @ {run.timestamp_display}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
@@ -238,7 +238,7 @@ def _detail_mi(args: Namespace, run: Run) -> None:
 
 
 def _detail_cc(args: Namespace, run: Run) -> None:
-    rows = query_cc(args, "detail", run)
+    rows = query_cc(args, "1", run)
     table = cli_table(title=f"RADON-CC @ {run.timestamp_display}")
     table.add_column("Directory", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -253,10 +253,10 @@ def _detail_cc(args: Namespace, run: Run) -> None:
 
 
 ################################################################################################
-# "Full" methods
+# 2 methods
 ################################################################################################
 def _full_raw(args: Namespace, run: Run) -> None:
-    rows = query_raw(args, "full", run)
+    rows = query_raw(args, "2", run)
     # Calculate grand totals
     totals = defaultdict(int)
     for row in rows:
@@ -291,7 +291,7 @@ def _full_raw(args: Namespace, run: Run) -> None:
 
 
 def _full_hal(args: Namespace, run: Run) -> None:
-    rows, means = query_hal(args, "full", run)
+    rows, means = query_hal(args, "2", run)
 
     table = cli_table(title=f"RADON-HAL @ {run.timestamp_display}", show_footer=True)
     # fmt: off
@@ -331,7 +331,7 @@ def _full_hal(args: Namespace, run: Run) -> None:
 
 
 def _full_mi(args: Namespace, run: Run) -> None:
-    rows, avg_footer, show_footer = query_mi(args, "full", run)
+    rows, avg_footer, show_footer = query_mi(args, "2", run)
 
     table = cli_table(title=f"RADON-MI @ {run.timestamp_display}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
@@ -349,7 +349,7 @@ def _full_mi(args: Namespace, run: Run) -> None:
 
 
 def _full_cc(args: Namespace, run: Run) -> None:
-    rows = query_cc(args, "full", run)
+    rows = query_cc(args, "2", run)
     table = cli_table(title=f"RADON-CC @ {run.timestamp_display}")
     table.add_column("Directory", justify="left")
     table.add_column("File", justify="left")
@@ -368,7 +368,23 @@ def _full_cc(args: Namespace, run: Run) -> None:
 ################################################################################################
 # History methods
 ################################################################################################
-def _history_raw(args: Namespace, project: Project) -> None: ...
+def _history_raw(args: Namespace, project: Project) -> None:
+    timestamps, transposed, grand_totals, rocs, roc_gt = query_raw(args, "history", project=project)
+    timestamps_formatted = format_timestamp_headers(timestamps)
+    table = cli_table(title="RADON-RAW Results Over Time", show_footer=True)
+    table.add_column("Metric", justify="left", footer="-")
+    for timestamp in sorted(timestamps):
+        table.add_column(timestamps_formatted[timestamp], justify="right", footer=f"{grand_totals[timestamp]:,d}")
+    table.add_column("Delta", footer=f"{roc_gt:.2f}%")
+
+    for metric, dt_rows in transposed.items():
+        row = [metric]
+        for timestamp in sorted(timestamps):
+            row.append(f"{dt_rows[timestamp]:,d}")
+        row.append(f"{rocs[metric]:.2f}%")
+        table.add_row(*row)
+
+    cli_console.print(table)
 
 
 def _history_mi(args: Namespace, project: Project) -> None:
@@ -386,11 +402,13 @@ def _history_mi(args: Namespace, project: Project) -> None:
             row.append(f"{dt_rows[timestamp]:.2f}")
 
         if roc > 0.01:
-            row.append(f"[green][bold]{roc:+.2f}%[/bold][/green]")
+            color = COLORS["positive"]
         elif roc < -0.01:
-            row.append(f"[red][bold]{roc:+.2f}%[/bold][/red]")
+            color = COLORS["negative"]
         else:
-            row.append(f"{roc:+.2f}%")
+            color = COLORS["neutral"]
+
+        row.append(f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]")
 
         table.add_row(*row)
     cli_console.print(table)

@@ -81,10 +81,10 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     fmt_time = "%H:%M"
     fmt_date_time = fmt_date + " " + fmt_time
     if num_unique_dates > 1 and has_multiple_times_in_date:
-        fmt_ = fmt_date_time  # Case 1: Multiple dates AND multiple times within dates
+        fmt_ = fmt_date_time  # case "1": Multiple dates AND multiple times within dates
         log.debug("- case 1")
     elif num_unique_dates > 1:
-        fmt_ = fmt_date  # Case 2: Multiple dates but only 1 timestamp per date
+        fmt_ = fmt_date  # case "2": Multiple dates but only 1 timestamp per date
         log.debug("- case 2")
     elif has_multiple_times_in_date:
         fmt_ = fmt_time  # Case 3: Single date but multiple times

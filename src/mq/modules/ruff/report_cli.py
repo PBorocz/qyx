@@ -5,7 +5,7 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.modules.base import Project, Run
-from mq.modules.ruff import MODULE
+from mq.modules.ruff import COLORS, MODULE
 from mq.modules.ruff.models import query
 from mq.utils import format_timestamp_headers, remove_common_prefixes
 
@@ -38,28 +38,28 @@ def report(args: Namespace) -> None:
 
 
 def _report_summary(args: Namespace, run: Run) -> None:
-    row = query(args, "summary", run)
+    row = query(args, "0", run)
     table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
-    table.add_row("Ruff Issues", str(row.count()))
+    table.add_row("Ruff Issues", f"{row.count():,d}")
     cli_console.print(table)
 
 
 def _report_detail(args: Namespace, run: Run) -> None:
-    summary = query(args, "summary", run)
-    results = query(args, "detail", run)
+    summary = query(args, "0", run)
+    results = query(args, "1", run)
     table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_footer=True)
     table.add_column("Rule", footer="TOTAL")
     table.add_column("Count", justify="center", footer=f"{summary.count():,}")
     table.add_column("Message")
     for result in results:
-        table.add_row(result.rule_code, str(result.count), result.message)
+        table.add_row(result.rule_code, f"{result.count:,d}", result.message)
     cli_console.print(table)
 
 
 def _report_full(args: Namespace, run: Run) -> None:
-    rows = query(args, "full", run)
+    rows = query(args, "2", run)
     foobar = 1
     rows = remove_common_prefixes(rows)
     table = cli_table(title=f"RUFF @ {run.timestamp_display}")
@@ -71,29 +71,66 @@ def _report_full(args: Namespace, run: Run) -> None:
     cli_console.print(table)
 
 
+# History at the "0" level...
 def _report_history(args: Namespace, project: Project) -> None:
     """Report on the history of runs "across"."""
-    rows, messages, transposed, grand_totals = query(args, "history", project=project)
+    timestamps, rows, roc = query(args, "history", project=project)
+    timestamps_formatted = format_timestamp_headers(timestamps)
+
     ################################################################################################
     # Render the table
     ################################################################################################
-    table = cli_table(title="RUFF Results Over Time", show_footer=True)
-    table.add_column("Rule", justify="left", footer="TOTAL")
-    table.add_column("Message", justify="left", footer="")
-    timestamps = list({row.timestamp for row in rows})
-    timestamps_formatted = format_timestamp_headers(timestamps)
+    table = cli_table(title="RUFF Results Over Time")
+    table.add_column("-")
     for timestamp in sorted(timestamps):
         table.add_column(
             timestamps_formatted[timestamp],
             justify="right",
-            footer=str(grand_totals[timestamp]),
-            footer_style="bold cyan",
         )
+    table.add_column("Delta")
 
-    for rule_code, dt_rows in transposed.items():
-        row = [rule_code, messages[rule_code]]
-        for timestamp in sorted(timestamps):
-            row.append(str(dt_rows[timestamp]))
-        table.add_row(*row)
+    row = ["Ruff Issues"]
+    for timestamp in sorted(timestamps):
+        row.append(str(rows[timestamp]))
+
+    if roc > 0.01:
+        color = COLORS["positive"]
+    elif roc < -0.01:
+        color = COLORS["negative"]
+    else:
+        color = COLORS["neutral"]
+
+    row.append(f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]")
+
+    table.add_row(*row)
 
     cli_console.print(table)
+
+
+# History at the "1" level!
+# def _report_history(args: Namespace, project: Project) -> None:
+#     """Report on the history of runs "across"."""
+#     rows, messages, transposed, grand_totals = query(args, "history", project=project)
+#     ################################################################################################
+#     # Render the table
+#     ################################################################################################
+#     table = cli_table(title="RUFF Results Over Time", show_footer=True)
+#     table.add_column("Rule", justify="left", footer="TOTAL")
+#     table.add_column("Message", justify="left", footer="")
+#     timestamps = list({row.timestamp for row in rows})
+#     timestamps_formatted = format_timestamp_headers(timestamps)
+#     for timestamp in sorted(timestamps):
+#         table.add_column(
+#             timestamps_formatted[timestamp],
+#             justify="right",
+#             footer=str(grand_totals[timestamp]),
+#             footer_style="bold cyan",
+#         )
+
+#     for rule_code, dt_rows in transposed.items():
+#         row = [rule_code, messages[rule_code]]
+#         for timestamp in sorted(timestamps):
+#             row.append(str(dt_rows[timestamp]))
+#         table.add_row(*row)
+
+#     cli_console.print(table)

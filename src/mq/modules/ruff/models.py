@@ -1,12 +1,12 @@
 """..."""
 
 from argparse import Namespace
-from collections import defaultdict
 
 from peewee import fn, CharField, IntegerField
 
 from mq.modules.base import BaseModuleModel, Project, Run
 from mq.modules.ruff import MODULE
+from mq.utils import rate_of_change_percentage
 
 
 class Ruff(BaseModuleModel):
@@ -29,10 +29,10 @@ class Ruff(BaseModuleModel):
 
 def query(args: Namespace, level: str, run: Run = None, project: Project = None) -> Ruff:
     match level.lower():
-        case "summary":
+        case "0":
             return Ruff.select(fn.COUNT(Ruff.id).alias("count")).where(Ruff.run == run)
 
-        case "detail":
+        case "1":
             return (
                 Ruff.select(Ruff.rule_code, Ruff.message, fn.COUNT(Ruff.id).alias("count"))
                 .where(Ruff.run == run)
@@ -40,15 +40,18 @@ def query(args: Namespace, level: str, run: Run = None, project: Project = None)
                 .order_by(fn.COUNT(Ruff.id).desc())
             )
 
-        case "full":
+        case "2":
             return Ruff.select().where(Ruff.run == run).order_by(Ruff.filename, Ruff.rule_code)
 
-        case "history":
+        case "h" | "history":
             # FIXME: Add support for parsing args.options to pull out last:<d>
             args_last = 2
-            runs_for_project_module = (
-                Run.select(Run.id)
-                .where(Run.project == project.id, Run.module == MODULE)
+            runs = (
+                Run.select()
+                .where(
+                    Run.project == project.id,
+                    Run.module == MODULE,
+                )
                 .order_by(Run.timestamp.desc())
                 .limit(args_last)
             )
@@ -59,24 +62,26 @@ def query(args: Namespace, level: str, run: Run = None, project: Project = None)
             rows = (
                 Ruff.select(
                     Run.timestamp.alias("timestamp"),
-                    Ruff.rule_code.alias("rule_code"),
-                    Ruff.message.alias("message"),
+                    fn.COUNT(Ruff.id).alias("count"),
                 )
-                .where(Project.id == project.id, Run.id.in_(runs_for_project_module))
                 .join(Run)
-                .join(Project)
+                .where(
+                    Run.id.in_(runs),
+                )
+                .group_by(Run.timestamp)
                 .order_by(Run.timestamp)
                 .objects()
             )
-            messages = {row.rule_code: row.message for row in rows}
+            timestamps = [result.timestamp for result in rows]
 
             ################################################################################################
             # Transpose (to get timestamps *across* instead of down and calculate grand totals)
             ################################################################################################
-            transposed = defaultdict(lambda: defaultdict(int))
-            grand_totals = defaultdict(int)
-            for row in rows:
-                transposed[row.rule_code][row.timestamp] += 1
-                grand_totals[row.timestamp] += 1
+            transposed = {row.timestamp: row.count for row in rows}
 
-            return rows, messages, transposed, grand_totals
+            roc = rate_of_change_percentage(
+                transposed[timestamps[-2]],
+                transposed[timestamps[-1]],
+            )
+
+            return timestamps, transposed, roc

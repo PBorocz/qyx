@@ -141,9 +141,10 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 # Queries..
 ################################################################################################
-def query_raw(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+    raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     match level.lower():
-        case "summary":
+        case "0":
             return RadonRaw.select(
                 fn.SUM(RadonRaw.loc).alias("loc"),
                 fn.SUM(RadonRaw.lloc).alias("lloc"),
@@ -154,7 +155,7 @@ def query_raw(args: Namespace, level: str = "summary", run: Run = None, project:
                 fn.SUM(RadonRaw.single_comments).alias("single_comments"),
             ).where(RadonRaw.run == run.id)
 
-        case "detail":
+        case "1":
             rows = (
                 RadonRaw.select(
                     RadonRaw.dir,
@@ -174,20 +175,83 @@ def query_raw(args: Namespace, level: str = "summary", run: Run = None, project:
             # Calculate totals
             totals = defaultdict(int)
             for row in rows:
-                for attr in ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments"):
+                for attr in raw_attrs:
                     totals[attr] += getattr(row, attr)
             return rows, totals
 
-        case "full":
+        case "2":
             return RadonRaw.select().where(RadonRaw.run == run.id).order_by(RadonRaw.dir, RadonRaw.filename)
+
+        case "h" | "history":
+            args_last = 2
+            # FIXME: Refactor to make this a "common" query given the number of places we use it:
+            runs = (
+                Run.select()
+                .where(
+                    Run.project == project,
+                    Run.module == MODULE,
+                    Run.sub_module == "raw",
+                )
+                .order_by(Run.timestamp.desc())
+                .limit(args_last)
+            )
+
+            query = (
+                RadonRaw.select(
+                    Run.timestamp.alias("timestamp"),
+                    fn.SUM(RadonRaw.loc).alias("loc"),
+                    fn.SUM(RadonRaw.lloc).alias("lloc"),
+                    fn.SUM(RadonRaw.sloc).alias("sloc"),
+                    fn.SUM(RadonRaw.comments).alias("comments"),
+                    fn.SUM(RadonRaw.multi).alias("multi"),
+                    fn.SUM(RadonRaw.blank).alias("blank"),
+                    fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+                )
+                .join(Run)
+                .where(
+                    Run.id.in_(runs),
+                )
+                .group_by(Run.timestamp)
+                .order_by(Run.timestamp)
+                .objects()
+            )
+
+            ################################################################################################
+            # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+            ################################################################################################
+            timestamps = [result.timestamp for result in query]
+            transposed = defaultdict(lambda: defaultdict(dict))
+            grand_totals = defaultdict(int)
+            for result in query:
+                total = 0
+                for attr in raw_attrs:
+                    lines = int(getattr(result, attr))
+                    transposed[attr][result.timestamp] = lines
+                    total += lines  # Calculate grand totals for each timestamp as we go
+                grand_totals[result.timestamp] += total
+
+            # Calculate rate of change of last 2 entries..
+            rocs = dict()
+            for attr in raw_attrs:
+                rocs[attr] = rate_of_change_percentage(
+                    transposed[attr][timestamps[-2]],
+                    transposed[attr][timestamps[-1]],
+                )
+
+            roc_gt = rate_of_change_percentage(
+                grand_totals[timestamps[-2]],
+                grand_totals[timestamps[-1]],
+            )
+
+            return timestamps, transposed, grand_totals, rocs, roc_gt
 
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def query_hal(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+def query_hal(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
     match level.lower():
-        case "summary":
+        case "0":
             return (
                 RadonHal.select(
                     RadonHal.dir,
@@ -209,7 +273,7 @@ def query_hal(args: Namespace, level: str = "summary", run: Run = None, project:
                 .order_by(RadonHal.dir)
             )
 
-        case "detail":
+        case "1":
             rows = RadonHal.select().where(RadonHal.run == run.id).order_by(RadonHal.dir, RadonHal.filename)
 
             # Calculate means
@@ -219,7 +283,7 @@ def query_hal(args: Namespace, level: str = "summary", run: Run = None, project:
                 means[attr] = sum(values) / len(values) if values else None
             return rows, means
 
-        case "full":
+        case "2":
             rows = (
                 RadonHalFunction.select(
                     RadonHal.dir,
@@ -254,12 +318,12 @@ def query_hal(args: Namespace, level: str = "summary", run: Run = None, project:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+def query_mi(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
     match level.lower():
-        case "s" | "summary":
+        case "0":
             return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
 
-        case "d" | "detail":
+        case "1":
             rows = (
                 RadonMi.select(RadonMi.dir, fn.AVG(RadonMi.mi).alias("mi_mean"))
                 .where(RadonMi.run == run.id)
@@ -278,7 +342,7 @@ def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: 
                 show_footer = False
             return rows, mean_mi_mean, mean_mi_mean_footer, show_footer
 
-        case "f" | "full":
+        case "2":
             rows = (
                 RadonMi.select().where(RadonMi.run == run.id).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
             )
@@ -331,7 +395,7 @@ def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: 
                 transposed["mi"][result.timestamp] = result.mi_mean
 
             # Calculate rate of change of last 2 entries..
-            roc = rate_of_change_percentage(transposed["mi"][timestamps[-2]], transposed["mi"][timestamps[-1]])
+            roc = rate_of_change_percentage(transposed["mi"][timestamps[-1]], transposed["mi"][timestamps[-2]])
 
             return timestamps, transposed, roc
 
@@ -339,9 +403,9 @@ def query_mi(args: Namespace, level: str = "summary", run: Run = None, project: 
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def query_cc(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
     match level.lower():
-        case "s" | "summary":
+        case "0":
             return (
                 RadonCc.select(
                     RadonCc.entity_type.alias("entity_type"),
@@ -353,7 +417,7 @@ def query_cc(args: Namespace, level: str = "summary", run: Run = None, project: 
             )
             return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
 
-        case "d" | "detail":
+        case "1":
             return (
                 RadonCc.select(
                     RadonCc.dir,
@@ -365,7 +429,7 @@ def query_cc(args: Namespace, level: str = "summary", run: Run = None, project: 
                 .order_by(RadonCc.dir, RadonCc.entity_type)
             )
 
-        case "f" | "full":
+        case "2":
             return (
                 RadonCc.select(
                     RadonCc.dir,
