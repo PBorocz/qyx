@@ -18,31 +18,39 @@ def ingest(args: Namespace) -> None:
     gch: str = get_git_commit_hash()
     project: Project = Project.get_or_insert(args.project)
 
+    radon_sub_module_parse_methods = dict(
+        raw=_parse_save_radon_raw_json,
+        mi=_parse_save_radon_mi_json,
+        hal=_parse_save_radon_hal_json,
+        cc=_parse_save_radon_cc_json,
+    )
+
     if args.stdin:
+        assert args.sub_module, "Sorry, we need to have a Radon tool specified"
         # Pipeline mode - parse JSON from stdin
         data = json.loads(sys.stdin.read())
-
-        # FIXME: Can we make the determination of which module dynamic based on json contents??
-        # sub_module = BUILD_ME!
-        # Parse me!
-        raise RuntimeError("Sorry, we can't identify the sub_module from the json...YET!")
+        parser = radon_sub_module_parse_methods[args.sub_module.lower()]
+        run: Run = Run.create(
+            project=project.id,
+            module=MODULE,
+            sub_module=args.sub_module.lower(),
+            git_commit_hash=gch,
+        )
+        num_files = parser(run, data)
+        print(
+            f"[green]✓ Ingested results of [bold]{num_files}[/bold] files "
+            f"from radon check: {args.sub_module.upper()}[/green]",
+        )
 
     else:
-        radon_sub_modules = dict(
-            raw=_parse_save_radon_raw_json,
-            mi=_parse_save_radon_mi_json,
-            hal=_parse_save_radon_hal_json,
-            cc=_parse_save_radon_cc_json,
-        )
         # Direct mode - run radon ourselves across ALL the modules..
-        for sub_module, parse_method in radon_sub_modules.items():
-            run: Run = Run(
+        for sub_module, parse_method in radon_sub_module_parse_methods.items():
+            run: Run = Run.create(
                 project=project.id,
                 module=MODULE,
                 sub_module=sub_module,
                 git_commit_hash=gch,
             )
-            run.save()
 
             sub_out = subprocess.run(["uvx", "radon", sub_module, args.project, "--json"], capture_output=True)
 
@@ -52,24 +60,6 @@ def ingest(args: Namespace) -> None:
             print(
                 f"[green]✓ Ingested results of [bold]{num_files}[/bold] files from radon check: {sub_module.upper()}[/green]"
             )
-
-    # num_functions = None
-    # if args.sub_module == "raw":
-    #     num_files = _parse_save_radon_raw_json(run, data)
-    #     msg = f"Ingested {num_files} results from radon check: RAW"
-    # elif args.sub_module == "mi":
-    #     num_files = _parse_save_radon_mi_json(run, data)
-    #     msg = f"Ingested {num_files} results from radon check: MI"
-    # elif args.sub_module == "hal":
-    #     num_files, num_functions = _parse_save_radon_hal_json(run, data)
-    #     msg = f"Ingested {num_files} files and with {num_functions} functions from radon check: HAL"
-    # elif args.sub_module == "cc":
-    #     num_files, num_entities = _parse_save_radon_cc_json(run, data)
-    #     msg = f"Ingested {num_files} files and with {num_entities} entities from radon check: CC"
-    # else:
-    #     logger.error(f"Sorry, we don't support sub_module: {args.sub_module} yet!")
-
-    # logger.info(msg)
 
 
 def _parse_save_radon_raw_json(run: Run, data: dict[str, int]) -> int:
@@ -158,18 +148,18 @@ def _parse_save_radon_hal_json(run: Run, data: dict[str, int]) -> int:
                 run=run.id,
                 radon_hal_id=radon_hal.id,
                 name=func_name,
-                h1=total["h1"],
-                h2=total["h2"],
-                N1=total["N1"],
-                N2=total["N2"],
-                program_vocabulary=total["vocabulary"],
-                program_length=total["length"],
-                calculated_length=total["calculated_length"],
-                volume=total["volume"],
-                difficulty=total["difficulty"],
-                effort=total["effort"],
-                time=total["time"],
-                bugs=total["bugs"],
+                h1=func_results["h1"],
+                h2=func_results["h2"],
+                N1=func_results["N1"],
+                N2=func_results["N2"],
+                program_vocabulary=func_results["vocabulary"],
+                program_length=func_results["length"],
+                calculated_length=func_results["calculated_length"],
+                volume=func_results["volume"],
+                difficulty=func_results["difficulty"],
+                effort=func_results["effort"],
+                time=func_results["time"],
+                bugs=func_results["bugs"],
             )
             radon_hal_func.save()
 

@@ -51,10 +51,10 @@ help = "Display summary report across all modules."
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.radon]
 shell = """
-  uvx radon cc  . --json | uv run mq ingest --module radon --submodule cc
-  uvx radon hal . --json | uv run mq ingest --module radon --submodule hal
-  uvx radon mi  . --json | uv run mq ingest --module radon --submodule mi
-  uvx radon raw . --json | uv run mq ingest --module radon --submodule raw
+  uvx radon cc  . --json | uv run mq ingest --stdin --module radon --submodule cc
+  uvx radon hal . --json | uv run mq ingest --stdin --module radon --submodule hal
+  uvx radon mi  . --json | uv run mq ingest --stdin --module radon --submodule mi
+  uvx radon raw . --json | uv run mq ingest --stdin --module radon --submodule raw
   """
 help = "Ingest radon checks"
 

@@ -76,7 +76,7 @@ class RadonHal(BaseModuleModel):
     N2		       = IntegerField(help_text="Total operands in file")
     program_vocabulary = IntegerField(help_text="Total vocabulary (h = h1 + h2)")
     program_length     = IntegerField(help_text="Total length (N = N1 + N2)")
-    calculated_length  = IntegerField(help_text="(see wikipedia page!)")
+    calculated_length  = FloatField(help_text="(see wikipedia page!)")
     volume             = FloatField(help_text="Total volume (V = N log2 h)")
     difficulty         = FloatField(help_text="Average difficulty across functions (D = ((h1/2) * (N2/h2)))")
     effort             = FloatField(help_text="Total effort (E = D * V)")
