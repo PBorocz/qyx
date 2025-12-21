@@ -79,9 +79,12 @@ def get_args():
     parse_serve.add_argument("--nobrowser", action="store_true", help="Don't auto-open browser")
 
     ################################################################################
-    # Trim command
+    # Admin command
     ################################################################################
-    parse_trim = subparsers.add_parser(
+    parse_admin = subparsers.add_parser("admin", help="Administration commands")
+    subparser_admin = parse_admin.add_subparsers(dest="admin_command", help="Administration subcommands")
+
+    parse_trim = subparser_admin.add_parser(
         "trim",
         parents=[parser_root],
         help="Trim old data, leaving the most recent run for each module",
@@ -91,10 +94,7 @@ def get_args():
     # TODO: Implement this:
     # parse_trim.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
 
-    ################################################################################
-    # Clear command
-    ################################################################################
-    parse_clear = subparsers.add_parser(
+    parse_clear = subparser_admin.add_parser(
         "clear",
         parents=[parser_root],
         help="Clear the database, either for all modules (default) or a specified module.",

@@ -77,11 +77,11 @@ shell = """
 help = "Run current ruff check and report on results."
 
 [tool.poe.tasks.clear]
-cmd = "uv run mq clear"
+cmd = "uv run mq admin clear"
 help = "Clear the database entirely(!)."
 
 [tool.poe.tasks.trim]
-cmd = "uv run mq trim"
+cmd = "uv run mq admin trim"
 help = "Delete -old- runs from the database, leaving the most recent."
 
 [tool.poe.tasks.sql]
