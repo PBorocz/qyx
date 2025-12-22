@@ -111,31 +111,36 @@ shell = """
   uv run mq report --module ruff --level 1
   uv run mq report --module ruff --level 2
   uv run mq report --module ruff --level h
+  uv run mq report --module ruff --level h --options last:99
 
   uv run mq report --module radon
   uv run mq report --module radon --level 0
   uv run mq report --module radon --level 1
   uv run mq report --module radon --level 2
   uv run mq report --module radon --level h
+  uv run mq report --module radon --level h --options last:99
 
   uv run mq report --module radon --sub_module mi
   uv run mq report --module radon --sub_module mi --level 0
   uv run mq report --module radon --sub_module mi --level 1
   uv run mq report --module radon --sub_module mi --level 2
   uv run mq report --module radon --sub_module mi --level h
+  uv run mq report --module radon --sub_module mi --level h --options last:99
 
   uv run mq report --module radon --sub_module raw
   uv run mq report --module radon --sub_module raw --level 0
   uv run mq report --module radon --sub_module raw --level 1
   uv run mq report --module radon --sub_module raw --level 2
   uv run mq report --module radon --sub_module raw --level h
+  uv run mq report --module radon --sub_module raw --level h --options last:99
 
   uv run mq report --module radon --sub_module cc
   uv run mq report --module radon --sub_module cc --level 0
   uv run mq report --module radon --sub_module cc --level 1
   uv run mq report --module radon --sub_module cc --level 2
   uv run mq report --module radon --sub_module cc --level 3
-  # uv run mq report --module radon --sub_module cc --level h
+  uv run mq report --module radon --sub_module cc --level h
+  uv run mq report --module radon --sub_module cc --level h --options last:99
 
   uv run mq report --module radon --sub_module hal
   uv run mq report --module radon --sub_module hal --level 0
@@ -143,5 +148,6 @@ shell = """
   uv run mq report --module radon --sub_module hal --level 2
   uv run mq report --module radon --sub_module hal --level 3
   uv run mq report --module radon --sub_module hal --level h
+  uv run mq report --module radon --sub_module hal --level h --options last:99
 """
 help = "Run smoke test suite"

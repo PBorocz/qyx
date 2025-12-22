@@ -58,7 +58,8 @@ def ingest(args: Namespace) -> None:
 
             num_files = parse_method(run, data)
             print(
-                f"[green]✓ Ingested results of [bold]{num_files}[/bold] files from radon check: {sub_module.upper()}[/green]"
+                f"[green]✓ Ingested results of [bold]{num_files}[/bold] "
+                f"files from radon check: {sub_module.upper()}[/green]",
             )
 
 

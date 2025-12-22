@@ -32,13 +32,13 @@ class Cloc(BaseModuleModel):
 def query(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
     match level.lower():
         case "0":
-            return _query_summary(run, percentages=args.percentages)
+            return _query_summary(run, percentages=args.options.percentages)
         case "1":
-            return _query_detail(run, percentages=args.percentages)
+            return _query_detail(run, percentages=args.options.percentages)
         case "2":
-            return _query_full(run, percentages=args.percentages)
+            return _query_full(run, percentages=args.options.percentages)
         case "h" | "history":
-            return _query_history(project)
+            return _query_history(project, last=args.options.last)
 
 
 def _query_summary(run: Run, percentages: bool = False) -> Any:
@@ -113,10 +113,8 @@ def _query_full(run: Run, percentages: bool = False) -> [list[Cloc], dict[str, i
     return rows, dict(column_totals), grand_total
 
 
-def _query_history(project: Project) -> tuple[list[str], defaultdict, defaultdict]:
-    # TODO: Add support for parsing args.options to pull out last:<d>
+def _query_history(project: Project, last: int) -> tuple[list[str], defaultdict, defaultdict]:
     # TODO: Add support for percentages here..
-    args_last = 2
     runs = (
         Run.select()
         .where(
@@ -124,7 +122,7 @@ def _query_history(project: Project) -> tuple[list[str], defaultdict, defaultdic
             Run.module == MODULE,
         )
         .order_by(Run.timestamp.desc())
-        .limit(args_last)
+        .limit(last)
     )
 
     query = (

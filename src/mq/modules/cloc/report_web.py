@@ -1,6 +1,5 @@
 """Report data obo running 'cloc' tool."""
 
-import logging
 from typing import Any
 
 from fasthtml import ft

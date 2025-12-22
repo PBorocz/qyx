@@ -25,9 +25,6 @@ def report(args: Namespace) -> None:
         log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
         return None
 
-    # Extract any/all module specific reporting options
-    args.percentages = True if args.options and "percentage" in args.options.lower() else False
-
     match args.level.lower():
         case "0":
             _summary(args, run)
@@ -49,10 +46,10 @@ def _summary(args: Namespace, run: Run) -> None:
     table.add_column("Blank", justify="center")
     table.add_column("TOTAL", justify="center")
     table.add_row(
-        fmt(result.lines_code, args.percentages),
-        fmt(result.lines_comment, args.percentages),
-        fmt(result.lines_blank, args.percentages),
-        fmt(result.lines_total, args.percentages),
+        fmt(result.lines_code, args.options.percentages),
+        fmt(result.lines_comment, args.options.percentages),
+        fmt(result.lines_blank, args.options.percentages),
+        fmt(result.lines_total, args.options.percentages),
     )
     cli_console.print(table)
 
@@ -62,18 +59,18 @@ def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
     detail_rows = query(args, "1", run)
     table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.percentages))
-    table.add_column("Comment", justify="right", footer=fmt(grand_total.lines_comment, args.percentages))
-    table.add_column("Blank", justify="right", footer=fmt(grand_total.lines_blank, args.percentages))
-    table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, args.percentages))
+    table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.options.percentages))
+    table.add_column("Comment", justify="right", footer=fmt(grand_total.lines_comment, args.options.percentages))
+    table.add_column("Blank", justify="right", footer=fmt(grand_total.lines_blank, args.options.percentages))
+    table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, args.options.percentages))
 
     for result in detail_rows:
         table.add_row(
             result.dir,
-            fmt(result.lines_code, args.percentages),
-            fmt(result.lines_comment, args.percentages),
-            fmt(result.lines_blank, args.percentages),
-            fmt(result.lines_total, args.percentages),
+            fmt(result.lines_code, args.options.percentages),
+            fmt(result.lines_comment, args.options.percentages),
+            fmt(result.lines_blank, args.options.percentages),
+            fmt(result.lines_total, args.options.percentages),
         )
     cli_console.print(table)
 
@@ -83,17 +80,17 @@ def _full(args: Namespace, run: Run) -> None:
 
     table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
     table.add_column("File", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], args.percentages))
-    table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], args.percentages))
-    table.add_column("Blank", justify="right", footer=fmt(column_totals["lines_blank"], args.percentages))
-    table.add_column("TOTAL", justify="right", footer=fmt(grand_total, args.percentages))
+    table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], args.options.percentages))
+    table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], args.options.percentages))
+    table.add_column("Blank", justify="right", footer=fmt(column_totals["lines_blank"], args.options.percentages))
+    table.add_column("TOTAL", justify="right", footer=fmt(grand_total, args.options.percentages))
     for row in rows:
         table.add_row(
             f"{row.dir}/{row.filename}",
-            fmt(row.lines_code, args.percentages),
-            fmt(row.lines_comment, args.percentages),
-            fmt(row.lines_blank, args.percentages),
-            fmt(row.lines_total, args.percentages),
+            fmt(row.lines_code, args.options.percentages),
+            fmt(row.lines_comment, args.options.percentages),
+            fmt(row.lines_blank, args.options.percentages),
+            fmt(row.lines_total, args.options.percentages),
         )
     cli_console.print(table)
 
@@ -116,7 +113,7 @@ def _history(args: Namespace, project: Project) -> None:
         row = [metric]
         for timestamp in sorted(timestamps):
             row.append(str(dt_rows[timestamp]))
-        row.append(f"{roc[metric]:.2f}%")
+        row.append(f"{roc[metric]:+.2f}%")
         table.add_row(*row)
 
     cli_console.print(table)

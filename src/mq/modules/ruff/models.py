@@ -30,30 +30,56 @@ class Ruff(BaseModuleModel):
 def query(args: Namespace, level: str, run: Run = None, project: Project = None) -> Ruff:
     match level.lower():
         case "0":
-            return Ruff.select(fn.COUNT(Ruff.id).alias("count")).where(Ruff.run == run)
+            return Ruff.select(
+                fn.COUNT(Ruff.id).alias("count"),
+            ).where(
+                Ruff.run == run,
+            )
 
         case "1":
             return (
-                Ruff.select(Ruff.rule_code, Ruff.message, fn.COUNT(Ruff.id).alias("count"))
-                .where(Ruff.run == run)
-                .group_by(Ruff.rule_code)
-                .order_by(fn.COUNT(Ruff.id).desc())
+                Ruff.select(
+                    Ruff.rule_code,
+                    Ruff.message,
+                    fn.COUNT(Ruff.id).alias("count"),
+                )
+                .where(
+                    Ruff.run == run,
+                )
+                .group_by(
+                    Ruff.rule_code,
+                )
+                .order_by(
+                    fn.COUNT(Ruff.id).desc(),
+                )
             )
 
         case "2":
-            return Ruff.select().where(Ruff.run == run).order_by(Ruff.filename, Ruff.rule_code)
+            return (
+                Ruff.select()
+                .where(
+                    Ruff.run == run,
+                )
+                .order_by(
+                    Ruff.rule_code,
+                    Ruff.dir,
+                    Ruff.filename,
+                )
+            )
 
         case "h" | "history":
-            # FIXME: Add support for parsing args.options to pull out last:<d>
-            args_last = 2
             runs = (
                 Run.select()
                 .where(
                     Run.project == project.id,
                     Run.module == MODULE,
                 )
-                .order_by(Run.timestamp.desc())
-                .limit(args_last)
+                .order_by(
+                    Run.timestamp.desc(),
+                )
+                .limit(
+                    args.options.last,
+                )
             )
 
             ################################################################################################

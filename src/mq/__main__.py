@@ -6,7 +6,7 @@ import logging
 import sys
 from typing import Callable
 
-from rich.traceback import install as install_traceback
+# from rich.traceback import install as install_traceback
 
 from mq import setup_logging, setup_sqlite
 from mq.modules import MODULES
@@ -45,7 +45,6 @@ def get_args():
     parse_ingest.add_argument("-s", "--sub_module", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
     parse_ingest.add_argument("--stdin", action="store_true", help="Read JSON from stdin instead of running subprocess")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
-    # parse_ingest.set_defaults(module_required=True)  # Make module required for ingest
 
     ################################################################################
     # Report command
@@ -58,14 +57,20 @@ def get_args():
     parse_report.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
     parse_report.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
     parse_report.add_argument("-s", "--sub_module", help="Optional sub-module (if applicable, e.g. cc for Radon).")
-    parse_report.add_argument("-o", "--options", help="Report option(s), eg. 'last:5,percentage' etc.")
+    parse_report.add_argument(
+        "-o",
+        "--options",
+        help="Report option(s), eg. 'last:5,percentage' etc.",
+        type=str,
+        dest="options_str",
+        default="",
+    )
     parse_report.add_argument(
         "-l",
         "--level",
         help="Level to report on, e.g. 0 (summary & default), 1 (detail), 2 (full) or h (history).",
         default="0",
     )
-    # parse_report.set_defaults(module_required=True)  # Make module required for report (...for now)
 
     ################################################################################
     # Serve command
@@ -106,6 +111,11 @@ def get_args():
     ################################################################################################
     args = parser.parse_args()
 
+    # Parse any REPORT options provided and add into the args
+    if args.command.lower() == "report" and hasattr(args, "options_str"):
+        default_options = dict(percentages=False, last=2)
+        args.options = parse_options(args.options_str or "", default_options)
+
     # Set defaults for the case where we don't have a command yet to execute..
     if not hasattr(args, "debug"):
         args.debug = False
@@ -119,10 +129,6 @@ def get_args():
     # If no explicit command was issued, default to simply printing a status.
     if not hasattr(args, "command") or args.command is None:
         args.command = "status"
-
-    # Check if module is required for certain commands
-    if hasattr(args, "module_required") and args.module_required and not args.module:
-        parser.error(f"The {args.command} command requires --module argument")
 
     return args
 
@@ -139,32 +145,6 @@ def get_method(module_dir: str, py_filename: str, method: str) -> tuple[Callable
         return getattr(module, method), None  # Return the method from the module
     except AttributeError as e:
         return None, f"Method {method} not found in {module_path}: {e}"
-
-
-def main():
-    # install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
-    args = get_args()  # Get/process all command-line arguments
-    setup_logging(args.debug, False)  # Setup logging (now that we know what potential level to log to)
-    setup_sqlite(args)  # Setup our data-store and respective tables.
-
-    # Lookup the appropriate method to run based on the sub-command desired:
-    match args.command:
-        case "ingest":
-            _dispatch_ingest(args)
-        case "report":
-            _dispatch_report(args)
-        case "status":
-            status(args)
-        case "serve":
-            run_server(args)
-        case "trim":
-            trim(args)
-        case "clear":
-            clear(args)
-        case _:
-            raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
-
-    housekeeping(args)  # Do database housekeeping
 
 
 def _dispatch_ingest(args: argparse.Namespace) -> None:
@@ -199,3 +179,50 @@ def _dispatch_report(args: argparse.Namespace) -> None:
         # Report over ALL available modules..
         for module in MODULES:
             __do_report(module)
+
+
+def parse_options(options_str: str, defaults=None):
+    """Parse any/all options provided (usually for reporting)."""
+    opts = argparse.Namespace(**(defaults or {}))
+    if not options_str:
+        return opts
+
+    for item in options_str.split(","):
+        if ":" in item:
+            key, value = item.split(":", 1)
+            try:
+                value = int(value)
+            except ValueError:
+                ...
+            setattr(opts, key, value)
+        else:
+            # Boolean flag
+            setattr(opts, item, True)
+
+    return opts
+
+
+def main():
+    # install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
+    args = get_args()  # Get/process all command-line arguments
+    setup_logging(args.debug, False)  # Setup logging (now that we know what potential level to log to)
+    setup_sqlite(args)  # Setup our data-store and respective tables.
+
+    # Lookup the appropriate method to run based on the sub-command desired:
+    match args.command:
+        case "ingest":
+            _dispatch_ingest(args)
+        case "report":
+            _dispatch_report(args)
+        case "status":
+            status(args)
+        case "serve":
+            run_server(args)
+        case "trim":
+            trim(args)
+        case "clear":
+            clear(args)
+        case _:
+            raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
+
+    housekeeping(args)  # Do database housekeeping

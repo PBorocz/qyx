@@ -162,7 +162,7 @@ def _raw_h(args: Namespace, run: Run = None, project: Project = None) -> None:
         if -0.01 < roc < 0.01:
             t_value = ""
         else:
-            t_value = f"{roc:.2f}%"
+            t_value = f"{roc:+.2f}%"
 
         row.append(t_value)
         table.add_row(*row)
@@ -318,7 +318,32 @@ def _cc_3(args: Namespace, run: Run = None, project: Project = None) -> None:
     cli_console.print(table)
 
 
-def _cc_h(args: Namespace, run: Run = None, project: Project = None) -> None: ...
+def _cc_h(args: Namespace, run: Run = None, project: Project = None) -> None:
+    timestamps, transposed, roc = query_cc(args, "h", project=project)
+    timestamps_formatted = format_timestamp_headers(timestamps)
+    table = cli_table(title="RADON-CC Results Over Time")
+    table.add_column("Complexity", justify="left")
+    for timestamp in sorted(timestamps):
+        table.add_column(timestamps_formatted[timestamp], justify="right")
+    table.add_column("Delta", footer=f"{roc:.2f}%")
+
+    t_row = ["Complexity"]
+    for timestamp in sorted(timestamps):
+        t_row.append(f"{transposed['complexity'][timestamp]:.2f}")
+
+    t_value = ""
+    if roc > 0.01:
+        color = COLORS["negative"]
+        t_value = f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]"
+
+    elif roc < -0.01:
+        color = COLORS["positive"]
+        t_value = f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]"
+
+    t_row.append(t_value)
+    table.add_row(*t_row)
+
+    cli_console.print(table)
 
 
 ################################################################################################

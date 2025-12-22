@@ -105,7 +105,7 @@ def partial_report_selector(project: int, module: str, run_id: int) -> Any:
 
 def partial_do_report(project: int, module: str, run_id: int, report: str) -> Any:
     # uvicorn_logger.info(f"partial_query_results {project=} {module=} {run_id=} {report=}")
-    run = Run.select().where(Run.id == run).get()
+    run = Run.select().where(Run.id == run_id).get()
     project = Project.select().where(Project.id == run.project).get()
     # uvicorn_logger.info(f"partial_query_results {run.id=} {project.id=}")
 

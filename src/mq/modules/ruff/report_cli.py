@@ -7,7 +7,7 @@ from mq.cli import cli_console, cli_table
 from mq.modules.base import Project, Run
 from mq.modules.ruff import COLORS, MODULE
 from mq.modules.ruff.models import query
-from mq.utils import format_timestamp_headers, remove_common_prefixes
+from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
@@ -26,27 +26,27 @@ def report(args: Namespace) -> None:
 
     match args.level.lower():
         case "0":
-            _report_summary(args, run)
+            _report_0(args, run)
         case "1":
-            _report_detail(args, run)
+            _report_1(args, run)
         case "2":
-            _report_full(args, run)
+            _report_2(args, run)
         case "h":
-            _report_history(args, project)
+            _report_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
 
 
-def _report_summary(args: Namespace, run: Run) -> None:
+def _report_0(args: Namespace, run: Run) -> None:
     row = query(args, "0", run)
     table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
-    table.add_row("Ruff Issues", f"{row.count():,d}")
+    table.add_row("Issues", f"{row.count():,d}")
     cli_console.print(table)
 
 
-def _report_detail(args: Namespace, run: Run) -> None:
+def _report_1(args: Namespace, run: Run) -> None:
     summary = query(args, "0", run)
     results = query(args, "1", run)
     table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_footer=True)
@@ -58,21 +58,19 @@ def _report_detail(args: Namespace, run: Run) -> None:
     cli_console.print(table)
 
 
-def _report_full(args: Namespace, run: Run) -> None:
+def _report_2(args: Namespace, run: Run) -> None:
     rows = query(args, "2", run)
-    foobar = 1
-    rows = remove_common_prefixes(rows)
     table = cli_table(title=f"RUFF @ {run.timestamp_display}")
     table.add_column("Rule")
-    table.add_column("File (line)")
+    table.add_column("File [line]")
     table.add_column("Message")
     for row in rows:
-        table.add_row(row.rule_code, f"{row.filename} [{row.line}] ", row.message)
+        table.add_row(row.rule_code, f"{row.dir}/{row.filename} [{row.line}] ", row.message)
     cli_console.print(table)
 
 
 # History at the "0" level...
-def _report_history(args: Namespace, project: Project) -> None:
+def _report_h(args: Namespace, project: Project) -> None:
     """Report on the history of runs "across"."""
     timestamps, rows, roc = query(args, "history", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
@@ -89,7 +87,7 @@ def _report_history(args: Namespace, project: Project) -> None:
         )
     table.add_column("Delta")
 
-    row = ["Ruff Issues"]
+    row = ["Issues"]
     for timestamp in sorted(timestamps):
         row.append(str(rows[timestamp]))
 
