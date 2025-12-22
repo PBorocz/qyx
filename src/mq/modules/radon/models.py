@@ -59,6 +59,21 @@ class RadonCc(BaseModuleModel):
     complexity    = IntegerField(help_text="Raw complexity score")
     # fmt: on
 
+    def get_rank(self, complexity: float) -> str:
+        """Return the grade score (aka "rank") for the given complexity measure."""
+        if complexity < 5.0:
+            return "A"  # low - simple block
+        elif 5.0 <= complexity < 10.0:
+            return "B"  # low - well structured and stable block
+        elif 10.0 <= complexity < 20.0:
+            return "C"  # moderate - slightly complex block
+        elif 20.0 <= complexity < 30.0:
+            return "D"  # more than moderate - more complex block
+        elif 30.0 <= complexity < 40.0:
+            return "E"  # high - complex block, alarming
+        else:
+            return "F"  # very high - error-prone, unstable block
+
     class Meta:
         """Define peewee meta data."""
 
@@ -85,22 +100,25 @@ class RadonHal(BaseModuleModel):
     # fmt:
 
     @classmethod
-    def attributes(cls) -> list[str]:
-        """Return a list of the attributes/metrics for the model."""
+    def attrs(cls) -> list[str]:
+        """Return a list of the attributes/metrics for the model (display, attr, type)."""
+        # fmt: off
+        #
         return (
-            "h1",
-            "h2",
-            "N1",
-            "N2",
-            "program_vocabulary",
-            "program_length",
-            "calculated_length",
-            "volume",
-            "difficulty",
-            "effort",
-            "time",
-            "bugs",
+            ("h1"                 , "h1"                 , "int"  ),
+            ("h2"                 , "h2"                 , "int"  ),
+            ("N1"                 , "N1"                 , "int"  ),
+            ("N2"                 , "N2"                 , "int"  ),
+            ("Program Vocabulary" , "program_vocabulary" , "int"  ),
+            ("Program Length"     , "program_length"     , "int"  ),
+            ("Calculated Length"  , "calculated_length"  , "float"),
+            ("Volume"             , "volume"             , "float"),
+            ("Difficulty"         , "difficulty"         , "float"),
+            ("Effort"             , "effort"             , "float"),
+            ("Time"               , "time"               , "float"),
+            ("Bugs"               , "bugs"               , "float"),
         )
+        # fmt: on
 
     class Meta:
         """Define peewee meta data."""
@@ -183,8 +201,8 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
             return RadonRaw.select().where(RadonRaw.run == run.id).order_by(RadonRaw.dir, RadonRaw.filename)
 
         case "h" | "history":
-            args_last = 2
             # FIXME: Refactor to make this a "common" query given the number of places we use it:
+            args_last = 2
             runs = (
                 Run.select()
                 .where(
@@ -208,9 +226,7 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
                     fn.SUM(RadonRaw.single_comments).alias("single_comments"),
                 )
                 .join(Run)
-                .where(
-                    Run.id.in_(runs),
-                )
+                .where(Run.id.in_(runs))
                 .group_by(Run.timestamp)
                 .order_by(Run.timestamp)
                 .objects()
@@ -221,14 +237,12 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
             ################################################################################################
             timestamps = [result.timestamp for result in query]
             transposed = defaultdict(lambda: defaultdict(dict))
-            grand_totals = defaultdict(int)
             for result in query:
                 total = 0
                 for attr in raw_attrs:
                     lines = int(getattr(result, attr))
                     transposed[attr][result.timestamp] = lines
                     total += lines  # Calculate grand totals for each timestamp as we go
-                grand_totals[result.timestamp] += total
 
             # Calculate rate of change of last 2 entries..
             rocs = dict()
@@ -239,11 +253,11 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
                 )
 
             roc_gt = rate_of_change_percentage(
-                grand_totals[timestamps[-2]],
-                grand_totals[timestamps[-1]],
+                transposed["loc"][timestamps[-2]],
+                transposed["loc"][timestamps[-1]],
             )
 
-            return timestamps, transposed, grand_totals, rocs, roc_gt
+            return timestamps, transposed, rocs, roc_gt
 
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
@@ -253,6 +267,27 @@ def query_hal(args: Namespace, level: str = "0", run: Run = None, project: Proje
     match level.lower():
         case "0":
             return (
+                RadonHal.select(
+                    fn.AVG(RadonHal.h1).alias("h1"),
+                    fn.AVG(RadonHal.h2).alias("h2"),
+                    fn.AVG(RadonHal.N1).alias("N1"),
+                    fn.AVG(RadonHal.N2).alias("N2"),
+                    fn.AVG(RadonHal.program_vocabulary).alias("program_vocabulary"),
+                    fn.AVG(RadonHal.program_length).alias("program_length"),
+                    fn.AVG(RadonHal.calculated_length).alias("calculated_length"),
+                    fn.AVG(RadonHal.volume).alias("volume"),
+                    fn.AVG(RadonHal.difficulty).alias("difficulty"),
+                    fn.AVG(RadonHal.effort).alias("effort"),
+                    fn.AVG(RadonHal.time).alias("time"),
+                    fn.AVG(RadonHal.bugs).alias("bugs"),
+                )
+                .where(
+                    RadonHal.run == run.id,
+                )
+                .get()
+            )
+        case "1":
+            rows = (
                 RadonHal.select(
                     RadonHal.dir,
                     fn.AVG(RadonHal.h1).alias("h1"),
@@ -272,18 +307,25 @@ def query_hal(args: Namespace, level: str = "0", run: Run = None, project: Proje
                 .where(RadonHal.run == run.id)
                 .order_by(RadonHal.dir)
             )
+            # Calculate mean of the means
+            mean_means = {}
+            for _, attr, _ in RadonHal.attrs():
+                values = [getattr(row, attr) for row in rows]
+                mean_means[attr] = sum(values) / len(values) if values else None
 
-        case "1":
+            return rows, mean_means
+
+        case "2":
             rows = RadonHal.select().where(RadonHal.run == run.id).order_by(RadonHal.dir, RadonHal.filename)
 
             # Calculate means
             means = {}
-            for attr in RadonHal.attributes():
+            for _, attr, _ in RadonHal.attrs():
                 values = [getattr(row, attr) for row in rows]
                 means[attr] = sum(values) / len(values) if values else None
             return rows, means
 
-        case "2":
+        case "3":
             rows = (
                 RadonHalFunction.select(
                     RadonHal.dir,
@@ -309,10 +351,75 @@ def query_hal(args: Namespace, level: str = "0", run: Run = None, project: Proje
             )
             # Calculate mean metric values
             means = {}
-            for attr in RadonHal.attributes():
+            for _, attr, _ in RadonHal.attrs():
                 values = [getattr(row, attr) for row in rows]
                 means[attr] = sum(values) / len(values) if values else None
             return rows, means
+
+        case "h":
+            # FIXME: Refactor to make this a "common" query given the number of places we use it:
+            args_last = 2
+            runs = (
+                Run.select()
+                .where(
+                    Run.project == project,
+                    Run.module == MODULE,
+                    Run.sub_module == "hal",
+                )
+                .order_by(Run.timestamp.desc())
+                .limit(args_last)
+            )
+
+            query = (
+                RadonHal.select(
+                    Run.timestamp.alias("timestamp"),
+                    fn.AVG(RadonHal.h1).alias("h1"),
+                    fn.AVG(RadonHal.h2).alias("h2"),
+                    fn.AVG(RadonHal.N1).alias("N1"),
+                    fn.AVG(RadonHal.N2).alias("N2"),
+                    fn.AVG(RadonHal.program_vocabulary).alias("program_vocabulary"),
+                    fn.AVG(RadonHal.program_length).alias("program_length"),
+                    fn.AVG(RadonHal.calculated_length).alias("calculated_length"),
+                    fn.AVG(RadonHal.volume).alias("volume"),
+                    fn.AVG(RadonHal.difficulty).alias("difficulty"),
+                    fn.AVG(RadonHal.effort).alias("effort"),
+                    fn.AVG(RadonHal.time).alias("time"),
+                    fn.AVG(RadonHal.bugs).alias("bugs"),
+                )
+                .join(Run)
+                .where(Run.id.in_(runs))
+                .group_by(Run.timestamp)
+                .order_by(Run.timestamp)
+                .objects()
+            )
+
+            ################################################################################################
+            # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+            ################################################################################################
+            timestamps = [result.timestamp for result in query]
+            transposed = defaultdict(lambda: defaultdict(dict))
+            grand_totals = defaultdict(int)
+            for result in query:
+                total = 0
+                for _, attr, _ in RadonHal.attrs():
+                    value = getattr(result, attr)
+                    transposed[attr][result.timestamp] = value
+                    total += value  # Calculate grand totals for each timestamp as we go
+                grand_totals[result.timestamp] += total
+
+            # Calculate rate of change of last 2 entries..
+            rocs = dict()
+            for _, attr, _ in RadonHal.attrs():
+                rocs[attr] = rate_of_change_percentage(
+                    transposed[attr][timestamps[-2]],
+                    transposed[attr][timestamps[-1]],
+                )
+
+            roc_gt = rate_of_change_percentage(
+                grand_totals[timestamps[-2]],
+                grand_totals[timestamps[-1]],
+            )
+            return timestamps, transposed, grand_totals, rocs, roc_gt
 
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
@@ -409,20 +516,19 @@ def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Projec
             return (
                 RadonCc.select(
                     RadonCc.entity_type.alias("entity_type"),
-                    fn.COUNT(RadonCc.id).alias("count"),
+                    fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
                 .where(RadonCc.run == run.id)
                 .group_by(RadonCc.entity_type)
                 .order_by(fn.COUNT(RadonCc.id).desc())
             )
-            return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
 
         case "1":
             return (
                 RadonCc.select(
                     RadonCc.dir,
                     RadonCc.entity_type,
-                    fn.COUNT(RadonCc.id).alias("count"),
+                    fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
                 .where(RadonCc.run == run.id)
                 .group_by(RadonCc.dir, RadonCc.entity_type)
@@ -435,11 +541,18 @@ def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Projec
                     RadonCc.dir,
                     RadonCc.filename,
                     RadonCc.entity_type,
-                    fn.COUNT(RadonCc.id).alias("count"),
+                    fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
                 .where(RadonCc.run == run.id)
                 .group_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
                 .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
+            )
+
+        case "3":
+            return (
+                RadonCc.select()
+                .where(RadonCc.run == run.id)
+                .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_name)
             )
 
         case _:

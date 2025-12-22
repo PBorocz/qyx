@@ -97,6 +97,7 @@ def _parse_save_radon_mi_json(run: Run, data: dict[str, int]) -> int:
 
 def _parse_save_radon_cc_json(run: Run, data: dict[str, int]) -> int:
     num_files = 0
+    mapping = dict(F="Function", M="Method", C="Class")
     for fn_, entities in data.items():
         fn_path = Path(fn_)
         for entity in entities:
@@ -104,7 +105,7 @@ def _parse_save_radon_cc_json(run: Run, data: dict[str, int]) -> int:
                 run=run.id,
                 dir=fn_path.parent,
                 filename=fn_path.name,
-                entity_type=entity["type"][0].upper(),
+                entity_type=mapping[entity["type"][0].upper()],
                 entity_name=entity["name"],
                 line_start=entity["lineno"],
                 line_end=entity["endline"],
