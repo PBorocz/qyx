@@ -96,26 +96,41 @@ def _full(args: Namespace, run: Run) -> None:
 
 
 def _history(args: Namespace, project: Project) -> None:
-    timestamps, transposed, grand_totals, roc = query(args, "history", project=project)
+    timestamps, rows, transposed, grand_totals, roc = query(args, "history", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="CLOC Results Over Time", show_footer=True)
-    table.add_column("Metric", justify="left", footer="-")
-    for timestamp in sorted(timestamps):
-        table.add_column(
-            timestamps_formatted[timestamp],
-            justify="right",
-            footer=str(grand_totals[timestamp]),
-            footer_style="bold cyan",
-        )
-    if roc["grand_total"]:
-        table.add_column("Delta", justify="left", footer=f"{roc['grand_total']:.2f}%")
-
-    for metric, dt_rows in transposed.items():
-        row = [metric]
+    if len(timestamps) <= 20:
+        table = cli_table(title="CLOC Results Over Time", show_footer=True)
+        table.add_column("Metric", justify="left", footer="-")
         for timestamp in sorted(timestamps):
-            row.append(str(dt_rows[timestamp]))
-        if roc[metric]:
-            row.append(f"{roc[metric]:+.2f}%")
-        table.add_row(*row)
+            table.add_column(
+                timestamps_formatted[timestamp],
+                justify="right",
+                footer=str(grand_totals[timestamp]),
+                footer_style="bold cyan",
+            )
+        if roc["grand_total"]:
+            table.add_column("Delta", justify="left", footer=f"{roc['grand_total']:.2f}%")
+
+        for metric, dt_rows in transposed.items():
+            row = [metric]
+            for timestamp in sorted(timestamps):
+                row.append(str(dt_rows[timestamp]))
+            if roc[metric]:
+                row.append(f"{roc[metric]:+.2f}%")
+            table.add_row(*row)
+    else:
+        table.add_column("-", justify="left")
+        table.add_column("Code", justify="right")
+        table.add_column("Comment", justify="right")
+        table.add_column("Blank", justify="right")
+        for row in rows:
+            t_row = [
+                timestamps_formatted[row.timestamp],
+                f"{row.total_code:,d}",
+                f"{row.total_comment:,d}",
+                f"{row.total_blank:,d}",
+            ]
+            table.add_row(*t_row)
 
     cli_console.print(table)

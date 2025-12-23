@@ -172,4 +172,4 @@ def _query_history(project: Project, last: int) -> tuple[list[str], defaultdict,
     else:
         roc["grand_total"] = 0.00
 
-    return timestamps, transposed, grand_totals, roc
+    return timestamps, query, transposed, grand_totals, roc
