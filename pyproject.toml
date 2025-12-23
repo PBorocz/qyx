@@ -42,6 +42,14 @@ help = "Run the mq command."
 cmd = """uv run mq ingest"""
 help = "Run/ingest all modules."
 
+[tool.poe.tasks.ingest-git-mq]
+shell = """
+  uv run mq admin clear -m cloc
+  uv run mq ingest      --git https://github.com/pborocz/mq -m cloc
+  uv run mq report cloc --project  https://github.com/pborocz/mq
+  """
+help = "Run/ingest all modules."
+
 [tool.poe.tasks.report]
 cmd = """uv run mq report"""
 help = "Display summary report across all modules."

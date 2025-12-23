@@ -16,7 +16,7 @@ from mq.utils.git import get_git_commit_hash
 
 def ingest(args: Namespace) -> None:
     gch: str = get_git_commit_hash()
-    project: Project = Project.get_or_insert(args.project)
+    project: Project = Project.get_or_insert_relative(args.project)
 
     radon_sub_module_parse_methods = dict(
         raw=_parse_save_radon_raw_json,

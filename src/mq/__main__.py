@@ -45,6 +45,7 @@ def get_args():
     parse_ingest.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
     parse_ingest.add_argument("-s", "--sub_module", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
     parse_ingest.add_argument("--stdin", action="store_true", help="Read JSON from stdin instead of running subprocess")
+    parse_ingest.add_argument("--git", help="Ingest from a github repo")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
 
     ################################################################################
@@ -106,6 +107,8 @@ def get_args():
         help="Clear the database, either for all modules (default) or a specified module.",
     )
     parse_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
+    parse_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
+    parse_clear.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
 
     ################################################################################################
     # PARSE!!!
@@ -219,10 +222,14 @@ def main():
             status(args)
         case "serve":
             run_server(args)
-        case "trim":
-            trim(args)
-        case "clear":
-            clear(args)
+        case "admin":
+            match args.admin_command:
+                case "trim":
+                    trim(args)
+                case "clear":
+                    clear(args)
+                case _:
+                    raise RuntimeError("Sorry, invalid admin option selected, must be one of 'trim' or 'clear'")
         case _:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 

@@ -65,37 +65,48 @@ def clear(args: Namespace) -> None:
         db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
         db_path.unlink(missing_ok=True)
 
-    if args.module:
-        # Delete all the data associated with the specified module.
-        for project in Project.select():
-            for run in Run.select().where(Run.module == args.module):
-                for model in models_for_module(args.module):
-                    model.delete().where(model.run == run.id).execute()
-            Run.delete().where(Run.module == args.module).execute()
-    else:
-        # In this case, we can simply nuke the entire db file (this is
-        # useful if we want to apply an updated schema *AND* don't care
-        # about losing existing data)
-        should_delete = args.no_confirm
-        if not should_delete:
-            cli_console.print("[bold red]⚠️  WARNING: This will delete ALL data![/bold red]")
-            should_delete = Confirm.ask("[yellow]Are you sure you want to continue?[/yellow]", default=False)
-
-        if should_delete:
-            __delete_database()
-            cli_console.print("[green]✓ Data cleared successfully.[/green]")
+    if args.project:
+        project = Project.select().where(Project.path_input == args.project).get()
+        if args.module:
+            # Delete all the data associated with the specified module for the specified project:
+            if do_it(
+                args, f"This will delete all data for Project: '{project.path_input}' and Module: '{args.module}'"
+            ):
+                Run.delete().where(Run.project == project, Run.module == args.module).execute()
+            else:
+                cli_console.print("[blue]Ok, nothing done.[/blue]")
         else:
-            cli_console.print("[blue]Ok, nothing done.[/blue]")
+            if do_it(args, f"This will delete all data for Project: '{project.path_input}'"):
+                Run.delete().where(Run.project == project).execute()
+            else:
+                cli_console.print("[blue]Ok, nothing done.[/blue]")
+    else:
+        if args.module:
+            if do_it(args, f"This will delete all data for Module: '{args.module}'"):
+                Run.delete().where(Run.module == args.module).execute()
+            else:
+                # In this case, we can simply nuke the entire db file (this is
+                # useful if we want to apply an updated schema *AND* don't care
+                # about losing existing data)
+                if do_it(args, "This will delete ALL data!"):
+                    __delete_database()
+                    cli_console.print("[green]✓ Data cleared successfully.[/green]")
+                else:
+                    cli_console.print("[blue]Ok, nothing done.[/blue]")
+
+
+def do_it(args: Namespace, message: str) -> bool:
+    _do_it: bool = args.no_confirm
+    if not _do_it:
+        cli_console.print(f"[bold red]⚠️ WARNING: {message}[/bold red]")
+        _do_it = Confirm.ask("[yellow]Are you sure you want to continue?[/yellow]", default=False)
+    return _do_it
 
 
 def trim(args: Namespace) -> None:
     """Clear/delete all data associated with "old" runs, ie, lose history but keep most recent!"""
-    should_trim = args.no_confirm
-    if not should_trim:
-        cli_console.print("[bold red]⚠️  WARNING: This will delete older data![/bold red]")
-        should_trim = Confirm.ask("[yellow]Ok to continue?[/yellow]", default=False)
-
-    if should_trim:
+    # TODO: Implement ability to trim by either Project OR Module (or both!)
+    if do_it(args, "This will delete 'older' data! (leaving the most recent Run for each module & project)"):
         _trim(args)
         cli_console.print("[green]✓ Older data cleared successfully.[/green]")
     else:

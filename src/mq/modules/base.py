@@ -53,23 +53,37 @@ class Project(BaseModel):
     )
 
     @classmethod
-    def get_or_insert(cls, arg_input_dir: str) -> Project:
-        """Get the project at the specified source directory, even if we have to insert."""
-        path_absolute = str(Path(arg_input_dir).resolve())
-
+    def get_or_insert_raw(cls, path_input: str, path_absolute: str, display: str) -> Project:
+        """Get the project of the specified input path, even if we have to insert."""
         try:
-            project = cls.get(cls.path_absolute == path_absolute)
+            project = cls.get(cls.path_input == path_input)
         except pw.DoesNotExist:
-            path_display = generate_display_name(path_absolute)
             project = cls.create(
-                path_input=arg_input_dir,
+                path_input=path_input,
                 path_absolute=path_absolute,
-                path_display=path_display,
+                path_display=display,
             )
         return project
 
+    @classmethod
+    def get_or_insert_relative(cls, arg_input_dir: str) -> Project:
+        """Get the project at the specified source directory, even if we have to insert."""
+        path_absolute = str(Path(arg_input_dir).resolve())
+        path_display = _generate_display_name(path_absolute)
+        return cls.get_or_insert_raw(arg_input_dir, path_absolute, path_display)
+        # try:
+        #     project = cls.get(cls.path_absolute == path_absolute)
+        # except pw.DoesNotExist:
+        #     path_display = generate_display_name(path_absolute)
+        #     project = cls.create(
+        #         path_input=arg_input_dir,
+        #         path_absolute=path_absolute,
+        #         path_display=path_display,
+        #     )
+        # return project
 
-def generate_display_name(path_absolute: str) -> str:
+
+def _generate_display_name(path_absolute: str) -> str:
     """Generate a human-friendly display name for the project."""
     # Try project name from config files
     if project_name := detect_project_name(path_absolute):
