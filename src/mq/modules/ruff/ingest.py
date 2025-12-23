@@ -32,8 +32,11 @@ def ingest(args: Namespace) -> None:
         json_data = json.loads(result.stdout)
 
     results = _parse_ruff_json(json_data)
-    num = _save_results(run, results)
-    print(f"[green]✓ Ingested [bold]{num}[/bold] results from ruff check[/green]")
+    if results:
+        num = _save_results(run, results)
+        print(f"[green]✓ Ingested [bold]{num}[/bold] results from ruff check[/green]")
+    else:
+        print("[green]✓ [bold]Congrulation![/bold] All checks passed![/green]")
 
 
 def _parse_ruff_json(data: list) -> list[Ruff]:

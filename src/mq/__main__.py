@@ -9,7 +9,8 @@ from typing import Callable
 # from rich.traceback import install as install_traceback
 
 from mq import setup_logging, setup_sqlite
-from mq.modules import MODULES
+from mq.modules import MODULE_NAMES
+
 from mq.utils.db import clear, housekeeping, trim
 from mq.cli.status import status
 from mq.web.server import run_server
@@ -160,7 +161,7 @@ def _dispatch_ingest(args: argparse.Namespace) -> None:
         __do_ingest(args.module)
     else:
         # Ingest over ALL available modules..
-        for module in MODULES:
+        for module in MODULE_NAMES:
             __do_ingest(module)
 
 
@@ -177,7 +178,7 @@ def _dispatch_report(args: argparse.Namespace) -> None:
         __do_report(args.module)
     else:
         # Report over ALL available modules..
-        for module in MODULES:
+        for module in MODULE_NAMES:
             __do_report(module)
 
 

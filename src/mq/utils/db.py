@@ -10,7 +10,7 @@ from rich.prompt import Confirm
 
 from mq.cli import cli_console
 from mq.modules.base import Project, Run
-from mq.modules import models_for_module, MODULE_MODELS
+from mq.modules import models_for_module, MODULES_AND_MODELS
 
 log = logging.getLogger(__name__)
 
@@ -18,29 +18,46 @@ log = logging.getLogger(__name__)
 def housekeeping(args: Namespace) -> None:
     """Clean out extraneous Runs that don't have data and Projects that don't have Runs."""
 
-    def _unused_runs(args: Namespace):
-        """Delete orphaned Run rows."""
-        # Gather all the current run id's
-        run_ids_used = set()
-        for model in MODULE_MODELS:
-            models_run_ids = model.select(model.run).distinct()
-            run_ids_used.update([row.run_id for row in models_run_ids])
+    def __cleanup(module_name: str, module_info: dict) -> None:
+        # First, get all the run's id's used by models in this module:
+        model_run_ids = set()
+        models = module_info["models"]
+        for model in models:
+            model_run_ids.update([row.run_id for row in model.select(model.run).distinct()])
+        log.debug(f"- {module_name:6s} {len(models)=:1d} {len(model_run_ids)=:2d} : {sorted(model_run_ids)}")
 
-        # Delete Runs that aren't currently used
-        if run_ids_used:
-            log.debug(f"We have {len(run_ids_used)} active Runs currently.")
-            num = Run.delete().where(Run.id.not_in(run_ids_used)).execute()
-            if num:
-                log.debug(f"Cleaned up {num} Run(s) that weren't referenced.")
+        # Secondly, gather all the run's currently stored for this module
+        run_ids = {run.id for run in Run.select().where(Run.module == module_name)}
+        log.debug(f"- {'Run':6s} {len(run_ids)=:2d} : {sorted(run_ids)}")
 
-    def _unused_projects(args: Namespace):
+        # Find any "extraneous" ones by simple set subtract (!) and delete 'em.
+        run_ids_to_delete = run_ids - model_run_ids
+        if run_ids_to_delete:
+            num = Run.delete().where(Run.id.in_(run_ids_to_delete)).execute()
+            msg = f"- Cleaned up {num} Run(s) that weren't referenced."
+        else:
+            msg = "- No runs needed to be cleaned up."
+        log.debug(msg)
+
+    def _delete_unused_runs(args: Namespace):
+        """Delete orphaned Run rows on behalf of modules that REQUIRE data to be valid."""
+        for module_name, module_info in MODULES_AND_MODELS.items():
+            module = module_info["module"]
+            log.debug(f"Considering {module_name=}")
+            if not module.RESULTS_REQUIRED:
+                log.debug(f"(skipping module: {module_name} from housekeeping as data is NOT required)")
+                continue
+
+            __cleanup(module_name, module_info)
+
+    def _delete_unused_projects(args: Namespace):
         """Delete orphaned Project rows."""
         num = Project.delete().where(Project.id.not_in(Run.select(Run.project).distinct())).execute()
         if num:
             log.debug(f"Cleaned up {num} Projects that had no Runs defined.")
 
-    _unused_runs(args)
-    _unused_projects(args)
+    _delete_unused_runs(args)
+    _delete_unused_projects(args)
 
 
 def clear(args: Namespace) -> None:
