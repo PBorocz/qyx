@@ -107,13 +107,15 @@ def _history(args: Namespace, project: Project) -> None:
             footer=str(grand_totals[timestamp]),
             footer_style="bold cyan",
         )
-    table.add_column("Delta", justify="left", footer=f"{roc['grand_total']:.2f}%")
+    if roc["grand_total"]:
+        table.add_column("Delta", justify="left", footer=f"{roc['grand_total']:.2f}%")
 
     for metric, dt_rows in transposed.items():
         row = [metric]
         for timestamp in sorted(timestamps):
             row.append(str(dt_rows[timestamp]))
-        row.append(f"{roc[metric]:+.2f}%")
+        if roc[metric]:
+            row.append(f"{roc[metric]:+.2f}%")
         table.add_row(*row)
 
     cli_console.print(table)

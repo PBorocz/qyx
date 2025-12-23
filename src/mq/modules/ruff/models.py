@@ -2,7 +2,7 @@
 
 from argparse import Namespace
 
-from peewee import fn, CharField, IntegerField
+from peewee import fn, CharField, IntegerField, JOIN
 
 from mq.modules.base import BaseModuleModel, Project, Run
 from mq.modules.ruff import MODULE
@@ -85,12 +85,15 @@ def query(args: Namespace, level: str, run: Run = None, project: Project = None)
             ################################################################################################
             # Query
             ################################################################################################
+            # NOTE: This seems a bit backward here as we're querying from Run and joining the Ruff table.
+            # We do this as there are valid cases when there are NO Ruff table entries for a particular
+            # run. We still want the timestamp back with a Ruff count of *0*.
             rows = (
-                Ruff.select(
+                Run.select(
                     Run.timestamp.alias("timestamp"),
                     fn.COUNT(Ruff.id).alias("count"),
                 )
-                .join(Run)
+                .join(Ruff, JOIN.LEFT_OUTER)
                 .where(
                     Run.id.in_(runs),
                 )
@@ -98,16 +101,20 @@ def query(args: Namespace, level: str, run: Run = None, project: Project = None)
                 .order_by(Run.timestamp)
                 .objects()
             )
-            timestamps = [result.timestamp for result in rows]
+            timestamps = [row.timestamp for row in rows]
 
             ################################################################################################
             # Transpose (to get timestamps *across* instead of down and calculate grand totals)
             ################################################################################################
             transposed = {row.timestamp: row.count for row in rows}
 
-            roc = rate_of_change_percentage(
-                transposed[timestamps[-2]],
-                transposed[timestamps[-1]],
-            )
+            # Calculate ROC if we can..
+            if len(timestamps) > 1:
+                roc = rate_of_change_percentage(
+                    transposed[timestamps[-2]],
+                    transposed[timestamps[-1]],
+                )
+            else:
+                roc = 0.00
 
             return timestamps, transposed, roc

@@ -49,7 +49,8 @@ def _report_0(args: Namespace, run: Run) -> None:
 def _report_1(args: Namespace, run: Run) -> None:
     summary = query(args, "0", run)
     results = query(args, "1", run)
-    table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_footer=True)
+    show_footer = True if results else False
+    table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
     table.add_column("Count", justify="center", footer=f"{summary.count():,}")
     table.add_column("Message")

@@ -246,15 +246,21 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
             # Calculate rate of change of last 2 entries..
             rocs = dict()
             for attr in raw_attrs:
-                rocs[attr] = rate_of_change_percentage(
-                    transposed[attr][timestamps[-2]],
-                    transposed[attr][timestamps[-1]],
-                )
+                if len(timestamps) > 1:
+                    rocs[attr] = rate_of_change_percentage(
+                        transposed[attr][timestamps[-2]],
+                        transposed[attr][timestamps[-1]],
+                    )
+                else:
+                    rocs[attr] = 0.0
 
-            roc_gt = rate_of_change_percentage(
-                transposed["loc"][timestamps[-2]],
-                transposed["loc"][timestamps[-1]],
-            )
+            if len(timestamps) > 1:
+                roc_gt = rate_of_change_percentage(
+                    transposed["loc"][timestamps[-2]],
+                    transposed["loc"][timestamps[-1]],
+                )
+            else:
+                roc_gt = 0.0
 
             return timestamps, transposed, rocs, roc_gt
 
@@ -426,15 +432,21 @@ def query_hal_h(args: Namespace, level: str = "0", run: Run = None, project: Pro
     # Calculate rate of change of last 2 entries..
     rocs = dict()
     for _, attr, _ in RadonHal.attrs():
-        rocs[attr] = rate_of_change_percentage(
-            transposed[attr][timestamps[-2]],
-            transposed[attr][timestamps[-1]],
-        )
+        if len(timestamps) > 1:
+            rocs[attr] = rate_of_change_percentage(
+                transposed[attr][timestamps[-2]],
+                transposed[attr][timestamps[-1]],
+            )
+        else:
+            rocs[attr] = 0.00
 
-    roc_gt = rate_of_change_percentage(
-        grand_totals[timestamps[-2]],
-        grand_totals[timestamps[-1]],
-    )
+    if len(timestamps) > 1:
+        roc_gt = rate_of_change_percentage(
+            grand_totals[timestamps[-2]],
+            grand_totals[timestamps[-1]],
+        )
+    else:
+        roc_gt = 0.00
     return timestamps, transposed, grand_totals, rocs, roc_gt
 
 
@@ -514,7 +526,10 @@ def query_mi(args: Namespace, level: str = "0", run: Run = None, project: Projec
                 transposed["mi"][result.timestamp] = result.mi_mean
 
             # Calculate rate of change of last 2 entries..
-            roc = rate_of_change_percentage(transposed["mi"][timestamps[-1]], transposed["mi"][timestamps[-2]])
+            if len(timestamps) > 1:
+                roc = rate_of_change_percentage(transposed["mi"][timestamps[-1]], transposed["mi"][timestamps[-2]])
+            else:
+                roc = 0.00
 
             return timestamps, transposed, roc
 
@@ -600,11 +615,13 @@ def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Projec
                 transposed["complexity"][result.timestamp] = result.complexity
 
             # Calculate rate of change of last 2 entries..
-            roc = dict()
-            roc = rate_of_change_percentage(
-                transposed["complexity"][timestamps[-2]],
-                transposed["complexity"][timestamps[-1]],
-            )
+            if len(timestamps) > 1:
+                roc = rate_of_change_percentage(
+                    transposed["complexity"][timestamps[-2]],
+                    transposed["complexity"][timestamps[-1]],
+                )
+            else:
+                roc = 0.00
 
             return timestamps, transposed, roc
 

@@ -157,13 +157,19 @@ def _query_history(project: Project, last: int) -> tuple[list[str], defaultdict,
 
     roc = dict()
     for attr in ("Code", "Comment", "Blank"):
-        roc[attr] = rate_of_change_percentage(
-            transposed[attr][timestamps[-2]],
-            transposed[attr][timestamps[-1]],
+        if len(timestamps) > 1:
+            roc[attr] = rate_of_change_percentage(
+                transposed[attr][timestamps[-2]],
+                transposed[attr][timestamps[-1]],
+            )
+        else:
+            roc[attr] = 0.00
+    if len(timestamps) > 1:
+        roc["grand_total"] = rate_of_change_percentage(
+            grand_totals[timestamps[-2]],
+            grand_totals[timestamps[-1]],
         )
-    roc["grand_total"] = rate_of_change_percentage(
-        grand_totals[timestamps[-2]],
-        grand_totals[timestamps[-1]],
-    )
+    else:
+        roc["grand_total"] = 0.00
 
     return timestamps, transposed, grand_totals, roc
