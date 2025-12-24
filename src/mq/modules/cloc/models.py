@@ -2,14 +2,18 @@
 
 from argparse import Namespace
 from decimal import Decimal
+from datetime import datetime
 from collections import defaultdict
 from typing import Any
+import logging
 
 from peewee import fn, IntegerField
 
 from mq.modules.base import BaseModuleModel, Project, Request, Scan
 from mq.modules.cloc import MODULE
 from mq.utils import rate_of_change_percentage
+
+log = logging.getLogger(__name__)
 
 
 class Cloc(BaseModuleModel):
@@ -193,4 +197,29 @@ def _query_history(project: Project, request: Request, last: int) -> tuple[list[
     else:
         roc["grand_total"] = 0.00
 
-    return timestamps, query, transposed, grand_totals, roc
+    adgs = dict()
+    if len(timestamps) > 1:
+        days = days_between(timestamps[0], timestamps[-1])
+        # fmt: off
+        adgs["total_code"   ] = (query[-1].total_code    - query[0].total_code   ) / days
+        adgs["total_comment"] = (query[-1].total_comment - query[0].total_comment) / days
+        adgs["total_blank"  ] = (query[-1].total_blank   - query[0].total_blank  ) / days
+        # fmt: on
+    return timestamps, query, transposed, grand_totals, roc, adgs
+
+
+def days_between(timestamp1: str, timestamp2: str) -> float:
+    """Calculate the number of days between two timestamp strings.
+
+    Args:
+        timestamp1: Earlier timestamp string (e.g., "2025-12-20 23:53:56+00:00")
+        timestamp2: Later timestamp string (e.g., "2025-12-24 01:05:12+00:00")
+
+    Returns:
+        Number of days as a float (e.g., 3.05)
+    """
+    dt1 = datetime.fromisoformat(timestamp1)
+    dt2 = datetime.fromisoformat(timestamp2)
+
+    delta = dt2 - dt1
+    return delta.total_seconds() / (24 * 60 * 60)

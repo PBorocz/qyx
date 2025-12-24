@@ -99,9 +99,8 @@ def _full(args: Namespace, scan: Scan) -> None:
 
 
 def _history(args: Namespace, project: Project, request: Request) -> None:
-    timestamps, rows, transposed, grand_totals, roc = query(args, "history", project=project, request=request)
+    timestamps, rows, transposed, grand_totals, roc, adgs = query(args, "history", project=project, request=request)
     timestamps_formatted = format_timestamp_headers(timestamps)
-    table = cli_table(title="CLOC Results Over Time", show_footer=True)
     if len(timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)
         table.add_column("Metric", justify="left", footer="-")
@@ -113,7 +112,7 @@ def _history(args: Namespace, project: Project, request: Request) -> None:
                 footer_style="bold cyan",
             )
         if roc["grand_total"]:
-            table.add_column("Delta", justify="left", footer=f"{roc['grand_total']:.2f}%")
+            table.add_column("Delta", justify="left", footer=f"{roc['grand_total']:,.2f}%")
 
         for metric, dt_rows in transposed.items():
             row = [metric]
@@ -123,10 +122,11 @@ def _history(args: Namespace, project: Project, request: Request) -> None:
                 row.append(f"{roc[metric]:+.2f}%")
             table.add_row(*row)
     else:
-        table.add_column("-", justify="left")
-        table.add_column("Code", justify="right")
-        table.add_column("Comment", justify="right")
-        table.add_column("Blank", justify="right")
+        table = cli_table(title="CLOC Results Over Time", show_footer=True)
+        table.add_column("", justify="left", footer="Average Daily Growth")
+        table.add_column("Code", justify="right", footer=f"{adgs['total_code']:,.0f}")
+        table.add_column("Comment", justify="right", footer=f"{adgs['total_comment']:,.0f}")
+        table.add_column("Blank", justify="right", footer=f"{adgs['total_blank']:,.0f}")
         for row in rows:
             t_row = [
                 timestamps_formatted[row.timestamp],

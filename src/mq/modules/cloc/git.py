@@ -29,7 +29,7 @@ def git_commits(args: Namespace) -> Iterator[tuple]:
         log.debug(f"Found {len(commits)} commits")
 
         # Process each commit
-        for i, commit_info in enumerate_skip(commits, 10):
+        for i, commit_info in enumerate_skip(commits, 1):
             commit_hash, commit_date = commit_info
             log.debug(f"Processing commit {i + 1:02d}/{len(commits):d}: {commit_date} {commit_hash[:8]}")
             checkout_commit(repo_path, commit_hash)
