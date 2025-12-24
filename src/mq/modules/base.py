@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import zoneinfo
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import peewee as pw
 
-from mq.utils import detect_project_name
+from mq.utils import detect_project_name, timestamp_display
 
 
 class BaseModel(pw.Model):
@@ -18,6 +18,10 @@ class BaseModel(pw.Model):
         """Define peewee orm/table semantics."""
 
         database = None
+
+    def timestamp_display(self, full: bool = False) -> str:
+        """..."""
+        return timestamp_display(self.timestamp)
 
 
 class Project(BaseModel):
@@ -37,48 +41,69 @@ class Project(BaseModel):
     """
 
     id = pw.AutoField()
-    path_input = pw.CharField(
+    name = pw.CharField(
+        help_text="Descriptive name of the project, either as assigned by the user or calculated.",
+    )
+    input = pw.CharField(
         help_text="Path as entered by user (e.g., '.', '../src', '/abs/path').",
     )
     path_absolute = pw.CharField(
         help_text="Resolved absolute path to project root directory.",
         unique=True,
     )
-    path_display = pw.CharField(
-        help_text="Human-friendly display name for reports and UI.",
-    )
     created = pw.DateTimeField(
         help_text="GMT/UTC datetime the project was created.",
-        default=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
     )
 
+    class Meta:
+        """Define peewee meta data."""
+
+        indexes = (
+            (("name",), True),
+            (("input",), True),
+        )
+
     @classmethod
-    def get_or_insert_raw(cls, path_input: str, path_absolute: str, display: str) -> Project:
+    def get_(cls, input: str) -> Project | None:
+        """Get the project using either or name."""
+        try:
+            return cls.get(cls.input == input)
+        except pw.DoesNotExist:
+            try:
+                return cls.get(cls.name == input)
+            except pw.DoesNotExist:
+                return None
+
+    @classmethod
+    def get_or_insert_raw(cls, input: str, path_absolute: str, display: str) -> Project:
         """Get the project of the specified input path, even if we have to insert."""
         try:
-            project = cls.get(cls.path_input == path_input)
+            return cls.get(cls.input == input)
         except pw.DoesNotExist:
-            project = cls.create(
-                path_input=path_input,
-                path_absolute=path_absolute,
-                path_display=display,
-            )
-        return project
+            try:
+                return cls.get(cls.name == input)
+            except pw.DoesNotExist:
+                return cls.create(
+                    name=display,
+                    input=input,
+                    path_absolute=path_absolute,
+                )
 
     @classmethod
     def get_or_insert_relative(cls, arg_input_dir: str) -> Project:
         """Get the project at the specified source directory, even if we have to insert."""
         path_absolute = str(Path(arg_input_dir).resolve())
-        path_display = _generate_display_name(path_absolute)
-        return cls.get_or_insert_raw(arg_input_dir, path_absolute, path_display)
+        name = _generate_display_name(path_absolute)
+        return cls.get_or_insert_raw(arg_input_dir, path_absolute, name)
         # try:
         #     project = cls.get(cls.path_absolute == path_absolute)
         # except pw.DoesNotExist:
-        #     path_display = generate_display_name(path_absolute)
+        #     name = generate_display_name(path_absolute)
         #     project = cls.create(
         #         path_input=arg_input_dir,
         #         path_absolute=path_absolute,
-        #         path_display=path_display,
+        #         name=name,
         #     )
         # return project
 
@@ -106,36 +131,83 @@ def _generate_display_name(path_absolute: str) -> str:
     return Path(path_absolute).name
 
 
-class Run(BaseModel):
-    """A 'Run' is the execution of a particular module at a particular time for a project."""
+class Request(BaseModel):
+    """A 'Request' captures the user desire to perform an analysis."""
 
-    # fmt: off
-    id              = pw.AutoField()
-    project         = pw.ForeignKeyField(Project, backref="runs", on_delete="CASCADE")
-    timestamp       = pw.DateTimeField(help_text="GMT/UTC datetime the ingest occurred", default=datetime.utcnow)
-    module          = pw.CharField(help_text="Module gathered for, e.g. ruff, cloc, radon etc.")
-    sub_module      = pw.CharField(help_text="Optional sub-module, e.g. cc or raw obo radon.", null=True)
-    git_commit_hash = pw.CharField(help_text="ID from respective sport's site", null=True)
-    # fmt: on
+    id = pw.AutoField()
+    project = pw.ForeignKeyField(
+        Project,
+        backref="runs",
+        on_delete="CASCADE",
+    )
+    module = pw.CharField(
+        help_text="Module gathered for, e.g. ruff, cloc, radon etc.",
+    )
+    sub_module = pw.CharField(
+        help_text="Optional sub-module, e.g. cc or raw obo radon.",
+        null=True,
+    )
+    timestamp = pw.DateTimeField(
+        help_text="GMT/UTC datetime the ingest occurred",
+        default=lambda: datetime.now(UTC),
+    )
 
     class Meta:
         """Define peewee meta data."""
 
         indexes = ((("project", "timestamp", "module", "sub_module"), True),)
 
-    @property
-    def timestamp_display(self) -> str:
-        """..."""
-        dt_local: datetime = self.timestamp.replace(tzinfo=zoneinfo.ZoneInfo("UTC")).astimezone()
-        format = "%H:%M%p" if dt_local.date() == datetime.now().date() else "%Y-%m-%d %H:%M%p"
-        return dt_local.strftime(format)
+    @classmethod
+    def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Request | None:
+        """Find the most recent run for the specified project and module (or sub_module)."""
+        query = (
+            Request.select()
+            .order_by(Request.timestamp.desc())
+            .where(Request.project == project.id, Request.module == module)
+        )
+        if sub_module:
+            query = query.where(Request.sub_module == sub_module)
+        if run := query.first():
+            return run
+        return None
+
+
+class Scan(BaseModel):
+    """A 'Scan' is the execution of a particular module at a particular time for a project."""
+
+    id = pw.AutoField()
+    request = pw.ForeignKeyField(
+        Request,
+        backref="scans",
+        on_delete="CASCADE",
+    )
+    timestamp = pw.DateTimeField(
+        help_text="GMT/UTC datetime of the code base",
+        default=lambda: datetime.now(UTC),
+    )
+    module = pw.CharField(
+        help_text="Module gathered for, e.g. ruff, cloc, radon etc.",
+    )
+    sub_module = pw.CharField(
+        help_text="Optional sub-module, e.g. cc or raw obo radon.",
+        null=True,
+    )
+    git_commit_hash = pw.CharField(
+        help_text="ID from respective sport's site",
+        null=True,
+    )
+
+    class Meta:
+        """Define peewee meta data."""
+
+        indexes = ((("request", "timestamp", "module", "sub_module"), True),)
 
     @classmethod
-    def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Run | None:
+    def get_most_recent(cls, request: Request, module: str, sub_module: str = None) -> Scan | None:
         """Find the most recent run for the specified project and module (or sub_module)."""
-        query = Run.select().order_by(Run.timestamp.desc()).where(Run.project == project.id, Run.module == module)
+        query = Scan.select().order_by(Scan.timestamp.desc()).where(Scan.request == request, Scan.module == module)
         if sub_module:
-            query = query.where(Run.sub_module == sub_module)
+            query = query.where(Scan.sub_module == sub_module)
         if run := query.first():
             return run
         return None
@@ -146,7 +218,7 @@ class BaseModuleModel(pw.Model):
 
     # fmt: off
     id       = pw.AutoField()
-    run      = pw.ForeignKeyField(Run, backref="modules", on_delete="CASCADE")
+    scan     = pw.ForeignKeyField(Scan, backref="modules", on_delete="CASCADE")
     filename = pw.CharField(help_text="Name of file under evaluation.")
     dir      = pw.CharField(help_text="Relative directory of file under evaluation.")
     # fmt: on

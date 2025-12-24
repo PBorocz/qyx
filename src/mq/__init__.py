@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from mq.modules import MODULE_MODELS
-from mq.modules.base import Project, Run
+from mq.modules.base import Project, Request, Scan
 
 
 def setup_sqlite(args: Namespace) -> None:
@@ -19,7 +19,7 @@ def setup_sqlite(args: Namespace) -> None:
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
 
     # Make sure our models have tables defined for 'em!
-    for ith, model_class in enumerate([Project, Run] + MODULE_MODELS):
+    for ith, model_class in enumerate([Project, Request, Scan] + MODULE_MODELS):
         model_class._meta.database = db
         model_class.create_table(safe=True)
     logging.debug(f"...connected to {db_path.name=} with {ith + 1} models defined.")

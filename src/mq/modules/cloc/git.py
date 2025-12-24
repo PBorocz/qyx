@@ -4,6 +4,7 @@ import logging
 import tempfile
 import subprocess
 from argparse import Namespace
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 from urllib.parse import urlparse
@@ -28,10 +29,11 @@ def git_commits(args: Namespace) -> Iterator[tuple]:
         log.debug(f"Found {len(commits)} commits")
 
         # Process each commit
-        for i, commit_hash in enumerate_skip(commits, 1):
-            log.debug(f"Processing commit {i + 1:02d}/{len(commits):d}: {commit_hash[:8]}")
+        for i, commit_info in enumerate_skip(commits, 10):
+            commit_hash, commit_date = commit_info
+            log.debug(f"Processing commit {i + 1:02d}/{len(commits):d}: {commit_date} {commit_hash[:8]}")
             checkout_commit(repo_path, commit_hash)
-            yield repo_path, commit_hash
+            yield repo_path, commit_date, commit_hash
 
 
 def parse_git_standalone(args: Namespace) -> None:
@@ -47,16 +49,22 @@ def parse_git_standalone(args: Namespace) -> None:
         # Here you would store metrics in your SQLite database
 
 
-def get_commit_hashes(repo_path: Path) -> list[str]:
+def get_commit_hashes(repo_path: Path) -> list[tuple[str, str]]:
     """Get all commit hashes in chronological order (oldest to newest)."""
     result = subprocess.run(
-        ["git", "log", "--reverse", "--pretty=format:%H"],
+        ["git", "log", "--reverse", "--pretty=format:%H|%at"],  # Unix timestamp..
         cwd=repo_path,
         capture_output=True,
         text=True,
         check=True,
     )
-    return result.stdout.strip().split("\n")
+    commits = []
+    for line in result.stdout.strip().split("\n"):
+        hash_val, s_date = line.split("|")
+        utc_date = datetime.fromtimestamp(int(s_date), tz=timezone.utc)
+        commits.append((hash_val, utc_date))
+
+    return commits
 
 
 def checkout_commit(repo_path: Path, commit_hash: str) -> None:

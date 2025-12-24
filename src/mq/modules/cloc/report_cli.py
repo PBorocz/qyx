@@ -5,7 +5,7 @@ from argparse import Namespace
 
 from mq.cli import cli_table, cli_console
 from mq.modules import format_int_or_percentage as fmt
-from mq.modules.base import Project, Run
+from mq.modules.base import Project, Request, Scan
 from mq.modules.cloc import MODULE
 from mq.modules.cloc.models import query
 from mq.utils import format_timestamp_headers
@@ -14,33 +14,36 @@ log = logging.getLogger(__name__)
 
 
 def report(args: Namespace) -> None:
-    try:
-        project = Project.get(Project.path_input == args.project)
-    except Project.DoesNotExist:
+    if not (project := Project.get_(args.project)):
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 
-    # Get most recent Run for simple "current-state" reporting..
-    if not (run := Run.get_most_recent(project, MODULE)):
+    # Get most recent Request for simple "current-state" reporting..
+    if not (request := Request.get_most_recent(project, MODULE)):
+        log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
+        return None
+
+    # Get most recent Scan for simple "current-state" reporting..
+    if not (scan := Scan.get_most_recent(request, MODULE)):
         log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
         return None
 
     match args.level.lower():
         case "0":
-            _summary(args, run)
+            _summary(args, scan)
         case "1":
-            _detail(args, run)
+            _detail(args, scan)
         case "2":
-            _full(args, run)
+            _full(args, scan)
         case "h" | "history":
-            _history(args, project)
+            _history(args, project, request)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
 
 
-def _summary(args: Namespace, run: Run) -> None:
-    result = query(args, "0", run)
-    table = cli_table(title=f"CLOC @ {run.timestamp_display}")
+def _summary(args: Namespace, scan: Scan) -> None:
+    result = query(args, "0", scan=scan)
+    table = cli_table(title=f"CLOC @ {scan.timestamp_display()}")
     table.add_column("Code", justify="center")
     table.add_column("Comment", justify="center")
     table.add_column("Blank", justify="center")
@@ -54,10 +57,10 @@ def _summary(args: Namespace, run: Run) -> None:
     cli_console.print(table)
 
 
-def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
-    grand_total = query(args, "0", run)
-    detail_rows = query(args, "1", run)
-    table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
+def _detail(args: Namespace, scan: Scan, percentage: bool = False) -> None:
+    grand_total = query(args, "0", scan=scan)
+    detail_rows = query(args, "1", scan=scan)
+    table = cli_table(title=f"CLOC @ {scan.timestamp_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
     table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.options.percentages))
     table.add_column("Comment", justify="right", footer=fmt(grand_total.lines_comment, args.options.percentages))
@@ -75,10 +78,10 @@ def _detail(args: Namespace, run: Run, percentage: bool = False) -> None:
     cli_console.print(table)
 
 
-def _full(args: Namespace, run: Run) -> None:
-    rows, column_totals, grand_total = query(args, "2", run)
+def _full(args: Namespace, scan: Scan) -> None:
+    rows, column_totals, grand_total = query(args, "2", scan=scan)
 
-    table = cli_table(title=f"CLOC @ {run.timestamp_display}", show_footer=True)
+    table = cli_table(title=f"CLOC @ {scan.timestamp_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
     table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], args.options.percentages))
     table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], args.options.percentages))
@@ -95,8 +98,8 @@ def _full(args: Namespace, run: Run) -> None:
     cli_console.print(table)
 
 
-def _history(args: Namespace, project: Project) -> None:
-    timestamps, rows, transposed, grand_totals, roc = query(args, "history", project=project)
+def _history(args: Namespace, project: Project, request: Request) -> None:
+    timestamps, rows, transposed, grand_totals, roc = query(args, "history", project=project, request=request)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="CLOC Results Over Time", show_footer=True)
     if len(timestamps) <= 20:

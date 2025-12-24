@@ -6,7 +6,7 @@ from typing import Any
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
-from mq.modules.base import BaseModel, BaseModuleModel, Project, Run
+from mq.modules.base import BaseModel, BaseModuleModel, Project, Scan
 from mq.modules.radon import MODULE
 from mq.utils import rate_of_change_percentage
 
@@ -28,7 +28,7 @@ class RadonRaw(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_raw"
-        indexes = ((("run", "dir", "filename"), True),)
+        indexes = ((("scan", "dir", "filename"), True),)
 
 
 class RadonMi(BaseModuleModel):
@@ -43,7 +43,7 @@ class RadonMi(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_mi"
-        indexes = ((("run", "dir", "filename"), True),)
+        indexes = ((("scan", "dir", "filename"), True),)
 
 
 class RadonCc(BaseModuleModel):
@@ -78,7 +78,7 @@ class RadonCc(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_cc"
-        indexes = ((("run", "dir", "filename", "entity_type", "entity_name"), True),)
+        indexes = ((("scan", "dir", "filename", "entity_type", "entity_name"), True),)
 
 
 class RadonHal(BaseModuleModel):
@@ -124,15 +124,15 @@ class RadonHal(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_hal"
-        indexes = ((("run", "dir", "filename"), True),)
+        indexes = ((("scan", "dir", "filename"), True),)
 
 
 class RadonHalFunction(BaseModel):
     """Radon "HAL" Function metric storage."""
 
     # fmt: off
-    run               = ForeignKeyField(Run, backref="radon_hal_functions_run", on_delete="CASCADE")
-    radon_hal_id      = ForeignKeyField(RadonHal, backref="radon_hal_functions", on_delete="CASCADE")
+    scan              = ForeignKeyField(Scan, backref="radon_hal_functions_scan", on_delete="CASCADE")
+    radon_hal         = ForeignKeyField(RadonHal, backref="radon_hal_functions", on_delete="CASCADE")
 
     name              = CharField(help_text="function name")
     h1		      = IntegerField(help_text="Total distinct operators")
@@ -153,13 +153,13 @@ class RadonHalFunction(BaseModel):
         """Define peewee meta data."""
 
         table_name = "radon_hal_function"
-        indexes = ((("radon_hal_id", "name"), True),)
+        indexes = ((("radon_hal", "name"), True),)
 
 
 ################################################################################################
 # Queries..
 ################################################################################################
-def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     match level.lower():
         case "0":
@@ -171,7 +171,7 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
                 fn.SUM(RadonRaw.multi).alias("multi"),
                 fn.SUM(RadonRaw.blank).alias("blank"),
                 fn.SUM(RadonRaw.single_comments).alias("single_comments"),
-            ).where(RadonRaw.run == run.id)
+            ).where(RadonRaw.scan == scan)
 
         case "1":
             rows = (
@@ -185,7 +185,7 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
                     fn.SUM(RadonRaw.blank).alias("blank"),
                     fn.SUM(RadonRaw.single_comments).alias("single_comments"),
                 )
-                .where(RadonRaw.run == run.id)
+                .where(RadonRaw.scan == scan)
                 .group_by(RadonRaw.dir)
                 .order_by(RadonRaw.dir)
             )
@@ -198,24 +198,24 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
             return rows, totals
 
         case "2":
-            return RadonRaw.select().where(RadonRaw.run == run.id).order_by(RadonRaw.dir, RadonRaw.filename)
+            return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.dir, RadonRaw.filename)
 
         case "h" | "history":
             # FIXME: Refactor to make this a "common" query given the number of places we use it:
-            runs = (
-                Run.select()
+            scans = (
+                Scan.select()
                 .where(
-                    Run.project == project,
-                    Run.module == MODULE,
-                    Run.sub_module == "raw",
+                    Scan.project == project,
+                    Scan.module == MODULE,
+                    Scan.sub_module == "raw",
                 )
-                .order_by(Run.timestamp.desc())
+                .order_by(Scan.timestamp.desc())
                 .limit(args.options.last)
             )
 
             query = (
                 RadonRaw.select(
-                    Run.timestamp.alias("timestamp"),
+                    Scan.timestamp.alias("timestamp"),
                     fn.SUM(RadonRaw.loc).alias("loc"),
                     fn.SUM(RadonRaw.lloc).alias("lloc"),
                     fn.SUM(RadonRaw.sloc).alias("sloc"),
@@ -224,10 +224,10 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
                     fn.SUM(RadonRaw.blank).alias("blank"),
                     fn.SUM(RadonRaw.single_comments).alias("single_comments"),
                 )
-                .join(Run)
-                .where(Run.id.in_(runs))
-                .group_by(Run.timestamp)
-                .order_by(Run.timestamp)
+                .join(Scan)
+                .where(Scan.id.in_(scans))
+                .group_by(Scan.timestamp)
+                .order_by(Scan.timestamp)
                 .objects()
             )
 
@@ -268,23 +268,23 @@ def query_raw(args: Namespace, level: str = "0", run: Run = None, project: Proje
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def query_hal(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+def query_hal(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     match level.lower():
         case "0":
-            return query_hal_0(args, level, run, project)
+            return query_hal_0(args, level, scan, project)
         case "1":
-            return query_hal_1(args, level, run, project)
+            return query_hal_1(args, level, scan, project)
         case "2":
-            return query_hal_2(args, level, run, project)
+            return query_hal_2(args, level, scan, project)
         case "3":
-            return query_hal_3(args, level, run, project)
+            return query_hal_3(args, level, scan, project)
         case "h":
-            return query_hal_h(args, level, run, project)
+            return query_hal_h(args, level, scan, project)
         case _:
             raise RuntimeError(f"Sorry, invalid query level requested {level=}")
 
 
-def query_hal_0(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+def query_hal_0(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     return (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
@@ -301,13 +301,13 @@ def query_hal_0(args: Namespace, level: str = "0", run: Run = None, project: Pro
             fn.AVG(RadonHal.bugs).alias("bugs"),
         )
         .where(
-            RadonHal.run == run.id,
+            RadonHal.scan == scan,
         )
         .get()
     )
 
 
-def query_hal_1(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+def query_hal_1(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     rows = (
         RadonHal.select(
             RadonHal.dir,
@@ -325,7 +325,7 @@ def query_hal_1(args: Namespace, level: str = "0", run: Run = None, project: Pro
             fn.AVG(RadonHal.bugs).alias("bugs"),
         )
         .group_by(RadonHal.dir)
-        .where(RadonHal.run == run.id)
+        .where(RadonHal.scan == scan)
         .order_by(RadonHal.dir)
     )
     # Calculate mean of the means
@@ -337,8 +337,8 @@ def query_hal_1(args: Namespace, level: str = "0", run: Run = None, project: Pro
     return rows, mean_means
 
 
-def query_hal_2(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
-    rows = RadonHal.select().where(RadonHal.run == run.id).order_by(RadonHal.dir, RadonHal.filename)
+def query_hal_2(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+    rows = RadonHal.select().where(RadonHal.scan == scan).order_by(RadonHal.dir, RadonHal.filename)
 
     # Calculate means
     means = {}
@@ -348,7 +348,7 @@ def query_hal_2(args: Namespace, level: str = "0", run: Run = None, project: Pro
     return rows, means
 
 
-def query_hal_3(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+def query_hal_3(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     rows = (
         RadonHalFunction.select(
             RadonHal.dir,
@@ -368,7 +368,7 @@ def query_hal_3(args: Namespace, level: str = "0", run: Run = None, project: Pro
             RadonHalFunction.bugs,
         )
         .join(RadonHal)
-        .where(RadonHal.run == run.id)
+        .where(RadonHal.scan == scan)
         .order_by(RadonHal.dir, RadonHal.filename, RadonHalFunction.name)
         .objects()
     )
@@ -380,21 +380,21 @@ def query_hal_3(args: Namespace, level: str = "0", run: Run = None, project: Pro
     return rows, means
 
 
-def query_hal_h(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
-    runs = (
-        Run.select()
+def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+    scans = (
+        Scan.select()
         .where(
-            Run.project == project,
-            Run.module == MODULE,
-            Run.sub_module == "hal",
+            Scan.project == project,
+            Scan.module == MODULE,
+            Scan.sub_module == "hal",
         )
-        .order_by(Run.timestamp.desc())
+        .order_by(Scan.timestamp.desc())
         .limit(args.options.last)
     )
 
     query = (
         RadonHal.select(
-            Run.timestamp.alias("timestamp"),
+            Scan.timestamp.alias("timestamp"),
             fn.AVG(RadonHal.h1).alias("h1"),
             fn.AVG(RadonHal.h2).alias("h2"),
             fn.AVG(RadonHal.N1).alias("N1"),
@@ -408,10 +408,10 @@ def query_hal_h(args: Namespace, level: str = "0", run: Run = None, project: Pro
             fn.AVG(RadonHal.time).alias("time"),
             fn.AVG(RadonHal.bugs).alias("bugs"),
         )
-        .join(Run)
-        .where(Run.id.in_(runs))
-        .group_by(Run.timestamp)
-        .order_by(Run.timestamp)
+        .join(Scan)
+        .where(Scan.id.in_(scans))
+        .group_by(Scan.timestamp)
+        .order_by(Scan.timestamp)
         .objects()
     )
 
@@ -450,15 +450,15 @@ def query_hal_h(args: Namespace, level: str = "0", run: Run = None, project: Pro
     return timestamps, transposed, grand_totals, rocs, roc_gt
 
 
-def query_mi(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     match level.lower():
         case "0":
-            return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.run == run.id).get()
+            return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.scan == scan).get()
 
         case "1":
             rows = (
                 RadonMi.select(RadonMi.dir, fn.AVG(RadonMi.mi).alias("mi_mean"))
-                .where(RadonMi.run == run.id)
+                .where(RadonMi.scan == scan)
                 .order_by(fn.AVG(RadonMi.mi).asc(), RadonMi.dir)
                 .group_by(RadonMi.dir)
             )
@@ -476,7 +476,7 @@ def query_mi(args: Namespace, level: str = "0", run: Run = None, project: Projec
 
         case "2":
             rows = (
-                RadonMi.select().where(RadonMi.run == run.id).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
+                RadonMi.select().where(RadonMi.scan == scan).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
             )
             # Calculate the average maintainability index
             mi_s = [row.mi for row in rows]
@@ -491,29 +491,29 @@ def query_mi(args: Namespace, level: str = "0", run: Run = None, project: Projec
 
         case "h" | "history":
             assert project
-            runs = (
-                Run.select(Run.id)
+            scans = (
+                Scan.select(Scan.id)
                 .where(
-                    Run.project == project,
-                    Run.module == MODULE,
-                    Run.sub_module == "mi",
+                    Scan.project == project,
+                    Scan.module == MODULE,
+                    Scan.sub_module == "mi",
                 )
-                .order_by(Run.timestamp.desc())
+                .order_by(Scan.timestamp.desc())
                 .limit(args.options.last)
             )
-            run_ids = [run.id for run in runs]
+            scan_ids = [scan.id for scan in scans]
 
             query = (
                 RadonMi.select(
-                    Run.timestamp.alias("timestamp"),
+                    Scan.timestamp.alias("timestamp"),
                     fn.AVG(RadonMi.mi).alias("mi_mean"),
                 )
                 .where(
-                    RadonMi.run.in_(run_ids),
+                    RadonMi.run.in_(scan_ids),
                 )
-                .join(Run)
-                .group_by(Run.timestamp)
-                .order_by(Run.timestamp.desc())
+                .join(Scan)
+                .group_by(Scan.timestamp)
+                .order_by(Scan.timestamp.desc())
                 .objects()
             )
 
@@ -537,7 +537,7 @@ def query_mi(args: Namespace, level: str = "0", run: Run = None, project: Projec
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Project = None) -> Any:
+def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     match level.lower():
         case "0":
             return (
@@ -545,7 +545,7 @@ def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Projec
                     RadonCc.entity_type.alias("entity_type"),
                     fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
-                .where(RadonCc.run == run.id)
+                .where(RadonCc.scan == scan)
                 .group_by(RadonCc.entity_type)
                 .order_by(fn.COUNT(RadonCc.id).desc())
             )
@@ -557,7 +557,7 @@ def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Projec
                     RadonCc.entity_type,
                     fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
-                .where(RadonCc.run == run.id)
+                .where(RadonCc.scan == scan)
                 .group_by(RadonCc.dir, RadonCc.entity_type)
                 .order_by(RadonCc.dir, RadonCc.entity_type)
             )
@@ -570,7 +570,7 @@ def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Projec
                     RadonCc.entity_type,
                     fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
-                .where(RadonCc.run == run.id)
+                .where(RadonCc.scan == scan)
                 .group_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
                 .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
             )
@@ -578,31 +578,31 @@ def query_cc(args: Namespace, level: str = "0", run: Run = None, project: Projec
         case "3":
             return (
                 RadonCc.select()
-                .where(RadonCc.run == run.id)
+                .where(RadonCc.scan == scan)
                 .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_name)
             )
 
         case "h":
-            runs = (
-                Run.select()
+            scans = (
+                Scan.select()
                 .where(
-                    Run.project == project,
-                    Run.module == MODULE,
-                    Run.sub_module == "cc",
+                    Scan.project == project,
+                    Scan.module == MODULE,
+                    Scan.sub_module == "cc",
                 )
-                .order_by(Run.timestamp.desc())
+                .order_by(Scan.timestamp.desc())
                 .limit(args.options.last)
             )
 
             query = (
                 RadonCc.select(
-                    Run.timestamp.alias("timestamp"),
+                    Scan.timestamp.alias("timestamp"),
                     fn.AVG(RadonCc.complexity).alias("complexity"),
                 )
-                .join(Run)
-                .where(Run.id.in_(runs))
-                .group_by(Run.timestamp)
-                .order_by(Run.timestamp)
+                .join(Scan)
+                .where(Scan.id.in_(scans))
+                .group_by(Scan.timestamp)
+                .order_by(Scan.timestamp)
                 .objects()
             )
 

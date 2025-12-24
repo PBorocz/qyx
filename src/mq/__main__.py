@@ -208,11 +208,17 @@ def parse_options(options_str: str, defaults=None):
 
 def main():
     # install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
-    args = get_args()  # Get/process all command-line arguments
-    setup_logging(args.debug, False)  # Setup logging (now that we know what potential level to log to)
-    setup_sqlite(args)  # Setup our data-store and respective tables.
 
-    # Lookup the appropriate method to run based on the sub-command desired:
+    # Get/process all command-line arguments
+    args = get_args()
+
+    # Setup logging (now that we know what potential level to log to)
+    setup_logging(args.debug, False)
+
+    # Setup our data-store and respective tables.
+    setup_sqlite(args)
+
+    # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
     match args.command:
         case "ingest":
             _dispatch_ingest(args)
@@ -233,4 +239,5 @@ def main():
         case _:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
-    housekeeping(args)  # Do database housekeeping
+    # FIXME
+    # housekeeping(args)  # Do database housekeeping

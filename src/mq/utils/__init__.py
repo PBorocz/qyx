@@ -27,6 +27,30 @@ def remove_common_prefixes(rows: list) -> list:
     return rows
 
 
+def timestamp_display(timestamp: str, full: bool = False) -> str:
+    """..."""
+    # Parse the string timestamp from database
+    if isinstance(timestamp, str):
+        dt_utc = datetime.fromisoformat(timestamp)
+    else:
+        dt_utc = timestamp
+
+    # Ensure it's timezone-aware (it should be already)
+    if dt_utc.tzinfo is None:
+        dt_utc = dt_utc.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+
+    # Convert to local timezone
+    dt_local = dt_utc.astimezone()
+
+    # Choose format based on whether it's today
+    if not full and dt_local.date() == datetime.now().date():
+        format = "%H:%M%p"
+    else:
+        format = "%Y-%m-%d %H:%M%p"
+
+    return dt_local.strftime(format)
+
+
 def rate_of_change_percentage(old_value, new_value):
     """Calculate the rate of change percentage between two values.
 
@@ -56,8 +80,8 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
         Dict of formatted header strings keyed by original timestamp provided
     """
 
-    def __local(dt: datetime) -> datetime:
-        return dt.replace(tzinfo=zoneinfo.ZoneInfo("UTC")).astimezone()
+    def __local(s_dt: str) -> datetime:
+        return datetime.fromisoformat(s_dt).astimezone()
 
     if not timestamps:
         return []
@@ -65,8 +89,9 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     # Group timestamps by date
     dates_to_times = defaultdict(list)
     for ts in timestamps:
-        date_key = ts.date()
-        time_str = ts.strftime("%H:%M:%S")
+        date_ = datetime.fromisoformat(ts)
+        date_key = date_.date()
+        time_str = date_.strftime("%H:%M:%S")
         dates_to_times[date_key].append((ts, time_str))
 
     num_unique_dates = len(dates_to_times)

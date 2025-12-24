@@ -7,7 +7,7 @@ from typing import Any
 
 from peewee import fn, IntegerField
 
-from mq.modules.base import BaseModuleModel, Project, Run
+from mq.modules.base import BaseModuleModel, Project, Request, Scan
 from mq.modules.cloc import MODULE
 from mq.utils import rate_of_change_percentage
 
@@ -26,22 +26,28 @@ class Cloc(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "cloc"
-        indexes = ((("run", "dir", "filename"), True),)
+        indexes = ((("scan", "dir", "filename"), True),)
 
 
-def query(args: Namespace, level: str = "summary", run: Run = None, project: Project = None) -> Any:
+def query(
+    args: Namespace,
+    level: str = "summary",
+    project: Project = None,
+    request: Request = None,
+    scan: Scan = None,
+) -> Any:
     match level.lower():
         case "0":
-            return _query_summary(run, percentages=args.options.percentages)
+            return _query_summary(scan, percentages=args.options.percentages)
         case "1":
-            return _query_detail(run, percentages=args.options.percentages)
+            return _query_detail(scan, percentages=args.options.percentages)
         case "2":
-            return _query_full(run, percentages=args.options.percentages)
+            return _query_full(scan, percentages=args.options.percentages)
         case "h" | "history":
-            return _query_history(project, last=args.options.last)
+            return _query_history(project, request, last=args.options.last)
 
 
-def _query_summary(run: Run, percentages: bool = False) -> Any:
+def _query_summary(scan: Scan, percentages: bool = False) -> Any:
     row = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -51,7 +57,7 @@ def _query_summary(run: Run, percentages: bool = False) -> Any:
                 "lines_total",
             ),
         )
-        .where(Cloc.run == run.id)
+        .where(Cloc.scan == scan)
         .get()
     )
     if percentages:
@@ -63,8 +69,8 @@ def _query_summary(run: Run, percentages: bool = False) -> Any:
     return row
 
 
-def _query_detail(run: Run, percentages: bool = False) -> Any:
-    grand_total = _query_summary(run, percentages=False)
+def _query_detail(scan: Scan, percentages: bool = False) -> Any:
+    grand_total = _query_summary(scan, percentages=False)
     rows = (
         Cloc.select(
             Cloc.dir,
@@ -75,7 +81,7 @@ def _query_detail(run: Run, percentages: bool = False) -> Any:
                 "lines_total",
             ),
         )
-        .where(Cloc.run == run.id)
+        .where(Cloc.scan == scan)
         .group_by(Cloc.dir)
         .order_by(Cloc.dir)
     )
@@ -89,8 +95,8 @@ def _query_detail(run: Run, percentages: bool = False) -> Any:
     return rows
 
 
-def _query_full(run: Run, percentages: bool = False) -> [list[Cloc], dict[str, int], int]:
-    rows = Cloc.select().where(Cloc.run == run).order_by(Cloc.dir, Cloc.filename)
+def _query_full(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str, int], int]:
+    rows = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.dir, Cloc.filename)
     column_totals = defaultdict(int)
     for row in rows:
         column_totals["lines_blank"] += row.lines_blank
@@ -113,31 +119,46 @@ def _query_full(run: Run, percentages: bool = False) -> [list[Cloc], dict[str, i
     return rows, dict(column_totals), grand_total
 
 
-def _query_history(project: Project, last: int) -> tuple[list[str], defaultdict, defaultdict]:
+def _query_history(project: Project, request: Request, last: int) -> tuple[list[str], defaultdict, defaultdict]:
     # TODO: Add support for percentages here..
-    runs = (
-        Run.select()
-        .where(
-            Run.project == project,
-            Run.module == MODULE,
+
+    # If the most recent request (provided) has more than one scan,
+    # use only the scan in THAT request! otherwise, scan over all the
+    # scans for the project.
+    if Scan.filter(Scan.request == request).count() > 1:
+        # Essentially "git" mode, where our request triggered MULTIPLE scans (over time)
+        scans = (
+            Scan.select()
+            .where(Scan.request == request, Scan.module == MODULE)
+            .order_by(Scan.timestamp.desc())
+            .limit(last)
         )
-        .order_by(Run.timestamp.desc())
-        .limit(last)
-    )
+    else:
+        # Simple mode, our most recent request triggered on a single scan, consider all scans for the project:
+        scans = (
+            Scan.select()
+            .join(Request)
+            .where(
+                Request.project == project,
+                Scan.module == MODULE,
+            )
+            .order_by(Scan.timestamp.desc())
+            .limit(last)
+        )
 
     query = (
         Cloc.select(
-            Run.timestamp.alias("timestamp"),
+            Scan.timestamp.alias("timestamp"),
             fn.SUM(Cloc.lines_code).alias("total_code"),
             fn.SUM(Cloc.lines_comment).alias("total_comment"),
             fn.SUM(Cloc.lines_blank).alias("total_blank"),
         )
-        .join(Run)
+        .join(Scan)
         .where(
-            Run.id.in_(runs),
+            Scan.id.in_(scans),
         )
-        .group_by(Run.timestamp)
-        .order_by(Run.timestamp)
+        .group_by(Scan.timestamp)
+        .order_by(Scan.timestamp)
         .objects()
     )
 

@@ -4,7 +4,7 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
-from mq.modules.base import Project, Run
+from mq.modules.base import Project, Request, Scan
 from mq.modules.ruff import COLORS, MODULE
 from mq.modules.ruff.models import query
 from mq.utils import format_timestamp_headers
@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 def report(args: Namespace) -> None:
     try:
-        project = Project.get(path_input=args.project)
+        project = Project.get(input=args.project)
     except Project.DoesNotExist:
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
@@ -39,7 +39,7 @@ def report(args: Namespace) -> None:
 
 def _report_0(args: Namespace, run: Run) -> None:
     row = query(args, "0", run)
-    table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_header=False)
+    table = cli_table(title=f"RUFF @ {run.timestamp_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
     table.add_row("Issues", f"{row.count():,d}")
@@ -50,7 +50,7 @@ def _report_1(args: Namespace, run: Run) -> None:
     summary = query(args, "0", run)
     results = query(args, "1", run)
     show_footer = True if results else False
-    table = cli_table(title=f"RUFF @ {run.timestamp_display}", show_footer=show_footer)
+    table = cli_table(title=f"RUFF @ {run.timestamp_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
     table.add_column("Count", justify="center", footer=f"{summary.count():,}")
     table.add_column("Message")
@@ -61,7 +61,7 @@ def _report_1(args: Namespace, run: Run) -> None:
 
 def _report_2(args: Namespace, run: Run) -> None:
     rows = query(args, "2", run)
-    table = cli_table(title=f"RUFF @ {run.timestamp_display}")
+    table = cli_table(title=f"RUFF @ {run.timestamp_display()}")
     table.add_column("Rule")
     table.add_column("File [line]")
     table.add_column("Message")

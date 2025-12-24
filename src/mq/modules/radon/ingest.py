@@ -8,7 +8,7 @@ import sys
 from argparse import Namespace
 from rich import print
 
-from mq.modules.base import Project, Run
+from mq.modules.base import Project, Request, Scan
 from mq.modules.radon import MODULE
 from mq.modules.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from mq.utils.git import get_git_commit_hash
@@ -148,7 +148,7 @@ def _parse_save_radon_hal_json(run: Run, data: dict[str, int]) -> int:
         for func_name, func_results in results.get("functions", {}).items():
             radon_hal_func = RadonHalFunction(
                 run=run.id,
-                radon_hal_id=radon_hal.id,
+                radon_hal=radon_hal,
                 name=func_name,
                 h1=func_results["h1"],
                 h2=func_results["h2"],

@@ -4,21 +4,41 @@ from argparse import Namespace
 from collections import defaultdict
 
 from peewee import fn
+from rich.tree import Tree
+from rich import print
 
 from mq.cli import cli_console, cli_table
-from mq.modules.base import Project, Run
+from mq.modules.base import Project, Request, Scan
+from mq.modules.cloc.models import Cloc
 
 
 def status(args: Namespace) -> None:
+    """Use a simple terminal tree to display current db contents."""
+    tree = Tree("MQ Status")
+    for project in Project.select():
+        project_tree = tree.add(f"Project -> {project.name}")
+        for request in Request.select().where(Request.project == project):
+            sub_module = request.sub_module if request.sub_module else ""
+            s_request = f"Request ->  {request.timestamp_display(full=True)} {request.module} {sub_module}"
+            scan_tree = project_tree.add(s_request)
+            for scan in Scan.select().where(Scan.request == request):
+                sub_module = scan.sub_module if scan.sub_module else ""
+                count = Cloc.filter(Cloc.scan == scan).count()
+                s_scan = f"Scan -> {scan.timestamp_display(full=True)} {request.module} {sub_module} [{count} entries]"
+                scan_tree.add(s_scan)
+    print(tree)
+
+
+def status_old(args: Namespace) -> None:
     ################################################################################################
     # Query and transpose/aggregate
     ################################################################################################
     # TODO: Implement args.project filtering!
     rows = (
-        Run.select(Run, Project, fn.COUNT(Run.id).alias("run_count"))
+        Scan.select(Scan, Project, fn.COUNT(Scan.id).alias("run_count"))
         .join(Project)
-        .group_by(Project.path_input, Run.module, Run.sub_module)
-        .order_by(Project.path_input, Run.module, Run.sub_module)
+        .group_by(Project.input, Scan.module, Scan.sub_module)
+        .order_by(Project.input, Scan.module, Scan.sub_module)
     )
     if not rows:
         cli_console.print('[yellow]No data is available, perform an [green]"mq ingest"[/green] first.[/yellow]')
@@ -31,7 +51,7 @@ def status(args: Namespace) -> None:
     grand_total: int = 0
     module_sub_modules = set()
     for row in rows:
-        s_project = row.project.path_display
+        s_project = row.project.name
         module_sub_module = row.module if not row.sub_module else f"{row.module}/{row.sub_module}"
         module_sub_modules.add(module_sub_module)
         run_count_by_project_module[s_project][module_sub_module] = row.run_count

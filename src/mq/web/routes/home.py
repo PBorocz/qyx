@@ -6,20 +6,20 @@ from typing import Any
 from fasthtml import ft
 
 from mq.modules import MODULE_NAMES
-from mq.modules.base import Project, Run
+from mq.modules.base import Project, Request, Scan
 
 uvicorn_logger = logging.getLogger("uvicorn")
 
 
 def page() -> Any:
-    projects = Project.select().order_by(Project.path_input)
+    projects = Project.select().order_by(Project.input)
     return ft.Titled(
         "Meta Quality",
         ft.Div(
             ft.H3("Project"),
             ft.Select(
                 ft.Option("Select Project...", value="", selected=True),
-                *[ft.Option(f"{project.path_input}", value=f"{project.id}") for project in projects],
+                *[ft.Option(f"{project.input}", value=f"{project.id}") for project in projects],
                 name="project",
                 hx_get="/modules",
                 hx_target="#module-selector",
@@ -60,12 +60,12 @@ def partial_module_selector(project: int = "") -> Any:
 
 def partial_run_selector(project: int = "", module: str = "") -> Any:
     # uvicorn_logger.info(f"partial_run_selector {project=} {module=}")
-    runs = Run.select().where(Run.project == project, Run.module == module).order_by(Run.timestamp.desc())
+    runs = Scan.select().where(Scan.project == project, Scan.module == module).order_by(Scan.timestamp.desc())
     return ft.Div(
-        ft.H3("Run"),
+        ft.H3("Scan"),
         ft.Select(
-            ft.Option("Select Run...", value="", selected=True),
-            *[ft.Option(run.timestamp_display, value=run.id) for run in runs],
+            ft.Option("Select Scan...", value="", selected=True),
+            *[ft.Option(run.timestamp_display(), value=run.id) for run in runs],
             name="run",
             hx_get="/reports",
             hx_target="#report-selector",
@@ -105,7 +105,7 @@ def partial_report_selector(project: int, module: str, run_id: int) -> Any:
 
 def partial_do_report(project: int, module: str, run_id: int, report: str) -> Any:
     # uvicorn_logger.info(f"partial_query_results {project=} {module=} {run_id=} {report=}")
-    run = Run.select().where(Run.id == run_id).get()
+    run = Scan.select().where(Scan.id == run_id).get()
     project = Project.select().where(Project.id == run.project).get()
     # uvicorn_logger.info(f"partial_query_results {run.id=} {project.id=}")
 
