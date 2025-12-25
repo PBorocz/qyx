@@ -1,17 +1,17 @@
-# """..."""
+"""..."""
 
 # import json
 # import subprocess
 # import sys
 # from argparse import Namespace
-# from pathlib import Path
+from pathlib import Path
 
 # from rich import print
 
 # from mq.modules.base import Project, Request, Scan
 # from mq.modules import save_scan_results
 # from mq.modules.ruff import MODULE
-# from mq.modules.ruff.models import Ruff
+from mq.modules.ruff.models import Ruff
 # from mq.utils.git import get_git_commit_hash
 
 
@@ -40,17 +40,17 @@
 #         print("[green]✓ [bold]Congrulation![/bold] All checks passed![/green]")
 
 
-# def _parse_ruff_json(data: list) -> list[Ruff]:
-#     def _json_to_row(ruff_result: dict) -> Ruff:
-#         fn_path = Path(ruff_result["filename"])
-#         return Ruff(
-#             dir=fn_path.parent,
-#             filename=fn_path.name,
-#             line=ruff_result["location"]["row"],
-#             column=ruff_result["location"]["column"],
-#             message=ruff_result["message"],
-#             rule_code=ruff_result["code"],
-#             url=ruff_result["url"],
-#         )
+def parse_json(data: list) -> list[Ruff]:
+    def _json_to_row(ruff_result: dict) -> Ruff:
+        fn_path = Path(ruff_result["filename"])
+        return Ruff(
+            dir=fn_path.parent,
+            filename=fn_path.name,
+            line=ruff_result["location"]["row"],
+            column=ruff_result["location"]["column"],
+            message=ruff_result["message"],
+            rule_code=ruff_result["code"],
+            url=ruff_result["url"],
+        )
 
-#     return [_json_to_row(check) for check in data]
+    return [_json_to_row(check) for check in data]

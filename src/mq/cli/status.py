@@ -10,23 +10,52 @@ from rich import print
 from mq.cli import cli_console, cli_table
 from mq.modules.base import Project, Request, Scan
 from mq.modules.cloc.models import Cloc
+from mq.modules.radon.models import RadonCc, RadonHal, RadonMi, RadonRaw
+from mq.modules.ruff.models import Ruff
 
 
-def status(args: Namespace) -> None:
-    """Use a simple terminal tree to display current db contents."""
+def show_status(args: Namespace) -> None:
+    """Use a simple terminal tree to display current db information."""
     tree = Tree("MQ Status")
     for project in Project.select():
         project_tree = tree.add(f"Project -> {project.name}")
+
         for request in Request.select().where(Request.project == project):
-            sub_module = request.sub_module if request.sub_module else ""
-            s_request = f"Request ->  {request.timestamp_display(full=True)} {request.module} {sub_module}"
+            s_request = f"Request @ {request.timestamp_display(full=True)} [{request.scan_source}]"
             scan_tree = project_tree.add(s_request)
+
             for scan in Scan.select().where(Scan.request == request):
                 sub_module = scan.sub_module if scan.sub_module else ""
-                count = Cloc.filter(Cloc.scan == scan).count()
-                s_scan = f"Scan -> {scan.timestamp_display(full=True)} {request.module} {sub_module} [{count} entries]"
+                scan_count = _get_scan_count(scan)
+                s_scan = f"{scan.module.upper()} as of {scan.timestamp_display(full=True)} {sub_module} {scan_count}"
                 scan_tree.add(s_scan)
     print(tree)
+
+
+def _get_scan_count(scan: Scan) -> str:
+    """Return the scan's result count as a str already formatted for status tree."""
+    match scan.module:
+        # FIXME: Do this dynamically instead of hard-coding models?
+        case "cloc":
+            count = Cloc.filter(Cloc.scan == scan).count()
+        case "ruff":
+            count = Ruff.filter(Ruff.scan == scan).count()
+        case "radon":
+            match scan.sub_module:
+                case "cc":
+                    count = RadonCc.filter(RadonCc.scan == scan).count()
+                case "mi":
+                    count = RadonMi.filter(RadonMi.scan == scan).count()
+                case "hal":
+                    count = RadonHal.filter(RadonHal.scan == scan).count()
+                case "raw":
+                    count = RadonRaw.filter(RadonRaw.scan == scan).count()
+    if count == 0:
+        return "[-]"
+    elif count == 1:
+        return f"[{count} entry]"
+    else:
+        return f"[{count:3d} entries]"
 
 
 def status_old(args: Namespace) -> None:

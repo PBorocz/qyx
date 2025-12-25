@@ -44,7 +44,7 @@ def timestamp_display(timestamp: str, full: bool = False) -> str:
 
     # Choose format based on whether it's today
     if not full and dt_local.date() == datetime.now().date():
-        format = "%H:%M%p"
+        format = "%I:%M%p"
     else:
         format = "%Y-%m-%d %H:%M%p"
 
@@ -121,14 +121,42 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     return {ts: __local(ts).strftime(fmt_) for ts in timestamps}
 
 
-def detect_project_name(resolved_path: str) -> str | None:
+# Potentially unused after Project refactor of 2025-12-24.
+# def generate_display_name(path_absolute: str) -> str:
+#     """Generate a human-friendly display name for the project."""
+#     # Try project name from config files
+#     if project_name := detect_project_name(path_absolute):
+#         return project_name
+
+#     # Use relative path if shorter and not too many levels up
+#     try:
+#         abs_path = Path(path_absolute)
+#         cwd = Path.cwd()
+#         rel_path = abs_path.relative_to(cwd)
+
+#         # Use relative if reasonable length and not too nested
+#         if len(str(rel_path)) < len(str(abs_path)) and len(rel_path.parts) <= 3:
+#             return str(rel_path)
+#     except ValueError:
+#         # abs_path is not relative to cwd
+#         pass
+
+#     # Fall back to directory name
+#     return Path(path_absolute).name
+
+
+def detect_project_name(arg_path: str) -> str | None:
     """Detect Python project name from common config files."""
-    path = Path(resolved_path)
+    path = Path(arg_path).resolve()
+    log.debug(f"{path=}")
 
     # Walk up the directory tree looking for project indicators
     for parent in [path] + list(path.parents):
+        log.debug(f"-{parent=}")
+
         # Git repository name
         if (parent / ".git").exists():
+            log.debug(f"=matched git: {parent.name=}!")
             return parent.name
 
         # pyproject.toml
@@ -140,14 +168,17 @@ def detect_project_name(resolved_path: str) -> str | None:
                 with open(pyproject, "rb") as f:
                     data = tomllib.load(f)
                     if name := data.get("project", {}).get("name"):
+                        log.debug(f"=project.name from pyproject.toml: {name=}!")
                         return name
                     if name := data.get("tool", {}).get("poetry", {}).get("name"):
+                        log.debug(f"=tool.poetry.name from pyproject.toml: {name=}!")
                         return name
             except Exception:
                 pass
 
         # setup.py fallback
         if (parent / "setup.py").exists():
+            log.debug(f"=fallback to having setup.py: {parent.name=}!")
             return parent.name
 
     return None

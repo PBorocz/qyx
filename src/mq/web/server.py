@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 app, rt = fh.fast_app(debug=True)
 
 
-def run_server(args: Namespace) -> None:
+def serve(args: Namespace) -> None:
     """Run our web server."""
     if not args.no_browser:
 

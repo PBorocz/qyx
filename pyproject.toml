@@ -33,7 +33,11 @@ shell = """
 
 [tool.poe.tasks.mq]
 cmd = "uv run mq"
-help = "Run the mq command."
+help = "Run the mq command"
+
+[tool.poe.tasks.status]
+cmd = "uv run mq status"
+help = "Report current status"
 
 #-------------------------------------------------------------------------------
 # all
@@ -42,11 +46,11 @@ help = "Run the mq command."
 cmd = """uv run mq ingest"""
 help = "Run/ingest all modules."
 
-[tool.poe.tasks.ingest-git-mq]
+[tool.poe.tasks.ingest-cloc-git]
 shell = """
-  uv run mq admin clear -m cloc --no_confirm
-  uv run mq ingest -m cloc --git     https://github.com/pborocz/mq
-  uv run mq report -m cloc --project https://github.com/pborocz/mq --level h
+  uv run mq admin clear --module cloc --no_confirm
+  uv run mq ingest      --module cloc --git     https://github.com/pborocz/mq
+  uv run mq report      --module cloc --project https://github.com/pborocz/mq --level h --options "last:99"
   """
 help = "Run/ingest all modules."
 

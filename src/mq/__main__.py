@@ -1,19 +1,16 @@
 """Primary driver script."""
 
 import argparse
-import importlib
-import logging
-import sys
-from typing import Callable
 
 # from rich.traceback import install as install_traceback
 
 from mq import setup_logging, setup_sqlite
-from mq.modules import MODULE_NAMES
 
-from mq.utils.db import clear, housekeeping, trim
-from mq.cli.status import status
-from mq.web.server import run_server
+from mq.cli.ingest import ingest
+from mq.cli.status import show_status
+from mq.cli.report import report
+from mq.cli.admin import clear, housekeeping, trim
+from mq.web.server import serve
 
 
 def get_args():
@@ -137,54 +134,6 @@ def get_args():
     return args
 
 
-def get_method(module_dir: str, py_filename: str, method: str) -> tuple[Callable | None, str | None]:
-    module_path = f"mq.modules.{module_dir}.{py_filename}"  # Construct the path to the specific .py file
-    logging.debug(f"Using {module_path=}")
-    try:
-        module = importlib.import_module(module_path)  # ...and import it.
-    except ImportError as e:
-        return None, f"Could not import {module_path}: {e}"
-
-    try:
-        return getattr(module, method), None  # Return the method from the module
-    except AttributeError as e:
-        return None, f"Method {method} not found in {module_path}: {e}"
-
-
-def _dispatch_ingest(args: argparse.Namespace) -> None:
-    def __do_ingest(module: str) -> None:
-        method, msg = get_method(module, "ingest", "ingest")
-        if not method and msg:
-            logging.error(msg)
-            return sys.exit(1)
-        method(args)
-
-    if args.module:
-        # Single ingest request, lookup the method and do it!
-        __do_ingest(args.module)
-    else:
-        # Ingest over ALL available modules..
-        for module in MODULE_NAMES:
-            __do_ingest(module)
-
-
-def _dispatch_report(args: argparse.Namespace) -> None:
-    def __do_report(module: str) -> None:
-        method, msg = get_method(module, "report_cli", "report")
-        if not method and msg:
-            logging.error(msg)
-            return sys.exit(1)
-        method(args)
-
-    if args.module:
-        # Single report request, lookup the method and do it!
-        __do_report(args.module)
-    else:
-        # Report over ALL available modules..
-        for module in MODULE_NAMES:
-            __do_report(module)
-
-
 def parse_options(options_str: str, defaults=None):
     """Parse any/all options provided (usually for reporting)."""
     opts = argparse.Namespace(**(defaults or {}))
@@ -207,7 +156,7 @@ def parse_options(options_str: str, defaults=None):
 
 
 def main():
-    # install_traceback(show_locals=False)  # Before anything else, setup rich obo tracebacks
+    # install_traceback(show_locals=False)  # Before anything else, setup colorful/informative tracebacks
 
     # Get/process all command-line arguments
     args = get_args()
@@ -221,13 +170,13 @@ def main():
     # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
     match args.command:
         case "ingest":
-            _dispatch_ingest(args)
+            ingest(args)
         case "report":
-            _dispatch_report(args)
+            report(args)
         case "status":
-            status(args)
+            show_status(args)
         case "serve":
-            run_server(args)
+            serve(args)
         case "admin":
             match args.admin_command:
                 case "trim":

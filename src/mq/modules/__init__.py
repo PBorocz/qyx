@@ -9,9 +9,22 @@ from typing import Any
 
 from peewee import Model
 
+from mq.modules.base import Scan
+
 log = logging.getLogger(__name__)
 
 
+################################################################################################
+def save_scan_results(scan: Scan, rows: list) -> int:
+    for row in rows:
+        row.scan = scan.id
+        row.save()
+    return len(rows)
+
+
+################################################################################################
+# "Setup" logic for dynamically identifying available modules and their respective db models.
+################################################################################################
 def __get_module_from_path(module_name: str) -> Any:
     try:
         return importlib.import_module(f"mq.modules.{module_name}")

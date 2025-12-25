@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-import zoneinfo
+import logging
+from argparse import Namespace
 from datetime import datetime, UTC
 from pathlib import Path
 
 import peewee as pw
+from peewee import Check
 
 from mq.utils import detect_project_name, timestamp_display
+
+
+log = logging.getLogger(__name__)
 
 
 class BaseModel(pw.Model):
@@ -41,15 +46,22 @@ class Project(BaseModel):
     """
 
     id = pw.AutoField()
+
     name = pw.CharField(
         help_text="Descriptive name of the project, either as assigned by the user or calculated.",
     )
-    input = pw.CharField(
-        help_text="Path as entered by user (e.g., '.', '../src', '/abs/path').",
+    input_path = pw.CharField(
+        help_text="Path as entered by user, eg '.' or '../src', '/abs/path').",
+        null=True,
+    )
+    input_git_url = pw.CharField(
+        help_text="Github repo url as entered by user, eg., 'https://github.com/foo/bar'",
+        null=True,
     )
     path_absolute = pw.CharField(
-        help_text="Resolved absolute path to project root directory.",
+        help_text="Resolved absolute path to project root directory (only available for input_path)",
         unique=True,
+        null=True,
     )
     created = pw.DateTimeField(
         help_text="GMT/UTC datetime the project was created.",
@@ -59,76 +71,51 @@ class Project(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        indexes = (
-            (("name",), True),
-            (("input",), True),
-        )
+        indexes = ((("name",), True),)
 
     @classmethod
-    def get_(cls, input: str) -> Project | None:
-        """Get the project using either or name."""
-        try:
-            return cls.get(cls.input == input)
-        except pw.DoesNotExist:
-            try:
-                return cls.get(cls.name == input)
-            except pw.DoesNotExist:
-                return None
+    def get_by_identifier(cls, arg_input: str) -> Project | None:
+        """Get the project using name or either input definition in Priority order!."""
+        for field in [cls.name, cls.input_path, cls.input_git_url]:
+            instance = cls.get_or_none(field == arg_input)
+            if instance:
+                return instance
+        return None
 
     @classmethod
-    def get_or_insert_raw(cls, input: str, path_absolute: str, display: str) -> Project:
+    def create_from_args(cls, args: Namespace) -> Project:
         """Get the project of the specified input path, even if we have to insert."""
-        try:
-            return cls.get(cls.input == input)
-        except pw.DoesNotExist:
-            try:
-                return cls.get(cls.name == input)
-            except pw.DoesNotExist:
-                return cls.create(
-                    name=display,
-                    input=input,
-                    path_absolute=path_absolute,
-                )
+        if project := cls.get_by_identifier(args.project):
+            return project
 
-    @classmethod
-    def get_or_insert_relative(cls, arg_input_dir: str) -> Project:
-        """Get the project at the specified source directory, even if we have to insert."""
-        path_absolute = str(Path(arg_input_dir).resolve())
-        name = _generate_display_name(path_absolute)
-        return cls.get_or_insert_raw(arg_input_dir, path_absolute, name)
-        # try:
-        #     project = cls.get(cls.path_absolute == path_absolute)
-        # except pw.DoesNotExist:
-        #     name = generate_display_name(path_absolute)
-        #     project = cls.create(
-        #         path_input=arg_input_dir,
-        #         path_absolute=path_absolute,
-        #         name=name,
-        #     )
-        # return project
+        name = detect_project_name(args.project)
+        if args.git:
+            instance = cls.create(name=name, input_git_url=args.project)
+            msg = "Created a new project obo Git url.."
+        else:
+            path_absolute = str(Path(args.project).resolve())
+            msg = "Created a new project obo input path.."
+            instance = cls.create(name=name, input_path=args.project, path_absolute=path_absolute)
+        log.debug(msg)
+        return instance
 
-
-def _generate_display_name(path_absolute: str) -> str:
-    """Generate a human-friendly display name for the project."""
-    # Try project name from config files
-    if project_name := detect_project_name(path_absolute):
-        return project_name
-
-    # Use relative path if shorter and not too many levels up
-    try:
-        abs_path = Path(path_absolute)
-        cwd = Path.cwd()
-        rel_path = abs_path.relative_to(cwd)
-
-        # Use relative if reasonable length and not too nested
-        if len(str(rel_path)) < len(str(abs_path)) and len(rel_path.parts) <= 3:
-            return str(rel_path)
-    except ValueError:
-        # abs_path is not relative to cwd
-        pass
-
-    # Fall back to directory name
-    return Path(path_absolute).name
+    # @classmethod
+    # def get_or_insert_relative(cls, arg_input_dir: str) -> Project:
+    #     """Get the project at the specified source directory, even if we have to insert."""
+    #     path_absolute = str(Path(arg_input_dir).resolve())
+    #     name = _generate_display_name(path_absolute)
+    #     project
+    #     return cls.get_or_insert_raw(arg_input_dir, path_absolute, name)
+    #     # try:
+    #     #     project = cls.get(cls.path_absolute == path_absolute)
+    #     # except pw.DoesNotExist:
+    #     #     name = generate_display_name(path_absolute)
+    #     #     project = cls.create(
+    #     #         path_input=arg_input_dir,
+    #     #         path_absolute=path_absolute,
+    #     #         name=name,
+    #     #     )
+    #     # return project
 
 
 class Request(BaseModel):
@@ -140,12 +127,9 @@ class Request(BaseModel):
         backref="runs",
         on_delete="CASCADE",
     )
-    module = pw.CharField(
-        help_text="Module gathered for, e.g. ruff, cloc, radon etc.",
-    )
-    sub_module = pw.CharField(
-        help_text="Optional sub-module, e.g. cc or raw obo radon.",
-        null=True,
+    scan_source = pw.CharField(
+        help_text="Was the source of this request a git url or a directory path??",
+        null=False,
     )
     timestamp = pw.DateTimeField(
         help_text="GMT/UTC datetime the ingest occurred",
@@ -155,7 +139,13 @@ class Request(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        indexes = ((("project", "timestamp", "module", "sub_module"), True),)
+        constraints = [Check("scan_source IN ('path', 'git')")]
+
+    @classmethod
+    def create_from_args(cls, args: Namespace, project: Project) -> Request:
+        """Create a new request instance taking care to set the input based on CLI args."""
+        scan_source = "git" if args.git else "path"
+        return Request.create(project=project, scan_source=scan_source)
 
     @classmethod
     def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Request | None:
