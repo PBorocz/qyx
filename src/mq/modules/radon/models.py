@@ -78,7 +78,7 @@ class RadonCc(BaseModuleModel):
         """Define peewee meta data."""
 
         table_name = "radon_cc"
-        indexes = ((("scan", "dir", "filename", "entity_type", "entity_name"), True),)
+        indexes = ((("scan", "dir", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),)
 
 
 class RadonHal(BaseModuleModel):

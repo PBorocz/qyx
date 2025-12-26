@@ -1,8 +1,10 @@
 """Primary driver script."""
 
 import argparse
+import sys
 
 # from rich.traceback import install as install_traceback
+from rich import print
 
 from mq import setup_logging, setup_sqlite
 
@@ -11,6 +13,7 @@ from mq.cli.status import show_status
 from mq.cli.report import report
 from mq.cli.admin import clear, housekeeping, trim
 from mq.web.server import serve
+from mq.modules import MODULES_AND_MODELS, MODULE_NAMES
 
 
 def get_args():
@@ -122,6 +125,11 @@ def get_args():
         args.debug = False
     if not hasattr(args, "module"):
         args.module = None
+
+    if args.module and args.module not in MODULES_AND_MODELS:
+        s_names = ", ".join(MODULE_NAMES)
+        print(f"[red]Sorry! module: [bold]{args.module}[/bold] is not valid, must be one of {s_names}[/red]")
+        sys.exit(1)
 
     # TODO: Ensure here that a valid sub_module has been provided (from MODULES_AND_MODELS)
 

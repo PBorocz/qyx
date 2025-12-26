@@ -25,9 +25,13 @@ def show_status(args: Namespace) -> None:
             scan_tree = project_tree.add(s_request)
 
             for scan in Scan.select().where(Scan.request == request):
-                sub_module = scan.sub_module if scan.sub_module else ""
                 scan_count = _get_scan_count(scan)
-                s_scan = f"{scan.module.upper()} as of {scan.timestamp_display(full=True)} {sub_module} {scan_count}"
+                if scan.sub_module:
+                    s_module = f"{scan.module.upper()}-{scan.sub_module.upper()}"
+                else:
+                    s_module = scan.module.upper()
+
+                s_scan = f"{s_module} as of {scan.timestamp_display(full=True)} {scan_count}"
                 scan_tree.add(s_scan)
     print(tree)
 

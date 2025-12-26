@@ -19,52 +19,69 @@ log = logging.getLogger(__name__)
 
 
 def ingest(args: Namespace) -> None:
+    # Lookup (or create) our project!
+    project = Project.create_from_args(args)
+
+    # Store info obo the request
+    request = Request.create_from_args(args, project)
     if args.git:
         ...
-        # parse_git(args)
+        # parse_git(args, project, request)
     else:
         if args.module:
-            # Single ingest request, lookup the method and do it!
-            parse_single(args)
+            # Single ingest request for a particular module.
+            parse_single(args, project, request)
         else:
             # Ingest over ALL available modules..
             for module in MODULE_NAMES:
                 args.module = module
-                parse_single(module)
+                parse_single(module, project, request)
 
 
 ################################################################################################
 # Generic non-git ingestion
 ################################################################################################
-def parse_single(args: Namespace) -> None:
+def parse_single(args: Namespace, project: Project, request: Request) -> None:
+    """Capture information for the specified module (ie. run, parse and store)."""
     # Lookup the py_module based on the args.module were working on
     py_module = MODULES_AND_MODELS[args.module]["module"]
 
-    # Use this to find module's json parse method
-    py_parse = import_module(".parse", package=py_module.__name__)
-    method_parse = getattr(py_parse, "parse_json")  # Ok to go directly to AttributeError.
+    sub_module = args.sub_module.lower() if args.sub_module else None
+    scan = Scan.create(
+        request=request,
+        module=args.module.lower(),
+        sub_module=sub_module,
+        git_commit_hash=get_git_commit_hash(),
+    )
 
-    project = Project.create_from_args(args)
-
-    request = Request.create_from_args(args, project)
-
-    git_commit_hash = get_git_commit_hash()
-    scan = Scan.create(request=request, module=args.module.lower(), git_commit_hash=git_commit_hash)
-
+    ################################################################################################
+    # Get the tool's data EITHER directly from stdin OR by running it!
+    ################################################################################################
     if args.stdin:
         # Pipeline mode - parse JSON from stdin:
-        data = json.loads(sys.stdin.read())
+        json_ = json.loads(sys.stdin.read())
     else:
         # Direct mode - run the module's command ourselves:
-        command = py_module.INGEST_ARGS
-        command.extend([args.project])
+        command = py_module.get_ingest_command(args.project, args.sub_module)
         log.debug(f"{' '.join(command)=}")
 
         result = subprocess.run(command, capture_output=True, check=True)
-        data = json.loads(result.stdout)
+        json_ = json.loads(result.stdout)
 
-    # Parse and save the results!
-    results = method_parse(data)
+    ################################################################################################
+    # Parse the results received...
+    ################################################################################################
+    # Find either the module's json parse method or one specific to the sub_module
+    py_parse = import_module(".parse", package=py_module.__name__)  # eg. .../<module>/parse.py
+    parse_method_name = py_module.get_parse_method_name(args.sub_module)  # eg.  "parse_json" or "parse_json_cc"
+    log.debug(f"{parse_method_name=}")
+    parse_method = getattr(py_parse, parse_method_name)  # eg. parse_json()
+    log.debug(f"{parse_method=}")
+    results = parse_method(json_)
+
+    ################################################################################################
+    # Save em'!
+    ################################################################################################
     num = save_scan_results(scan, results)
     print(f"[green]✓ Ingested [bold]{num}[/bold] results from {args.module.upper()}[/green]")
 

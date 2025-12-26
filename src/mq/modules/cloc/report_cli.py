@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def report(args: Namespace) -> None:
-    if not (project := Project.get_(args.project)):
+    if not (project := Project.get_by_identifier(args.project)):
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 

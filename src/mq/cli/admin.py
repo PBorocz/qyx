@@ -17,48 +17,47 @@ log = logging.getLogger(__name__)
 
 def housekeeping(args: Namespace) -> None:
     """Clean out extraneous Scans that don't have data and Projects that don't have Scans."""
-    log.warning("Unimplemented yet")
-    return
-    # def __cleanup(module_name: str, module_info: dict) -> None:
-    #     # First, get all the run's id's used by models in this module:
-    #     model_run_ids = set()
-    #     models = module_info["models"]
-    #     for model in models:
-    #         model_run_ids.update([row.run_id for row in model.select(model.run).distinct()])
-    #     log.debug(f"- {module_name:6s} {len(models)=:1d} {len(model_run_ids)=:2d} : {sorted(model_run_ids)}")
 
-    #     # Secondly, gather all the run's currently stored for this module
-    #     run_ids = {run.id for run in Scan.select().where(Scan.module == module_name)}
-    #     log.debug(f"- {'Scan':6s} {len(run_ids)=:2d} : {sorted(run_ids)}")
+    def __cleanup(module_name: str, module_info: dict) -> None:
+        # First, get all the run's id's used by models in this module:
+        model_run_ids = set()
+        models = module_info["models"]
+        for model in models:
+            model_run_ids.update([row.run_id for row in model.select(model.run).distinct()])
+        log.debug(f"- {module_name:6s} {len(models)=:1d} {len(model_run_ids)=:2d} : {sorted(model_run_ids)}")
 
-    #     # Find any "extraneous" ones by simple set subtract (!) and delete 'em.
-    #     run_ids_to_delete = run_ids - model_run_ids
-    #     if run_ids_to_delete:
-    #         num = Scan.delete().where(Scan.id.in_(run_ids_to_delete)).execute()
-    #         msg = f"- Cleaned up {num} Scan(s) that weren't referenced."
-    #     else:
-    #         msg = "- No runs needed to be cleaned up."
-    #     log.debug(msg)
+        # Secondly, gather all the run's currently stored for this module
+        run_ids = {run.id for run in Scan.select().where(Scan.module == module_name)}
+        log.debug(f"- {'Scan':6s} {len(run_ids)=:2d} : {sorted(run_ids)}")
 
-    # def _delete_unused_runs(args: Namespace):
-    #     """Delete orphaned Scan rows on behalf of modules that REQUIRE data to be valid."""
-    #     for module_name, module_info in MODULES_AND_MODELS.items():
-    #         module = module_info["module"]
-    #         log.debug(f"Considering {module_name=}")
-    #         if not module.RESULTS_REQUIRED:
-    #             log.debug(f"(skipping module: {module_name} from housekeeping as data is NOT required)")
-    #             continue
+        # Find any "extraneous" ones by simple set subtract (!) and delete 'em.
+        run_ids_to_delete = run_ids - model_run_ids
+        if run_ids_to_delete:
+            num = Scan.delete().where(Scan.id.in_(run_ids_to_delete)).execute()
+            msg = f"- Cleaned up {num} Scan(s) that weren't referenced."
+        else:
+            msg = "- No runs needed to be cleaned up."
+        log.debug(msg)
 
-    #         __cleanup(module_name, module_info)
+    def _delete_unused_runs(args: Namespace):
+        """Delete orphaned Scan rows on behalf of modules that REQUIRE data to be valid."""
+        for module_name, module_info in MODULES_AND_MODELS.items():
+            module = module_info["module"]
+            log.debug(f"Considering {module_name=}")
+            if not module.RESULTS_REQUIRED:
+                log.debug(f"(skipping module: {module_name} from housekeeping as data is NOT required)")
+                continue
 
-    # def _delete_unused_projects(args: Namespace):
-    #     """Delete orphaned Project rows."""
-    #     num = Project.delete().where(Project.id.not_in(Scan.select(Scan.project).distinct())).execute()
-    #     if num:
-    #         log.debug(f"Cleaned up {num} Projects that had no Scans defined.")
+            __cleanup(module_name, module_info)
 
-    # _delete_unused_runs(args)
-    # _delete_unused_projects(args)
+    def _delete_unused_projects(args: Namespace):
+        """Delete orphaned Project rows."""
+        num = Project.delete().where(Project.id.not_in(Scan.select(Scan.project).distinct())).execute()
+        if num:
+            log.debug(f"Cleaned up {num} Projects that had no Scans defined.")
+
+    _delete_unused_runs(args)
+    _delete_unused_projects(args)
 
 
 def clear(args: Namespace) -> None:
