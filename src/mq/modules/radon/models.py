@@ -7,7 +7,6 @@ from typing import Any
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
 from mq.modules.base import BaseModel, BaseModuleModel, Project, Scan
-from mq.modules.radon import MODULE
 from mq.utils import rate_of_change_percentage
 
 
@@ -206,7 +205,7 @@ def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Pro
                 Scan.select()
                 .where(
                     Scan.project == project,
-                    Scan.module == MODULE,
+                    Scan.module == "radon",
                     Scan.sub_module == "raw",
                 )
                 .order_by(Scan.timestamp.desc())
@@ -385,7 +384,7 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
         Scan.select()
         .where(
             Scan.project == project,
-            Scan.module == MODULE,
+            Scan.module == "ruff",
             Scan.sub_module == "hal",
         )
         .order_by(Scan.timestamp.desc())
@@ -495,7 +494,7 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 Scan.select(Scan.id)
                 .where(
                     Scan.project == project,
-                    Scan.module == MODULE,
+                    Scan.module == "ruff",
                     Scan.sub_module == "mi",
                 )
                 .order_by(Scan.timestamp.desc())
@@ -587,7 +586,7 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 Scan.select()
                 .where(
                     Scan.project == project,
-                    Scan.module == MODULE,
+                    Scan.module == "ruff",
                     Scan.sub_module == "cc",
                 )
                 .order_by(Scan.timestamp.desc())

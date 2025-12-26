@@ -5,13 +5,10 @@ import logging
 import subprocess
 import sys
 from argparse import Namespace
-from importlib import import_module
 
 from rich import print
 
-from mq.cli import get_method
 from mq.modules.base import Project, Request, Scan
-from mq.modules import MODULE_NAMES, MODULES_AND_MODELS
 from mq.modules import save_scan_results
 from mq.utils.git import get_git_commit_hash
 
@@ -25,31 +22,36 @@ def ingest(args: Namespace) -> None:
     # Store info obo the request
     request = Request.create_from_args(args, project)
     if args.git:
+        # Doing a "history" run, ie. overall git revisions over time.
         ...
         # parse_git(args, project, request)
     else:
-        if args.module:
-            # Single ingest request for a particular module.
-            parse_single(args, project, request)
-        else:
-            # Ingest over ALL available modules..
-            for module in MODULE_NAMES:
-                args.module = module
-                parse_single(module, project, request)
+        # Doing a "current" run, ie. as of this moment.
+        for module in args.MODULES.keys():
+            if args.module and args.module.lower() != module.lower():
+                continue
+            parse_module(args, module, request)
 
 
 ################################################################################################
 # Generic non-git ingestion
 ################################################################################################
-def parse_single(args: Namespace, project: Project, request: Request) -> None:
+def parse_module(args: Namespace, module: str, request: Request) -> None:
     """Capture information for the specified module (ie. run, parse and store)."""
-    # Lookup the py_module based on the args.module were working on
-    py_module = MODULES_AND_MODELS[args.module]["module"]
+    # Lookup the module's configuration instance based on the module specified
+    configuration = args.MODULES[module]
+    log.debug(f"{configuration}")
 
-    sub_module = args.sub_module.lower() if args.sub_module else None
+    for sub_module in configuration.sub_modules:
+        if args.sub_module and args.sub_module.lower() != sub_module.lower():
+            continue
+        parse_sub_module(args, request, configuration, module, sub_module)
+
+
+def parse_sub_module(args: Namespace, request: Request, configuration, module: str, sub_module: str) -> None:
     scan = Scan.create(
         request=request,
-        module=args.module.lower(),
+        module=module.lower(),
         sub_module=sub_module,
         git_commit_hash=get_git_commit_hash(),
     )
@@ -61,8 +63,8 @@ def parse_single(args: Namespace, project: Project, request: Request) -> None:
         # Pipeline mode - parse JSON from stdin:
         json_ = json.loads(sys.stdin.read())
     else:
-        # Direct mode - run the module's command ourselves:
-        command = py_module.get_ingest_command(args.project, args.sub_module)
+        # Direct mode - run the module's command ourselves
+        command = configuration.get_ingest_command(args.project, sub_module)
         log.debug(f"{' '.join(command)=}")
 
         result = subprocess.run(command, capture_output=True, check=True)
@@ -71,19 +73,18 @@ def parse_single(args: Namespace, project: Project, request: Request) -> None:
     ################################################################################################
     # Parse the results received...
     ################################################################################################
-    # Find either the module's json parse method or one specific to the sub_module
-    py_parse = import_module(".parse", package=py_module.__name__)  # eg. .../<module>/parse.py
-    parse_method_name = py_module.get_parse_method_name(args.sub_module)  # eg.  "parse_json" or "parse_json_cc"
-    log.debug(f"{parse_method_name=}")
-    parse_method = getattr(py_parse, parse_method_name)  # eg. parse_json()
-    log.debug(f"{parse_method=}")
+    parse_method = configuration.get_parse_method(sub_module)
     results = parse_method(json_)
 
     ################################################################################################
     # Save em'!
     ################################################################################################
     num = save_scan_results(scan, results)
-    print(f"[green]✓ Ingested [bold]{num}[/bold] results from {args.module.upper()}[/green]")
+
+    s_from = module.upper()
+    if module.upper() != sub_module.upper():
+        s_from += f"-{sub_module.upper()}"
+    print(f"[green]✓ Ingested [bold]{num}[/bold] results from {s_from}[/green]")
 
 
 # def ingest(args: Namespace) -> None:

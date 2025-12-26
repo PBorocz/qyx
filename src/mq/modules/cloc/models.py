@@ -10,7 +10,6 @@ import logging
 from peewee import fn, IntegerField
 
 from mq.modules.base import BaseModuleModel, Project, Request, Scan
-from mq.modules.cloc import MODULE
 from mq.utils import rate_of_change_percentage
 
 log = logging.getLogger(__name__)

@@ -13,7 +13,7 @@ from mq.cli.status import show_status
 from mq.cli.report import report
 from mq.cli.admin import clear, housekeeping, trim
 from mq.web.server import serve
-from mq.modules import MODULES_AND_MODELS, MODULE_NAMES
+from mq.modules import setup_modules
 
 
 def get_args():
@@ -126,13 +126,6 @@ def get_args():
     if not hasattr(args, "module"):
         args.module = None
 
-    if args.module and args.module not in MODULES_AND_MODELS:
-        s_names = ", ".join(MODULE_NAMES)
-        print(f"[red]Sorry! module: [bold]{args.module}[/bold] is not valid, must be one of {s_names}[/red]")
-        sys.exit(1)
-
-    # TODO: Ensure here that a valid sub_module has been provided (from MODULES_AND_MODELS)
-
     # TODO: Ensure here that a valid level has been provided..
 
     # If no explicit command was issued, default to simply printing a status.
@@ -172,8 +165,19 @@ def main():
     # Setup logging (now that we know what potential level to log to)
     setup_logging(args.debug, False)
 
+    # Setup the modules currently defined/available.
+    args.MODULES = setup_modules(args)
+
     # Setup our data-store and respective tables.
     setup_sqlite(args)
+
+    # Now that we've done setup, we can validate some arguments..
+    if args.module and args.module not in args.MODULES:
+        s_names = ", ".join(args.MODULES.keys())
+        print(f"[red]Sorry! module: [bold]{args.module}[/bold] is not valid, must be one of {s_names}[/red]")
+        sys.exit(1)
+
+    # TODO: Ensure here that a valid sub_module has been provided (from MODULES_AND_MODELS)
 
     # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
     match args.command:

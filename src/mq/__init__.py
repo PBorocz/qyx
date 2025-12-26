@@ -9,7 +9,6 @@ from platformdirs import user_data_dir
 from rich.console import Console
 from rich.logging import RichHandler
 
-from mq.modules import MODULE_MODELS
 from mq.modules.base import Project, Request, Scan
 
 
@@ -19,17 +18,16 @@ def setup_sqlite(args: Namespace) -> None:
     db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
 
     # Make sure our models have tables defined for 'em!
-    for ith, model_class in enumerate([Project, Request, Scan] + MODULE_MODELS):
+    models = [Project, Request, Scan]
+    for configuration in args.MODULES.values():
+        for module_model_class in configuration.get_models().values():
+            models.append(module_model_class)
+
+    for model_class in models:
         model_class._meta.database = db
         model_class.create_table(safe=True)
-    logging.debug(f"...connected to {db_path.name=} with {ith + 1} models defined.")
 
-
-# def setup_logging(args: Namespace, logger) -> None:
-#     logger.remove()
-#     log_level = "DEBUG" if args.debug else "INFO"
-#     # TODO: For production/packaging deploy: change diagnose to False
-#     logger.add(sys.stderr, level=log_level, backtrace=True, diagnose=True)
+    logging.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")
 
 
 def setup_logging(arg_debug: bool = False, arg_peewee_debug: bool = False) -> logging.Logger:

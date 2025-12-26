@@ -3,7 +3,7 @@
 from argparse import Namespace
 from collections import defaultdict
 
-from peewee import fn
+from peewee import fn, InterfaceError
 from rich.tree import Tree
 from rich import print
 
@@ -36,24 +36,29 @@ def show_status(args: Namespace) -> None:
     print(tree)
 
 
-def _get_scan_count(scan: Scan) -> str:
+# FIXME: Make not as complex!
+def _get_scan_count(scan: Scan) -> str:  # noqa: C901
     """Return the scan's result count as a str already formatted for status tree."""
-    match scan.module:
-        # FIXME: Do this dynamically instead of hard-coding models?
-        case "cloc":
-            count = Cloc.filter(Cloc.scan == scan).count()
-        case "ruff":
-            count = Ruff.filter(Ruff.scan == scan).count()
-        case "radon":
-            match scan.sub_module:
-                case "cc":
-                    count = RadonCc.filter(RadonCc.scan == scan).count()
-                case "mi":
-                    count = RadonMi.filter(RadonMi.scan == scan).count()
-                case "hal":
-                    count = RadonHal.filter(RadonHal.scan == scan).count()
-                case "raw":
-                    count = RadonRaw.filter(RadonRaw.scan == scan).count()
+    count = 0
+    try:
+        match scan.module:
+            # FIXME: Do this dynamically instead of hard-coding models?
+            case "cloc":
+                count = Cloc.filter(Cloc.scan == scan).count()
+            case "ruff":
+                count = Ruff.filter(Ruff.scan == scan).count()
+            case "radon":
+                match scan.sub_module:
+                    case "cc":
+                        count = RadonCc.filter(RadonCc.scan == scan).count()
+                    case "mi":
+                        count = RadonMi.filter(RadonMi.scan == scan).count()
+                    case "hal":
+                        count = RadonHal.filter(RadonHal.scan == scan).count()
+                    case "raw":
+                        count = RadonRaw.filter(RadonRaw.scan == scan).count()
+    except InterfaceError:
+        return "?"
     if count == 0:
         return "[-]"
     elif count == 1:

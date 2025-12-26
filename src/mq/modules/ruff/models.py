@@ -5,7 +5,6 @@ from argparse import Namespace
 from peewee import fn, CharField, IntegerField, JOIN
 
 from mq.modules.base import BaseModuleModel, Project, Scan
-from mq.modules.ruff import MODULE
 from mq.utils import rate_of_change_percentage
 
 
@@ -72,7 +71,7 @@ def query(args: Namespace, level: str, scan: Scan = None, project: Project = Non
                 Scan.select()
                 .where(
                     Scan.project == project.id,
-                    Scan.module == MODULE,
+                    Scan.module == "ruff",
                 )
                 .order_by(
                     Scan.timestamp.desc(),
