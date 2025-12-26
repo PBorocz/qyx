@@ -1,4 +1,4 @@
-"""."""
+"""Master ingest logic."""
 
 import json
 import logging
@@ -27,19 +27,16 @@ def ingest(args: Namespace) -> None:
         # parse_git(args, project, request)
     else:
         # Doing a "current" run, ie. as of this moment.
-        for module in args.MODULES.keys():
+        for module in args.modules.keys():
             if args.module and args.module.lower() != module.lower():
                 continue
             parse_module(args, module, request)
 
 
-################################################################################################
-# Generic non-git ingestion
-################################################################################################
 def parse_module(args: Namespace, module: str, request: Request) -> None:
     """Capture information for the specified module (ie. run, parse and store)."""
     # Lookup the module's configuration instance based on the module specified
-    configuration = args.MODULES[module]
+    configuration = args.modules[module]
     log.debug(f"{configuration}")
 
     for sub_module in configuration.sub_modules:
@@ -85,21 +82,3 @@ def parse_sub_module(args: Namespace, request: Request, configuration, module: s
     if module.upper() != sub_module.upper():
         s_from += f"-{sub_module.upper()}"
     print(f"[green]✓ Ingested [bold]{num}[/bold] results from {s_from}[/green]")
-
-
-# def ingest(args: Namespace) -> None:
-#     if args.module:
-#         # Single ingest request, lookup the method and do it!
-#         __do_ingest(args)
-#     else:
-#         # Ingest over ALL available modules..
-#         for module in MODULE_NAMES:
-#             __do_ingest(module)
-
-
-# def __do_ingest(args: Namespace) -> None:
-#     method, msg = get_method(args.module, "ingest", "ingest")
-#     if not method and msg:
-#         logging.error(msg)
-#         return sys.exit(1)
-#     method(args)

@@ -5,8 +5,7 @@ from typing import Any
 
 from fasthtml import ft
 
-from mq.modules import MODULE_NAMES
-from mq.modules.base import Project, Request, Scan
+from mq.modules.base import Project, Scan
 
 uvicorn_logger = logging.getLogger("uvicorn")
 
@@ -51,7 +50,7 @@ def partial_module_selector(project: int = "") -> Any:
                     f" {module.title()}",
                     cls="mr-4",
                 )
-                for module in MODULE_NAMES
+                for module in ("FIXME!",)
             ],
             cls="mb-4 grid grid-cols-auto gap-4",
         ),

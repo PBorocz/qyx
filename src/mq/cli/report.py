@@ -6,7 +6,6 @@ from argparse import Namespace
 import sys
 
 from mq.cli import get_method
-from mq.modules import MODULE_NAMES
 
 log = logging.getLogger(__name__)
 
@@ -24,5 +23,5 @@ def report(args: Namespace) -> None:
         __do_report(args.module)
     else:
         # Report over ALL available modules..
-        for module in MODULE_NAMES:
+        for module in args.modules.keys():
             __do_report(module)

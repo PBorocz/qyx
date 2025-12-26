@@ -27,7 +27,7 @@ def show_status(args: Namespace) -> None:
             for scan in Scan.select().where(Scan.request == request):
                 scan_count = _get_scan_count(scan)
                 if scan.sub_module:
-                    s_module = f"{scan.module.upper()}-{scan.sub_module.upper()}"
+                    s_module = f"{scan.module.upper():5s} - {scan.sub_module.upper():4s}"
                 else:
                     s_module = scan.module.upper()
 

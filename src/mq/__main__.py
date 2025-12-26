@@ -116,7 +116,7 @@ def get_args():
     args = parser.parse_args()
 
     # Parse any REPORT options provided and add into the args
-    if args.command.lower() == "report" and hasattr(args, "options_str"):
+    if args.command and args.command.lower() == "report" and hasattr(args, "options_str"):
         default_options = dict(percentages=False, last=2)
         args.options = parse_options(args.options_str or "", default_options)
 
@@ -125,8 +125,6 @@ def get_args():
         args.debug = False
     if not hasattr(args, "module"):
         args.module = None
-
-    # TODO: Ensure here that a valid level has been provided..
 
     # If no explicit command was issued, default to simply printing a status.
     if not hasattr(args, "command") or args.command is None:
@@ -156,6 +154,28 @@ def parse_options(options_str: str, defaults=None):
     return opts
 
 
+def validate_args(args: argparse.Namespace) -> bool:
+    """Validate arguments now that we've got everything setup."""
+    if args.module and args.module not in args.modules:
+        s_names = ", ".join(args.modules.keys())
+        print(f"[red]Sorry! module: [bold]{args.module}[/bold] is not valid, must be one of {s_names}[/red]")
+        return False
+
+    if hasattr(args, "sub_module"):
+        if not args.module:
+            print("[red]Sorry! can't specify a sub_module without a module itself![/red]")
+            return False
+
+        module_config = args.modules[args.module.lower()]
+        if args.sub_module not in module_config.sub_modules:
+            print(
+                f"[red]Sorry! sub_module: [bold]{args.sub_module}[/bold] does not "
+                f"exist within module: {args.module}[/red]",
+            )
+            return False
+    return True
+
+
 def main():
     # install_traceback(show_locals=False)  # Before anything else, setup colorful/informative tracebacks
 
@@ -165,19 +185,15 @@ def main():
     # Setup logging (now that we know what potential level to log to)
     setup_logging(args.debug, False)
 
-    # Setup the modules currently defined/available.
-    args.MODULES = setup_modules(args)
+    # Setup the modules currently defined/available (and place into args)
+    args.modules = setup_modules(args)
+
+    # Arguments read and modules defined, are our arguments valid?
+    if not validate_args(args):
+        sys.exit(1)
 
     # Setup our data-store and respective tables.
     setup_sqlite(args)
-
-    # Now that we've done setup, we can validate some arguments..
-    if args.module and args.module not in args.MODULES:
-        s_names = ", ".join(args.MODULES.keys())
-        print(f"[red]Sorry! module: [bold]{args.module}[/bold] is not valid, must be one of {s_names}[/red]")
-        sys.exit(1)
-
-    # TODO: Ensure here that a valid sub_module has been provided (from MODULES_AND_MODELS)
 
     # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
     match args.command:
@@ -200,5 +216,5 @@ def main():
         case _:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
-    # FIXME
-    # housekeeping(args)  # Do database housekeeping
+    # Do database housekeeping
+    housekeeping(args)
