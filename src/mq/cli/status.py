@@ -31,7 +31,7 @@ def show_status(args: Namespace) -> None:
                 else:
                     s_module = scan.module.upper()
 
-                s_scan = f"{s_module} as of {scan.timestamp_display(full=True)} {scan_count}"
+                s_scan = f"{s_module} as of {scan.as_of_display(full=True)} {scan_count}"
                 scan_tree.add(s_scan)
     print(tree)
 

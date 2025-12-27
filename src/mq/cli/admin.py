@@ -163,7 +163,7 @@ def _trim(args: Namespace) -> int:
             Project.name.alias("project_name"),
             Scan.module,
             Scan.sub_module,
-            fn.MAX(Scan.timestamp).alias("max_timestamp"),
+            fn.MAX(Scan.as_of).alias("max_as_of"),
         )
         .join(Request)
         .join(Project)

@@ -21,7 +21,13 @@ from mq.web.routes.home import (
 
 log = logging.getLogger(__name__)
 
-app, rt = fh.fast_app(debug=True)
+css = fh.Style("""
+    body { font-family: Arial; margin: 20px; }
+    h1 { color: blue; }
+    button { padding: 10px; background: lightblue; border: none; }
+""")
+
+app, rt = fh.fast_app(debug=True, hdrs=(css,))
 
 
 def serve(args: Namespace) -> None:

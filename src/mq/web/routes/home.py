@@ -59,7 +59,7 @@ def partial_module_selector(project: int = "") -> Any:
 
 def partial_run_selector(project: int = "", module: str = "") -> Any:
     # uvicorn_logger.info(f"partial_run_selector {project=} {module=}")
-    runs = Scan.select().where(Scan.project == project, Scan.module == module).order_by(Scan.timestamp.desc())
+    runs = Scan.select().where(Scan.project == project, Scan.module == module).order_by(Scan.as_of.desc())
     return ft.Div(
         ft.H3("Scan"),
         ft.Select(

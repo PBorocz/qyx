@@ -24,10 +24,6 @@ class BaseModel(pw.Model):
 
         database = None
 
-    def timestamp_display(self, full: bool = False) -> str:
-        """..."""
-        return timestamp_display(self.timestamp)
-
 
 class Project(BaseModel):
     """Root of result storage, a 'project' is essentially just a project root directory.
@@ -99,24 +95,6 @@ class Project(BaseModel):
         log.debug(msg)
         return instance
 
-    # @classmethod
-    # def get_or_insert_relative(cls, arg_input_dir: str) -> Project:
-    #     """Get the project at the specified source directory, even if we have to insert."""
-    #     path_absolute = str(Path(arg_input_dir).resolve())
-    #     name = _generate_display_name(path_absolute)
-    #     project
-    #     return cls.get_or_insert_raw(arg_input_dir, path_absolute, name)
-    #     # try:
-    #     #     project = cls.get(cls.path_absolute == path_absolute)
-    #     # except pw.DoesNotExist:
-    #     #     name = generate_display_name(path_absolute)
-    #     #     project = cls.create(
-    #     #         path_input=arg_input_dir,
-    #     #         path_absolute=path_absolute,
-    #     #         name=name,
-    #     #     )
-    #     # return project
-
 
 class Request(BaseModel):
     """A 'Request' captures the user desire to perform an analysis."""
@@ -161,6 +139,10 @@ class Request(BaseModel):
             return run
         return None
 
+    def timestamp_display(self, full: bool = False) -> str:
+        """..."""
+        return timestamp_display(self.timestamp)
+
 
 class Scan(BaseModel):
     """A 'Scan' is the execution of a particular module at a particular time for a project."""
@@ -171,8 +153,8 @@ class Scan(BaseModel):
         backref="scans",
         on_delete="CASCADE",
     )
-    timestamp = pw.DateTimeField(
-        help_text="GMT/UTC datetime of the code base",
+    as_of = pw.DateTimeField(
+        help_text="As Of GMT/UTC datetime of the code base being analysed",
         default=lambda: datetime.now(UTC),
     )
     module = pw.CharField(
@@ -190,17 +172,21 @@ class Scan(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        indexes = ((("request", "timestamp", "module", "sub_module"), True),)
+        indexes = ((("request", "as_of", "module", "sub_module"), True),)
 
     @classmethod
     def get_most_recent(cls, request: Request, module: str, sub_module: str = None) -> Scan | None:
         """Find the most recent run for the specified project and module (or sub_module)."""
-        query = Scan.select().order_by(Scan.timestamp.desc()).where(Scan.request == request, Scan.module == module)
+        query = Scan.select().order_by(Scan.as_of.desc()).where(Scan.request == request, Scan.module == module)
         if sub_module:
             query = query.where(Scan.sub_module == sub_module)
         if run := query.first():
             return run
         return None
+
+    def as_of_display(self, full: bool = False) -> str:
+        """..."""
+        return timestamp_display(self.as_of)
 
 
 class BaseModuleModel(pw.Model):

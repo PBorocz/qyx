@@ -208,13 +208,13 @@ def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Pro
                     Scan.module == "radon",
                     Scan.sub_module == "raw",
                 )
-                .order_by(Scan.timestamp.desc())
+                .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
             )
 
             query = (
                 RadonRaw.select(
-                    Scan.timestamp.alias("timestamp"),
+                    Scan.as_of.alias("timestamp"),
                     fn.SUM(RadonRaw.loc).alias("loc"),
                     fn.SUM(RadonRaw.lloc).alias("lloc"),
                     fn.SUM(RadonRaw.sloc).alias("sloc"),
@@ -225,8 +225,8 @@ def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Pro
                 )
                 .join(Scan)
                 .where(Scan.id.in_(scans))
-                .group_by(Scan.timestamp)
-                .order_by(Scan.timestamp)
+                .group_by(Scan.as_of)
+                .order_by(Scan.as_of)
                 .objects()
             )
 
@@ -387,13 +387,13 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
             Scan.module == "ruff",
             Scan.sub_module == "hal",
         )
-        .order_by(Scan.timestamp.desc())
+        .order_by(Scan.as_of.desc())
         .limit(args.options.last)
     )
 
     query = (
         RadonHal.select(
-            Scan.timestamp.alias("timestamp"),
+            Scan.as_of.alias("timestamp"),
             fn.AVG(RadonHal.h1).alias("h1"),
             fn.AVG(RadonHal.h2).alias("h2"),
             fn.AVG(RadonHal.N1).alias("N1"),
@@ -409,8 +409,8 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
         )
         .join(Scan)
         .where(Scan.id.in_(scans))
-        .group_by(Scan.timestamp)
-        .order_by(Scan.timestamp)
+        .group_by(Scan.as_of)
+        .order_by(Scan.as_of)
         .objects()
     )
 
@@ -497,22 +497,22 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                     Scan.module == "ruff",
                     Scan.sub_module == "mi",
                 )
-                .order_by(Scan.timestamp.desc())
+                .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
             )
             scan_ids = [scan.id for scan in scans]
 
             query = (
                 RadonMi.select(
-                    Scan.timestamp.alias("timestamp"),
+                    Scan.as_of.alias("timestamp"),
                     fn.AVG(RadonMi.mi).alias("mi_mean"),
                 )
                 .where(
                     RadonMi.run.in_(scan_ids),
                 )
                 .join(Scan)
-                .group_by(Scan.timestamp)
-                .order_by(Scan.timestamp.desc())
+                .group_by(Scan.as_of)
+                .order_by(Scan.as_of.desc())
                 .objects()
             )
 
@@ -589,19 +589,19 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                     Scan.module == "ruff",
                     Scan.sub_module == "cc",
                 )
-                .order_by(Scan.timestamp.desc())
+                .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
             )
 
             query = (
                 RadonCc.select(
-                    Scan.timestamp.alias("timestamp"),
+                    Scan.as_of.alias("timestamp"),
                     fn.AVG(RadonCc.complexity).alias("complexity"),
                 )
                 .join(Scan)
                 .where(Scan.id.in_(scans))
-                .group_by(Scan.timestamp)
-                .order_by(Scan.timestamp)
+                .group_by(Scan.as_of)
+                .order_by(Scan.as_of)
                 .objects()
             )
 

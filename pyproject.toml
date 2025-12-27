@@ -48,9 +48,9 @@ help = "Run/ingest all modules."
 
 [tool.poe.tasks.ingest-cloc-git]
 shell = """
-  uv run mq admin clear --module cloc --no_confirm
-  uv run mq ingest      --module cloc --git     https://github.com/pborocz/mq
-  uv run mq report      --module cloc --project https://github.com/pborocz/mq --level h --options "last:99"
+  # uv run mq admin clear --module cloc --no_confirm
+  uv run mq ingest        --module cloc --git     https://github.com/pborocz/mq --debug
+  # uv run mq report      --module cloc --project https://github.com/pborocz/mq --level h --options "last:99"
   """
 help = "Run/ingest all modules."
 

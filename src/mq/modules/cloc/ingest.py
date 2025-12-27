@@ -31,7 +31,7 @@
 #     log.debug(f"Request : {request=}")
 #     # test_dt = datetime.fromtimestamp(1732670456, tz=UTC)
 #     # scan = Scan.create(request=request, module="test", timestamp=test_dt, git_commit_hash="test123")
-#     # print(f"Created with datetime object: {scan.timestamp}")
+#     # print(f"Created with datetime object: {scan.as_of}")
 #     # return
 
 #     for repo_path, commit_date, commit_hash in git_commits(args):
@@ -56,7 +56,7 @@
 #         num_saved = save_scan_results(scan, results)
 #         print(
 #             f"[green]✓ Ingested [bold]{num_saved}[/bold] results from "
-#             f"{MODULE.upper()}[/green] as of {scan.timestamp_display()}",
+#             f"{MODULE.upper()}[/green] as of {scan.as_of_display()}",
 #         )
 
 

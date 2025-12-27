@@ -161,7 +161,7 @@ def validate_args(args: argparse.Namespace) -> bool:
         print(f"[red]Sorry! module: [bold]{args.module}[/bold] is not valid, must be one of {s_names}[/red]")
         return False
 
-    if hasattr(args, "sub_module"):
+    if hasattr(args, "sub_module") and args.sub_module:
         if not args.module:
             print("[red]Sorry! can't specify a sub_module without a module itself![/red]")
             return False

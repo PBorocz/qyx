@@ -131,10 +131,7 @@ def _query_history(project: Project, request: Request, last: int) -> tuple[list[
     if Scan.filter(Scan.request == request).count() > 1:
         # Essentially "git" mode, where our request triggered MULTIPLE scans (over time)
         scans = (
-            Scan.select()
-            .where(Scan.request == request, Scan.module == MODULE)
-            .order_by(Scan.timestamp.desc())
-            .limit(last)
+            Scan.select().where(Scan.request == request, Scan.module == MODULE).order_by(Scan.as_of.desc()).limit(last)
         )
     else:
         # Simple mode, our most recent request triggered on a single scan, consider all scans for the project:
@@ -145,13 +142,13 @@ def _query_history(project: Project, request: Request, last: int) -> tuple[list[
                 Request.project == project,
                 Scan.module == MODULE,
             )
-            .order_by(Scan.timestamp.desc())
+            .order_by(Scan.as_of.desc())
             .limit(last)
         )
 
     query = (
         Cloc.select(
-            Scan.timestamp.alias("timestamp"),
+            Scan.as_of.alias("timestamp"),
             fn.SUM(Cloc.lines_code).alias("total_code"),
             fn.SUM(Cloc.lines_comment).alias("total_comment"),
             fn.SUM(Cloc.lines_blank).alias("total_blank"),
@@ -160,8 +157,8 @@ def _query_history(project: Project, request: Request, last: int) -> tuple[list[
         .where(
             Scan.id.in_(scans),
         )
-        .group_by(Scan.timestamp)
-        .order_by(Scan.timestamp)
+        .group_by(Scan.as_of)
+        .order_by(Scan.as_of)
         .objects()
     )
 

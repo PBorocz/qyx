@@ -74,7 +74,7 @@ def query(args: Namespace, level: str, scan: Scan = None, project: Project = Non
                     Scan.module == "ruff",
                 )
                 .order_by(
-                    Scan.timestamp.desc(),
+                    Scan.as_of.desc(),
                 )
                 .limit(
                     args.options.last,
@@ -89,15 +89,15 @@ def query(args: Namespace, level: str, scan: Scan = None, project: Project = Non
             # run. We still want the timestamp back with a Ruff count of *0*.
             rows = (
                 Scan.select(
-                    Scan.timestamp.alias("timestamp"),
+                    Scan.as_of.alias("timestamp"),
                     fn.COUNT(Ruff.id).alias("count"),
                 )
                 .join(Ruff, JOIN.LEFT_OUTER)
                 .where(
                     Scan.id.in_(scans),
                 )
-                .group_by(Scan.timestamp)
-                .order_by(Scan.timestamp)
+                .group_by(Scan.as_of)
+                .order_by(Scan.as_of)
                 .objects()
             )
             timestamps = [row.timestamp for row in rows]

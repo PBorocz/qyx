@@ -10,7 +10,7 @@ from rich import print
 
 from mq.modules.base import Project, Request, Scan
 from mq.modules import save_scan_results
-from mq.utils.git import get_git_commit_hash
+from mq.utils.git import extract_repo_name, get_git_commit_hash
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def ingest(args: Namespace) -> None:
     if args.git:
         # Doing a "history" run, ie. overall git revisions over time.
         ...
-        # parse_git(args, project, request)
+        parse_git(args, project, request)
     else:
         # Doing a "current" run, ie. as of this moment.
         for module in args.modules.keys():
@@ -82,3 +82,9 @@ def parse_sub_module(args: Namespace, request: Request, configuration, module: s
     if module.upper() != sub_module.upper():
         s_from += f"-{sub_module.upper()}"
     print(f"[green]✓ Ingested [bold]{num}[/bold] results from {s_from}[/green]")
+
+
+def parse_git(args: Namespace, project: Project, request: Request) -> None:
+    repo_name = extract_repo_name(args.git)
+    log.debug(f"Project name: {project.name=} {repo_name=}")
+    return
