@@ -46,8 +46,8 @@ def get_args():
     parse_ingest.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
     parse_ingest.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
     parse_ingest.add_argument("-s", "--sub_module", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
-    parse_ingest.add_argument("--stdin", action="store_true", help="Read JSON from stdin instead of running subprocess")
-    parse_ingest.add_argument("--git", help="Ingest from a github repo")
+    parse_ingest.add_argument("--stdin", action="store_true", help="Read JSON from stdin instead of running command.")
+    parse_ingest.add_argument("--git", help="Ingest historically from the specified github repo.")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
 
     ################################################################################

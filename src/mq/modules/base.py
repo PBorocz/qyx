@@ -198,7 +198,7 @@ class BaseModuleModel(pw.Model):
 
     # fmt: off
     id       = pw.AutoField()
-    scan     = pw.ForeignKeyField(Scan, backref="modules", on_delete="CASCADE")
+    scan     = pw.ForeignKeyField(Scan, backref="-modules-", on_delete="CASCADE")
     filename = pw.CharField(help_text="Name of file under evaluation.")
     dir      = pw.CharField(help_text="Relative directory of file under evaluation.")
     # fmt: on
