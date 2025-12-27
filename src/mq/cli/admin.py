@@ -47,7 +47,7 @@ def _delete_extraneous_scans(args: Namespace) -> None:
             num = 0
             msg = f"- Cleaned up {num} Scan(s) that weren't referenced."
         else:
-            msg = "Nothing done, all Scans have Results associated with them."
+            msg = "Nothing done, all {module_name.upper()} Scans have Results associated with them."
         log.debug(msg)
 
     for module_name, module_config in args.modules.items():
