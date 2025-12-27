@@ -139,6 +139,10 @@ class Request(BaseModel):
             return run
         return None
 
+    def is_git(self) -> bool:
+        """Return true if this request is based on a git repository history."""
+        return self.scan_source == "git"
+
     def timestamp_display(self, full: bool = False) -> str:
         """..."""
         return timestamp_display(self.timestamp)

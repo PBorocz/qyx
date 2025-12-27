@@ -8,12 +8,14 @@ from rich import print
 
 from mq import setup_logging, setup_sqlite
 
+from mq.cli.admin.clear import clear
+from mq.cli.admin.housekeeping import housekeeping
+from mq.cli.admin.trim import trim
 from mq.cli.ingest import ingest
-from mq.cli.status import show_status
 from mq.cli.report import report
-from mq.cli.admin import clear, housekeeping, trim
-from mq.web.server import serve
+from mq.cli.status import show_status
 from mq.modules import setup_modules
+from mq.web.server import serve
 
 
 def get_args():

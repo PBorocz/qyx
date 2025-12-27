@@ -31,7 +31,11 @@ def show_status(args: Namespace) -> None:
                 else:
                     s_module = scan.module.upper()
 
-                s_scan = f"{s_module} as of {scan.as_of_display(full=True)} {scan_count}"
+                if request.is_git():
+                    s_scan = f"{s_module} asOf {scan.as_of_display(full=True)} {scan_count}"
+                else:
+                    s_scan = f"{s_module} @    {scan.as_of_display(full=True)} {scan_count}"
+
                 scan_tree.add(s_scan)
     print(tree)
 
