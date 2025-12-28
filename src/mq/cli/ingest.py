@@ -10,9 +10,9 @@ from typing import Iterator
 
 from rich import print
 
-from mq.modules.base import Project, Request, Scan
-from mq.modules import save_scan_results
-from mq.utils.git import extract_repo_name, get_git_commit_hash, git_commits
+from mq.tools.base import Project, Request, Scan
+from mq.tools import save_scan_results, split_arg_tool_analysis
+from mq.utils.git import get_git_commit_hash, git_commits
 
 log = logging.getLogger(__name__)
 
@@ -28,16 +28,16 @@ def ingest(args: Namespace) -> None:
     # Lookup (or create) our Project and associated Tequest
     project = Project.create_from_args(args)
     request = Request.create_from_args(args, project)
+    ta_pairs = generate_ta_pairs(args)
 
-    for scan_request in generate_scan_requests(args, request):
+    for scan_request in iter_scan_requests(args, request):
         log.debug(f"{scan_request=}")
-        _ingest_scan_request(args, project, request, scan_request)
-    return
+        for o_tool, analysis in ta_pairs:
+            _ingest_analysis(args, request, o_tool, analysis, scan_request)
 
 
-def generate_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:
+def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:
     if request.scan_source == "git":
-        repo_name = extract_repo_name(args.git)
         for repo_path, commit_date, commit_hash in git_commits(args):
             yield Namespace(
                 as_git=True,
@@ -54,37 +54,17 @@ def generate_scan_requests(args: Namespace, request: Request) -> Iterator[Namesp
         )
 
 
-def _ingest_scan_request(args: Namespace, project: Project, request: Request, scan_request: Namespace) -> None:
-    for module in args.modules.keys():
-        if args.module and args.module.lower() != module.lower():
-            continue
-        _ingest_module(args, module.lower(), request, scan_request)
-
-
-def _ingest_module(args: Namespace, module: str, request: Request, scan_request: Namespace) -> None:
-    """Capture information for the specified module (ie. run, parse and store)."""
-    # Lookup the module's configuration instance based on the module specified
-    module_configuration = args.modules[module]
-    log.debug(f"{module_configuration=}")
-
-    for sub_module in module_configuration.sub_modules:
-        if args.sub_module and args.sub_module.lower() != sub_module.lower():
-            continue
-        _ingest_sub_module(args, request, module_configuration, module, sub_module.lower(), scan_request)
-
-
-def _ingest_sub_module(
+def _ingest_analysis(
     args: Namespace,
     request: Request,
-    module_configuration: dict,
-    module: str,
-    sub_module: str,
+    tool_configuration: any,  # FIXME: typing?
+    analysis: str,
     scan_request: Namespace,
 ) -> None:
     scan = Scan.create(
         request=request,
-        module=module,
-        sub_module=sub_module,
+        tool=tool_configuration.module,
+        analysis=analysis,
         git_commit_hash=scan_request.hash,
         as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
     )
@@ -96,8 +76,8 @@ def _ingest_sub_module(
         # Pipeline mode - parse JSON from stdin:
         json_ = json.loads(sys.stdin.read())
     else:
-        # Direct mode - run the module's command ourselves
-        command = module_configuration.get_ingest_command(args.project, sub_module)
+        # Direct mode - run the tool's command ourselves
+        command = tool_configuration.get_ingest_command(args.project, analysis)
         log.debug(f"{' '.join(command)=}")
 
         result = subprocess.run(
@@ -111,7 +91,7 @@ def _ingest_sub_module(
     ################################################################################################
     # Parse the results received...
     ################################################################################################
-    parse_method = module_configuration.get_parse_method(sub_module)
+    parse_method = tool_configuration.get_parse_method(analysis)
     results = parse_method(json_)
 
     ################################################################################################
@@ -119,146 +99,38 @@ def _ingest_sub_module(
     ################################################################################################
     num = save_scan_results(scan, results)
 
-    s_from = module.upper()
-    if module.upper() != sub_module.upper():
-        s_from += f"-{sub_module.upper()}"
-    print(f"[green]✓ Ingested [bold]{num}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
+    s_from = tool_configuration.module
+    if tool_configuration.module != analysis:
+        s_from += f":{analysis}"
+    print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
 
 
-################################################################################################################
-# ORIGINAL DON'T TOUCH!!
-################################################################################################################
-# def ingest_original(args: Namespace) -> None:
-#     # Lookup (or create) our project!
-#     project = Project.create_from_args(args)
+def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
+    """Process the command-line argument and return a list of Tools and analyses to perform."""
+    ################################################################################
+    # Case 1: tool_analysis is empty -> we want to ingest everything!
+    ################################################################################
+    return_ = list()
+    if not args.tool_analysis:
+        for tool_name in args.tools.keys():
+            tool_configuration = args.tools[tool_name]
+            for analysis_name in tool_configuration.analyses:
+                return_.append((tool_configuration, analysis_name))
+        return return_
 
-#     # Store info obo the request
-#     request = Request.create_from_args(args, project)
-#     if args.git:
-#         # Doing a "history" run, ie. overall git revisions over time.
-#         parse_git(args, project, request)
-#     else:
-#         # Doing a "current" run, ie. as of this moment.
-#         for module in args.modules.keys():
-#             if args.module and args.module.lower() != module.lower():
-#                 continue
-#             parse_module(args, module, request)
+    arg_tool, arg_analysis = split_arg_tool_analysis(args.tool_analysis)
 
+    ################################################################################
+    # Case 2: Tool only, give all the analyses the tool supports
+    ################################################################################
+    if not arg_analysis:
+        tool_configuration = args.tools[arg_tool]
+        for analysis_name in tool_configuration.analyses:
+            return_.append((tool_configuration, analysis_name))
+        return return_
 
-# def parse_module(args: Namespace, module: str, request: Request) -> None:
-#     """Capture information for the specified module (ie. run, parse and store)."""
-#     # Lookup the module's configuration instance based on the module specified
-#     configuration = args.modules[module]
-#     log.debug(f"{configuration}")
-
-#     for sub_module in configuration.sub_modules:
-#         if args.sub_module and args.sub_module.lower() != sub_module.lower():
-#             continue
-#         parse_sub_module(args, request, configuration, module, sub_module)
-
-
-# def parse_sub_module(args: Namespace, request: Request, configuration, module: str, sub_module: str) -> None:
-#     scan = Scan.create(
-#         request=request,
-#         module=module.lower(),
-#         sub_module=sub_module,
-#         git_commit_hash=get_git_commit_hash(),
-#     )
-
-#     ################################################################################################
-#     # Get the tool's data EITHER directly from stdin OR by running it!
-#     ################################################################################################
-#     if args.stdin:
-#         # Pipeline mode - parse JSON from stdin:
-#         json_ = json.loads(sys.stdin.read())
-#     else:
-#         # Direct mode - run the module's command ourselves
-#         command = configuration.get_ingest_command(args.project, sub_module)
-#         log.debug(f"{' '.join(command)=}")
-
-#         result = subprocess.run(command, capture_output=True, check=True)
-#         json_ = json.loads(result.stdout)
-
-#     ################################################################################################
-#     # Parse the results received...
-#     ################################################################################################
-#     parse_method = configuration.get_parse_method(sub_module)
-#     results = parse_method(json_)
-
-#     ################################################################################################
-#     # Save em'!
-#     ################################################################################################
-#     num = save_scan_results(scan, results)
-
-#     s_from = module.upper()
-#     if module.upper() != sub_module.upper():
-#         s_from += f"-{sub_module.upper()}"
-#     print(f"[green]✓ Ingested [bold]{num}[/bold] results from {s_from}[/green]")
-
-
-# def parse_git(args: Namespace, project: Project, request: Request) -> None:
-#     repo_name = extract_repo_name(args.git)
-#     log.debug(f"Project name: {project.name=} {repo_name=}")
-
-#     for repo_path, commit_date, commit_hash in git_commits(args):
-#         super_args = Namespace(
-#             args=args,
-#             project=project,
-#             request=request,
-#             repo_path=repo_path,
-#             commit_date=commit_date,
-#             commit_hash=commit_hash,
-#         )
-#         parse_git_revision(super_args)
-
-
-# def parse_git_revision(super_args: Namespace) -> None:
-#     args = super_args.args
-#     for module in args.modules.keys():
-#         if args.module and args.module.lower() != module.lower():
-#             continue
-#         parse_git_module(super_args, module)
-
-
-# def parse_git_module(super_args: Namespace, module: str) -> None:
-#     """Parse the specified module from the current revision."""
-#     args = super_args.args
-#     configuration = args.modules[module]
-#     log.debug(f"{configuration}")
-
-#     for sub_module in configuration.sub_modules:
-#         if args.sub_module and args.sub_module.lower() != sub_module.lower():
-#             continue
-#         parse_git_sub_module(super_args, configuration, module, sub_module)
-
-
-# def parse_git_sub_module(super_args: Namespace, configuration, module: str, sub_module: str) -> None:
-#     """Parse the specified sub_module from the current revision."""
-#     scan = Scan.create(
-#         request=super_args.request,
-#         module=module.lower(),
-#         sub_module=sub_module,
-#         git_commit_hash=super_args.commit_hash,
-#         as_of=super_args.commit_date,  # NOTE! We're getting this from the current git revision!
-#     )
-
-#     # We're finally ready to run our module/sub_module tool against this revision
-#     command = configuration.get_ingest_command(".", None)
-#     log.debug(f"{' '.join(command)=}")
-
-#     result = subprocess.run(
-#         command,
-#         cwd=super_args.repo_path,
-#         capture_output=True,
-#         check=True,
-#     )
-#     json_ = json.loads(result.stdout)
-#     parse_method = configuration.get_parse_method(sub_module)
-#     results = parse_method(json_)
-#     num = save_scan_results(scan, results)
-
-#     s_from = module.upper()
-#     if module.upper() != sub_module.upper():
-#         s_from += f"-{sub_module.upper()}"
-
-#     print(f"[green]✓ Ingested [bold]{num}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
+    ################################################################################
+    # Case 3: Tool and Analysis specified
+    ################################################################################
+    assert arg_tool and arg_analysis
+    return [(args.tools[arg_tool], arg_analysis)]

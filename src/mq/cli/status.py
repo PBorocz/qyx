@@ -8,10 +8,10 @@ from rich.tree import Tree
 from rich import print
 
 from mq.cli import cli_console, cli_table
-from mq.modules.base import Project, Request, Scan
-from mq.modules.cloc.models import Cloc
-from mq.modules.radon.models import RadonCc, RadonHal, RadonMi, RadonRaw
-from mq.modules.ruff.models import Ruff
+from mq.tools.base import Project, Request, Scan
+from mq.tools.cloc.models import Cloc
+from mq.tools.radon.models import RadonCc, RadonHal, RadonMi, RadonRaw
+from mq.tools.ruff.models import Ruff
 
 
 def show_status(args: Namespace) -> None:
@@ -26,15 +26,11 @@ def show_status(args: Namespace) -> None:
 
             for scan in Scan.select().where(Scan.request == request):
                 scan_count = _get_scan_count(scan)
-                if scan.sub_module:
-                    s_module = f"{scan.module.upper():5s} - {scan.sub_module.upper():4s}"
-                else:
-                    s_module = scan.module.upper()
-
+                s_analysis = scan.tool_analysis_display()
                 if request.is_git():
-                    s_scan = f"{s_module} asOf {scan.as_of_display(full=True)} {scan_count}"
+                    s_scan = f"Scan -> {s_analysis} asOf {scan.as_of_display(full=True)} {scan_count}"
                 else:
-                    s_scan = f"{s_module} @    {scan.as_of_display(full=True)} {scan_count}"
+                    s_scan = f"Scan -> {s_analysis} @    {scan.as_of_display(full=True)} {scan_count}"
 
                 scan_tree.add(s_scan)
     print(tree)
@@ -45,14 +41,14 @@ def _get_scan_count(scan: Scan) -> str:  # noqa: C901
     """Return the scan's result count as a str already formatted for status tree."""
     count = 0
     try:
-        match scan.module:
+        match scan.tool:
             # FIXME: Do this dynamically instead of hard-coding models?
             case "cloc":
                 count = Cloc.filter(Cloc.scan == scan).count()
             case "ruff":
                 count = Ruff.filter(Ruff.scan == scan).count()
             case "radon":
-                match scan.sub_module:
+                match scan.analysis:
                     case "cc":
                         count = RadonCc.filter(RadonCc.scan == scan).count()
                     case "mi":
@@ -64,11 +60,11 @@ def _get_scan_count(scan: Scan) -> str:  # noqa: C901
     except InterfaceError:
         return "?"
     if count == 0:
-        return "[-]"
+        return ""
     elif count == 1:
-        return f"[{count} entry]"
+        return f"({count} entry)"
     else:
-        return f"[{count:3d} entries]"
+        return f"({count:3d} entries)"
 
 
 def status_old(args: Namespace) -> None:

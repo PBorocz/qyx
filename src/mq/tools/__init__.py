@@ -1,29 +1,29 @@
 """..."""
 
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from importlib import import_module
 from argparse import Namespace
 from pathlib import Path
 
-from mq.modules.base import Scan
+from mq.tools.base import Scan
 
 log = logging.getLogger(__name__)
 
 
 ################################################################################################
 class AbstractModuleConfiguration(ABC):
-    """Defines all the semantics of a code quality tool (aka Module) supported by this package."""
+    """Defines all the semantics of a code quality tool (aka module) supported by this package."""
 
     def __init__(
         self,
-        module_name: str,
-        sub_modules: tuple[str],
+        module: str,  # Name of the python module directory supporting the tool
+        analyses: tuple[str],
         **kwargs,
     ) -> "AbstractModuleConfiguration":
         """..."""
-        self.module_name = module_name
-        self.sub_modules: tuple[str] = sub_modules  # List of sub_modules (even if just 1 for stuff like cloc and ruff)
+        self.module = module
+        self.analyses: tuple[str] = analyses  # Analyses support by the tool (even if 1 for stuff like cloc and ruff)
         self.results_required = True  # Are Results "required" for a Scan to be valid? (usually yes)
 
         for attr, value in kwargs.items():
@@ -47,25 +47,41 @@ def save_scan_results(scan: Scan, rows: list) -> int:
 
 
 ################################################################################################
+def split_arg_tool_analysis(arg: str = None) -> tuple[str, str]:
+    """Split the input argument that embeds tool & analysis together.
+
+    ""          -> [None, None]
+    "cloc"      -> ["cloc", None]
+    "radon:raw" -> ["radon", "raw"]
+    """
+    if not arg:
+        return [None, None]
+    if ":" in arg:
+        tool, analysis = arg.lower().split(":")
+        return [tool, analysis]  # Tool + specific analysis
+    return [arg.lower(), False]  # Tool only
+
+
+################################################################################################
 # "Setup" logic for dynamically identifying available modules and their respective configurations
 ################################################################################################
-def setup_modules(args: Namespace) -> dict:
-    """Introspect our modules directory to dynamically discover modules defined at run-time."""
-    modules = {}
+def setup_tools(args: Namespace) -> dict:
+    """Introspect our tools directory to dynamically discover modules defined at run-time."""
+    tools = {}
 
-    # Iterate over /app/modules and get handles to each module
-    modules_dir = Path("src/mq/modules")
-    for module_path in modules_dir.iterdir():
-        if module_path.is_dir() and not module_path.name.startswith("_"):
-            module_name = module_path.name
-            log.debug(f"Setting up module: '{module_name}'...")
+    # Iterate over /app/tools and get handles to each module
+    tools_dir = Path("src/mq/tools")
+    for tool_path in tools_dir.iterdir():
+        if tool_path.is_dir() and not tool_path.name.startswith("_"):
+            tool_name = tool_path.name
+            log.debug(f"Setting up module: '{tool_name}'...")
 
             ################################################################################
             # Get a handle to the module itself.
             ################################################################################
             try:
-                s_import_path = f"mq.modules.{module_name}"
-                module = import_module(s_import_path)
+                s_import_path = f"mq.tools.{tool_name}"
+                tool = import_module(s_import_path)
             except ImportError as exc:
                 raise RuntimeError(f"Sorry, can't import: '{s_import_path}': {exc}!")
 
@@ -73,18 +89,18 @@ def setup_modules(args: Namespace) -> dict:
             # Now, find the configuration Class
             ################################################################################
             try:
-                module_class = getattr(module, "Configuration")
-                log.debug(f"{module_class=}")
+                tool_class = getattr(tool, "Configuration")
+                log.debug(f"{tool_class=}")
             except AttributeError as exc:
-                raise RuntimeError(f"Sorry, can't instantiate {module_name}'s configuration class?: {exc}!")
+                raise RuntimeError(f"Sorry, can't instantiate {tool_name}'s configuration class?: {exc}!")
 
             ################################################################################
             # ...instantiate it and store it!
             ################################################################################
-            modules[module_name] = module_class()
+            tools[tool_name] = tool_class()
 
-    log.debug(f"Modules available: {', '.join(modules.keys())}")
-    return modules
+    log.debug(f"Tools available: {', '.join(tools.keys())}")
+    return tools
 
 
 ################################################################################################

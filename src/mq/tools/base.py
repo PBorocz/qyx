@@ -128,16 +128,17 @@ class Request(BaseModel):
     @classmethod
     def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Request | None:
         """Find the most recent run for the specified project and module (or sub_module)."""
-        query = (
-            Request.select()
-            .order_by(Request.timestamp.desc())
-            .where(Request.project == project.id, Request.module == module)
-        )
-        if sub_module:
-            query = query.where(Request.sub_module == sub_module)
-        if run := query.first():
-            return run
-        return None
+        raise NotImplementedError("Sorry, needs to be updated first!")
+        # query = (
+        #     Request.select()
+        #     .order_by(Request.timestamp.desc())
+        #     .where(Request.project == project.id, Request.module == module)
+        # )
+        # if sub_module:
+        #     query = query.where(Request.sub_module == sub_module)
+        # if run := query.first():
+        #     return run
+        # return None
 
     def is_git(self) -> bool:
         """Return true if this request is based on a git repository history."""
@@ -161,29 +162,32 @@ class Scan(BaseModel):
         help_text="As Of GMT/UTC datetime of the code base being analysed",
         default=lambda: datetime.now(UTC),
     )
-    module = pw.CharField(
-        help_text="Module gathered for, e.g. ruff, cloc, radon etc.",
+    analysis = pw.CharField(
+        help_text="Analysis performed, e.g. cloc, cc, mi, hal, ruff etc.",
+        null=True,
     )
-    sub_module = pw.CharField(
-        help_text="Optional sub-module, e.g. cc or raw obo radon.",
+    tool = pw.CharField(
+        help_text="Tool used, e.g. cloc, radon, ruff etc.",
         null=True,
     )
     git_commit_hash = pw.CharField(
         help_text="ID from respective sport's site",
         null=True,
     )
+    timestamp = pw.DateTimeField(
+        help_text="GMT/UTC datetime the scan occurred",
+        default=lambda: datetime.now(UTC),
+    )
 
     class Meta:
         """Define peewee meta data."""
 
-        indexes = ((("request", "as_of", "module", "sub_module"), True),)
+        indexes = ((("request", "as_of", "analysis", "tool"), True),)
 
     @classmethod
-    def get_most_recent(cls, request: Request, module: str, sub_module: str = None) -> Scan | None:
-        """Find the most recent run for the specified project and module (or sub_module)."""
-        query = Scan.select().order_by(Scan.as_of.desc()).where(Scan.request == request, Scan.module == module)
-        if sub_module:
-            query = query.where(Scan.sub_module == sub_module)
+    def get_most_recent(cls, request: Request, analysis: str = None) -> Scan | None:
+        """Find the most recent scan for the specified project and analysis."""
+        query = Scan.select().order_by(Scan.as_of.desc()).where(Scan.request == request, Scan.analysis == analysis)
         if run := query.first():
             return run
         return None
@@ -192,8 +196,15 @@ class Scan(BaseModel):
         """..."""
         return timestamp_display(self.as_of)
 
+    def tool_analysis_display(self) -> str:
+        """Return a nicely formatted tool + analysis."""
+        if self.tool == self.analysis:
+            return f"{self.tool:9s}"
+        else:
+            return f"{self.tool:5s}:{self.analysis:3}"
 
-class BaseModuleModel(pw.Model):
+
+class BaseResultsModel(pw.Model):
     """Define an base model definition from which all the module's storage model(s) will inherit."""
 
     # fmt: off

@@ -5,7 +5,7 @@ from typing import Any
 
 from fasthtml import ft
 
-from mq.modules.base import Project, Scan
+from mq.tools.base import Project, Scan
 
 uvicorn_logger = logging.getLogger("uvicorn")
 
@@ -110,7 +110,7 @@ def partial_do_report(project: int, module: str, run_id: int, report: str) -> An
 
     match run.module:
         case "cloc":
-            from mq.modules.cloc import report_web
+            from mq.tools.cloc import report_web
 
             match report:
                 case "history":

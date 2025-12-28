@@ -35,7 +35,7 @@ def cli_table(**kwargs):
 
 ################################################################################################
 def get_method(module_dir: str, py_filename: str, method: str) -> tuple[Callable | None, str | None]:
-    module_path = f"mq.modules.{module_dir}.{py_filename}"  # Construct the path to the specific .py file
+    module_path = f"mq.tools.{module_dir}.{py_filename}"  # Construct the path to the specific .py file
     log.debug(f"Using {module_path=}")
     try:
         module = importlib.import_module(module_path)  # ...and import it.

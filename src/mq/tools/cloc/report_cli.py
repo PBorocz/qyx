@@ -4,10 +4,10 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_table, cli_console
-from mq.modules import format_int_or_percentage as fmt
-from mq.modules.base import Project, Request, Scan
-from mq.modules.cloc import MODULE
-from mq.modules.cloc.models import query
+from mq.tools import format_int_or_percentage as fmt
+from mq.tools.base import Project, Request, Scan
+from mq.tools.cloc import TOOL
+from mq.tools.cloc.models import query
 from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -19,12 +19,12 @@ def report(args: Namespace) -> None:
         return None
 
     # Get most recent Request for simple "current-state" reporting..
-    if not (request := Request.get_most_recent(project, MODULE)):
+    if not (request := Request.get_most_recent(project, TOOL)):
         log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
         return None
 
     # Get most recent Scan for simple "current-state" reporting..
-    if not (scan := Scan.get_most_recent(request, MODULE)):
+    if not (scan := Scan.get_most_recent(request, TOOL)):
         log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
         return None
 

@@ -8,18 +8,18 @@ from pathlib import Path
 
 # from rich import print
 
-# from mq.modules.base import Project, Request, Scan
-# from mq.modules import save_scan_results
-# from mq.modules.ruff import MODULE
-from mq.modules.ruff.models import Ruff
+# from mq.tools.base import Project, Request, Scan
+# from mq.tools import save_scan_results
+# from mq.tools.ruff import TOOL
+from mq.tools.ruff.models import Ruff
 # from mq.utils.git import get_git_commit_hash
 
 
 # def ingest(args: Namespace) -> None:
 #     current_git_commit_hash = get_git_commit_hash()
 #     project = Project.get_or_insert_relative(args.project)
-#     request = Request.create(project=project, module=MODULE)
-#     scan = Scan.create(request=request, module=MODULE, git_commit_hash=current_git_commit_hash)
+#     request = Request.create(project=project, module=TOOL)
+#     scan = Scan.create(request=request, module=TOOL, git_commit_hash=current_git_commit_hash)
 
 #     if args.stdin:
 #         # Pipeline mode - parse JSON from stdin

@@ -48,9 +48,9 @@ help = "Run/ingest all modules."
 
 [tool.poe.tasks.ingest-cloc-git]
 shell = """
-  # uv run mq admin clear --module cloc --no_confirm
-  poe mq ingest        --module cloc --git     https://github.com/pborocz/mq --debug
-  # uv run mq report      --module cloc --project https://github.com/pborocz/mq --level h --options "last:99"
+  # uv run mq admin clear --analysis cloc --no_confirm
+  poe mq ingest        --analysis cloc --git     https://github.com/pborocz/mq --debug
+  # uv run mq report      --analysis cloc --project https://github.com/pborocz/mq --level h --options "last:99"
   """
 help = "Run/ingest all modules."
 
@@ -63,10 +63,10 @@ help = "Display summary report across all modules."
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.radon]
 shell = """
-  uvx radon cc  . --json | uv run mq ingest --stdin --module radon --submodule cc
-  uvx radon hal . --json | uv run mq ingest --stdin --module radon --submodule hal
-  uvx radon mi  . --json | uv run mq ingest --stdin --module radon --submodule mi
-  uvx radon raw . --json | uv run mq ingest --stdin --module radon --submodule raw
+  uvx radon cc  . --json | uv run mq ingest --stdin --analysis radon:cc
+  uvx radon hal . --json | uv run mq ingest --stdin --analysis radon:hal
+  uvx radon mi  . --json | uv run mq ingest --stdin --analysis radon:mi
+  uvx radon raw . --json | uv run mq ingest --stdin --analysis radon:raw
   """
 help = "Ingest radon checks"
 
@@ -74,18 +74,14 @@ help = "Ingest radon checks"
 # Cloc
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.cloc]
-shell = """
-  cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --module clocw
-  """
+shell = """cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --analysis cloc"""
 help = "Run cloc and report on results."
 
 #-------------------------------------------------------------------------------
 # Ruff (Check)
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.ruff]
-shell = """
-  ruff check --output-format=json | uv run mq ingest --module ruff
-  """
+shell = """ruff check --output-format=json | uv run mq ingest --analysis ruff"""
 help = "Run current ruff check and report on results."
 
 [tool.poe.tasks.clear]
@@ -101,7 +97,7 @@ cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""
 help = "Run the litecli command against our database"
 
 #-------------------------------------------------------------------------------
-# test
+# Tests
 #-------------------------------------------------------------------------------
 [tool.poe.tasks.test_suite_reports]
 shell = """
@@ -109,57 +105,57 @@ shell = """
   uv run mq
   uv run mq status
 
-  uv run mq report --module cloc
-  uv run mq report --module cloc --level 0
-  uv run mq report --module cloc --level 0 --options percentage
-  uv run mq report --module cloc --level 1
-  uv run mq report --module cloc --level 1 --options percentage
-  uv run mq report --module cloc --level 2
-  uv run mq report --module cloc --level 2 --options percentage
-  uv run mq report --module cloc --level h
+  uv run mq report --analysis cloc
+  uv run mq report --analysis cloc --level 0
+  uv run mq report --analysis cloc --level 0 --options percentage
+  uv run mq report --analysis cloc --level 1
+  uv run mq report --analysis cloc --level 1 --options percentage
+  uv run mq report --analysis cloc --level 2
+  uv run mq report --analysis cloc --level 2 --options percentage
+  uv run mq report --analysis cloc --level h
 
-  uv run mq report --module ruff
-  uv run mq report --module ruff --level 0
-  uv run mq report --module ruff --level 1
-  uv run mq report --module ruff --level 2
-  uv run mq report --module ruff --level h
-  uv run mq report --module ruff --level h --options last:99
+  uv run mq report --analysis ruff
+  uv run mq report --analysis ruff --level 0
+  uv run mq report --analysis ruff --level 1
+  uv run mq report --analysis ruff --level 2
+  uv run mq report --analysis ruff --level h
+  uv run mq report --analysis ruff --level h --options last:99
 
-  uv run mq report --module radon
-  uv run mq report --module radon --level 0
-  uv run mq report --module radon --level 1
-  uv run mq report --module radon --level 2
-  uv run mq report --module radon --level h
-  uv run mq report --module radon --level h --options last:99
+  uv run mq report --analysis radon
+  uv run mq report --analysis radon --level 0
+  uv run mq report --analysis radon --level 1
+  uv run mq report --analysis radon --level 2
+  uv run mq report --analysis radon --level h
+  uv run mq report --analysis radon --level h --options last:99
 
-  uv run mq report --module radon --sub_module mi
-  uv run mq report --module radon --sub_module mi --level 0
-  uv run mq report --module radon --sub_module mi --level 1
-  uv run mq report --module radon --sub_module mi --level 2
-  uv run mq report --module radon --sub_module mi --level h
-  uv run mq report --module radon --sub_module mi --level h --options last:99
+  uv run mq report --analysis radon:mi
+  uv run mq report --analysis radon:mi --level 0
+  uv run mq report --analysis radon:mi --level 1
+  uv run mq report --analysis radon:mi --level 2
+  uv run mq report --analysis radon:mi --level h
+  uv run mq report --analysis radon:mi --level h --options last:99
 
-  uv run mq report --module radon --sub_module raw
-  uv run mq report --module radon --sub_module raw --level 0
-  uv run mq report --module radon --sub_module raw --level 1
-  uv run mq report --module radon --sub_module raw --level 2
-  uv run mq report --module radon --sub_module raw --level h
-  uv run mq report --module radon --sub_module raw --level h --options last:99
+  uv run mq report --analysis radon:raw
+  uv run mq report --analysis radon:raw --level 0
+  uv run mq report --analysis radon:raw --level 1
+  uv run mq report --analysis radon:raw --level 2
+  uv run mq report --analysis radon:raw --level h
+  uv run mq report --analysis radon:raw --level h --options last:99
 
-  uv run mq report --module radon --sub_module cc
-  uv run mq report --module radon --sub_module cc --level 0
-  uv run mq report --module radon --sub_module cc --level 1
-  uv run mq report --module radon --sub_module cc --level 2
-  uv run mq report --module radon --sub_module cc --level 3
-  uv run mq report --module radon --sub_module cc --level h
-  uv run mq report --module radon --sub_module cc --level h --options last:99
+  uv run mq report --analysis radon:cc
+  uv run mq report --analysis radon:cc --level 0
+  uv run mq report --analysis radon:cc --level 1
+  uv run mq report --analysis radon:cc --level 2
+  uv run mq report --analysis radon:cc --level 3
+  uv run mq report --analysis radon:cc --level h
+  uv run mq report --analysis radon:cc --level h --options last:99
 
-  uv run mq report --module radon --sub_module hal
-  uv run mq report --module radon --sub_module hal --level 0
-  uv run mq report --module radon --sub_module hal --level 1
-  uv run mq report --module radon --sub_module hal --level 2
-  uv run mq report --module radon --sub_module hal --level 3
-  uv run mq report --module radon --sub_module hal --level h
-  uv run mq report --module radon --sub_module hal --level h --options last:99
+  uv run mq report --analysis radon:hal
+  uv run mq report --analysis radon:hal --level 0
+  uv run mq report --analysis radon:hal --level 1
+  uv run mq report --analysis radon:hal --level 2
+  uv run mq report --analysis radon:hal --level 3
+  uv run mq report --analysis radon:hal --level h
+  uv run mq report --analysis radon:hal --level h --options last:99
 """
 help = "Run smoke test suite"

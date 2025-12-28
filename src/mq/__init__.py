@@ -9,7 +9,7 @@ from platformdirs import user_data_dir
 from rich.console import Console
 from rich.logging import RichHandler
 
-from mq.modules.base import Project, Request, Scan
+from mq.tools.base import Project, Request, Scan
 
 
 def setup_sqlite(args: Namespace) -> None:
@@ -19,9 +19,9 @@ def setup_sqlite(args: Namespace) -> None:
 
     # Make sure our models have tables defined for 'em!
     models = [Project, Request, Scan]
-    for configuration in args.modules.values():
-        for module_model_class in configuration.get_models().values():
-            models.append(module_model_class)
+    for configuration in args.tools.values():
+        for tool_model_class in configuration.get_models().values():
+            models.append(tool_model_class)
 
     for model_class in models:
         model_class._meta.database = db

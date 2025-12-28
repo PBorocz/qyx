@@ -14,16 +14,17 @@ from mq.cli.admin.trim import trim
 from mq.cli.ingest import ingest
 from mq.cli.report import report
 from mq.cli.status import show_status
-from mq.modules import setup_modules
+from mq.tools import split_arg_tool_analysis
+from mq.tools import setup_tools
 from mq.web.server import serve
 
 
 def get_args():
-    # Create parent parser with common arguments
+    """Create a command-line argument structure."""
     parser_root = argparse.ArgumentParser(add_help=False)
     parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.", default=False)
 
-    parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment")
+    parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment", parents=[parser_root])
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     ################################################################################
@@ -32,7 +33,7 @@ def get_args():
     subparsers.add_parser(
         "status",
         parents=[parser_root],
-        help="Report current status for all or specific project.",
+        help="Report current status.",
     )
 
     ################################################################################
@@ -44,8 +45,13 @@ def get_args():
         help="Ingest code quality results from supported tools.",
     )
     parse_ingest.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
-    parse_ingest.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
-    parse_ingest.add_argument("-s", "--sub_module", help="Optional sub-module, e.g. cc, hal, mi or raw for Radon.")
+    parse_ingest.add_argument(
+        "-a",
+        "--analysis",
+        dest="tool_analysis",
+        default=None,
+        help="Analysis to run, eg. cloc, radon:cc, ruff etc.",
+    )
     parse_ingest.add_argument("--stdin", action="store_true", help="Read JSON from stdin instead of running command.")
     parse_ingest.add_argument("--git", help="Ingest historically from the specified github repo.")
     parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
@@ -59,8 +65,7 @@ def get_args():
         help="Report on code quality for the specified (or all) projects.",
     )
     parse_report.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
-    parse_report.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
-    parse_report.add_argument("-s", "--sub_module", help="Optional sub-module (if applicable, e.g. cc for Radon).")
+    parse_report.add_argument("-a", "--analysis", help="Analysis to report on, e.g. cloc, radon:cc, ruff etc.")
     parse_report.add_argument(
         "-o",
         "--options",
@@ -96,41 +101,35 @@ def get_args():
     parse_trim = subparser_admin.add_parser(
         "trim",
         parents=[parser_root],
-        help="Trim old data, leaving the most recent run for each module",
+        help="Trim old data, leaving the most recent run for each analysis",
     )
     parse_trim.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
-    parse_trim.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
+    parse_trim.add_argument("-a", "--analysis", help="Analysis to trim data for, e.g. radon-cc, ruff, cloc etc.")
     # TODO: Implement this:
     # parse_trim.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
 
     parse_clear = subparser_admin.add_parser(
         "clear",
         parents=[parser_root],
-        help="Clear the database, either for all modules (default) or a specified module.",
+        help="Clear the database, either for all analyses (default) or a specific one.",
     )
     parse_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
     parse_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
-    parse_clear.add_argument("-m", "--module", help="Module name, e.g. radon, ruff, cloc etc.")
+    parse_clear.add_argument("-a", "--analysis", help="Optional, analysis to clear for, e.g. radon:cc, ruff, cloc etc.")
 
     ################################################################################################
     # PARSE!!!
     ################################################################################################
     args = parser.parse_args()
 
+    # Enforce that no command defaults to "status"
+    if args.command is None:
+        args.command = "status"
+
     # Parse any REPORT options provided and add into the args
     if args.command and args.command.lower() == "report" and hasattr(args, "options_str"):
         default_options = dict(percentages=False, last=2)
         args.options = parse_options(args.options_str or "", default_options)
-
-    # Set defaults for the case where we don't have a command yet to execute..
-    if not hasattr(args, "debug"):
-        args.debug = False
-    if not hasattr(args, "module"):
-        args.module = None
-
-    # If no explicit command was issued, default to simply printing a status.
-    if not hasattr(args, "command") or args.command is None:
-        args.command = "status"
 
     return args
 
@@ -158,21 +157,13 @@ def parse_options(options_str: str, defaults=None):
 
 def validate_args(args: argparse.Namespace) -> bool:
     """Validate arguments now that we've got everything setup."""
-    if args.module and args.module not in args.modules:
-        s_names = ", ".join(args.modules.keys())
-        print(f"[red]Sorry! module: [bold]{args.module}[/bold] is not valid, must be one of {s_names}[/red]")
-        return False
-
-    if hasattr(args, "sub_module") and args.sub_module:
-        if not args.module:
-            print("[red]Sorry! can't specify a sub_module without a module itself![/red]")
-            return False
-
-        module_config = args.modules[args.module.lower()]
-        if args.sub_module not in module_config.sub_modules:
+    if "analysis" in args:
+        tool, analysis, sub = split_arg_tool_analysis(args.tool_analysis)
+        if tool not in args.tools:
+            s_names = ", ".join(args.tools.keys())
             print(
-                f"[red]Sorry! sub_module: [bold]{args.sub_module}[/bold] does not "
-                f"exist within module: {args.module}[/red]",
+                f"[red]Sorry! analysis: [bold]{args.tool_analysis}[/bold] is not valid, "
+                f"tool must be one of {s_names}[/red]",
             )
             return False
     return True
@@ -187,10 +178,10 @@ def main():
     # Setup logging (now that we know what potential level to log to)
     setup_logging(args.debug, False)
 
-    # Setup the modules currently defined/available (and place into args)
-    args.modules = setup_modules(args)
+    # Setup the tools currently defined/available (and place into args)
+    args.tools = setup_tools(args)
 
-    # Arguments read and modules defined, are our arguments valid?
+    # Arguments read and available tools defined, are our arguments valid?
     if not validate_args(args):
         sys.exit(1)
 

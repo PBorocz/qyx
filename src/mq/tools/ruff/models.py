@@ -4,11 +4,11 @@ from argparse import Namespace
 
 from peewee import fn, CharField, IntegerField, JOIN
 
-from mq.modules.base import BaseModuleModel, Project, Scan
+from mq.tools.base import BaseResultsModel, Project, Scan
 from mq.utils import rate_of_change_percentage
 
 
-class Ruff(BaseModuleModel):
+class Ruff(BaseResultsModel):
     """..."""
 
     # fmt: off

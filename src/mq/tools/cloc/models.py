@@ -9,13 +9,13 @@ import logging
 
 from peewee import fn, IntegerField
 
-from mq.modules.base import BaseModuleModel, Project, Request, Scan
+from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.utils import rate_of_change_percentage
 
 log = logging.getLogger(__name__)
 
 
-class Cloc(BaseModuleModel):
+class Cloc(BaseResultsModel):
     """..."""
 
     # fmt: off

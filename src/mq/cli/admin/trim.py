@@ -7,7 +7,7 @@ from peewee import fn
 
 from mq.cli import cli_console
 from mq.cli.admin import do_it
-from mq.modules.base import Project, Request, Scan
+from mq.tools.base import Project, Request, Scan
 
 log = logging.getLogger(__name__)
 

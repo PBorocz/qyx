@@ -4,9 +4,9 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
-from mq.modules.base import Project, Request, Scan
-from mq.modules.ruff import COLORS, MODULE
-from mq.modules.ruff.models import query
+from mq.tools.base import Project, Request, Scan
+from mq.tools.ruff import COLORS, TOOL
+from mq.tools.ruff.models import query
 from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -20,8 +20,8 @@ def report(args: Namespace) -> None:
         return None
 
     # Get most recent Run for simple "current-state" reporting..
-    if not (run := Run.get_most_recent(project, MODULE)):
-        log.error(f"Sorry, we haven't performed a {MODULE.upper()} measurement yet for this project.")
+    if not (run := Run.get_most_recent(project, TOOL)):
+        log.error(f"Sorry, we haven't performed a {TOOL.upper()} measurement yet for this project.")
         return None
 
     match args.level.lower():

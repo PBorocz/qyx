@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 
-from mq.modules.cloc.models import Cloc
+from mq.tools.cloc.models import Cloc
 
 
 log = logging.getLogger(__name__)

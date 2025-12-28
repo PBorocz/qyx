@@ -6,9 +6,9 @@ from argparse import Namespace
 from collections import defaultdict
 
 from mq.cli import cli_console, cli_table
-from mq.modules.base import Project, Request, Scan
-from mq.modules.radon import COLORS, MODULE
-from mq.modules.radon.models import (
+from mq.tools.base import Project, Request, Scan
+from mq.tools.radon import COLORS, TOOL
+from mq.tools.radon.models import (
     RadonHal,
     query_cc,
     query_hal,
@@ -19,7 +19,7 @@ from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
-RADON_SUB_MODULES = ("raw", "mi", "hal", "cc")
+RADON_SUB_TOOLS = ("raw", "mi", "hal", "cc")
 
 
 def report(args: Namespace) -> None:
@@ -30,13 +30,13 @@ def report(args: Namespace) -> None:
         return None
 
     if args.sub_module:
-        if not (run := Run.get_most_recent(project, MODULE, args.sub_module)):
+        if not (run := Run.get_most_recent(project, TOOL, args.sub_module)):
             log.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
         _dispatch_level_submodule(args, args.sub_module, run=run, project=project)
     else:
-        for sub_module in RADON_SUB_MODULES:
+        for sub_module in RADON_SUB_TOOLS:
             # Get most recent Run for simple "current-state" reporting..
-            if not (run := Run.get_most_recent(project, MODULE, sub_module)):
+            if not (run := Run.get_most_recent(project, TOOL, sub_module)):
                 log.info(f"Sorry, we haven't performed a {sub_module} measurement yet for this project.")
                 continue
             _dispatch_level_submodule(args, sub_module, run=run, project=project)

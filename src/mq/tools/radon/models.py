@@ -6,11 +6,11 @@ from typing import Any
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
-from mq.modules.base import BaseModel, BaseModuleModel, Project, Scan
+from mq.tools.base import BaseModel, BaseResultsModel, Project, Scan
 from mq.utils import rate_of_change_percentage
 
 
-class RadonRaw(BaseModuleModel):
+class RadonRaw(BaseResultsModel):
     """Radon "RAW" metric storage."""
 
     # fmt: off
@@ -30,7 +30,7 @@ class RadonRaw(BaseModuleModel):
         indexes = ((("scan", "dir", "filename"), True),)
 
 
-class RadonMi(BaseModuleModel):
+class RadonMi(BaseResultsModel):
     """Radon "MI" metric storage."""
 
     # fmt: off
@@ -45,7 +45,7 @@ class RadonMi(BaseModuleModel):
         indexes = ((("scan", "dir", "filename"), True),)
 
 
-class RadonCc(BaseModuleModel):
+class RadonCc(BaseResultsModel):
     """Radon "CC" metric storage."""
 
     # fmt: off
@@ -80,7 +80,7 @@ class RadonCc(BaseModuleModel):
         indexes = ((("scan", "dir", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),)
 
 
-class RadonHal(BaseModuleModel):
+class RadonHal(BaseResultsModel):
     """Radon "HAL" metric storage."""
 
     # fmt: off
