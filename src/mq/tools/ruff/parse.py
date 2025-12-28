@@ -35,7 +35,7 @@ from mq.tools.ruff.models import Ruff
 #     results = _parse_ruff_json(json_data)
 #     if results:
 #         num = save_scan_results(scan, results)
-#         print(f"[green]✓ Ingested [bold]{num}[/bold] results from ruff check[/green]")
+#         print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from ruff check[/green]")
 #     else:
 #         print("[green]✓ [bold]Congrulation![/bold] All checks passed![/green]")
 

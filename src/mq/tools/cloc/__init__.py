@@ -15,7 +15,10 @@ class Configuration(AbstractModuleConfiguration):
 
     def __init__(self):
         """..."""
-        super(Configuration, self).__init__(module="cloc", analyses=("cloc",))
+        super(Configuration, self).__init__(
+            module_name="cloc",
+            analyses=("cloc",),
+        )
 
     def get_models(self):
         """Return the models associated with the tool by analysis."""
@@ -34,5 +37,5 @@ class Configuration(AbstractModuleConfiguration):
 
     def get_parse_method(self, _) -> Callable:
         """Return the parse method to parse Cloc JSON output."""
-        py_parse = import_module(f"mq.tools.{self.module}.parse")  # eg. .../<module>/parse.py
+        py_parse = import_module(f"mq.tools.{self.module_name}.parse")  # eg. .../<module>/parse.py
         return getattr(py_parse, "parse_json")

@@ -205,8 +205,8 @@ def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Pro
                 Scan.select()
                 .where(
                     Scan.project == project,
-                    Scan.module == "radon",
-                    Scan.sub_module == "raw",
+                    Scan.tool == "radon",
+                    Scan.analysis == "raw",
                 )
                 .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
@@ -384,8 +384,8 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
         Scan.select()
         .where(
             Scan.project == project,
-            Scan.module == "ruff",
-            Scan.sub_module == "hal",
+            Scan.tool == "ruff",
+            Scan.analysis == "hal",
         )
         .order_by(Scan.as_of.desc())
         .limit(args.options.last)
@@ -494,8 +494,8 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 Scan.select(Scan.id)
                 .where(
                     Scan.project == project,
-                    Scan.module == "ruff",
-                    Scan.sub_module == "mi",
+                    Scan.tool == "ruff",
+                    Scan.analysis == "mi",
                 )
                 .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
@@ -586,8 +586,8 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 Scan.select()
                 .where(
                     Scan.project == project,
-                    Scan.module == "ruff",
-                    Scan.sub_module == "cc",
+                    Scan.tool == "ruff",
+                    Scan.analysis == "cc",
                 )
                 .order_by(Scan.as_of.desc())
                 .limit(args.options.last)

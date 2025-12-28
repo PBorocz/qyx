@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+import types
 from abc import ABC
 from importlib import import_module
 from argparse import Namespace
@@ -17,14 +18,15 @@ class AbstractModuleConfiguration(ABC):
 
     def __init__(
         self,
-        module: str,  # Name of the python module directory supporting the tool
+        module_name: str,  # Name of the python module directory supporting the tool
         analyses: tuple[str],
         **kwargs,
     ) -> "AbstractModuleConfiguration":
         """..."""
-        self.module = module
+        self.module_name: str = module_name
         self.analyses: tuple[str] = analyses  # Analyses support by the tool (even if 1 for stuff like cloc and ruff)
         self.results_required = True  # Are Results "required" for a Scan to be valid? (usually yes)
+        self.py_module: types.ModuleType = None  # Handle to the mq/tools/{module_name}/ module itself!
 
         for attr, value in kwargs.items():
             setattr(self, attr, value)
@@ -81,7 +83,7 @@ def setup_tools(args: Namespace) -> dict:
             ################################################################################
             try:
                 s_import_path = f"mq.tools.{tool_name}"
-                tool = import_module(s_import_path)
+                tool_module = import_module(s_import_path)
             except ImportError as exc:
                 raise RuntimeError(f"Sorry, can't import: '{s_import_path}': {exc}!")
 
@@ -89,15 +91,17 @@ def setup_tools(args: Namespace) -> dict:
             # Now, find the configuration Class
             ################################################################################
             try:
-                tool_class = getattr(tool, "Configuration")
-                log.debug(f"{tool_class=}")
+                tool_configuration_class = getattr(tool_module, "Configuration")
+                log.debug(f"{tool_configuration_class=}")
             except AttributeError as exc:
                 raise RuntimeError(f"Sorry, can't instantiate {tool_name}'s configuration class?: {exc}!")
 
             ################################################################################
             # ...instantiate it and store it!
             ################################################################################
-            tools[tool_name] = tool_class()
+            tool_configuration_instance = tool_configuration_class()
+            tool_configuration_instance.py_module = tool_module
+            tools[tool_name] = tool_configuration_instance
 
     log.debug(f"Tools available: {', '.join(tools.keys())}")
     return tools
@@ -108,3 +112,35 @@ def setup_tools(args: Namespace) -> dict:
 ################################################################################################
 def format_int_or_percentage(value, as_percentage):
     return f"{value:.0f}%" if as_percentage else f"{value:,}"
+
+
+################################################################################################
+def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
+    """Process the command-line argument and return a list of Tools and analyses to perform."""
+    ################################################################################
+    # Case 1: tool_analysis is empty -> we want to ingest everything!
+    ################################################################################
+    return_: list = list()
+    if not args.tool_analysis:
+        for tool_name in args.tools.keys():
+            tool_configuration = args.tools[tool_name]
+            for analysis_name in tool_configuration.analyses:
+                return_.append((tool_configuration, analysis_name))
+        return return_
+
+    s_tool, s_analysis = split_arg_tool_analysis(args.tool_analysis)
+
+    ################################################################################
+    # Case 2: Tool only, give all the analyses the tool supports
+    ################################################################################
+    if not s_analysis:
+        tool_configuration = args.tools[s_tool]
+        for analysis_name in tool_configuration.analyses:
+            return_.append((tool_configuration, analysis_name))
+        return return_
+
+    ################################################################################
+    # Case 3: Tool *AND* Analysis specified!
+    ################################################################################
+    assert s_tool and s_analysis
+    return [(args.tools[s_tool], s_analysis)]

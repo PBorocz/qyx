@@ -102,28 +102,27 @@ class Request(BaseModel):
     id = pw.AutoField()
     project = pw.ForeignKeyField(
         Project,
-        backref="runs",
+        backref="requests",
         on_delete="CASCADE",
-    )
-    scan_source = pw.CharField(
-        help_text="Was the source of this request a git url or a directory path??",
-        null=False,
     )
     timestamp = pw.DateTimeField(
         help_text="GMT/UTC datetime the ingest occurred",
         default=lambda: datetime.now(UTC),
     )
+    git_repo = pw.CharField(
+        help_text="If the source of this request was a git, what was it?",
+        null=True,
+    )
 
     class Meta:
         """Define peewee meta data."""
 
-        constraints = [Check("scan_source IN ('path', 'git')")]
+        indexes = ((("project", "timestamp"), True),)
 
     @classmethod
     def create_from_args(cls, args: Namespace, project: Project) -> Request:
         """Create a new request instance taking care to set the input based on CLI args."""
-        scan_source = "git" if args.git else "path"
-        return Request.create(project=project, scan_source=scan_source)
+        return Request.create(project=project, git_repo=args.git)
 
     @classmethod
     def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Request | None:
@@ -140,9 +139,9 @@ class Request(BaseModel):
         #     return run
         # return None
 
-    def is_git(self) -> bool:
+    def from_git(self) -> bool:
         """Return true if this request is based on a git repository history."""
-        return self.scan_source == "git"
+        return self.git_repo is not None
 
     def timestamp_display(self, full: bool = False) -> str:
         """..."""
@@ -185,9 +184,17 @@ class Scan(BaseModel):
         indexes = ((("request", "as_of", "analysis", "tool"), True),)
 
     @classmethod
-    def get_most_recent(cls, request: Request, analysis: str = None) -> Scan | None:
+    def get_most_recent(cls, project: Project, analysis: str = None) -> Scan | None:
         """Find the most recent scan for the specified project and analysis."""
-        query = Scan.select().order_by(Scan.as_of.desc()).where(Scan.request == request, Scan.analysis == analysis)
+        query = (
+            Scan.select()
+            .where(
+                Request.project == project,
+                Scan.analysis == analysis,
+            )
+            .join(Request)
+            .order_by(Scan.as_of.desc())
+        )
         if run := query.first():
             return run
         return None
@@ -209,7 +216,7 @@ class BaseResultsModel(pw.Model):
 
     # fmt: off
     id       = pw.AutoField()
-    scan     = pw.ForeignKeyField(Scan, backref="-modules-", on_delete="CASCADE")
+    scan     = pw.ForeignKeyField(Scan, backref="modules", on_delete="CASCADE")
     filename = pw.CharField(help_text="Name of file under evaluation.")
     dir      = pw.CharField(help_text="Relative directory of file under evaluation.")
     # fmt: on

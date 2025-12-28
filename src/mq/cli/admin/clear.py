@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 
 def clear(args: Namespace) -> None:
+    raise NotImplementedError("!")
+
     def _delete_database():
         db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
         db_path.unlink(missing_ok=True)

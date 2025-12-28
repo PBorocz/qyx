@@ -27,8 +27,10 @@ help = "Deploy to github."
 interpreter = "fish"
 shell = """
   uvx cleanpy --all --exclude-envs --verbose .
-  jj bookmark set --revision  @- trunk
-  jj git push     --revisions @-
+  ruff rule --all --output-format json > src/mq/tools/ruff/ruff_rules.json
+  jj commit -m "chore: update ruff rules database [automated]"
+  jj bookmark set trunk                      # Pull our bookmark "up" to the most recent...
+  jj git push --bookmark trunk               # ...and push up to github!
   """
 
 [tool.poe.tasks.mq]
@@ -46,10 +48,10 @@ help = "Report current status"
 cmd = """uv run mq ingest"""
 help = "Run/ingest all modules."
 
-[tool.poe.tasks.ingest-cloc-git]
+[tool.poe.tasks.ingest-git]
 shell = """
-  # uv run mq admin clear --analysis cloc --no_confirm
-  poe mq ingest        --analysis cloc --git     https://github.com/pborocz/mq --debug
+  # uv run mq admin clear --no_confirm
+  poe mq ingest --git https://github.com/pborocz/mq
   # uv run mq report      --analysis cloc --project https://github.com/pborocz/mq --level h --options "last:99"
   """
 help = "Run/ingest all modules."

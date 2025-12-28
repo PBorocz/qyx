@@ -39,7 +39,6 @@ def query(args: Namespace, level: str, scan: Scan = None, project: Project = Non
             return (
                 Ruff.select(
                     Ruff.rule_code,
-                    Ruff.message,
                     fn.COUNT(Ruff.id).alias("count"),
                 )
                 .where(
@@ -71,7 +70,7 @@ def query(args: Namespace, level: str, scan: Scan = None, project: Project = Non
                 Scan.select()
                 .where(
                     Scan.project == project.id,
-                    Scan.module == "ruff",
+                    Scan.tool == "ruff",
                 )
                 .order_by(
                     Scan.as_of.desc(),

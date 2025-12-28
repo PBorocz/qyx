@@ -16,7 +16,7 @@ class Configuration(AbstractModuleConfiguration):
     def __init__(self):
         """..."""
         super(Configuration, self).__init__(
-            module="ruff",
+            module_name="ruff",
             analyses=("ruff",),
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
@@ -37,5 +37,5 @@ class Configuration(AbstractModuleConfiguration):
 
     def get_parse_method(self, _) -> Callable:
         """Return the parse method to parse this Radon sub_module's JSON output."""
-        py_parse = import_module(f"mq.tools.{self.module}.parse")  # eg. .../<module>/parse.py
+        py_parse = import_module(f"mq.tools.{self.module_name}.parse")  # eg. .../<module>/parse.py
         return getattr(py_parse, "parse_json")

@@ -14,7 +14,10 @@ class Configuration(AbstractModuleConfiguration):
 
     def __init__(self):
         """..."""
-        super(Configuration, self).__init__(module="radon", analyses=("cc", "hal", "mi", "raw"))
+        super(Configuration, self).__init__(
+            module_name="radon",
+            analyses=("cc", "hal", "mi", "raw"),
+        )
 
     def get_models(self):
         """Return the models associated with the tool by analysis."""
@@ -39,5 +42,5 @@ class Configuration(AbstractModuleConfiguration):
     def get_parse_method(self, analysis: str) -> Callable:
         """Return the parse method to parse this Radon analysis's JSON output."""
         parse_method_name = f"parse_json_{analysis.lower()}"
-        py_parse = import_module(f"mq.tools.{self.module}.parse")  # eg. .../<module>/parse.py
+        py_parse = import_module(f"mq.tools.{self.module_name}.parse")  # eg. .../<module>/parse.py
         return getattr(py_parse, parse_method_name)  # eg. parse_json()

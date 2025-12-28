@@ -44,7 +44,12 @@ def get_args():
         parents=[parser_root],
         help="Ingest code quality results from supported tools.",
     )
-    parse_ingest.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
+    parse_ingest.add_argument(
+        "-p",
+        "--project",
+        default=".",
+        help='Base path to project, defaults to "."',
+    )
     parse_ingest.add_argument(
         "-a",
         "--analysis",
@@ -52,9 +57,22 @@ def get_args():
         default=None,
         help="Analysis to run, eg. cloc, radon:cc, ruff etc.",
     )
-    parse_ingest.add_argument("--stdin", action="store_true", help="Read JSON from stdin instead of running command.")
-    parse_ingest.add_argument("--git", help="Ingest historically from the specified github repo.")
-    parse_ingest.add_argument("-v", "--verbosity", type=int, default=0, help="Logging verbosity")
+    parse_ingest.add_argument(
+        "--stdin",
+        action="store_true",
+        help="Read JSON from stdin instead of running command.",
+    )
+    parse_ingest.add_argument(
+        "--git",
+        help="Ingest historically from the specified github repo.",
+    )
+    parse_ingest.add_argument(
+        "-v",
+        "--verbosity",
+        type=int,
+        default=0,
+        help="Logging verbosity",
+    )
 
     ################################################################################
     # Report command
@@ -64,8 +82,19 @@ def get_args():
         parents=[parser_root],
         help="Report on code quality for the specified (or all) projects.",
     )
-    parse_report.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
-    parse_report.add_argument("-a", "--analysis", help="Analysis to report on, e.g. cloc, radon:cc, ruff etc.")
+    parse_report.add_argument(
+        "-p",
+        "--project",
+        default=".",
+        help='Base path to project, defaults to "."',
+    )
+    parse_report.add_argument(
+        "-a",
+        "--analysis",
+        dest="tool_analysis",
+        default=None,
+        help="Analysis to report on, e.g. cloc, radon:cc, ruff etc.",
+    )
     parse_report.add_argument(
         "-o",
         "--options",

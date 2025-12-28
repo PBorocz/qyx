@@ -131,7 +131,7 @@ def _query_history(project: Project, request: Request, last: int) -> tuple[list[
     if Scan.filter(Scan.request == request).count() > 1:
         # Essentially "git" mode, where our request triggered MULTIPLE scans (over time)
         scans = (
-            Scan.select().where(Scan.request == request, Scan.module == "cloc").order_by(Scan.as_of.desc()).limit(last)
+            Scan.select().where(Scan.request == request, Scan.tool == "cloc").order_by(Scan.as_of.desc()).limit(last)
         )
     else:
         # Simple mode, our most recent request triggered on a single scan, consider all scans for the project:
@@ -140,7 +140,7 @@ def _query_history(project: Project, request: Request, last: int) -> tuple[list[
             .join(Request)
             .where(
                 Request.project == project,
-                Scan.module == "cloc",
+                Scan.tool == "cloc",
             )
             .order_by(Scan.as_of.desc())
             .limit(last)

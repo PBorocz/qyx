@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 def trim(args: Namespace) -> None:
     """Clear/delete/*TRIM* all data associated with "old" scan, ie, lose history but keep most recent!"""
     # TODO: Implement ability to trim by Project (we already handle module below)
+    raise NotImplementedError("!")
+
     if do_it(args, "This will delete 'older' data! (leaving the most recent Scan for each module & project)"):
         count = _trim(args)
         if count:

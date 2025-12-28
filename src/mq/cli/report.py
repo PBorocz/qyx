@@ -1,27 +1,30 @@
 """."""
 
+import importlib
 import logging
-
-from argparse import Namespace
 import sys
+import types
+from argparse import Namespace
+from typing import Callable
 
-from mq.cli import get_method
+from mq.tools import generate_ta_pairs, AbstractModuleConfiguration
 
 log = logging.getLogger(__name__)
 
 
 def report(args: Namespace) -> None:
-    def __do_report(module: str) -> None:
-        method, msg = get_method(module, "report_cli", "report")
-        if not method and msg:
-            logging.error(msg)
-            return sys.exit(1)
-        method(args)
+    tools_analyses: list[tuple[AbstractModuleConfiguration, str]] = generate_ta_pairs(args)
 
-    if args.module:
-        # Single report request, lookup the method and do it!
-        __do_report(args.module)
-    else:
-        # Report over ALL available modules..
-        for module in args.modules.keys():
-            __do_report(module)
+    for o_tool, analysis in tools_analyses:
+        try:
+            report_cli: types.Module = importlib.import_module(f"{o_tool.py_module.__name__}.report_cli")
+        except AttributeError as exc:
+            logging.error(str(exc))
+            return sys.exit(1)
+
+        report_method: Callable = report_cli.report
+        if not report_method:
+            logging.error("Unable to find 'report' method in {o_tool.module_name}'s report_cli.py file!")
+            return sys.exit(1)
+
+        report_method(args)
