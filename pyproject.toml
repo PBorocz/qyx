@@ -30,9 +30,9 @@ shell = """
   ruff rule --all --output-format json > src/mq/tools/ruff/ruff_rules.json
   if not jj diff --quiet
     jj describe -m "chore: update ruff rules database [automated]"
-    jj bookmark set trunk
-    jj git push --bookmark trunk
   end
+  jj bookmark set trunk --revision @-
+  jj git push --bookmark trunk
   """
 
 [tool.poe.tasks.mq]
