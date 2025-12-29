@@ -7,9 +7,6 @@ from mq.tools import AbstractModuleConfiguration
 from mq.tools.cloc.models import Cloc
 
 
-TOOL: str = "cloc"
-
-
 class Configuration(AbstractModuleConfiguration):
     """Configure semantics associated with using the cloc tool."""
 
@@ -17,12 +14,9 @@ class Configuration(AbstractModuleConfiguration):
         """..."""
         super(Configuration, self).__init__(
             module_name="cloc",
+            models=(Cloc,),
             analyses=("cloc",),
         )
-
-    def get_models(self):
-        """Return the models associated with the tool by analysis."""
-        return dict(cloc=Cloc)
 
     def get_ingest_command(self, project_path: str, _) -> list[str]:
         """Return the command sent to subprocess to directly perform a CLOC operation."""

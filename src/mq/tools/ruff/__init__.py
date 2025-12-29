@@ -6,7 +6,6 @@ from typing import Callable
 from mq.tools import AbstractModuleConfiguration
 from mq.tools.ruff.models import Ruff
 
-TOOL: str = "ruff"
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
@@ -17,13 +16,10 @@ class Configuration(AbstractModuleConfiguration):
         """..."""
         super(Configuration, self).__init__(
             module_name="ruff",
+            models=(Ruff,),
             analyses=("ruff",),
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
-
-    def get_models(self):
-        """Return the models associated with the tool by analysis."""
-        return dict(ruff=Ruff)
 
     def get_ingest_command(self, project_path: str, _) -> list[str]:
         """Return the command sent to subprocess to directly perform a CLOC operation."""

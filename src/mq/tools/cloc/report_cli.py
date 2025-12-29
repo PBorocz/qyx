@@ -6,42 +6,39 @@ from argparse import Namespace
 from mq.cli import cli_table, cli_console
 from mq.tools import format_int_or_percentage as fmt
 from mq.tools.base import Project, Request, Scan
-from mq.tools.cloc import TOOL
 from mq.tools.cloc.models import query
 from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
 
-def report(args: Namespace) -> None:
+def report(args: Namespace, o_tool, analysis: str) -> None:
     if not (project := Project.get_by_identifier(args.project)):
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 
-    # Get most recent Request for simple "current-state" reporting..
-    if not (request := Request.get_most_recent(project, TOOL)):
-        log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
-        return None
-
     # Get most recent Scan for simple "current-state" reporting..
-    if not (scan := Scan.get_most_recent(request, TOOL)):
+    # Note: We safely can disregard whether or not the Scan was based on
+    # git or directly from a directory as we're searching based on "as of",
+    # thus, the most recent scan could be from either source!
+    if not (scan := Scan.get_most_recent(project, "cloc", "cloc")):
         log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
         return None
 
     match args.level.lower():
         case "0":
-            _summary(args, scan)
+            _report_0(args, scan)
         case "1":
-            _detail(args, scan)
+            _report_1(args, scan)
         case "2":
-            _full(args, scan)
+            _report_2(args, scan)
         case "h" | "history":
-            _history(args, project, request)
+            _report_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
 
 
-def _summary(args: Namespace, scan: Scan) -> None:
+def _report_0(args: Namespace, scan: Scan) -> None:
     result = query(args, "0", scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("Code", justify="center")
@@ -57,7 +54,7 @@ def _summary(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _detail(args: Namespace, scan: Scan, percentage: bool = False) -> None:
+def _report_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
     grand_total = query(args, "0", scan=scan)
     detail_rows = query(args, "1", scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
@@ -78,7 +75,7 @@ def _detail(args: Namespace, scan: Scan, percentage: bool = False) -> None:
     cli_console.print(table)
 
 
-def _full(args: Namespace, scan: Scan) -> None:
+def _report_2(args: Namespace, scan: Scan) -> None:
     rows, column_totals, grand_total = query(args, "2", scan=scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
@@ -98,7 +95,7 @@ def _full(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _history(args: Namespace, project: Project, request: Request) -> None:
+def _report_h(args: Namespace, project: Project, request: Request) -> None:
     timestamps, rows, transposed, grand_totals, roc, adgs = query(args, "history", project=project, request=request)
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:

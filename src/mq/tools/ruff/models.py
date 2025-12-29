@@ -4,7 +4,7 @@ from argparse import Namespace
 
 from peewee import fn, CharField, IntegerField, JOIN
 
-from mq.tools.base import BaseResultsModel, Project, Scan
+from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.utils import rate_of_change_percentage
 
 
@@ -26,7 +26,12 @@ class Ruff(BaseResultsModel):
         indexes = ((("scan", "dir", "filename", "line", "column", "rule_code"), True),)
 
 
-def query(args: Namespace, level: str, scan: Scan = None, project: Project = None) -> Ruff:
+def query(
+    args: Namespace,
+    level: str,
+    project: Project = None,
+    scan: Scan = None,
+) -> Ruff:
     match level.lower():
         case "0":
             return Ruff.select(
@@ -69,9 +74,10 @@ def query(args: Namespace, level: str, scan: Scan = None, project: Project = Non
             scans = (
                 Scan.select()
                 .where(
-                    Scan.project == project.id,
+                    Request.project == project,
                     Scan.tool == "ruff",
                 )
+                .join(Request)
                 .order_by(
                     Scan.as_of.desc(),
                 )
@@ -85,7 +91,7 @@ def query(args: Namespace, level: str, scan: Scan = None, project: Project = Non
             ################################################################################################
             # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
             # We do this as there are valid cases when there are NO Ruff table entries for a particular
-            # run. We still want the timestamp back with a Ruff count of *0*.
+            # scan. We still want the timestamp back with a Ruff count of *0*.
             rows = (
                 Scan.select(
                     Scan.as_of.alias("timestamp"),

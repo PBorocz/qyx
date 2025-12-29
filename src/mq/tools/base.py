@@ -184,12 +184,13 @@ class Scan(BaseModel):
         indexes = ((("request", "as_of", "analysis", "tool"), True),)
 
     @classmethod
-    def get_most_recent(cls, project: Project, analysis: str = None) -> Scan | None:
-        """Find the most recent scan for the specified project and analysis."""
+    def get_most_recent(cls, project: Project, tool: str, analysis: str) -> Scan | None:
+        """Find the most recent scan for the specified project, tool and analysis BY AS-OF DATE!"""
         query = (
             Scan.select()
             .where(
                 Request.project == project,
+                Scan.tool == tool,
                 Scan.analysis == analysis,
             )
             .join(Request)

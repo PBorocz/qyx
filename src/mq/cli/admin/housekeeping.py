@@ -23,7 +23,7 @@ def _delete_extraneous_scans(args: Namespace) -> None:
         # log.debug(f"Cleanup {tool_name=}")
         # First, get all the scan's id's used by models in this module:
         model_scan_ids = set()
-        for tool, model in tool_config.get_models().items():
+        for model in tool_config.models:
             result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
             model_scan_ids.update(result_scan_ids)
             # log.debug(f"-- Results '{model.__name__:9s}' has {len(result_scan_ids):2d} scan(s) with data.")

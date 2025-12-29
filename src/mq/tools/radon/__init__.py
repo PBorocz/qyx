@@ -4,9 +4,9 @@ from importlib import import_module
 from typing import Callable
 
 from mq.tools import AbstractModuleConfiguration
-from mq.tools.radon.models import RadonCc, RadonHal, RadonMi, RadonRaw
+from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
-TOOL: str = "radon"
+COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
 class Configuration(AbstractModuleConfiguration):
@@ -16,16 +16,8 @@ class Configuration(AbstractModuleConfiguration):
         """..."""
         super(Configuration, self).__init__(
             module_name="radon",
+            models=(RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw),
             analyses=("cc", "hal", "mi", "raw"),
-        )
-
-    def get_models(self):
-        """Return the models associated with the tool by analysis."""
-        return dict(
-            cc=RadonCc,
-            hal=RadonHal,
-            mi=RadonMi,
-            raw=RadonRaw,
         )
 
     def get_ingest_command(self, project_path: str, analysis: str) -> list[str]:

@@ -6,7 +6,7 @@ from typing import Any
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
-from mq.tools.base import BaseModel, BaseResultsModel, Project, Scan
+from mq.tools.base import BaseModel, BaseResultsModel, Project, Request, Scan
 from mq.utils import rate_of_change_percentage
 
 
@@ -204,10 +204,11 @@ def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Pro
             scans = (
                 Scan.select()
                 .where(
-                    Scan.project == project,
+                    Request.project == project,
                     Scan.tool == "radon",
                     Scan.analysis == "raw",
                 )
+                .join(Request)
                 .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
             )
@@ -376,6 +377,8 @@ def query_hal_3(args: Namespace, level: str = "0", scan: Scan = None, project: P
     for _, attr, _ in RadonHal.attrs():
         values = [getattr(row, attr) for row in rows]
         means[attr] = sum(values) / len(values) if values else None
+        breakpoint()
+
     return rows, means
 
 
@@ -383,10 +386,11 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
     scans = (
         Scan.select()
         .where(
-            Scan.project == project,
+            Request.project == project,
             Scan.tool == "ruff",
             Scan.analysis == "hal",
         )
+        .join(Request)
         .order_by(Scan.as_of.desc())
         .limit(args.options.last)
     )
@@ -493,10 +497,11 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
             scans = (
                 Scan.select(Scan.id)
                 .where(
-                    Scan.project == project,
+                    Request.project == project,
                     Scan.tool == "ruff",
                     Scan.analysis == "mi",
                 )
+                .join(Request)
                 .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
             )
@@ -508,7 +513,7 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                     fn.AVG(RadonMi.mi).alias("mi_mean"),
                 )
                 .where(
-                    RadonMi.run.in_(scan_ids),
+                    RadonMi.scan.in_(scan_ids),
                 )
                 .join(Scan)
                 .group_by(Scan.as_of)
@@ -585,10 +590,11 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
             scans = (
                 Scan.select()
                 .where(
-                    Scan.project == project,
+                    Request.project == project,
                     Scan.tool == "ruff",
                     Scan.analysis == "cc",
                 )
+                .join(Request)
                 .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
             )

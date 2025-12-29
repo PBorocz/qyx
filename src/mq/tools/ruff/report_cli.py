@@ -15,26 +15,24 @@ log = logging.getLogger(__name__)
 RUFF_RULES = None
 
 
-def report(args: Namespace) -> None:
+def report(args: Namespace, o_tool, analysis: str) -> None:
     global RUFF_RULES
     with open("src/mq/tools/ruff/ruff_rules.json") as f:
         RUFF_RULES = json.load(f)
 
-    try:
-        project: Project = Project.create_from_args(args)
-    except Project.DoesNotExist:
+    if not (project := Project.get_by_identifier(args.project)):
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
-    log.debug(f"{project=}")
 
     # Get most recent Scan for simple "current-state" reporting.
     # Note: We safely can disregard whether or not the Scan was based on
     # git or directly from a directory as we're searching based on "as of",
     # thus, the most recent scan could be from either source!
-    if not (scan := Scan.get_most_recent(project, "ruff")):
+    if not (scan := Scan.get_most_recent(project, "ruff", "ruff")):
         log.error("Sorry, we haven't performed a 'ruff' scan yet for this project.")
         return None
 
+    log.debug(f"{scan=}")
     match args.level.lower():
         case "0":
             _report_0(args, scan)
@@ -49,7 +47,7 @@ def report(args: Namespace) -> None:
 
 
 def _report_0(args: Namespace, scan: Scan) -> None:
-    row = query(args, "0", scan)
+    row = query(args, "0", scan=scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -65,8 +63,8 @@ def get_ruff_rule_name(rule_code: str) -> dict:
 
 
 def _report_1(args: Namespace, scan: Scan) -> None:
-    summary = query(args, "0", scan)
-    results = query(args, "1", scan)
+    summary = query(args, "0", scan=scan)
+    results = query(args, "1", scan=scan)
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
@@ -79,7 +77,7 @@ def _report_1(args: Namespace, scan: Scan) -> None:
 
 
 def _report_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, "2", scan)
+    rows = query(args, "2", scan=scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule")
     table.add_column("File [line]")

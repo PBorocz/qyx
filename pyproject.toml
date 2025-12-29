@@ -31,7 +31,8 @@ shell = """
   if not jj diff --quiet
     jj describe -m "chore: update ruff rules database [automated]"
   end
-  jj bookmark set trunk --revision @-
+  # jj bookmark set trunk --revision @-
+  jj bookmark set trunk --revision 'coalesce(@-, @)'
   jj git push --bookmark trunk
   """
 

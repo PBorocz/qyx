@@ -20,8 +20,8 @@ def setup_sqlite(args: Namespace) -> None:
     # Make sure our models have tables defined for 'em!
     models = [Project, Request, Scan]
     for configuration in args.tools.values():
-        for tool_model_class in configuration.get_models().values():
-            models.append(tool_model_class)
+        for tool_peewee_class in configuration.models:
+            models.append(tool_peewee_class)
 
     for model_class in models:
         model_class._meta.database = db
