@@ -122,7 +122,33 @@ class Request(BaseModel):
     @classmethod
     def create_from_args(cls, args: Namespace, project: Project) -> Request:
         """Create a new request instance taking care to set the input based on CLI args."""
-        return Request.create(project=project, git_repo=args.git)
+        return cls.create(project=project, git_repo=args.git)
+
+    @classmethod
+    def get_or_create(cls, args: Namespace, project: Project) -> Request:
+        """Return the appropriate request instance, whether (back)filling a git history or new."""
+        if not args.git:
+            # For a NON git-based scan (ie. a directory), we create a new Request each time...
+            return cls.create_from_args(args, project)
+
+        # Otherwise, we first look for the most recent git-based Request for this project.
+        request = (
+            cls.select()
+            .order_by(Request.timestamp.asc())
+            .where(
+                Request.project == project,
+                Request.git_repo.is_null(False),
+            )
+            .first()
+        )
+        if request:
+            log.debug(f"Found existing git {request.id=}, using it...")
+            request.timestamp = datetime.now(UTC)
+            request.save()
+        else:
+            log.debug("No existing git request found for this project, creating a new one.")
+            request = cls.create_from_args(args, project)
+        return request
 
     @classmethod
     def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Request | None:

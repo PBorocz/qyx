@@ -27,7 +27,7 @@ def ingest(args: Namespace) -> None:
     #
     # Lookup (or create) our Project and associated Request
     project: Project = Project.create_from_args(args)
-    request: Request = Request.create_from_args(args, project)
+    request: Request = Request.get_or_create(args, project)
 
     tools_analyses: list[tuple[AbstractModuleConfiguration, str]] = generate_ta_pairs(args)
 
@@ -62,13 +62,36 @@ def _ingest_analysis(
     analysis: str,
     scan_request: Namespace,
 ) -> None:
-    scan: Scan = Scan.create(
-        request=request,
-        tool=tool_configuration.module_name,
-        analysis=analysis,
-        git_commit_hash=scan_request.hash,
-        as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
-    )
+    if args.git:
+        ################################################################################################
+        # Have we already done this scan? If so, save to skip...
+        ################################################################################################
+        try:
+            scan = (
+                Scan.select()
+                .where(
+                    Scan.request == request,
+                    Scan.tool == tool_configuration.module_name,
+                    Scan.analysis == analysis,
+                    Scan.git_commit_hash == scan_request.hash,
+                )
+                .get()
+            )
+            log.debug(
+                f"Skipping...we've already scanned {scan.tool}:{scan.analysis} "
+                f"as of: {scan.as_of} obo {scan.git_commit_hash[:8]}",
+            )
+            return
+        except Scan.DoesNotExist:
+            ...
+
+        scan: Scan = Scan.create(
+            request=request,
+            tool=tool_configuration.module_name,
+            analysis=analysis,
+            git_commit_hash=scan_request.hash,
+            as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
+        )
 
     ################################################################################################
     # Get the tool's data EITHER directly from stdin OR by running it!
@@ -95,6 +118,9 @@ def _ingest_analysis(
     ingest_method: Callable = tool_configuration.get_ingest_method(analysis)
     num: int = ingest_method(scan, json_)
 
+    ################################################################################################
+    # Report status
+    ################################################################################################
     s_from: str = tool_configuration.module_name
     if tool_configuration.module_name != analysis:
         s_from += f":{analysis}"

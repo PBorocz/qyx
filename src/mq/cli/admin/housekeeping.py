@@ -56,8 +56,8 @@ def _delete_extraneous_requests(args: Namespace) -> None:
     num = Request.delete().where(Request.id.not_in(Scan.select(Scan.request).distinct())).execute()
     if num:
         log.debug(f"Cleaned up {num} Requests that had no Scans defined on their behalf.")
-    else:
-        log.debug("Nothing done, all Requests have Scans associated with them.")
+    # else:
+    #     log.debug("Nothing done, all Requests have Scans associated with them.")
 
 
 def _delete_extraneous_projects(args: Namespace):
@@ -65,5 +65,5 @@ def _delete_extraneous_projects(args: Namespace):
     num = Project.delete().where(Project.id.not_in(Request.select(Request.project).distinct())).execute()
     if num:
         log.debug(f"Cleaned up {num} Projects that had no Requests defined on their behalf.")
-    else:
-        log.debug("Nothing done, all Projects have Requests associated with them.")
+    # else:
+    #     log.debug("Nothing done, all Projects have Requests associated with them.")
