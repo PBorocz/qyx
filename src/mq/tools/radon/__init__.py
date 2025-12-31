@@ -31,8 +31,8 @@ class Configuration(AbstractModuleConfiguration):
             project_path,
         ]
 
-    def get_parse_method(self, analysis: str) -> Callable:
-        """Return the parse method to parse this Radon analysis's JSON output."""
-        parse_method_name = f"parse_json_{analysis.lower()}"
-        py_parse = import_module(f"mq.tools.{self.module_name}.parse")  # eg. .../<module>/parse.py
-        return getattr(py_parse, parse_method_name)  # eg. parse_json()
+    def get_ingest_method(self, analysis: str) -> Callable:
+        """Return the ingest method to parse & save this Radon analysis's JSON output."""
+        py_ingest = import_module(f"mq.tools.{self.module_name}.ingest")  # eg. .../<module>/ingest.py
+        ingest_method_name = f"ingest_{analysis.lower()}"
+        return getattr(py_ingest, ingest_method_name)  # eg. ingest_cc()

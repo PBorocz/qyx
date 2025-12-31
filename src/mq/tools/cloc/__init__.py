@@ -29,7 +29,7 @@ class Configuration(AbstractModuleConfiguration):
             project_path,
         ]
 
-    def get_parse_method(self, _) -> Callable:
-        """Return the parse method to parse Cloc JSON output."""
-        py_parse = import_module(f"mq.tools.{self.module_name}.parse")  # eg. .../<module>/parse.py
-        return getattr(py_parse, "parse_json")
+    def get_ingest_method(self, _) -> Callable:
+        """Return the ingest method to parse and save Cloc JSON output."""
+        py_ingest = import_module(f"mq.tools.{self.module_name}.ingest")  # eg. .../<module>/ingest.py
+        return getattr(py_ingest, "ingest")

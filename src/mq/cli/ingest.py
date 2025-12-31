@@ -10,7 +10,7 @@ from typing import Callable, Iterator
 
 from rich import print
 
-from mq.tools import generate_ta_pairs, save_scan_results, AbstractModuleConfiguration
+from mq.tools import generate_ta_pairs, AbstractModuleConfiguration
 from mq.tools.base import Project, Request, Scan
 from mq.utils.git import get_git_commit_hash, git_commits
 
@@ -90,15 +90,10 @@ def _ingest_analysis(
         json_: list | dict = json.loads(result.stdout)
 
     ################################################################################################
-    # Parse the results received...
+    # Parse & save the results received...
     ################################################################################################
-    parse_method: Callable = tool_configuration.get_parse_method(analysis)
-    results: list = parse_method(json_)
-
-    ################################################################################################
-    # Save em'!
-    ################################################################################################
-    num: int = save_scan_results(scan, results)
+    ingest_method: Callable = tool_configuration.get_ingest_method(analysis)
+    num: int = ingest_method(scan, json_)
 
     s_from: str = tool_configuration.module_name
     if tool_configuration.module_name != analysis:

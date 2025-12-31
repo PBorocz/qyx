@@ -7,7 +7,7 @@ from importlib import import_module
 from argparse import Namespace
 from pathlib import Path
 
-from mq.tools.base import BaseModel, Scan
+from mq.tools.base import BaseModel
 
 log = logging.getLogger(__name__)
 
@@ -36,17 +36,9 @@ class AbstractModuleConfiguration(ABC):
         """Return the command sent to subprocess to directly perform a CLOC operation."""
         raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
 
-    def get_parse_method(self, *args, **kwargs):
+    def get_ingest_method(self, *args, **kwargs):
         """Return the parse method to parse this Radon sub_module's JSON output."""
         raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
-
-
-################################################################################################
-def save_scan_results(scan: Scan, rows: list) -> int:
-    for row in rows:
-        row.scan = scan.id
-        row.save()
-    return len(rows)
 
 
 ################################################################################################

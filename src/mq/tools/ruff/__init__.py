@@ -22,7 +22,7 @@ class Configuration(AbstractModuleConfiguration):
         )
 
     def get_ingest_command(self, project_path: str, _) -> list[str]:
-        """Return the command sent to subprocess to directly perform a CLOC operation."""
+        """Return the command sent to subprocess to directly perform a Ruff operation."""
         return [
             "ruff",
             "check",
@@ -31,7 +31,7 @@ class Configuration(AbstractModuleConfiguration):
             project_path,
         ]
 
-    def get_parse_method(self, _) -> Callable:
-        """Return the parse method to parse this Radon sub_module's JSON output."""
-        py_parse = import_module(f"mq.tools.{self.module_name}.parse")  # eg. .../<module>/parse.py
-        return getattr(py_parse, "parse_json")
+    def get_ingest_method(self, _) -> Callable:
+        """Return the ingest method to parse and save this Ruff JSON output."""
+        py_ingest = import_module(f"mq.tools.{self.module_name}.ingest")  # eg. .../<module>/ingest.py
+        return getattr(py_ingest, "ingest")
