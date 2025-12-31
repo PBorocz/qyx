@@ -9,6 +9,7 @@ from rich import print
 from mq import setup_logging, setup_sqlite
 
 from mq.cli.admin.clear import clear
+from mq.cli.admin.delete import delete
 from mq.cli.admin.housekeeping import housekeeping
 from mq.cli.admin.trim import trim
 from mq.cli.ingest import ingest
@@ -146,6 +147,14 @@ def get_args():
     parse_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
     parse_clear.add_argument("-a", "--analysis", help="Optional, analysis to clear for, e.g. radon:cc, ruff, cloc etc.")
 
+    parse_delete = subparser_admin.add_parser(
+        "delete",
+        parents=[parser_root],
+        help="Delete a particular Project, Request or Scan.",
+    )
+    parse_delete.add_argument("--no_confirm", action="store_true", help="Run delete *without* confirmation(!)")
+    parse_delete.add_argument("--arg", dest="delete_target", help="delete p:<id>, r:<id> or s:<id>")
+
     ################################################################################################
     # PARSE!!!
     ################################################################################################
@@ -233,6 +242,8 @@ def main():
                     trim(args)
                 case "clear":
                     clear(args)
+                case "delete":
+                    delete(args)
                 case _:
                     raise RuntimeError("Sorry, invalid admin option selected, must be one of 'trim' or 'clear'")
         case _:

@@ -16,20 +16,20 @@ def show_status(args: Namespace) -> None:
     """Use a simple terminal tree to display current db information."""
     tree = Tree("MQ Status")
     for project in Project.select():
-        project_tree = tree.add(f"Project -> {project.name}")
+        project_tree = tree.add(f"Project [{project.id}] -> {project.name}")
 
         for request in Request.select().where(Request.project == project):
-            source = "git" if request.from_git() else "dir"
-            s_request = f"Request at {request.timestamp_display(full=True)} from '{source}'"
+            source = "from git" if request.from_git() else ""
+            s_request = f"Request [{request.id}] at {request.timestamp_display(full=True)} {source}"
             scan_tree = project_tree.add(s_request)
 
             for scan in Scan.select().where(Scan.request == request):
                 scan_count = _get_scan_count(scan)
                 s_analysis = scan.tool_analysis_display()
                 if request.from_git():
-                    s_scan = f"Scan -> {s_analysis} asOf {scan.as_of_display(full=True)} {scan_count}"
+                    s_scan = f"Scan [{scan.id}] -> {s_analysis} asOf {scan.as_of_display(full=True)} {scan_count}"
                 else:
-                    s_scan = f"Scan -> {s_analysis} @    {scan.as_of_display(full=True)} {scan_count}"
+                    s_scan = f"Scan [{scan.id}] -> {s_analysis} @    {scan.as_of_display(full=True)} {scan_count}"
 
                 scan_tree.add(s_scan)
     print(tree)
