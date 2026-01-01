@@ -23,7 +23,7 @@ def show_status(args: Namespace) -> None:
             s_request = f"Request [{request.id}] at {request.timestamp_display(full=True)} {source}"
             scan_tree = project_tree.add(s_request)
 
-            for scan in Scan.select().where(Scan.request == request):
+            for scan in Scan.select().order_by(Scan.as_of).where(Scan.request == request):
                 scan_count = _get_scan_count(scan)
                 s_analysis = scan.tool_analysis_display()
                 if request.from_git():
@@ -35,7 +35,7 @@ def show_status(args: Namespace) -> None:
     print(tree)
 
 
-# FIXME: Make not as complex!
+# FIXME: Make not as complex! ;-)
 def _get_scan_count(scan: Scan) -> str:  # noqa: C901
     """Return the scan's result count as a str already formatted for status tree."""
     count = 0

@@ -85,13 +85,13 @@ def _ingest_analysis(
         except Scan.DoesNotExist:
             ...
 
-        scan: Scan = Scan.create(
-            request=request,
-            tool=tool_configuration.module_name,
-            analysis=analysis,
-            git_commit_hash=scan_request.hash,
-            as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
-        )
+    scan: Scan = Scan.create(
+        request=request,
+        tool=tool_configuration.module_name,
+        analysis=analysis,
+        git_commit_hash=scan_request.hash,
+        as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
+    )
 
     ################################################################################################
     # Get the tool's data EITHER directly from stdin OR by running it!

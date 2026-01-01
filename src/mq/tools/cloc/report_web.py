@@ -4,7 +4,7 @@ from typing import Any
 
 from fasthtml import ft
 
-from mq.tools.base import Project, Request, Scan
+from mq.tools.base import Project, Run
 from mq.tools.cloc.models import query_detail, query_full, query_history, query_summary
 from mq.utils import format_timestamp_headers
 

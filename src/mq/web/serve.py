@@ -89,4 +89,4 @@ if __name__ == "__main__":
     parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
     args = parser.parse_args()
     setup_sqlite(args)
-    run_server(args)
+    serve(args)

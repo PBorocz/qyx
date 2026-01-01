@@ -8,7 +8,6 @@ from datetime import datetime, UTC
 from pathlib import Path
 
 import peewee as pw
-from peewee import Check
 
 from mq.utils import detect_project_name, timestamp_display
 

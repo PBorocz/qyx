@@ -25,7 +25,7 @@ def checkout_commit(repo_path: Path, commit_hash: str) -> None:
     subprocess.run(["git", "checkout", "-f", commit_hash], cwd=repo_path, capture_output=True, check=True)
 
 
-def git_commits(args: Namespace, revision_skip: int = 10) -> Iterator[tuple]:
+def git_commits(args: Namespace, revision_skip: int = 1) -> Iterator[tuple]:
     """Clone repo and analyze each revision."""
     args.git = args.git
 
@@ -93,7 +93,6 @@ def enumerate_skip(items: list, skip: int) -> list[tuple[int, any]]:
 
     Args:
         items: List to enumerate
-        start: Starting index for enumeration
         skip: Take every Nth item (skip=1 means all items, skip=2 means every other, etc.)
 
     Returns:

@@ -159,113 +159,126 @@ class RadonHalFunction(BaseModel):
 # Queries..
 ################################################################################################
 def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
-    raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     match level.lower():
         case "0":
-            return RadonRaw.select(
-                fn.SUM(RadonRaw.loc).alias("loc"),
-                fn.SUM(RadonRaw.lloc).alias("lloc"),
-                fn.SUM(RadonRaw.sloc).alias("sloc"),
-                fn.SUM(RadonRaw.comments).alias("comments"),
-                fn.SUM(RadonRaw.multi).alias("multi"),
-                fn.SUM(RadonRaw.blank).alias("blank"),
-                fn.SUM(RadonRaw.single_comments).alias("single_comments"),
-            ).where(RadonRaw.scan == scan)
-
+            return query_raw_0(args, level, scan, project)
         case "1":
-            rows = (
-                RadonRaw.select(
-                    RadonRaw.dir,
-                    fn.SUM(RadonRaw.loc).alias("loc"),
-                    fn.SUM(RadonRaw.lloc).alias("lloc"),
-                    fn.SUM(RadonRaw.sloc).alias("sloc"),
-                    fn.SUM(RadonRaw.comments).alias("comments"),
-                    fn.SUM(RadonRaw.multi).alias("multi"),
-                    fn.SUM(RadonRaw.blank).alias("blank"),
-                    fn.SUM(RadonRaw.single_comments).alias("single_comments"),
-                )
-                .where(RadonRaw.scan == scan)
-                .group_by(RadonRaw.dir)
-                .order_by(RadonRaw.dir)
-            )
-
-            # Calculate totals
-            totals = defaultdict(int)
-            for row in rows:
-                for attr in raw_attrs:
-                    totals[attr] += getattr(row, attr)
-            return rows, totals
-
+            return query_raw_1(args, level, scan, project)
         case "2":
-            return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.dir, RadonRaw.filename)
-
+            return query_raw_2(args, level, scan, project)
         case "h" | "history":
-            # FIXME: Refactor to make this a "common" query given the number of places we use it:
-            scans = (
-                Scan.select()
-                .where(
-                    Request.project == project,
-                    Scan.tool == "radon",
-                    Scan.analysis == "raw",
-                )
-                .join(Request)
-                .order_by(Scan.as_of.desc())
-                .limit(args.options.last)
-            )
-
-            query = (
-                RadonRaw.select(
-                    Scan.as_of.alias("timestamp"),
-                    fn.SUM(RadonRaw.loc).alias("loc"),
-                    fn.SUM(RadonRaw.lloc).alias("lloc"),
-                    fn.SUM(RadonRaw.sloc).alias("sloc"),
-                    fn.SUM(RadonRaw.comments).alias("comments"),
-                    fn.SUM(RadonRaw.multi).alias("multi"),
-                    fn.SUM(RadonRaw.blank).alias("blank"),
-                    fn.SUM(RadonRaw.single_comments).alias("single_comments"),
-                )
-                .join(Scan)
-                .where(Scan.id.in_(scans))
-                .group_by(Scan.as_of)
-                .order_by(Scan.as_of)
-                .objects()
-            )
-
-            ################################################################################################
-            # Transpose (to get timestamps *across* instead of down and calculate grand totals)
-            ################################################################################################
-            timestamps = [result.timestamp for result in query]
-            transposed = defaultdict(lambda: defaultdict(dict))
-            for result in query:
-                total = 0
-                for attr in raw_attrs:
-                    lines = int(getattr(result, attr))
-                    transposed[attr][result.timestamp] = lines
-                    total += lines  # Calculate grand totals for each timestamp as we go
-
-            # Calculate rate of change of last 2 entries..
-            rocs = dict()
-            for attr in raw_attrs:
-                if len(timestamps) > 1:
-                    rocs[attr] = rate_of_change_percentage(
-                        transposed[attr][timestamps[-2]],
-                        transposed[attr][timestamps[-1]],
-                    )
-                else:
-                    rocs[attr] = 0.0
-
-            if len(timestamps) > 1:
-                roc_gt = rate_of_change_percentage(
-                    transposed["loc"][timestamps[-2]],
-                    transposed["loc"][timestamps[-1]],
-                )
-            else:
-                roc_gt = 0.0
-
-            return timestamps, transposed, rocs, roc_gt
-
+            return query_raw_h(args, level, scan, project)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
+
+
+def query_raw_0(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+    return RadonRaw.select(
+        fn.SUM(RadonRaw.loc).alias("loc"),
+        fn.SUM(RadonRaw.lloc).alias("lloc"),
+        fn.SUM(RadonRaw.sloc).alias("sloc"),
+        fn.SUM(RadonRaw.comments).alias("comments"),
+        fn.SUM(RadonRaw.multi).alias("multi"),
+        fn.SUM(RadonRaw.blank).alias("blank"),
+        fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+    ).where(RadonRaw.scan == scan)
+
+
+def query_raw_1(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+    raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
+    rows = (
+        RadonRaw.select(
+            RadonRaw.dir,
+            fn.SUM(RadonRaw.loc).alias("loc"),
+            fn.SUM(RadonRaw.lloc).alias("lloc"),
+            fn.SUM(RadonRaw.sloc).alias("sloc"),
+            fn.SUM(RadonRaw.comments).alias("comments"),
+            fn.SUM(RadonRaw.multi).alias("multi"),
+            fn.SUM(RadonRaw.blank).alias("blank"),
+            fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+        )
+        .where(RadonRaw.scan == scan)
+        .group_by(RadonRaw.dir)
+        .order_by(RadonRaw.dir)
+    )
+
+    # Calculate totals
+    totals = defaultdict(int)
+    for row in rows:
+        for attr in raw_attrs:
+            totals[attr] += getattr(row, attr)
+    return rows, totals
+
+
+def query_raw_2(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+    return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.dir, RadonRaw.filename)
+
+
+def query_raw_h(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+    # FIXME: Refactor to make this a "common" query given the number of places we use it:
+    raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
+    scans = (
+        Scan.select()
+        .where(
+            Request.project == project,
+            Scan.tool == "radon",
+            Scan.analysis == "raw",
+        )
+        .join(Request)
+        .order_by(Scan.as_of.desc())
+        .limit(args.options.last)
+    )
+
+    query = (
+        RadonRaw.select(
+            Scan.as_of.alias("timestamp"),
+            fn.SUM(RadonRaw.loc).alias("loc"),
+            fn.SUM(RadonRaw.lloc).alias("lloc"),
+            fn.SUM(RadonRaw.sloc).alias("sloc"),
+            fn.SUM(RadonRaw.comments).alias("comments"),
+            fn.SUM(RadonRaw.multi).alias("multi"),
+            fn.SUM(RadonRaw.blank).alias("blank"),
+            fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+        )
+        .join(Scan)
+        .where(Scan.id.in_(scans))
+        .group_by(Scan.as_of)
+        .order_by(Scan.as_of)
+        .objects()
+    )
+
+    ################################################################################################
+    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+    ################################################################################################
+    timestamps = [result.timestamp for result in query]
+    transposed = defaultdict(lambda: defaultdict(dict))
+    for result in query:
+        total = 0
+        for attr in raw_attrs:
+            lines = int(getattr(result, attr))
+            transposed[attr][result.timestamp] = lines
+            total += lines  # Calculate grand totals for each timestamp as we go
+
+    # Calculate rate of change of last 2 entries..
+    rocs = dict()
+    for attr in raw_attrs:
+        if len(timestamps) > 1:
+            rocs[attr] = rate_of_change_percentage(
+                transposed[attr][timestamps[-2]],
+                transposed[attr][timestamps[-1]],
+            )
+        else:
+            rocs[attr] = 0.0
+
+    if len(timestamps) > 1:
+        roc_gt = rate_of_change_percentage(
+            transposed["loc"][timestamps[-2]],
+            transposed["loc"][timestamps[-1]],
+        )
+    else:
+        roc_gt = 0.0
+
+    return timestamps, transposed, rocs, roc_gt
 
 
 def query_hal(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
@@ -377,7 +390,6 @@ def query_hal_3(args: Namespace, level: str = "0", scan: Scan = None, project: P
     for _, attr, _ in RadonHal.attrs():
         values = [getattr(row, attr) for row in rows]
         means[attr] = sum(values) / len(values) if values else None
-        breakpoint()
 
     return rows, means
 

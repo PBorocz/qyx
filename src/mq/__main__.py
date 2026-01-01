@@ -17,7 +17,7 @@ from mq.cli.report import report
 from mq.cli.status import show_status
 from mq.tools import split_arg_tool_analysis
 from mq.tools import setup_tools
-from mq.web.server import serve
+from mq.web.serve import serve
 
 
 def get_args():
