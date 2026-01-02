@@ -66,13 +66,6 @@ def register(args, rt):
                 report_web: types.Module = importlib.import_module(path_)
                 render_method = getattr(report_web, "render")
                 return render_method(request, name, config)
-                # return page(
-                #     request,
-                #     name.title(),
-                #     name.title(),
-                #     fh.H1(f"{name.title()} Tool", cls="text-3xl font-bold mb-4"),
-                #     fh.P(f"Configuration: {config}", cls="text-gray-600"),
-                # )
 
             return render_tool_page_method
 
@@ -88,23 +81,14 @@ def navbar(request, active_page):
 
     nav_items = []
     for name, path in pages:
-        classes = "px-3 py-2 rounded-md text-sm font-medium"
-        if active_page == name:
-            classes += " bg-blue-600 text-white"
-        else:
-            classes += " text-gray-700 hover:bg-gray-200"
-        nav_items.append(ft.A(name, href=path, cls=classes))
+        kwargs = dict(aria_current="page") if active_page == name else dict()
+        nav_items.append(ft.A(name, href=path, **kwargs))
 
     return ft.Nav(
-        ft.Div(
-            ft.Div(
-                ft.Span("MQ", cls="text-xl font-bold text-blue-600 mr-8"),
-                *nav_items,
-                cls="flex items-center space-x-2",
-            ),
-            cls="container mx-auto px-4",
-        ),
-        cls="bg-white shadow-md py-4",
+        ft.Ul(ft.Li(ft.Strong("MQ")), *[ft.Li(item) for item in nav_items]),  # Right-side nav..
+        ft.Ul(),  # Left side nav..
+        # ft.Ul(ft.Li(ft.Strong("MQ"))),
+        # ft.Ul(*[ft.Li(item) for item in nav_items]),
     )
 
 
@@ -112,12 +96,13 @@ def navbar(request, active_page):
 def page(request, title, active_page, *content):
     return ft.Html(
         ft.Head(
-            ft.Title(title),
-            # ft.Script(src="https://cdn.tailwindcss.com"),
+            ft.Title(f"MQ-{title}"),
             ft.Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
+            ft.Script(src="https://kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js"),
         ),
         ft.Body(
             navbar(request, active_page),
-            ft.Div(*content, cls="container mx-auto py-8"),  # px-4
+            ft.Main(*content),
+            cls="container",
         ),
     )
