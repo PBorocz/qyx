@@ -120,7 +120,7 @@ def get_args():
         help="Run built-in web server for reporting.",
     )
     parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-    parse_serve.add_argument("--no_browser", action="store_true", help="Don't auto-open browser")
+    parse_serve.add_argument("--no_browser", action="store_false", help="Don't auto-open browser", default=True)
 
     ################################################################################
     # Admin command

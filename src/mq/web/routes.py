@@ -4,23 +4,23 @@ import importlib
 import logging
 import types
 
-from fasthtml import ft
 from fasthtml import common as fh
+
+from mq.web.page import render_page
 
 log = logging.getLogger("uvicorn")
 # log = logging.getLogger(__name__)
 
 
-################################################################################################
-# Define our routes..
-################################################################################################
 def register(args, rt):
+    """Register all the routes for the app."""
+
     ################################################################################
     # Static routes...
     ################################################################################
     @rt("/")
     def get(request):
-        return page(
+        return render_page(
             request,
             "Home",
             "Home",
@@ -30,7 +30,7 @@ def register(args, rt):
 
     @rt("/about")
     def about(request):
-        return page(
+        return render_page(
             request,
             "About",
             "About",
@@ -41,7 +41,7 @@ def register(args, rt):
 
     @rt("/contact")
     def contact(request):
-        return page(
+        return render_page(
             request,
             "Contact",
             "Contact",
@@ -70,39 +70,3 @@ def register(args, rt):
             return render_tool_page_method
 
         make_tool_route(tool_name, tool_config)
-
-
-# Helper function to create navbar with active state
-def navbar(request, active_page):
-    args = request.app.state.args  # Look through fasthtml app to get to "our" args..
-    pages = [("Home", "/")]
-    for tool_name, tool_config in args.tools.items():
-        pages.append((tool_name.title(), f"/{tool_name}"))
-
-    nav_items = []
-    for name, path in pages:
-        kwargs = dict(aria_current="page") if active_page == name else dict()
-        nav_items.append(ft.A(name, href=path, **kwargs))
-
-    return ft.Nav(
-        ft.Ul(ft.Li(ft.Strong("MQ")), *[ft.Li(item) for item in nav_items]),  # Right-side nav..
-        ft.Ul(),  # Left side nav..
-        # ft.Ul(ft.Li(ft.Strong("MQ"))),
-        # ft.Ul(*[ft.Li(item) for item in nav_items]),
-    )
-
-
-# Page layout wrapper
-def page(request, title, active_page, *content):
-    return ft.Html(
-        ft.Head(
-            ft.Title(f"MQ-{title}"),
-            ft.Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
-            ft.Script(src="https://kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js"),
-        ),
-        ft.Body(
-            navbar(request, active_page),
-            ft.Main(*content),
-            cls="container",
-        ),
-    )

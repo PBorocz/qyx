@@ -11,21 +11,21 @@ import uvicorn
 
 from fasthtml import common as fh
 
-from mq.web.routes.home import register
+from mq.web.routes import register
 
 log = logging.getLogger(__name__)
 
-css = fh.Style("""
-    body { font-family: Arial; margin: 20px; }
-    h1 { color: blue; }
-    button { padding: 10px; background: lightblue; border: none; }
-""")
+# css = fh.Style("""
+#     body { font-family: Arial; margin: 20px; }
+#     h1 { color: blue; }
+#     button { padding: 10px; background: lightblue; border: none; }
+# """)
 
 app, rt = None, None
 
 
 def create_app(args):
-    app, rt = fh.fast_app(debug=True, hdrs=(css,))
+    app, rt = fh.fast_app(debug=True)  # , hdrs=(css,)
     app.state.args = args
     return app, rt
 
@@ -46,8 +46,9 @@ def serve(args: Namespace) -> None:
             log.info(f"Starting browser to https://localhost/{int(args.port)}")
             time.sleep(1)  # Wait for server to start
             webbrowser.open(f"http://localhost:{args.port}")
-
             threading.Thread(target=__open_browser, daemon=True).start()
+
+        __open_browser()
 
     log.info(f"Starting server at https://localhost/{int(args.port)}")
     uvicorn.run(

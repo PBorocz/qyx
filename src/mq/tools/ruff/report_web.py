@@ -8,12 +8,12 @@ from fasthtml import common as fh
 # from mq.tools.base import Project, Run
 # from mq.tools.cloc.models import query_detail, query_full, query_history, query_summary
 # from mq.utils import format_timestamp_headers
-from mq.web.routes.home import page
+from mq.web.page import render_page
 
 
 def render(request, name, config):
     """..."""
-    return page(
+    return render_page(
         request,
         name.title(),
         name.title(),

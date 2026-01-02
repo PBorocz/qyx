@@ -3,107 +3,113 @@
 from datetime import datetime
 
 from pygal import DateTimeLine
-from pygal.style import CleanStyle
+from pygal.style import Style
 from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 
 from mq.tools.cloc.models import query
-from mq.web.routes.home import page
+from mq.web.page import render_page
 
 
 def render(request, name, config):
     """..."""
-    return page(
+    return render_page(
         request,
         name,
         name.title(),
-        *render_summary(request),
+        *render_current_status(request),
         *render_history(request),
     )
 
 
-def _th_r(value: str) -> fh.Th:
-    return fh.Th(value, scope="col", style="text-align: right")
-
-
-def _th(value: str) -> fh.Th:
-    return fh.Th(value, scope="col")
-
-
-def _td_r(value: str) -> fh.Th:
-    return fh.Td(value, style="text-align: right")
-
-
-def _td(value: str) -> fh.Th:
-    return fh.Td(value)
-
-
-def render_summary(request):
+################################################################################################
+# Current Status..
+################################################################################################
+def render_current_status(request):
     args = request.app.state.args
     project = Project.select().first()
     scan = Scan.get_most_recent(project, "cloc", "cloc")
     results = query(args, "0", scan=scan)
 
-    return fh.Div(
-        fh.H3("Current Status"),
+    return fh.Section(
+        fh.H1("Current Status"),
         fh.H4(f"As Of {scan.as_of_display(full=False)}"),
-        fh.Table(
-            fh.Thead(
-                fh.Tr(
-                    _th_r("Code"),
-                    _th_r("Comments"),
-                    _th_r("Blanks"),
-                    _th_r("TOTAL"),
+        fh.Div(
+            fh.Table(
+                fh.Thead(
+                    fh.Tr(
+                        fh.Th("Lines of Code", scope="col", style="text-align: right"),
+                        fh.Th("Comment Lines", scope="col", style="text-align: right"),
+                        fh.Th("Blank Lines", scope="col", style="text-align: right"),
+                        fh.Th("TOTAL", scope="col", style="text-align: right"),
+                    ),
+                ),
+                fh.Tbody(
+                    fh.Tr(
+                        fh.Td(f"{results.lines_code:,d}", style="text-align: right"),
+                        fh.Td(f"{results.lines_comment:,d}", style="text-align: right"),
+                        fh.Td(f"{results.lines_blank:,d}", style="text-align: right"),
+                        fh.Td(f"{results.lines_total:,d}", style="text-align: right"),
+                    ),
                 ),
             ),
-            fh.Tbody(
-                fh.Tr(
-                    _td_r(f"{results.lines_code:,d}"),
-                    _td_r(f"{results.lines_comment:,d}"),
-                    _td_r(f"{results.lines_blank:,d}"),
-                    _td_r(f"{results.lines_total:,d}"),
-                ),
-            ),
+            cls="div",
         ),
     )
 
 
+################################################################################################
+# History
+################################################################################################
 def render_history(request):
     # Create Pygal chart
     args = request.app.state.args
     project = Project.select().first()
-    args.options.last = 999
+    args.options.last = 999  # Override to get ALL the data we have!
     timestamps, rows, _, _, _, _ = query(args, "history", project=project)
-    # timestamps_formatted = format_timestamp_headers(timestamps)
+
+    custom_style = Style(
+        background="transparent",
+        font_family="Inter",
+        guide_stroke_color="#cccccc",  # Lighter minor lines
+        guide_stroke_dasharray="2,4",  # Different dash for minor
+        guide_stroke_width=0.5,  # Thinner minor lines
+        major_guide_stroke_color="#333333",  # Darker major lines
+        major_guide_stroke_dasharray="6,6",  # Dashed major lines
+        major_guide_stroke_width=2,  # Thicker major lines
+        transition="400ms ease-in",
+    )
 
     chart = DateTimeLine(
-        x_title="Date",
         y_title="Lines",
+        dots_size=1,
         height=500,
-        dots_size=2,
+        legend_at_bottom=True,
+        legend_at_bottom_columns=3,
+        style=custom_style,
+        tooltip_border_radius=10,
         x_label_rotation=45,  # Angle labels to prevent overlap
         x_labels_major_every=2,  # Show every 5th label
-        tooltip_border_radius=10,
         x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
-        style=CleanStyle,
-        # width=1200,
-        # explicit_size=True,
     )
     datetime_values_cd = [(datetime.fromisoformat(row.timestamp), row.total_code) for row in rows]
     datetime_values_cm = [(datetime.fromisoformat(row.timestamp), row.total_comment) for row in rows]
     datetime_values_bl = [(datetime.fromisoformat(row.timestamp), row.total_blank) for row in rows]
 
-    chart.add("Lines of Code", datetime_values_cd)
-    chart.add("Comment Lines", datetime_values_cm)
-    chart.add("Blank Lines", datetime_values_bl)
+    chart.add("Code", datetime_values_cd)
+    chart.add("Comments", datetime_values_cm)
+    chart.add("Blanks", datetime_values_bl)
 
     # Render as SVG
     svg_chart = chart.render()  # Returns bytes
 
-    return fh.Div(
-        fh.H3("History"),
-        fh.Div(fh.NotStr(svg_chart.decode("utf-8"))),
+    return fh.Section(
+        fh.H1("History", style="margin-top: 1rem;"),
+        fh.Div(
+            fh.NotStr(svg_chart.decode("utf-8")),
+            cls="div",
+        ),
     )
 
 
