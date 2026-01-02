@@ -54,6 +54,18 @@ def register(args, rt):
             ),
         )
 
+    @rt("/cloc_update-project")
+    def cloc_update_project(request, project: str):
+        """HTMX endpoint to update content based on project selection."""
+        # Update your data fetching based on selected project
+        # For now, just re-render with the project parameter
+        from mq.tools.cloc.report_web import render_current_status, render_history
+
+        return (
+            *render_current_status(request, project),
+            *render_history(request, project),
+        )
+
     ################################################################################
     # Dynamic routes (ie. for each tool)
     ################################################################################

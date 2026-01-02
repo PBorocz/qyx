@@ -80,6 +80,7 @@ def render_page(request, title, active_page, *main_page_content):
             ft.Meta(name="color-scheme", content="light dark"),
             ft.Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
             ft.Script(src="https://kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js"),
+            ft.Script(src="https://unpkg.com/htmx.org@1.9.10"),
             ft.Style(STYLE),
             ft.Title(f"MQ-{title}"),
             lang="en",

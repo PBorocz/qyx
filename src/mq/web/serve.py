@@ -15,18 +15,16 @@ from mq.web.routes import register
 
 log = logging.getLogger(__name__)
 
-# css = fh.Style("""
-#     body { font-family: Arial; margin: 20px; }
-#     h1 { color: blue; }
-#     button { padding: 10px; background: lightblue; border: none; }
-# """)
-
 app, rt = None, None
 
 
 def create_app(args):
-    app, rt = fh.fast_app(debug=True)  # , hdrs=(css,)
+    app, rt = fh.fast_app(debug=True)
+
+    # Send our args into the FastHtml environment for availability within
+    # the various page renderers:
     app.state.args = args
+
     return app, rt
 
 
@@ -39,7 +37,8 @@ def serve(args: Namespace) -> None:
     # Register routes..
     register(args, rt)
 
-    if not args.no_browser:
+    # And start us up!
+    if args.browser:
 
         def __open_browser():
             """Start browser (ultimately in a background thread)."""
@@ -60,6 +59,19 @@ def serve(args: Namespace) -> None:
         use_colors=True,
         # reload=True,
     )
+
+
+# This is only necessary to diagnose issues when running server from within CLI.
+# If so: % uv run python "src/mq/web/server.py"
+if __name__ == "__main__":
+    from mq import setup_sqlite
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--port", help="Optional port, default is 5011.", default=5011)
+    parser.add_argument("--browser", action="store_true", help="Auto-open browser", default=False)
+    args = parser.parse_args()
+    setup_sqlite(args)
+    serve(args)
 
 
 # @rt
@@ -85,15 +97,3 @@ def serve(args: Namespace) -> None:
 # @rt
 # def query(project: int, module: str, run_id: int, report: str) -> Any:
 #     return partial_do_report(project, module, run_id, report)
-
-# This is only necessary to diagnose issues when running server from within CLI.
-# If so: % uv run python "src/mq/web/server.py"
-if __name__ == "__main__":
-    from mq import setup_sqlite
-
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-    parser.add_argument("--no_browser", action="store_true", help="Don't auto-open browser")
-    args = parser.parse_args()
-    setup_sqlite(args)
-    serve(args)

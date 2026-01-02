@@ -18,17 +18,46 @@ def render(request, name, config):
         request,
         name,
         name.title(),
-        *render_current_status(request),
-        *render_history(request),
+        *render_project_selector(request),
+        fh.Div(
+            *render_current_status(request, None),
+            *render_history(request, None),
+            id="project-content",  # Target for out HTMX updates!
+        ),
+    )
+
+
+################################################################################################
+# Project Selector
+################################################################################################
+def render_project_selector(request):
+    fh_select_items = [fh.Option("Project...", value="")]
+    for project in Project.select().order_by(Project.name):
+        fh_select_items.append(fh.Option(project.name, value=str(project.id)))
+
+    return fh.Form(
+        fh.Fieldset(
+            fh.Select(
+                *fh_select_items,
+                name="project",
+                aria_label="Select your project...",
+                hx_get="/cloc_update-project",  # HTMX endpoint
+                hx_target="#project-content",  # Where to update
+                hx_swap="innerHTML",  # How to update
+                hx_trigger="change",  # Trigger on selection change
+            ),
+        ),
     )
 
 
 ################################################################################################
 # Current Status..
 ################################################################################################
-def render_current_status(request):
+def render_current_status(request, s_project: str = None):
+    if not s_project:
+        return fh.Section()
     args = request.app.state.args
-    project = Project.select().first()
+    project = Project.get(Project.id == int(s_project))
     scan = Scan.get_most_recent(project, "cloc", "cloc")
     results = query(args, "0", scan=scan)
 
@@ -62,10 +91,12 @@ def render_current_status(request):
 ################################################################################################
 # History
 ################################################################################################
-def render_history(request):
+def render_history(request, s_project: str = None):
     # Create Pygal chart
+    if not s_project:
+        return fh.Section()
+    project = Project.get(Project.id == int(s_project))
     args = request.app.state.args
-    project = Project.select().first()
     args.options.last = 999  # Override to get ALL the data we have!
     timestamps, rows, _, _, _, _ = query(args, "history", project=project)
 
