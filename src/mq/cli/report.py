@@ -7,7 +7,8 @@ import types
 from argparse import Namespace
 from typing import Callable
 
-from mq.tools import generate_ta_pairs, AbstractModuleConfiguration
+from mq.tools import generate_ta_pairs
+from mq.tools.base import AbstractModuleConfiguration
 
 log = logging.getLogger(__name__)
 

@@ -399,7 +399,7 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
         Scan.select()
         .where(
             Request.project == project,
-            Scan.tool == "ruff",
+            Scan.tool == "radon",
             Scan.analysis == "hal",
         )
         .join(Request)
@@ -510,7 +510,7 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 Scan.select(Scan.id)
                 .where(
                     Request.project == project,
-                    Scan.tool == "ruff",
+                    Scan.tool == "radon",
                     Scan.analysis == "mi",
                 )
                 .join(Request)
@@ -603,7 +603,7 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 Scan.select()
                 .where(
                     Request.project == project,
-                    Scan.tool == "ruff",
+                    Scan.tool == "radon",
                     Scan.analysis == "cc",
                 )
                 .join(Request)

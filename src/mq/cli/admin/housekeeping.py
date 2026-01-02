@@ -3,8 +3,7 @@
 import logging
 from argparse import Namespace
 
-from mq.tools import AbstractModuleConfiguration
-from mq.tools.base import Project, Request, Scan
+from mq.tools.base import AbstractModuleConfiguration, Project, Request, Scan
 
 log = logging.getLogger(__name__)
 
@@ -39,10 +38,9 @@ def _delete_extraneous_scans(args: Namespace) -> None:
         if scan_ids_to_delete:
             # num = Scan.delete().where(Scan.id.in_(scan_ids_to_delete)).execute()
             num = 0
-            msg = f"- Cleaned up {num} Scan(s) that weren't referenced."
-        else:
-            msg = f"Nothing done, all {tool_name.upper()} Scans have Results associated with them."
-        log.debug(msg)
+            log.debug(f"- Cleaned up {num} Scan(s) that weren't referenced.")
+        # else:
+        #     log.debug(f"Nothing done, all {tool_name.upper()} Scans have Results associated with them.")
 
     for tool_name, tool_config in args.tools.items():
         if not tool_config.results_required:

@@ -3,7 +3,7 @@
 from importlib import import_module
 from typing import Callable
 
-from mq.tools import AbstractModuleConfiguration
+from mq.tools.base import AbstractModuleConfiguration
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
 COLORS: dict = dict(positive="red", negative="green", neutral="white")

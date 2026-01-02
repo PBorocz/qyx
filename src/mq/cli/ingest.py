@@ -10,8 +10,8 @@ from typing import Callable, Iterator
 
 from rich import print
 
-from mq.tools import generate_ta_pairs, AbstractModuleConfiguration
-from mq.tools.base import Project, Request, Scan
+from mq.tools import generate_ta_pairs
+from mq.tools.base import AbstractModuleConfiguration, Project, Request, Scan
 from mq.utils.git import get_git_commit_hash, git_commits
 
 log = logging.getLogger(__name__)

@@ -33,6 +33,7 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
         case "2":
             _report_2(args, scan)
         case "h" | "history":
+            assert isinstance(scan, Scan)
             _report_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
@@ -95,8 +96,8 @@ def _report_2(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _report_h(args: Namespace, project: Project, request: Request) -> None:
-    timestamps, rows, transposed, grand_totals, roc, adgs = query(args, "history", project=project, request=request)
+def _report_h(args: Namespace, project: Project, scan: Scan) -> None:
+    timestamps, rows, transposed, grand_totals, roc, adgs = query(args, "history", project=project, scan=scan)
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)

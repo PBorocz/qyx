@@ -34,9 +34,8 @@ class Cloc(BaseResultsModel):
 
 def query(
     args: Namespace,
-    level: str = "summary",
+    level: str = "0",
     project: Project = None,
-    request: Request = None,
     scan: Scan = None,
 ) -> Any:
     match level.lower():
@@ -47,7 +46,7 @@ def query(
         case "2":
             return _query_full(scan, percentages=args.options.percentages)
         case "h" | "history":
-            return _query_history(project, request, last=args.options.last)
+            return _query_history(project, last=args.options.last)
 
 
 def _query_summary(scan: Scan, percentages: bool = False) -> Any:
@@ -122,29 +121,29 @@ def _query_full(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str,
     return rows, dict(column_totals), grand_total
 
 
-def _query_history(project: Project, request: Request, last: int) -> tuple[list[str], defaultdict, defaultdict]:
+def _query_history(project: Project, last: int) -> tuple[list[str], defaultdict, defaultdict]:
     # TODO: Add support for percentages here..
 
     # If the most recent request (provided) has more than one scan,
     # use only the scan in THAT request! otherwise, scan over all the
     # scans for the project.
-    if Scan.filter(Scan.request == request).count() > 1:
-        # Essentially "git" mode, where our request triggered MULTIPLE scans (over time)
-        scans = (
-            Scan.select().where(Scan.request == request, Scan.tool == "cloc").order_by(Scan.as_of.desc()).limit(last)
+    # if Scan.filter(Scan.request == request).count() > 1:
+    #     # Essentially "git" mode, where our request triggered MULTIPLE scans (over time)
+    #     scans = (
+    #         Scan.select().where(Scan.request == request, Scan.tool == "cloc").order_by(Scan.as_of.desc()).limit(last)
+    #     )
+    # else:
+    # Simple mode, our most recent request triggered on a single scan, consider all scans for the project:
+    scans = (
+        Scan.select()
+        .join(Request)
+        .where(
+            Request.project == project,
+            Scan.tool == "cloc",
         )
-    else:
-        # Simple mode, our most recent request triggered on a single scan, consider all scans for the project:
-        scans = (
-            Scan.select()
-            .join(Request)
-            .where(
-                Request.project == project,
-                Scan.tool == "cloc",
-            )
-            .order_by(Scan.as_of.desc())
-            .limit(last)
-        )
+        .order_by(Scan.as_of.desc())
+        .limit(last)
+    )
 
     query = (
         Cloc.select(
@@ -154,9 +153,7 @@ def _query_history(project: Project, request: Request, last: int) -> tuple[list[
             fn.SUM(Cloc.lines_blank).alias("total_blank"),
         )
         .join(Scan)
-        .where(
-            Scan.id.in_(scans),
-        )
+        .where(Scan.id.in_(scans))
         .group_by(Scan.as_of)
         .order_by(Scan.as_of)
         .objects()

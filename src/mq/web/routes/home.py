@@ -1,127 +1,123 @@
 """."""
 
+import importlib
 import logging
-from typing import Any
+import types
 
 from fasthtml import ft
+from fasthtml import common as fh
 
-from mq.tools.base import Project, Scan
+log = logging.getLogger("uvicorn")
+# log = logging.getLogger(__name__)
 
-uvicorn_logger = logging.getLogger("uvicorn")
 
+################################################################################################
+# Define our routes..
+################################################################################################
+def register(args, rt):
+    ################################################################################
+    # Static routes...
+    ################################################################################
+    @rt("/")
+    def get(request):
+        return page(
+            request,
+            "Home",
+            "Home",
+            fh.H1("Code Quality Data Dashboard", cls="text-3xl font-bold mb-4"),
+            fh.P("This is the home page. Use the navbar above to navigate.", cls="text-gray-600"),
+        )
 
-def page() -> Any:
-    projects = Project.select().order_by(Project.input)
-    return ft.Titled(
-        "Meta Quality",
-        ft.Div(
-            ft.H3("Project"),
-            ft.Select(
-                ft.Option("Select Project...", value="", selected=True),
-                *[ft.Option(f"{project.input}", value=f"{project.id}") for project in projects],
-                name="project",
-                hx_get="/modules",
-                hx_target="#module-selector",
-                hx_trigger="change",
+    @rt("/about")
+    def about(request):
+        return page(
+            request,
+            "About",
+            "About",
+            fh.H1("About Us", cls="text-3xl font-bold mb-4"),
+            fh.P("Learn more about our application here.", cls="text-gray-600 mb-2"),
+            fh.P("We build amazing things with FastHTML!", cls="text-gray-600"),
+        )
+
+    @rt("/contact")
+    def contact(request):
+        return page(
+            request,
+            "Contact",
+            "Contact",
+            fh.H1("Contact Us", cls="text-3xl font-bold mb-4"),
+            fh.P("Get in touch with us:", cls="text-gray-600 mb-4"),
+            fh.Ul(
+                fh.Li("Email: hello@example.com"),
+                fh.Li("Phone: (555) 123-4567"),
+                cls="list-disc list-inside text-gray-600",
             ),
-            ft.Div(id="module-selector", cls="mt-4"),
-            ft.Div(id="run-selector", cls="mt-4"),
-            ft.Div(id="report-selector", cls="mt-4"),
-            ft.Div(id="query", cls="mt-4"),
-        ),
-    )
+        )
+
+    ################################################################################
+    # Dynamic routes (ie. for each tool)
+    ################################################################################
+    for tool_name, tool_config in args.tools.items():
+        # Create a closure to capture tool_name and tool_config
+        def make_tool_route(name, config):
+            @rt(f"/{name}")
+            def render_tool_page_method(request):
+                path_ = f"mq.tools.{name}.report_web"
+                report_web: types.Module = importlib.import_module(path_)
+                render_method = getattr(report_web, "render")
+                return render_method(request, name, config)
+                # return page(
+                #     request,
+                #     name.title(),
+                #     name.title(),
+                #     fh.H1(f"{name.title()} Tool", cls="text-3xl font-bold mb-4"),
+                #     fh.P(f"Configuration: {config}", cls="text-gray-600"),
+                # )
+
+            return render_tool_page_method
+
+        make_tool_route(tool_name, tool_config)
 
 
-def partial_module_selector(project: int = "") -> Any:
-    return ft.Div(
-        ft.H3("Module(s)"),
+# Helper function to create navbar with active state
+def navbar(request, active_page):
+    args = request.app.state.args  # Look through fasthtml app to get to "our" args..
+    pages = [("Home", "/")]
+    for tool_name, tool_config in args.tools.items():
+        pages.append((tool_name.title(), f"/{tool_name}"))
+
+    nav_items = []
+    for name, path in pages:
+        classes = "px-3 py-2 rounded-md text-sm font-medium"
+        if active_page == name:
+            classes += " bg-blue-600 text-white"
+        else:
+            classes += " text-gray-700 hover:bg-gray-200"
+        nav_items.append(ft.A(name, href=path, cls=classes))
+
+    return ft.Nav(
         ft.Div(
-            *[
-                ft.Label(
-                    ft.Input(
-                        type="radio",
-                        name="module",
-                        value=module,
-                        hx_get="/runs",
-                        hx_target="#run-selector",
-                        hx_trigger="change",
-                        hx_include="[name='project']",  # Include project in request.
-                    ),
-                    f" {module.title()}",
-                    cls="mr-4",
-                )
-                for module in ("FIXME!",)
-            ],
-            cls="mb-4 grid grid-cols-auto gap-4",
+            ft.Div(
+                ft.Span("MQ", cls="text-xl font-bold text-blue-600 mr-8"),
+                *nav_items,
+                cls="flex items-center space-x-2",
+            ),
+            cls="container mx-auto px-4",
         ),
+        cls="bg-white shadow-md py-4",
     )
 
 
-def partial_run_selector(project: int = "", module: str = "") -> Any:
-    # uvicorn_logger.info(f"partial_run_selector {project=} {module=}")
-    runs = Scan.select().where(Scan.project == project, Scan.module == module).order_by(Scan.as_of.desc())
-    return ft.Div(
-        ft.H3("Scan"),
-        ft.Select(
-            ft.Option("Select Scan...", value="", selected=True),
-            *[ft.Option(run.timestamp_display(), value=run.id) for run in runs],
-            name="run",
-            hx_get="/reports",
-            hx_target="#report-selector",
-            hx_trigger="change",
-            hx_include="[name='project'], [name='module']",
+# Page layout wrapper
+def page(request, title, active_page, *content):
+    return ft.Html(
+        ft.Head(
+            ft.Title(title),
+            # ft.Script(src="https://cdn.tailwindcss.com"),
+            ft.Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
+        ),
+        ft.Body(
+            navbar(request, active_page),
+            ft.Div(*content, cls="container mx-auto py-8"),  # px-4
         ),
     )
-
-
-def partial_report_selector(project: int, module: str, run_id: int) -> Any:
-    # TODO: Make this sensitive to which reports are implemented by module
-    # uvicorn_logger.info(f"partial_report_selector {project=} {module=} {run_id=}")
-    reports = ("summary", "detail", "full", "history")
-    return ft.Div(
-        ft.H3("Reports Available"),
-        ft.Div(
-            *[
-                ft.Label(
-                    ft.Input(
-                        type="radio",
-                        name="report",
-                        value=report,
-                        hx_get="/query",
-                        hx_target="#query",
-                        hx_trigger="change",
-                        hx_include="[name='project'], [name='module'], [name='run_id']",
-                    ),
-                    f" {report.title()}",
-                    cls="mr-4",
-                )
-                for report in reports
-            ],
-            cls="mb-4 grid grid-cols-auto gap-4",
-        ),
-    )
-
-
-def partial_do_report(project: int, module: str, run_id: int, report: str) -> Any:
-    # uvicorn_logger.info(f"partial_query_results {project=} {module=} {run_id=} {report=}")
-    run = Scan.select().where(Scan.id == run_id).get()
-    project = Project.select().where(Project.id == run.project).get()
-    # uvicorn_logger.info(f"partial_query_results {run.id=} {project.id=}")
-
-    match run.module:
-        case "cloc":
-            from mq.tools.cloc import report_web
-
-            match report:
-                case "history":
-                    return report_web.render_history(project)
-                case "summary":
-                    return report_web.render_summary(run)
-                case "detail":
-                    return report_web.render_detail(run)
-                case "full":
-                    return report_web.render_full(run)
-                case _:
-                    return ft.Div(ft.P(f"Sorry, we don't support {report=} yet!"))
-        case _:
-            return ft.Div(ft.P(f"Sorry, we haven't implemented reports yet for {module=}"))

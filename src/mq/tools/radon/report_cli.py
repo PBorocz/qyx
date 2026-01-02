@@ -430,11 +430,11 @@ def _hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         t_value = ""
         if roc > 0.01:
             color = COLORS["positive"]
-            t_value = f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]"
+            t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
 
         elif roc < -0.01:
             color = COLORS["negative"]
-            t_value = f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]"
+            t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
 
         t_row.append(t_value)
         table.add_row(*t_row)

@@ -1,60 +1,11 @@
 """..."""
 
 import logging
-import types
-from abc import ABC
 from importlib import import_module
 from argparse import Namespace
 from pathlib import Path
 
-from mq.tools.base import BaseModel
-
 log = logging.getLogger(__name__)
-
-
-################################################################################################
-class AbstractModuleConfiguration(ABC):
-    """Defines all the semantics of a code quality tool (aka module) supported by this package."""
-
-    def __init__(
-        self,
-        module_name: str,  # Name of the python module directory supporting the tool
-        analyses: tuple[str],
-        models: tuple[BaseModel],
-        **kwargs,
-    ) -> "AbstractModuleConfiguration":
-        """..."""
-        self.module_name: str = module_name
-        self.models: tuple[BaseModel] = models  # Peewee storage models used by this tool.
-        self.analyses: tuple[str] = analyses  # Analyses support by the tool (even if 1 for stuff like cloc and ruff)
-        self.results_required = True  # Are Results "required" for a Scan to be valid? (usually yes)
-        self.py_module: types.ModuleType = None  # Handle to the mq/tools/{module_name}/ module itself!
-        for attr, value in kwargs.items():
-            setattr(self, attr, value)
-
-    def get_ingest_command(self, *args, **kwargs):
-        """Return the command sent to subprocess to directly perform a CLOC operation."""
-        raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
-
-    def get_ingest_method(self, *args, **kwargs):
-        """Return the parse method to parse this Radon sub_module's JSON output."""
-        raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
-
-
-################################################################################################
-def split_arg_tool_analysis(arg: str = None) -> tuple[str, str]:
-    """Split the input argument that embeds tool & analysis together.
-
-    ""          -> [None, None]
-    "cloc"      -> ["cloc", None]
-    "radon:raw" -> ["radon", "raw"]
-    """
-    if not arg:
-        return [None, None]
-    if ":" in arg:
-        tool, analysis = arg.lower().split(":")
-        return [tool, analysis]  # Tool + specific analysis
-    return [arg.lower(), False]  # Tool only
 
 
 ################################################################################################
@@ -137,3 +88,19 @@ def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
     ################################################################################
     assert s_tool and s_analysis
     return [(args.tools[s_tool], s_analysis)]
+
+
+################################################################################################
+def split_arg_tool_analysis(arg: str = None) -> tuple[str, str]:
+    """Split the input argument that embeds tool & analysis together.
+
+    ""          -> [None, None]
+    "cloc"      -> ["cloc", None]
+    "radon:raw" -> ["radon", "raw"]
+    """
+    if not arg:
+        return [None, None]
+    if ":" in arg:
+        tool, analysis = arg.lower().split(":")
+        return [tool, analysis]  # Tool + specific analysis
+    return [arg.lower(), False]  # Tool only

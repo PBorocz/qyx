@@ -120,7 +120,7 @@ def get_args():
         help="Run built-in web server for reporting.",
     )
     parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-    parse_serve.add_argument("--nobrowser", action="store_true", help="Don't auto-open browser")
+    parse_serve.add_argument("--no_browser", action="store_true", help="Don't auto-open browser")
 
     ################################################################################
     # Admin command
@@ -164,10 +164,12 @@ def get_args():
     if args.command is None:
         args.command = "status"
 
-    # Parse any REPORT options provided and add into the args
-    if args.command and args.command.lower() == "report" and hasattr(args, "options_str"):
-        default_options = dict(percentages=False, last=2)
-        args.options = parse_options(args.options_str or "", default_options)
+    # Set report options (used both by cli and web)
+    option_defaults = argparse.Namespace(percentages=False, last=2)
+    if hasattr(args, "options_str"):
+        args.options = parse_options(args.options_str)
+    else:
+        args.options = option_defaults
 
     return args
 

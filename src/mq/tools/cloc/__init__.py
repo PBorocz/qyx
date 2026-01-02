@@ -3,7 +3,7 @@
 from importlib import import_module
 from typing import Callable
 
-from mq.tools import AbstractModuleConfiguration
+from mq.tools.base import AbstractModuleConfiguration
 from mq.tools.cloc.models import Cloc
 
 

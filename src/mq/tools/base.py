@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import types
+from abc import ABC
 from argparse import Namespace
 from datetime import datetime, UTC
 from pathlib import Path
@@ -15,6 +17,49 @@ from mq.utils import detect_project_name, timestamp_display
 log = logging.getLogger(__name__)
 
 
+################################################################################################
+class AbstractModuleConfiguration(ABC):
+    """Defines all the semantics of a code quality tool (aka module) supported by this package."""
+
+    def __init__(
+        self,
+        module_name: str,
+        analyses: tuple[str],
+        models: tuple[BaseModel],
+        **kwargs,
+    ) -> "AbstractModuleConfiguration":
+        """..."""
+        # Name of directory implementing the tool, e.g. "ruff" obo ../src/mq/tools/ruff
+        self.module_name: str = module_name
+
+        # Peewee storage models used by this tool.
+        self.models: tuple[BaseModel] = models
+
+        # Analyses support by the tool (even if 1 for stuff like cloc and ruff)
+        self.analyses: tuple[str] = analyses
+
+        # Are Results "required" for a Scan to be valid? (usually yes)
+        self.results_required = True
+
+        # Handle to the mq/tools/{module_name}/ module itself!
+        self.py_module: types.ModuleType = None
+
+        # Save any other values sent in...
+        for attr, value in kwargs.items():
+            setattr(self, attr, value)
+
+    def get_ingest_command(self, *args, **kwargs):
+        """Return the command sent to subprocess to directly perform a CLOC operation."""
+        raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
+
+    def get_ingest_method(self, *args, **kwargs):
+        """Return the parse method to parse this Radon sub_module's JSON output."""
+        raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
+
+
+################################################################################################
+# Base Peewee Model Definitions (ie. database tables)
+################################################################################################
 class BaseModel(pw.Model):
     """Root of our "tree" of models."""
 
@@ -149,20 +194,14 @@ class Request(BaseModel):
             request = cls.create_from_args(args, project)
         return request
 
-    @classmethod
-    def get_most_recent(cls, project: Project, module: str, sub_module: str = None) -> Request | None:
-        """Find the most recent run for the specified project and module (or sub_module)."""
-        raise NotImplementedError("Sorry, needs to be updated first!")
-        # query = (
-        #     Request.select()
-        #     .order_by(Request.timestamp.desc())
-        #     .where(Request.project == project.id, Request.module == module)
-        # )
-        # if sub_module:
-        #     query = query.where(Request.sub_module == sub_module)
-        # if run := query.first():
-        #     return run
-        # return None
+    # NOTE: IS THIS USED ANYMORE ANYWHERE?
+    # @classmethod
+    # def get_most_recent(cls, project: Project) -> Request | None:
+    #     """Find the most recent request for he specified project."""
+    #     query = Request.select().order_by(Request.timestamp.desc()).where(Request.project == project.id)
+    #     if run := query.first():
+    #         return run
+    #     return None
 
     def from_git(self) -> bool:
         """Return true if this request is based on a git repository history."""
@@ -174,7 +213,7 @@ class Request(BaseModel):
 
 
 class Scan(BaseModel):
-    """A 'Scan' is the execution of a particular module at a particular time for a project."""
+    """A 'Scan' is the execution of a particular tool at a particular time obo of a specific request."""
 
     id = pw.AutoField()
     request = pw.ForeignKeyField(
@@ -209,18 +248,13 @@ class Scan(BaseModel):
         indexes = ((("request", "as_of", "analysis", "tool"), True),)
 
     @classmethod
-    def get_most_recent(cls, project: Project, tool: str, analysis: str) -> Scan | None:
+    def get_most_recent(cls, project: Project, tool: str = None, analysis: str = None) -> Scan | None:
         """Find the most recent scan for the specified project, tool and analysis BY AS-OF DATE!"""
-        query = (
-            Scan.select()
-            .where(
-                Request.project == project,
-                Scan.tool == tool,
-                Scan.analysis == analysis,
-            )
-            .join(Request)
-            .order_by(Scan.as_of.desc())
-        )
+        query = Scan.select().where(Request.project == project).join(Request).order_by(Scan.as_of.desc())
+        if tool:
+            query = query.where(Scan.tool == tool)
+        if analysis:
+            query = query.where(Scan.analysis == analysis)
         if run := query.first():
             return run
         return None
