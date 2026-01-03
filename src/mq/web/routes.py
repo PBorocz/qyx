@@ -54,16 +54,44 @@ def register(args, rt):
             ),
         )
 
-    @rt("/cloc_update-project")
-    def cloc_update_project(request, project: str):
+    @rt("/partials/cloc_set_project")
+    def cloc_set_project(request, project: str):
         """HTMX endpoint to update content based on project selection."""
-        # Update your data fetching based on selected project
-        # For now, just re-render with the project parameter
         from mq.tools.cloc.report_web import render_accordion_levels, render_history_chart
 
         return (
             *render_accordion_levels(request, project),
             *render_history_chart(request, project),
+        )
+
+    @rt("/partials/ruff_set_project")
+    def ruff_set_project(request, project: str):
+        """HTMX endpoint to update content based on project selection."""
+        from mq.tools.ruff.report_web import render_accordion_levels, render_history_chart
+
+        return (
+            *render_accordion_levels(request, project),
+            *render_history_chart(request, project),
+        )
+
+    @rt("/partials/radon_set_project")
+    def radon_set_project(request, project: str, analysis: str):
+        """HTMX endpoint to update content based on project selection."""
+        from mq.tools.radon.report_web import render_accordion_levels, render_history_chart
+
+        return (
+            *render_accordion_levels(request, s_project_id=project, s_analysis=analysis),
+            # *render_history_chart(request, project),
+        )
+
+    @rt("/partials/radon_set_analysis")
+    def radon_set_analysis(request, project: str, analysis: str):
+        """HTMX endpoint to update content based on project selection."""
+        from mq.tools.radon.report_web import render_accordion_levels, render_history_chart
+
+        return (
+            *render_accordion_levels(request, s_project_id=project, s_analysis=analysis),
+            # *render_history_chart(request, project),
         )
 
     ################################################################################

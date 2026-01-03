@@ -30,10 +30,7 @@ def remove_common_prefixes(rows: list) -> list:
 def timestamp_display(timestamp: str, full: bool = False) -> str:
     """..."""
     # Parse the string timestamp from database
-    if isinstance(timestamp, str):
-        dt_utc = datetime.fromisoformat(timestamp)
-    else:
-        dt_utc = timestamp
+    dt_utc = datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else timestamp
 
     # Ensure it's timezone-aware (it should be already)
     if dt_utc.tzinfo is None:

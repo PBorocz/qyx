@@ -12,26 +12,8 @@ from rich.logging import RichHandler
 from mq.tools.base import Project, Request, Scan
 
 
-def setup_sqlite(args: Namespace) -> None:
-    db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
-
-    # Make sure our models have tables defined for 'em!
-    models = [Project, Request, Scan]
-    for configuration in args.tools.values():
-        for tool_peewee_class in configuration.models:
-            models.append(tool_peewee_class)
-
-    for model_class in models:
-        model_class._meta.database = db
-        model_class.create_table(safe=True)
-
-    logging.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")
-
-
-def setup_logging(arg_debug: bool = False, arg_peewee_debug: bool = False) -> logging.Logger:
-    level = "DEBUG" if arg_debug else "INFO"
+def setup_logging(arg_log_level: str, arg_peewee_debug: bool = False) -> logging.Logger:
+    level = getattr(logging, arg_log_level.upper())
     peewee_level = "DEBUG" if arg_peewee_debug else "INFO"
 
     # Setup Rich handler
@@ -70,3 +52,22 @@ def setup_logging(arg_debug: bool = False, arg_peewee_debug: bool = False) -> lo
     peewee_logger.addHandler(rich_handler)
     peewee_logger.setLevel(peewee_level)
     peewee_logger.propagate = False
+
+
+def setup_sqlite(args: Namespace) -> None:
+    db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
+
+    # Make sure our models have tables defined for 'em!
+    models = [Project, Request, Scan]
+    for configuration in args.tools.values():
+        for tool_peewee_class in configuration.models:
+            models.append(tool_peewee_class)
+
+    for model_class in models:
+        model_class._meta.database = db
+        model_class.create_table(safe=True)
+
+    log = logging.getLogger(__name__)
+    log.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")

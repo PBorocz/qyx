@@ -12,6 +12,11 @@ STYLE = """
       --pico-primary-hover: #1d4ed8;
    }
 
+   /* Make "small"...well small! */
+   small {
+      font-size: 0.75rem;
+   }
+
    /* Make tables more compact */
    table {
       font-size: 0.9rem;

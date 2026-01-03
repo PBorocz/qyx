@@ -67,7 +67,7 @@ def _report_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
     for result in detail_rows:
         table.add_row(
-            result.dir,
+            result.directory,
             fmt(result.lines_code, args.options.percentages),
             fmt(result.lines_comment, args.options.percentages),
             fmt(result.lines_blank, args.options.percentages),
@@ -87,7 +87,7 @@ def _report_2(args: Namespace, scan: Scan) -> None:
     table.add_column("TOTAL", justify="right", footer=fmt(grand_total, args.options.percentages))
     for row in rows:
         table.add_row(
-            f"{row.dir}/{row.filename}",
+            f"{row.directory}/{row.filename}",
             fmt(row.lines_code, args.options.percentages),
             fmt(row.lines_comment, args.options.percentages),
             fmt(row.lines_blank, args.options.percentages),

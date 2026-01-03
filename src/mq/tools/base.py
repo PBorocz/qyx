@@ -233,6 +233,10 @@ class Scan(BaseModel):
         help_text="Tool used, e.g. cloc, radon, ruff etc.",
         null=True,
     )
+    # cwd = pw.CharField(
+    #     help_text="Directory for tool execuction (ie. /tmp/... for git or /users/dev/project",
+    #     null=True,
+    # )
     git_commit_hash = pw.CharField(
         help_text="ID from respective sport's site",
         null=True,
@@ -275,8 +279,8 @@ class BaseResultsModel(pw.Model):
     """Define an base model definition from which all the module's storage model(s) will inherit."""
 
     # fmt: off
-    id       = pw.AutoField()
-    scan     = pw.ForeignKeyField(Scan, backref="modules", on_delete="CASCADE")
-    filename = pw.CharField(help_text="Name of file under evaluation.")
-    dir      = pw.CharField(help_text="Relative directory of file under evaluation.")
+    id        = pw.AutoField()
+    scan      = pw.ForeignKeyField(Scan, backref="modules", on_delete="CASCADE")
+    directory = pw.CharField(help_text="eg. src/mq/")
+    filename  = pw.CharField(help_text="eg. foo.py")
     # fmt: on

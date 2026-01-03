@@ -1,178 +1,229 @@
-"""Report data obo running 'cloc' tool."""
+"""Report data obo running 'ruff' tool."""
 
-# from typing import Any
+import json
+from argparse import Namespace
+from datetime import datetime
 
-# from fasthtml import ft
+from pygal import DateTimeLine
+from pygal.style import Style
 from fasthtml import common as fh
 
-# from mq.tools.base import Project, Run
-# from mq.tools.cloc.models import query_detail, query_full, query_history, query_summary
-# from mq.utils import format_timestamp_headers
+from mq.tools.base import Project, Scan
+
+from mq.tools.ruff.models import query
 from mq.web.page import render_page
 
+RUFF_RULES = None
 
+
+################################################################################################
+# Page layout...
+################################################################################################
 def render(request, name, config):
-    """..."""
+    """Do the primary page layout for this tools display page."""
+    global RUFF_RULES
+    if not RUFF_RULES:
+        with open("src/mq/tools/ruff/ruff_rules.json") as f:
+            RUFF_RULES = json.load(f)
+
     return render_page(
         request,
+        name,
         name.title(),
-        name.title(),
-        fh.H1("Most Recent Analysis", cls="text-3xl font-bold mb-4"),
-        fh.P(f"Configuration: {config}", cls="text-gray-600"),
+        *render_project_selector(request),
+        # This Div will be updated as the project changes via HTMX!
+        fh.Div(id="project-content"),
     )
 
 
-# def _th_r(value: str) -> ft.Th:
-#     return ft.Th(value, scope="col", style="font-family: monospace; text-align: right;")
+################################################################################################
+# Project Selector
+################################################################################################
+# FIXME: This is VERY COMMON across all tools, refactor to make it so!
+def render_project_selector(request):
+    projects = Project.select().order_by(Project.name)
+    if not projects:
+        return None
+
+    # Convert our project(s) into selector items..
+    elif len(projects) > 1:
+        fh_select_items = [fh.Option("Project...", value="")]
+        for project in projects:
+            fh_select_items.append(fh.Option(project.name, value=str(project.id)))
+
+    elif len(projects) == 1:
+        project = projects[0]
+        fh_select_items = [fh.Option(project.name, value=str(project.id), selected=True)]
+
+    # And return our selector form
+    return fh.Form(
+        fh.Fieldset(
+            fh.Select(
+                *fh_select_items,
+                name="project",
+                aria_label="Select your project...",
+                hx_get="/partials/ruff_set_project",  # HTMX endpoint
+                hx_target="#project-content",  # Where to update
+                hx_swap="innerHTML",  # How to update
+                hx_trigger="load, change",  # Trigger on page load *AND* selection change
+            ),
+        ),
+    )
 
 
-# def _th(value: str) -> ft.Th:
-#     return ft.Th(value, scope="col", style="font-family: monospace")
+def get_ruff_rule_name(rule_code: str) -> dict:
+    for rule in RUFF_RULES:
+        if rule.get("code").lower() == rule_code.lower():
+            return rule["name"]
+    return "-Unknown Rule: {rule_code}-"
 
 
-# def _td_r(value: str) -> ft.Th:
-#     return ft.Td(value, scope="row", style="font-family: monospace; text-align: right;")
+################################################################################################
+# Current Status at 3 Levels
+################################################################################################
+def render_accordion_levels(request, s_project_id: str = None):
+    if not s_project_id:
+        return fh.Section()
+    args = request.app.state.args
+    project = Project.get(Project.id == int(s_project_id))
+    scan = Scan.get_most_recent(project, "ruff", "ruff")
+
+    return fh.Section(
+        fh.H1("Current Status"),
+        fh.H4(f"As Of {scan.as_of_display(full=False)}"),
+        fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level_0(args, scan)),
+        fh.Details(fh.Summary("By Rule"), name="details", *render_level_1(args, scan)),
+        fh.Details(fh.Summary("By File"), name="details", *render_level_2(args, scan)),
+        cls="bordered",
+    )
 
 
-# def _td(value: str) -> ft.Th:
-#     return ft.Td(value, scope="row", style="font-family: monospace")
+def render_level_0(args: Namespace, scan: Scan):
+    row = query(args, "0", scan=scan)
+    return (
+        fh.Table(
+            fh.Tbody(
+                fh.Tr(
+                    fh.Th("Issues", style="text-align: left"),
+                    fh.Td(f"{int(row.count):,d}", style="text-align: right"),
+                ),
+            ),
+        ),
+    )
 
 
-# def render_summary(run: Run) -> Any:
-#     results = query_summary(run)
+def render_level_1(args: Namespace, scan: Scan):
+    summary = query(args, "0", scan=scan)
+    results = query(args, "1", scan=scan)
 
-#     return ft.Div(
-#         ft.Hr(),
-#         ft.H4("CLOC Summary"),
-#         ft.Table(
-#             ft.Thead(
-#                 ft.Tr(
-#                     _th_r("Code"),
-#                     _th_r("Comments"),
-#                     _th_r("Blanks"),
-#                     _th_r("TOTAL"),
-#                 ),
-#             ),
-#             ft.Tbody(
-#                 ft.Tr(
-#                     _td_r(f"{results.lines_code}"),
-#                     _td_r(f"{results.lines_comment}"),
-#                     _td_r(f"{results.lines_blank}"),
-#                     _td_r(f"{results.lines_total}"),
-#                 ),
-#             ),
-#         ),
-#     )
+    t_head = fh.Tr(
+        fh.Th("Rule", scope="col", style="text-align: left"),
+        fh.Th("Count", scope="col", style="text-align: right"),
+        fh.Th("Message", scope="col", style="text-align: left"),
+    )
 
+    t_body = []
+    for result in results:
+        rule_name = get_ruff_rule_name(result.rule_code)
+        t_row = fh.Tr(
+            fh.Td(result.rule_code, style="text-align: left"),
+            fh.Td(f"{result.count:,d}", style="text-align: right"),
+            fh.Td(rule_name.title(), style="text-align: left"),
+        )
+        t_body.append(t_row)
 
-# def render_detail(run: Run) -> Any:
-#     column_total = query_summary(run)
-#     detail_rows = query_detail(run)
+    t_total = fh.Tr(
+        fh.Td("TOTAL", style="text-align: left"),
+        fh.Td(f"{summary.count:,d}", style="text-align: right"),
+        fh.Td(""),
+    )
 
-#     th_s = [
-#         _th("Directory"),
-#         _th_r("Code"),
-#         _th_r("Comments"),
-#         _th_r("Blanks"),
-#         _th_r("TOTAL"),
-#     ]
-
-#     tr_s = []  # Table rows...
-#     for result in detail_rows:
-#         td_s = [  # TD elements...
-#             _td(result.dir),
-#             _td_r(result.lines_code),
-#             _td_r(result.lines_blank),
-#             _td_r(result.lines_comment),
-#             _td_r(result.lines_total),
-#         ]
-#         tr_s.append(ft.Tr(*td_s))
-
-#     tfoot_s = [
-#         _th("TOTAL"),
-#         _td_r(column_total.lines_code),
-#         _td_r(column_total.lines_blank),
-#         _td_r(column_total.lines_comment),
-#         _td_r(column_total.lines_total),
-#     ]
-
-#     return ft.Div(
-#         ft.Hr(),
-#         ft.H4("CLOC Detail"),
-#         ft.Table(
-#             ft.Thead(ft.Tr(*th_s)),
-#             ft.Tbody(*tr_s),
-#             ft.Tfoot(ft.Tr(*tfoot_s)),
-#         ),
-#     )
+    return (
+        fh.Table(
+            fh.Thead(t_head),
+            fh.Tbody(*t_body),
+            fh.Tfoot(t_total),
+            id="level_1",
+        ),
+        fh.Script("new Tablesort(document.getElementById('level_1'));"),
+    )
 
 
-# def render_full(run: Run) -> Any:
-#     rows, column_totals, grand_total = query_full(run)
+def render_level_2(args: Namespace, scan: Scan):
+    rows = query(args, "2", scan=scan)
 
-#     th_s = [
-#         _th("Directory"),
-#         _th_r("Code"),
-#         _th_r("Comments"),
-#         _th_r("Blanks"),
-#         _th_r("TOTAL"),
-#     ]
+    t_head = fh.Tr(
+        fh.Th("Rule", scope="col", style="text-align: left"),
+        fh.Th("File [line]", scope="col", style="text-align: left"),
+        fh.Th("Message", scope="col", style="text-align: right"),
+    )
 
-#     tr_s = []  # Table rows...
-#     for row in rows:
-#         td_s = [  # TD elements...
-#             _td(f"{row.dir}/{row.filename}"),
-#             _td_r(row.lines_code),
-#             _td_r(row.lines_blank),
-#             _td_r(row.lines_comment),
-#             _td_r(row.lines_total),
-#         ]
-#         tr_s.append(ft.Tr(*td_s))
+    t_body = []
+    for row in rows:
+        t_row = fh.Tr(
+            fh.Td(row.rule_code, style="text-align: left"),
+            fh.Td(f"{row.directory}/{row.filename} [{row.line}]", style="text-align: left"),
+            fh.Td(row.message, style="text-align: right"),
+        )
+        t_body.append(t_row)
 
-#     tfoot_s = [
-#         _th("TOTAL"),
-#         _td_r(column_totals["lines_code"]),
-#         _td_r(column_totals["lines_blank"]),
-#         _td_r(column_totals["lines_comment"]),
-#         _td_r(grand_total),
-#     ]
-
-#     return ft.Div(
-#         ft.Hr(),
-#         ft.H4("CLOC Full"),
-#         ft.Table(
-#             ft.Thead(ft.Tr(*th_s)),
-#             ft.Tbody(*tr_s),
-#             ft.Tfoot(ft.Tr(*tfoot_s)),
-#         ),
-#     )
+    return (
+        fh.Table(
+            fh.Thead(t_head),
+            fh.Tbody(*t_body),
+            id="level_2",
+        ),
+        fh.Script("new Tablesort(document.getElementById('level_2'));"),
+    )
 
 
-# def render_history(project: Project) -> Any:
-#     timestamps, transposed, grand_totals = query_history(project)
-#     timestamps_formatted = format_timestamp_headers(timestamps)
-#     th_s = [_th("Metric")]
-#     for timestamp in sorted(timestamps):
-#         th_s.append(_th_r(timestamps_formatted[timestamp]))
+################################################################################################
+# History
+################################################################################################
+def render_history_chart(request, s_project_id: str = None):
+    # Create Pygal chart
+    if not s_project_id:
+        return fh.Section()
+    project = Project.get(Project.id == int(s_project_id))
+    args = request.app.state.args
+    args.options.last = 999  # Override to get ALL the data we have!
+    _, rows, _ = query(args, "history", project=project)
 
-#     tr_s = []
-#     for metric, dt_rows in transposed.items():
-#         td_s = [_th(metric)]
-#         for timestamp in sorted(timestamps):
-#             td_s.append(_td_r(str(dt_rows[timestamp])))
-#         tr_s.append(ft.Tr(*td_s))
+    # FIXME: Make this common across all tools!
+    custom_style = Style(
+        background="transparent",
+        font_family="Inter",
+        guide_stroke_color="#cccccc",  # Lighter minor lines
+        guide_stroke_dasharray="2,4",  # Different dash for minor
+        guide_stroke_width=0.5,  # Thinner minor lines
+        major_guide_stroke_color="#333333",  # Darker major lines
+        major_guide_stroke_dasharray="6,6",  # Dashed major lines
+        major_guide_stroke_width=2,  # Thicker major lines
+        transition="400ms ease-in",
+    )
 
-#     tfoot_s = [_th("TOTAL")]
-#     for timestamp in sorted(timestamps):
-#         tfoot_s.append(_td_r(str(grand_totals[timestamp])))
+    # FIXME: Make a bunch of these COMMON across all tools!
+    chart = DateTimeLine(
+        y_title="Ruff Issues",
+        dots_size=1,
+        height=500,
+        show_legend=False,
+        style=custom_style,
+        tooltip_border_radius=10,
+        x_label_rotation=45,  # Angle labels to prevent overlap
+        x_labels_major_every=2,  # Show every 5th label
+        x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
+    )
+    datetime_values = [(datetime.fromisoformat(ts_), count) for ts_, count in rows.items()]
 
-#     return ft.Div(
-#         ft.Hr(),
-#         ft.H4("CLOC Results Over Time"),
-#         ft.Table(
-#             ft.Thead(ft.Tr(*th_s)),
-#             ft.Tbody(*tr_s),
-#             ft.Tfoot(ft.Tr(*tfoot_s)),
-#             cls="striped",
-#         ),
-#     )
+    chart.add("-count-", datetime_values)
+
+    svg_chart = chart.render()  # Render as SVG and return bytes
+
+    return fh.Section(
+        fh.H1("History", style="margin-top: 1rem;"),
+        fh.Div(
+            fh.NotStr(svg_chart.decode("utf-8")),
+            cls="bordered",
+        ),
+    )

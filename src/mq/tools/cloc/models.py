@@ -29,7 +29,7 @@ class Cloc(BaseResultsModel):
         """Define peewee meta data."""
 
         table_name = "cloc"
-        indexes = ((("scan", "dir", "filename"), True),)
+        indexes = ((("scan", "directory", "filename"), True),)
 
 
 def query(
@@ -75,7 +75,7 @@ def _query_detail(scan: Scan, percentages: bool = False) -> Any:
     grand_total = _query_summary(scan, percentages=False)
     rows = (
         Cloc.select(
-            Cloc.dir,
+            Cloc.directory,
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
             fn.SUM(Cloc.lines_code).alias("lines_code"),
             fn.SUM(Cloc.lines_comment).alias("lines_comment"),
@@ -84,8 +84,8 @@ def _query_detail(scan: Scan, percentages: bool = False) -> Any:
             ),
         )
         .where(Cloc.scan == scan)
-        .group_by(Cloc.dir)
-        .order_by(Cloc.dir)
+        .group_by(Cloc.directory)
+        .order_by(Cloc.directory)
     )
     if percentages:
         # Convert to percentage of total:
@@ -98,7 +98,7 @@ def _query_detail(scan: Scan, percentages: bool = False) -> Any:
 
 
 def _query_full(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str, int], int]:
-    rows = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.dir, Cloc.filename)
+    rows = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename)
     column_totals = defaultdict(int)
     for row in rows:
         column_totals["lines_blank"] += row.lines_blank

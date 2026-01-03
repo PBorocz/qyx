@@ -51,7 +51,7 @@ def _report_0(args: Namespace, scan: Scan) -> None:
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
-    table.add_row("Issues", f"{row.count():,d}")
+    table.add_row("Issues", f"{row.count:,d}")
     cli_console.print(table)
 
 
@@ -68,7 +68,7 @@ def _report_1(args: Namespace, scan: Scan) -> None:
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
-    table.add_column("Count", justify="center", footer=f"{summary.count():,}")
+    table.add_column("Count", justify="center", footer=f"{summary.count:,}")
     table.add_column("Message")
     for result in results:
         rule_name = get_ruff_rule_name(result.rule_code)
@@ -83,7 +83,7 @@ def _report_2(args: Namespace, scan: Scan) -> None:
     table.add_column("File [line]")
     table.add_column("Message")
     for row in rows:
-        table.add_row(row.rule_code, f"{row.dir}/{row.filename} [{row.line}] ", row.message)
+        table.add_row(row.rule_code, f"{row.directory}/{row.filename} [{row.line}] ", row.message)
     cli_console.print(table)
 
 

@@ -1,5 +1,6 @@
 """..."""
 
+import os
 from pathlib import Path
 
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
@@ -9,8 +10,9 @@ from mq.tools.base import Scan
 def ingest_raw(scan: Scan, data: dict[str, int]) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         return RadonRaw(
-            dir=fn_path.parent,
+            directory=fn_path.parent,
             filename=fn_path.name,
             loc=radon_result["loc"],
             lloc=radon_result["lloc"],
@@ -31,8 +33,9 @@ def ingest_raw(scan: Scan, data: dict[str, int]) -> int:
 def ingest_mi(scan: Scan, data: dict[str, int]) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         return RadonMi(
-            dir=fn_path.parent,
+            directory=fn_path.parent,
             filename=fn_path.name,
             mi=radon_result["mi"],
             rank=radon_result["rank"],
@@ -50,9 +53,10 @@ def ingest_cc(scan: Scan, data: dict[str, int]) -> int:
     rows = []
     for fn_, entities in data.items():
         fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         for entity in entities:
             row = RadonCc(
-                dir=fn_path.parent,
+                directory=fn_path.parent,
                 filename=fn_path.name,
                 entity_type=mapping[entity["type"][0].upper()],
                 entity_name=entity["name"],
@@ -76,9 +80,10 @@ def ingest_hal(scan: Scan, data: dict[str, int]) -> int:
     for fn_, results in data.items():
         total = results["total"]
         fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         radon_hal = RadonHal(
             scan=scan.id,
-            dir=fn_path.parent,
+            directory=fn_path.parent,
             filename=fn_path.name,
             h1=total["h1"],
             h2=total["h2"],

@@ -16,23 +16,24 @@ def show_status(args: Namespace) -> None:
     """Use a simple terminal tree to display current db information."""
     tree = Tree("MQ Status")
     for project in Project.select():
-        project_tree = tree.add(f"Project [{project.id}] -> {project.name}")
+        project_tree = tree.add(f"Project -> {project.name} [{project.id}]")
 
         for request in Request.select().where(Request.project == project):
             source = "from git" if request.from_git() else ""
-            s_request = f"Request [{request.id}] at {request.timestamp_display(full=True)} {source}"
+            s_request = f"Request at {request.timestamp_display(full=True)} {source} [{request.id}]"
             scan_tree = project_tree.add(s_request)
 
             for scan in Scan.select().order_by(Scan.as_of).where(Scan.request == request):
-                scan_count = _get_scan_count(scan)
+                s_scan_count = _get_scan_count(scan)
                 s_analysis = scan.tool_analysis_display()
-                if request.from_git():
-                    s_scan = f"Scan [{scan.id}] -> {s_analysis} asOf {scan.as_of_display(full=True)} {scan_count}"
-                else:
-                    s_scan = f"Scan [{scan.id}] -> {s_analysis} @    {scan.as_of_display(full=True)} {scan_count}"
+                delimiter = "asOf" if request.from_git() else "@  "
+                s_as_of_display = f"{delimiter} {scan.as_of_display(full=True)}"
+                s_scan = f"Scan -> {s_analysis} {s_scan_count:4s} {s_as_of_display} [{scan.id}]"
 
                 scan_tree.add(s_scan)
-    print(tree)
+
+    if tree.children:
+        print(tree)
 
 
 # FIXME: Make not as complex! ;-)
@@ -60,7 +61,5 @@ def _get_scan_count(scan: Scan) -> str:  # noqa: C901
         return "?"
     if count == 0:
         return ""
-    elif count == 1:
-        return f"({count} entry)"
     else:
-        return f"({count:3d} entries)"
+        return f"{count:3d}"

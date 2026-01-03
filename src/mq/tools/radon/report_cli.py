@@ -46,6 +46,7 @@ def _dispatch_level_submodule(args: Namespace, project: Project, scan: Scan, ana
         log.debug(f"{method=}")
     except AttributeError:
         log.error(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
+        return
 
     method(args, project=project, scan=scan)
 
@@ -93,7 +94,7 @@ def _raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     # fmt: on
     for row in rows:
         table.add_row(
-            row.dir,
+            row.directory,
             f"{row.lloc:,}",
             f"{row.sloc:,}",
             f"{row.comments:,}",
@@ -127,7 +128,7 @@ def _raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     # fmt: on
     for row in rows:
         table.add_row(
-            row.dir,
+            row.directory,
             row.filename,
             f"{row.loc:,}",
             f"{row.lloc:,}",
@@ -191,7 +192,7 @@ def _mi_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Maintainability Index", justify="right", footer=mean_mi_mean_footer)
     for row in rows:
         table.add_row(
-            row.dir,
+            row.directory,
             f"{row.mi_mean:.2f}",
         )
     cli_console.print(table)
@@ -207,7 +208,7 @@ def _mi_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Rank", justify="center")
     for row in rows:
         table.add_row(
-            row.dir,
+            row.directory,
             row.filename,
             f"{row.mi:.2f}",
             row.rank,
@@ -271,7 +272,7 @@ def _cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     for row in rows:
         table.add_row(
-            row.dir,
+            row.directory,
             plurals[row.entity_type],
             f"{row.mean_complexity:.2f}",
             row.get_rank(row.mean_complexity),
@@ -289,7 +290,7 @@ def _cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     for row in rows:
         table.add_row(
-            f"{row.dir}/{row.filename}",
+            f"{row.directory}/{row.filename}",
             plurals[row.entity_type],
             f"{row.mean_complexity:.2f}",
             row.get_rank(row.mean_complexity),
@@ -307,7 +308,7 @@ def _cc_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Rank", justify="center")
     for row in rows:
         table.add_row(
-            f"{row.dir}/{row.filename}",
+            f"{row.directory}/{row.filename}",
             row.entity_name,
             row.entity_type,
             f"{row.complexity:.2f}",
@@ -359,14 +360,12 @@ def _hal_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 def _hal_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     rows, mean_means = query_hal(args, "1", scan)
-    # Calculate mean metric values
-
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="Mean")
     for display, attr, _ in RadonHal.attrs():
         table.add_column(display, justify="right", footer=f"{mean_means[attr]:.2f}")
     for row in rows:
-        t_row = [row.dir]
+        t_row = [row.directory]
         for _, attr, _ in RadonHal.attrs():
             t_row.append(f"{getattr(row, attr):.2f}")
         table.add_row(*t_row)
@@ -381,7 +380,7 @@ def _hal_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     for display, attr, _ in RadonHal.attrs():
         table.add_column(display, justify="right", footer=f"{means[attr]:.2f}")
     for row in rows:
-        t_row = [f"{row.dir}/{row.filename}"]
+        t_row = [f"{row.directory}/{row.filename}"]
         for _, attr, fmt in RadonHal.attrs():
             if fmt == "float":
                 value = f"{getattr(row, attr):.2f}"
@@ -401,7 +400,7 @@ def _hal_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     for display, attr, _ in RadonHal.attrs():
         table.add_column(display, justify="right", footer=f"{means[attr]:.2f}")
     for row in rows:
-        t_row = [f"{row.dir}/{row.filename}", row.name]
+        t_row = [f"{row.directory}/{row.filename}", row.name]
         for _, attr, fmt in RadonHal.attrs():
             if fmt == "float":
                 value = f"{getattr(row, attr):.2f}"

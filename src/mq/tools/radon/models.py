@@ -27,7 +27,7 @@ class RadonRaw(BaseResultsModel):
         """Define peewee meta data."""
 
         table_name = "radon_raw"
-        indexes = ((("scan", "dir", "filename"), True),)
+        indexes = ((("scan", "directory", "filename"), True),)
 
 
 class RadonMi(BaseResultsModel):
@@ -42,7 +42,7 @@ class RadonMi(BaseResultsModel):
         """Define peewee meta data."""
 
         table_name = "radon_mi"
-        indexes = ((("scan", "dir", "filename"), True),)
+        indexes = ((("scan", "directory", "filename"), True),)
 
 
 class RadonCc(BaseResultsModel):
@@ -77,7 +77,7 @@ class RadonCc(BaseResultsModel):
         """Define peewee meta data."""
 
         table_name = "radon_cc"
-        indexes = ((("scan", "dir", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),)
+        indexes = ((("scan", "directory", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),)
 
 
 class RadonHal(BaseResultsModel):
@@ -123,7 +123,7 @@ class RadonHal(BaseResultsModel):
         """Define peewee meta data."""
 
         table_name = "radon_hal"
-        indexes = ((("scan", "dir", "filename"), True),)
+        indexes = ((("scan", "directory", "filename"), True),)
 
 
 class RadonHalFunction(BaseModel):
@@ -188,7 +188,7 @@ def query_raw_1(args: Namespace, level: str = "0", scan: Scan = None, project: P
     raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     rows = (
         RadonRaw.select(
-            RadonRaw.dir,
+            RadonRaw.directory,
             fn.SUM(RadonRaw.loc).alias("loc"),
             fn.SUM(RadonRaw.lloc).alias("lloc"),
             fn.SUM(RadonRaw.sloc).alias("sloc"),
@@ -198,8 +198,8 @@ def query_raw_1(args: Namespace, level: str = "0", scan: Scan = None, project: P
             fn.SUM(RadonRaw.single_comments).alias("single_comments"),
         )
         .where(RadonRaw.scan == scan)
-        .group_by(RadonRaw.dir)
-        .order_by(RadonRaw.dir)
+        .group_by(RadonRaw.directory)
+        .order_by(RadonRaw.directory)
     )
 
     # Calculate totals
@@ -211,7 +211,7 @@ def query_raw_1(args: Namespace, level: str = "0", scan: Scan = None, project: P
 
 
 def query_raw_2(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
-    return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.dir, RadonRaw.filename)
+    return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.directory, RadonRaw.filename)
 
 
 def query_raw_h(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
@@ -323,7 +323,7 @@ def query_hal_0(args: Namespace, level: str = "0", scan: Scan = None, project: P
 def query_hal_1(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     rows = (
         RadonHal.select(
-            RadonHal.dir,
+            RadonHal.directory,
             fn.AVG(RadonHal.h1).alias("h1"),
             fn.AVG(RadonHal.h2).alias("h2"),
             fn.AVG(RadonHal.N1).alias("N1"),
@@ -337,9 +337,9 @@ def query_hal_1(args: Namespace, level: str = "0", scan: Scan = None, project: P
             fn.AVG(RadonHal.time).alias("time"),
             fn.AVG(RadonHal.bugs).alias("bugs"),
         )
-        .group_by(RadonHal.dir)
+        .group_by(RadonHal.directory)
         .where(RadonHal.scan == scan)
-        .order_by(RadonHal.dir)
+        .order_by(RadonHal.directory)
     )
     # Calculate mean of the means
     mean_means = {}
@@ -351,7 +351,7 @@ def query_hal_1(args: Namespace, level: str = "0", scan: Scan = None, project: P
 
 
 def query_hal_2(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
-    rows = RadonHal.select().where(RadonHal.scan == scan).order_by(RadonHal.dir, RadonHal.filename)
+    rows = RadonHal.select().where(RadonHal.scan == scan).order_by(RadonHal.directory, RadonHal.filename)
 
     # Calculate means
     means = {}
@@ -364,7 +364,7 @@ def query_hal_2(args: Namespace, level: str = "0", scan: Scan = None, project: P
 def query_hal_3(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     rows = (
         RadonHalFunction.select(
-            RadonHal.dir,
+            RadonHal.directory,
             RadonHal.filename,
             RadonHalFunction.name,
             RadonHalFunction.h1,
@@ -382,7 +382,7 @@ def query_hal_3(args: Namespace, level: str = "0", scan: Scan = None, project: P
         )
         .join(RadonHal)
         .where(RadonHal.scan == scan)
-        .order_by(RadonHal.dir, RadonHal.filename, RadonHalFunction.name)
+        .order_by(RadonHal.directory, RadonHal.filename, RadonHalFunction.name)
         .objects()
     )
     # Calculate mean metric values
@@ -472,10 +472,10 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
 
         case "1":
             rows = (
-                RadonMi.select(RadonMi.dir, fn.AVG(RadonMi.mi).alias("mi_mean"))
+                RadonMi.select(RadonMi.directory, fn.AVG(RadonMi.mi).alias("mi_mean"))
                 .where(RadonMi.scan == scan)
-                .order_by(fn.AVG(RadonMi.mi).asc(), RadonMi.dir)
-                .group_by(RadonMi.dir)
+                .order_by(fn.AVG(RadonMi.mi).asc(), RadonMi.directory)
+                .group_by(RadonMi.directory)
             )
 
             # Calculate the mean mean maintainability index
@@ -491,7 +491,9 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
 
         case "2":
             rows = (
-                RadonMi.select().where(RadonMi.scan == scan).order_by(RadonMi.mi.asc(), RadonMi.dir, RadonMi.filename)
+                RadonMi.select()
+                .where(RadonMi.scan == scan)
+                .order_by(RadonMi.mi.asc(), RadonMi.directory, RadonMi.filename)
             )
             # Calculate the average maintainability index
             mi_s = [row.mi for row in rows]
@@ -569,33 +571,33 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
         case "1":
             return (
                 RadonCc.select(
-                    RadonCc.dir,
+                    RadonCc.directory,
                     RadonCc.entity_type,
                     fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
                 .where(RadonCc.scan == scan)
-                .group_by(RadonCc.dir, RadonCc.entity_type)
-                .order_by(RadonCc.dir, RadonCc.entity_type)
+                .group_by(RadonCc.directory, RadonCc.entity_type)
+                .order_by(RadonCc.directory, RadonCc.entity_type)
             )
 
         case "2":
             return (
                 RadonCc.select(
-                    RadonCc.dir,
+                    RadonCc.directory,
                     RadonCc.filename,
                     RadonCc.entity_type,
                     fn.AVG(RadonCc.complexity).alias("mean_complexity"),
                 )
                 .where(RadonCc.scan == scan)
-                .group_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
-                .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_type)
+                .group_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_type)
+                .order_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_type)
             )
 
         case "3":
             return (
                 RadonCc.select()
                 .where(RadonCc.scan == scan)
-                .order_by(RadonCc.dir, RadonCc.filename, RadonCc.entity_name)
+                .order_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_name)
             )
 
         case "h":

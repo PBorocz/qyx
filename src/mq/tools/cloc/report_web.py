@@ -23,12 +23,8 @@ def render(request, name, config):
         name,
         name.title(),
         *render_project_selector(request),
-        fh.Div(
-            # This Div will be updated as the project changes via HTMX!
-            *render_accordion_levels(request, None),
-            *render_history_chart(request, None),
-            id="project-content",
-        ),
+        # This Div will be updated as the project changes via HTMX!
+        fh.Div(id="project-content"),
     )
 
 
@@ -57,7 +53,7 @@ def render_project_selector(request):
                 *fh_select_items,
                 name="project",
                 aria_label="Select your project...",
-                hx_get="/cloc_update-project",  # HTMX endpoint
+                hx_get="/partials/cloc_set_project",  # HTMX endpoint
                 hx_target="#project-content",  # Where to update
                 hx_swap="innerHTML",  # How to update
                 hx_trigger="load, change",  # Trigger on page load *AND* selection change
@@ -125,7 +121,7 @@ def render_level_1(args: Namespace, scan: Scan):
     t_body = []
     for result in detail_rows:
         t_row = fh.Tr(
-            fh.Td(result.dir, style="text-align: left"),
+            fh.Td(result.directory, style="text-align: left"),
             fh.Td(f"{result.lines_code:,d}", style="text-align: right"),
             fh.Td(f"{result.lines_comment:,d}", style="text-align: right"),
             fh.Td(f"{result.lines_blank:,d}", style="text-align: right"),
@@ -166,7 +162,7 @@ def render_level_2(args: Namespace, scan: Scan):
     t_body = []
     for result in results:
         t_row = fh.Tr(
-            fh.Td(f"{result.dir}/{result.filename}", style="text-align: left"),
+            fh.Td(f"{result.directory}/{result.filename}", style="text-align: left"),
             fh.Td(f"{result.lines_code:,d}", style="text-align: right"),
             fh.Td(f"{result.lines_comment:,d}", style="text-align: right"),
             fh.Td(f"{result.lines_blank:,d}", style="text-align: right"),
@@ -203,7 +199,7 @@ def render_history_chart(request, s_project_id: str = None):
     project = Project.get(Project.id == int(s_project_id))
     args = request.app.state.args
     args.options.last = 999  # Override to get ALL the data we have!
-    timestamps, rows, _, _, _, _ = query(args, "history", project=project)
+    _, rows, _, _, _, _ = query(args, "history", project=project)
 
     custom_style = Style(
         background="transparent",

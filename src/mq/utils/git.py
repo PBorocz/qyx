@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+import os
 import subprocess
 import tempfile
 from argparse import Namespace
@@ -29,8 +30,10 @@ def git_commits(args: Namespace, revision_skip: int = 1) -> Iterator[tuple]:
     """Clone repo and analyze each revision."""
     args.git = args.git
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        repo_path = Path(tmpdir) / args.project
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # This is a macOS-specific quirk: =/var= is a symlink to =/private/var=.
+        repo_path = Path(os.path.realpath(temp_dir)) / args.project
+        # repo_path = Path(temp_dir) / args.project
         log.debug(f"Repo path {repo_path}...")
 
         # Clone the repository

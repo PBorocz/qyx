@@ -23,7 +23,12 @@ from mq.web.serve import serve
 def get_args():
     """Create a command-line argument structure."""
     parser_root = argparse.ArgumentParser(add_help=False)
-    parser_root.add_argument("-d", "--debug", action="store_true", help="Enable debug logging.", default=False)
+    parser_root.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set logging level",
+    )
 
     parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment", parents=[parser_root])
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -66,13 +71,6 @@ def get_args():
     parse_ingest.add_argument(
         "--git",
         help="Ingest historically from the specified github repo.",
-    )
-    parse_ingest.add_argument(
-        "-v",
-        "--verbosity",
-        type=int,
-        default=0,
-        help="Logging verbosity",
     )
 
     ################################################################################
@@ -165,18 +163,16 @@ def get_args():
         args.command = "status"
 
     # Set report options (used both by cli and web)
-    option_defaults = argparse.Namespace(percentages=False, last=2)
-    if hasattr(args, "options_str"):
-        args.options = parse_options(args.options_str)
-    else:
-        args.options = option_defaults
+    d_option_defaults = dict(percentages=False, last=2)
+    options_str = args.options_str if hasattr(args, "options_str") else ""
+    args.options = parse_arg_option_str(options_str, d_option_defaults)
 
     return args
 
 
-def parse_options(options_str: str, defaults=None):
+def parse_arg_option_str(options_str: str, defaults: dict = {}):
     """Parse any/all options provided (usually for reporting)."""
-    opts = argparse.Namespace(**(defaults or {}))
+    opts = argparse.Namespace(**(defaults))
     if not options_str:
         return opts
 
@@ -216,12 +212,12 @@ def main():
     args = get_args()
 
     # Setup logging (now that we know what potential level to log to)
-    setup_logging(args.debug, False)
+    setup_logging(args.log_level, False)
 
     # Setup the tools currently defined/available (and place into args)
     args.tools = setup_tools(args)
 
-    # Arguments read and available tools defined, are our arguments valid?
+    # Are our arguments valid?
     if not validate_args(args):
         sys.exit(1)
 

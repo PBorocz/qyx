@@ -23,7 +23,7 @@ class Ruff(BaseResultsModel):
         """..."""
 
         table_name = "ruff"
-        indexes = ((("scan", "dir", "filename", "line", "column", "rule_code"), True),)
+        indexes = ((("scan", "directory", "filename", "line", "column", "rule_code"), True),)
 
 
 def query(
@@ -34,10 +34,14 @@ def query(
 ) -> Ruff:
     match level.lower():
         case "0":
-            return Ruff.select(
-                fn.COUNT(Ruff.id).alias("count"),
-            ).where(
-                Ruff.scan == scan,
+            return (
+                Ruff.select(
+                    fn.COUNT(Ruff.id).alias("count"),
+                )
+                .where(
+                    Ruff.scan == scan,
+                )
+                .first()
             )
 
         case "1":
@@ -65,7 +69,7 @@ def query(
                 )
                 .order_by(
                     Ruff.rule_code,
-                    Ruff.dir,
+                    Ruff.directory,
                     Ruff.filename,
                 )
             )

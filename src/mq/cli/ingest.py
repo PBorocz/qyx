@@ -8,8 +8,6 @@ from argparse import Namespace
 from datetime import datetime, UTC
 from typing import Callable, Iterator
 
-from rich import print
-
 from mq.tools import generate_ta_pairs
 from mq.tools.base import AbstractModuleConfiguration, Project, Request, Scan
 from mq.utils.git import get_git_commit_hash, git_commits
@@ -32,7 +30,6 @@ def ingest(args: Namespace) -> None:
     tools_analyses: list[tuple[AbstractModuleConfiguration, str]] = generate_ta_pairs(args)
 
     for scan_request in iter_scan_requests(args, request):
-        log.debug(f"{scan_request=}")
         for o_tool, analysis in tools_analyses:
             _ingest_analysis(args, request, o_tool, analysis, scan_request)
 
@@ -42,14 +39,14 @@ def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]
         for repo_path, commit_date, commit_hash in git_commits(args):
             yield Namespace(
                 as_git=True,
-                location=repo_path,
+                cwd=repo_path,
                 as_of=commit_date,
                 hash=commit_hash,
             )
     else:
         yield Namespace(
             as_git=False,
-            location=args.project,
+            cwd=args.project,
             as_of=datetime.now(UTC),
             hash=get_git_commit_hash(),
         )
@@ -77,7 +74,7 @@ def _ingest_analysis(
                 )
                 .get()
             )
-            log.debug(
+            log.info(
                 f"Skipping...we've already scanned {scan.tool}:{scan.analysis} "
                 f"as of: {scan.as_of} obo {scan.git_commit_hash[:8]}",
             )
@@ -89,6 +86,7 @@ def _ingest_analysis(
         request=request,
         tool=tool_configuration.module_name,
         analysis=analysis,
+        cwd=scan_request.cwd,
         git_commit_hash=scan_request.hash,
         as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
     )
@@ -102,14 +100,9 @@ def _ingest_analysis(
     else:
         # Direct mode - run the tool's command ourselves
         command: list[str] = tool_configuration.get_ingest_command(args.project, analysis)
-        log.debug(f"Executing {' '.join(command)=} in {scan_request.location}")
+        log.debug(f"Executing {' '.join(command)=} in {scan_request.cwd}")
 
-        result = subprocess.run(
-            command,
-            cwd=scan_request.location,
-            capture_output=True,
-            check=True,
-        )
+        result = subprocess.run(command, cwd=scan_request.cwd, capture_output=True, check=True)
         json_: list | dict = json.loads(result.stdout)
 
     ################################################################################################
@@ -124,4 +117,6 @@ def _ingest_analysis(
     s_from: str = tool_configuration.module_name
     if tool_configuration.module_name != analysis:
         s_from += f":{analysis}"
-    print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
+    # from rich import print
+    # print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
+    log.info(f"Ingested {num:>5,d} results from {s_from:10s} as of {scan.as_of_display()}")

@@ -1,20 +1,18 @@
 """Ingest json data after running 'cloc' tool."""
 
-import logging
+import os
 from pathlib import Path
 
 from mq.tools.cloc.models import Cloc
 from mq.tools.base import Scan
 
-log = logging.getLogger(__name__)
-
 
 def ingest(scan: Scan, data: dict) -> int:
     def _json_to_row(fn_: str, cloc_result: dict) -> Cloc:
         fn_path = Path(fn_)
-        assert fn_path.name
+        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         return Cloc(
-            dir=fn_path.parent,
+            directory=fn_path.parent,
             filename=fn_path.name,
             lines_blank=cloc_result["blank"],
             lines_code=cloc_result["code"],
