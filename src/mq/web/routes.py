@@ -59,11 +59,11 @@ def register(args, rt):
         """HTMX endpoint to update content based on project selection."""
         # Update your data fetching based on selected project
         # For now, just re-render with the project parameter
-        from mq.tools.cloc.report_web import render_current_status, render_history
+        from mq.tools.cloc.report_web import render_accordion_levels, render_history_chart
 
         return (
-            *render_current_status(request, project),
-            *render_history(request, project),
+            *render_accordion_levels(request, project),
+            *render_history_chart(request, project),
         )
 
     ################################################################################

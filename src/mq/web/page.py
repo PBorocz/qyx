@@ -42,13 +42,34 @@ STYLE = """
        color: #6c757d;
    }
 
-   /* Section container (ie. border) */
-   .div {
+   /* Our simple "section" container (ie. border) */
+   .bordered {
        border: 1px solid #dee2e6;
        border-radius: 0.5rem;
        padding: 0rem;
        background: white;
-   }
+    }
+
+    th[role=columnheader]:not(.no-sort) {
+        cursor: pointer;
+    }
+    th[role=columnheader]:not(.no-sort):after {
+        content: '';
+        float: right;
+        margin-top: 0.2em;
+        margin-left: 0.25em;
+        font-size: 0.7em;
+        visibility: hidden;
+    }
+    th[aria-sort=ascending]:not(.no-sort):after {
+        content: '↑';
+        visibility: visible;
+    }
+    th[aria-sort=descending]:not(.no-sort):after {
+        content: '↓';
+        visibility: visible;
+    }
+
 """
 
 
@@ -81,6 +102,8 @@ def render_page(request, title, active_page, *main_page_content):
             ft.Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
             ft.Script(src="https://kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js"),
             ft.Script(src="https://unpkg.com/htmx.org@1.9.10"),
+            ft.Script(src="https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js"),
+            ft.Script(src="https://unpkg.com/tablesort@5.3.0/dist/sorts/tablesort.number.min.js"),
             ft.Style(STYLE),
             ft.Title(f"MQ-{title}"),
             lang="en",
