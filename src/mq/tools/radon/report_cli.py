@@ -324,23 +324,28 @@ def _cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Complexity", justify="left")
     for timestamp in sorted(timestamps):
         table.add_column(timestamps_formatted[timestamp], justify="right")
-    table.add_column("Delta", footer=f"{roc:.2f}%")
+    table.add_column("Delta")
 
-    t_row = ["Complexity"]
-    for timestamp in sorted(timestamps):
-        t_row.append(f"{transposed['complexity'][timestamp]:.2f}")
+    print(roc)
+    for entity_type, values in transposed.items():
+        t_row = [entity_type]
+        for timestamp in sorted(timestamps):
+            t_row.append(f"{values[timestamp]:.2f}")
 
-    t_value = ""
-    if roc > 0.01:
-        color = COLORS["negative"]
-        t_value = f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]"
+        t_value = ""
+        roc_ = roc.get(entity_type, 0)
+        if roc_ > 0.01:
+            color = COLORS["negative"]
+            t_value = f"[{color}][bold]{roc_:+.2f}%[/bold][/{color}]"
+        elif roc_ < -0.01:
+            color = COLORS["positive"]
+            t_value = f"[{color}][bold]{roc_:+.2f}%[/bold][/{color}]"
+        else:
+            t_value = ""
 
-    elif roc < -0.01:
-        color = COLORS["positive"]
-        t_value = f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]"
+        t_row.append(t_value)
 
-    t_row.append(t_value)
-    table.add_row(*t_row)
+        table.add_row(*t_row)
 
     cli_console.print(table)
 
@@ -412,13 +417,13 @@ def _hal_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def _hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, grand_totals, rocs, roc_gt = query_hal(args, "h", project=project)
+    timestamps, transposed, rocs = query_hal(args, "h", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
-    table = cli_table(title="RADON-HAL Results Over Time", show_footer=True)
-    table.add_column("Metric", justify="left", footer="-")
+    table = cli_table(title="RADON-HAL Results Over Time")
+    table.add_column("Metric", justify="left")
     for timestamp in sorted(timestamps):
-        table.add_column(timestamps_formatted[timestamp], justify="right", footer=f"{grand_totals[timestamp]:.2f}")
-    table.add_column("Delta", footer=f"{roc_gt:.2f}%")
+        table.add_column(timestamps_formatted[timestamp], justify="right")
+    table.add_column("Delta")
 
     for attr, dt_rows in transposed.items():
         t_row = [attr]

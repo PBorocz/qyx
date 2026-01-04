@@ -81,7 +81,7 @@ def register(args, rt):
 
         return (
             *render_accordion_levels(request, s_project_id=project, s_analysis=analysis),
-            # *render_history_chart(request, project),
+            *render_history_chart(request, s_project_id=project, s_analysis=analysis),
         )
 
     @rt("/partials/radon_set_analysis")
@@ -91,7 +91,7 @@ def register(args, rt):
 
         return (
             *render_accordion_levels(request, s_project_id=project, s_analysis=analysis),
-            # *render_history_chart(request, project),
+            *render_history_chart(request, s_project_id=project, s_analysis=analysis),
         )
 
     ################################################################################

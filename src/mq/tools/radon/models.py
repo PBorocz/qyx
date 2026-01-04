@@ -84,38 +84,37 @@ class RadonHal(BaseResultsModel):
     """Radon "HAL" metric storage."""
 
     # fmt: off
-    h1		       = IntegerField(help_text="Total distinct operators")
-    h2		       = IntegerField(help_text="Total distinct operands")
-    N1		       = IntegerField(help_text="Total operators in file")
-    N2		       = IntegerField(help_text="Total operands in file")
-    program_vocabulary = IntegerField(help_text="Total vocabulary (h = h1 + h2)")
-    program_length     = IntegerField(help_text="Total length (N = N1 + N2)")
-    calculated_length  = FloatField(help_text="(see wikipedia page!)")
-    volume             = FloatField(help_text="Total volume (V = N log2 h)")
-    difficulty         = FloatField(help_text="Average difficulty across functions (D = ((h1/2) * (N2/h2)))")
-    effort             = FloatField(help_text="Total effort (E = D * V)")
-    time               = FloatField(help_text="Total time (T = (E / 18) in seconds)")
-    bugs               = FloatField(help_text="Estimated bugs for file (B = V / 3000)")
+    h1		       = IntegerField () # See below for descriptions...
+    h2		       = IntegerField ()
+    N1		       = IntegerField ()
+    N2		       = IntegerField ()
+    program_vocabulary = IntegerField ()
+    program_length     = IntegerField ()
+    calculated_length  = FloatField   ()
+    volume             = FloatField   ()
+    difficulty         = FloatField   ()
+    effort             = FloatField   ()
+    time               = FloatField   ()
+    bugs               = FloatField   ()
     # fmt:
 
     @classmethod
-    def attrs(cls) -> list[str]:
+    def attrs()
         """Return a list of the attributes/metrics for the model (display, attr, type)."""
         # fmt: off
-        #
         return (
-            ("h1"                 , "h1"                 , "int"  ),
-            ("h2"                 , "h2"                 , "int"  ),
-            ("N1"                 , "N1"                 , "int"  ),
-            ("N2"                 , "N2"                 , "int"  ),
-            ("Program Vocabulary" , "program_vocabulary" , "int"  ),
-            ("Program Length"     , "program_length"     , "int"  ),
-            ("Calculated Length"  , "calculated_length"  , "float"),
-            ("Volume"             , "volume"             , "float"),
-            ("Difficulty"         , "difficulty"         , "float"),
-            ("Effort"             , "effort"             , "float"),
-            ("Time"               , "time"               , "float"),
-            ("Bugs"               , "bugs"               , "float"),
+            ("Estimated Bugs For File (V / 3000)"          , "bugs"               , "float"),
+            ("Total Time (E / 18 seconds)"                 , "time"               , "float"),
+            ("Total Effort (E = D * V)"                    , "effort"             , "float"),
+            ("Average Difficulty (D = ((h1/2) * (N2/h2)))" , "difficulty"         , "float"),
+            ("Volume (N log2 h))"                          , "volume"             , "float"),
+            ("Calculated Length"                           , "calculated_length"  , "float"),
+            ("Program Length (N = N1 + N2)"                , "program_length"     , "int"  ),
+            ("Program Vocabulary (h = h1 + h2)"            , "program_vocabulary" , "int"  ),
+            ("Total Operands in File (N2)"                 , "N2"                 , "int"  ),
+            ("Total Operators in File (N1)"                , "N1"                 , "int"  ),
+            ("Total Distinct Operands (h2)"                , "h2"                 , "int"  ),
+            ("Total Distinct Operators (h1)"               , "h1"                 , "int"  ),
         )
         # fmt: on
 
@@ -435,14 +434,12 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
     ################################################################################################
     timestamps = [result.timestamp for result in query]
     transposed = defaultdict(lambda: defaultdict(dict))
-    grand_totals = defaultdict(int)
     for result in query:
         total = 0
         for _, attr, _ in RadonHal.attrs():
             value = getattr(result, attr)
             transposed[attr][result.timestamp] = value
             total += value  # Calculate grand totals for each timestamp as we go
-        grand_totals[result.timestamp] += total
 
     # Calculate rate of change of last 2 entries..
     rocs = dict()
@@ -455,14 +452,7 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
         else:
             rocs[attr] = 0.00
 
-    if len(timestamps) > 1:
-        roc_gt = rate_of_change_percentage(
-            grand_totals[timestamps[-2]],
-            grand_totals[timestamps[-1]],
-        )
-    else:
-        roc_gt = 0.00
-    return timestamps, transposed, grand_totals, rocs, roc_gt
+    return timestamps, transposed, rocs
 
 
 def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
@@ -612,15 +602,15 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 .order_by(Scan.as_of.desc())
                 .limit(args.options.last)
             )
-
             query = (
                 RadonCc.select(
                     Scan.as_of.alias("timestamp"),
+                    RadonCc.entity_type,
                     fn.AVG(RadonCc.complexity).alias("complexity"),
                 )
                 .join(Scan)
                 .where(Scan.id.in_(scans))
-                .group_by(Scan.as_of)
+                .group_by(Scan.as_of, RadonCc.entity_type)
                 .order_by(Scan.as_of)
                 .objects()
             )
@@ -628,21 +618,21 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
             ################################################################################################
             # Transpose (to get timestamps *across* instead of down and calculate grand totals)
             ################################################################################################
-            timestamps = [result.timestamp for result in query]
+            timestamps = list({result.timestamp for result in query})
             transposed = defaultdict(lambda: defaultdict(dict))
             for result in query:
-                transposed["complexity"][result.timestamp] = result.complexity
+                transposed[result.entity_type][result.timestamp] = result.complexity
 
-            # Calculate rate of change of last 2 entries..
+            # Calculate rate of change of last 2 entries for each entity type
+            rocs = dict()
             if len(timestamps) > 1:
-                roc = rate_of_change_percentage(
-                    transposed["complexity"][timestamps[-2]],
-                    transposed["complexity"][timestamps[-1]],
-                )
-            else:
-                roc = 0.00
+                for entity_type, values_by_timestamp in transposed.items():
+                    rocs[entity_type] = rate_of_change_percentage(
+                        values_by_timestamp[timestamps[-2]],
+                        values_by_timestamp[timestamps[-1]],
+                    )
 
-            return timestamps, transposed, roc
+            return timestamps, transposed, rocs
 
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")

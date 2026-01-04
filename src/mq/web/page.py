@@ -7,10 +7,17 @@ STYLE = """
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
    :root {
+      --pico-font-size: 80%;
       --pico-font-family: 'Inter', sans-serif;
       --pico-primary: #2563eb;
       --pico-primary-hover: #1d4ed8;
    }
+
+   /* Get the accordian "arrow" to display right after the text instead of right-aligned. */
+   details summary {
+      max-width: fit-content;
+   }
+
 
    /* Make "small"...well small! */
    small {

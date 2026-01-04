@@ -2,15 +2,12 @@
 
 import logging
 from argparse import Namespace
-from datetime import datetime
 
-from pygal import DateTimeLine
-from pygal.style import Style
 from fasthtml import common as fh
 
-from mq.tools.base import Project, Scan
-
 import mq.tools.radon.report_web_renderers as renderers
+from mq.tools.base import Project, Scan
+from mq.tools.radon.models import RadonHal
 from mq.web.page import render_page
 
 log = logging.getLogger("uvicorn")
@@ -54,10 +51,10 @@ def render_selectors(request):
     # Convert our project(s) into selector items..
     ############################################################################################
     analyses = (
-        ("raw", "Code Counts"),
-        ("hal", "Halstead"),
-        ("mi", "Maintainability"),
         ("cc", "Cyclomatic Complexity"),
+        ("mi", "Maintainability Index"),
+        ("raw", "Raw Metrics"),
+        ("hal", "Halstead Complexity Measures"),
     )
     fh_select_analyses = [fh.Option(description, value=value) for value, description in analyses]
 
@@ -168,53 +165,74 @@ def render_level_3(args: Namespace, scan: Scan):
 ################################################################################################
 # History
 ################################################################################################
-def render_history_chart(request, s_project_id: str = None): ...
+def render_history_chart(request, s_project_id: str = None, s_analysis: str = None):
+    args = request.app.state.args
+    project = Project.get(Project.id == int(s_project_id))
 
+    match s_analysis.lower():
+        case "cc":
+            single = True
+            chart = renderers.cc_h(args, project)
+        case "hal":
+            single = False
+            charts = renderers.hal_h(args, project)
+        case "mi":
+            single = True
+            chart = renderers.mi_h(args, project)
+        case "raw":
+            single = True
+            chart = renderers.raw_h(args, project)
+        case _:
+            raise RuntimeError(f"Sorry, unrecognised {s_analysis=}")
 
-# def render_history_chart(request, s_project_id: str = None):
-#     # Create Pygal chart
-#     if not s_project_id:
-#         return fh.Section()
-#     project = Project.get(Project.id == int(s_project_id))
-#     args = request.app.state.args
-#     args.options.last = 999  # Override to get ALL the data we have!
-#     _, rows, _ = query(args, "history", project=project)
+    if single:
+        return fh.Section(
+            fh.H1("History", style="margin-top: 1rem;"),
+            fh.Div(
+                fh.NotStr(chart.render().decode("utf-8")),
+                cls="bordered",
+            ),
+        )
 
-#     # FIXME: Make this common across all tools!
-#     custom_style = Style(
-#         background="transparent",
-#         font_family="Inter",
-#         guide_stroke_color="#cccccc",  # Lighter minor lines
-#         guide_stroke_dasharray="2,4",  # Different dash for minor
-#         guide_stroke_width=0.5,  # Thinner minor lines
-#         major_guide_stroke_color="#333333",  # Darker major lines
-#         major_guide_stroke_dasharray="6,6",  # Dashed major lines
-#         major_guide_stroke_width=2,  # Thicker major lines
-#         transition="400ms ease-in",
-#     )
+    # Halstead gets special treatment due to the number of metrics available:
+    fh_sections = [
+        fh.H1("History...", style="margin-top: 1rem;"),
+        fh.Form(
+            fh.Fieldset(
+                fh.Select(
+                    *[fh.Option(t_attr[0].split("(")[0], value=t_attr[1]) for t_attr in RadonHal.attrs()],
+                    onchange="showChart(this.value)",  # this.value/value "h1", "N1", "bugs", etc.
+                    style="max-width: 300px; margin-bottom: 2rem;",
+                ),
+            ),
+        ),
+        fh.Script("""
+            function showChart(metric) {
+                // Hide all charts
+                document.querySelectorAll('[id^="metric-"]').forEach(chart => {
+                    // console.log('Hiding:', chart.id);
+                    chart.style.display = 'none';
+                });
 
-#     # FIXME: Make a bunch of these COMMON across all tools!
-#     chart = DateTimeLine(
-#         y_title="Radon ...",
-#         dots_size=1,
-#         height=500,
-#         show_legend=False,
-#         style=custom_style,
-#         tooltip_border_radius=10,
-#         x_label_rotation=45,  # Angle labels to prevent overlap
-#         x_labels_major_every=2,  # Show every 5th label
-#         x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
-#     )
-#     datetime_values = [(datetime.fromisoformat(ts_), count) for ts_, count in rows.items()]
+                // Show selected chart
+                const chartId = 'metric-' + metric;
+                // console.log('Looking for:', chartId);
 
-#     chart.add("-count-", datetime_values)
+                const selectedChart = document.getElementById(chartId);
+                // console.log('Found chart:', selectedChart);
 
-#     svg_chart = chart.render()  # Render as SVG and return bytes
-
-#     return fh.Section(
-#         fh.H1("History", style="margin-top: 1rem;"),
-#         fh.Div(
-#             fh.NotStr(svg_chart.decode("utf-8")),
-#             cls="bordered",
-#         ),
-#     )
+                if (selectedChart) {
+                    selectedChart.style.display = 'block';
+                }
+            }
+        """),
+    ]
+    for metric, chart in charts.items():
+        fh_sections.append(
+            fh.Div(
+                fh.NotStr(chart.render().decode("utf-8")),
+                id=f"metric-{metric}",
+                style=f"display: {'block' if metric == 'bugs' else 'none'};",
+            ),
+        )
+    return fh.Section(*fh_sections)
