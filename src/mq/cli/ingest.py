@@ -7,6 +7,8 @@ from argparse import Namespace
 from datetime import datetime, UTC
 from typing import Any, Callable, Iterator
 
+from rich.console import Console
+
 from mq.tools import generate_ta_pairs
 from mq.tools.base import AbstractModuleConfiguration, Project, Request, Scan
 from mq.utils.git import get_git_commit_hash, git_commits
@@ -35,13 +37,16 @@ def ingest(args: Namespace) -> None:
 
 def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:
     if request.from_git():
+        console = Console()
         for repo_path, commit_date, commit_hash in git_commits(args):
+            console.print(f"[bold cyan]Processing...[/] {commit_date.strftime('%Y-%m-%dT%H:%M:%S')}", end="\r")
             yield Namespace(
                 as_git=True,
                 cwd=repo_path,
                 as_of=commit_date,
                 hash=commit_hash,
             )
+        console.print("\n[bold green]✓ Done![/]")
     else:
         yield Namespace(
             as_git=False,
@@ -73,7 +78,7 @@ def _ingest_analysis(
                 )
                 .get()
             )
-            log.info(
+            log.debug(
                 f"Skipping...we've already scanned {scan.tool}:{scan.analysis} "
                 f"as of: {scan.as_of} obo {scan.git_commit_hash[:8]}",
             )
