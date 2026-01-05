@@ -120,6 +120,13 @@ shell = """
   uv run mq report --analysis cloc --level 2 --options percentage
   uv run mq report --analysis cloc --level h
 
+  uv run mq report --analysis fxtd
+  uv run mq report --analysis fxtd --level 0
+  uv run mq report --analysis fxtd --level 1
+  uv run mq report --analysis fxtd --level 2
+  uv run mq report --analysis fxtd --level h
+  uv run mq report --analysis fxtd --level h --options last:4
+
   uv run mq report --analysis ruff
   uv run mq report --analysis ruff --level 0
   uv run mq report --analysis ruff --level 1

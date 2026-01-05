@@ -154,7 +154,7 @@ def render_level_2(args: Namespace, scan: Scan):
     t_head = fh.Tr(
         fh.Th("Rule", scope="col", style="text-align: left"),
         fh.Th("File [line]", scope="col", style="text-align: left"),
-        fh.Th("Message", scope="col", style="text-align: right"),
+        fh.Th("Message", scope="col", style="text-align: left"),
     )
 
     t_body = []
@@ -162,7 +162,7 @@ def render_level_2(args: Namespace, scan: Scan):
         t_row = fh.Tr(
             fh.Td(row.rule_code, style="text-align: left"),
             fh.Td(f"{row.directory}/{row.filename} [{row.line}]", style="text-align: left"),
-            fh.Td(row.message, style="text-align: right"),
+            fh.Td(row.message, style="text-align: left"),
         )
         t_body.append(t_row)
 

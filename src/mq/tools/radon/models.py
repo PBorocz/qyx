@@ -99,7 +99,7 @@ class RadonHal(BaseResultsModel):
     # fmt:
 
     @classmethod
-    def attrs():
+    def attrs(cls):
         """Return a list of the attributes/metrics for the model (display, attr, type)."""
         # fmt: off
         return (
