@@ -1,13 +1,15 @@
 """..."""
 
+import json
 import os
 from pathlib import Path
+from typing import Any
 
 from mq.tools.base import Scan
 from mq.tools.ruff.models import Ruff
 
 
-def ingest(scan: Scan, data: list) -> int:
+def ingest(scan: Scan, data: Any) -> int:
     def _json_to_row(ruff_result: dict) -> Ruff:
         fn_path = Path(ruff_result["filename"])
         fn_path = Path(os.path.relpath(fn_path, scan.cwd))
@@ -22,7 +24,7 @@ def ingest(scan: Scan, data: list) -> int:
         )
 
     # Parse
-    rows = [_json_to_row(check) for check in data]
+    rows = [_json_to_row(check) for check in json.loads(data)]
 
     # Save
     for row in rows:

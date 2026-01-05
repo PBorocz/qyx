@@ -1,13 +1,15 @@
 """..."""
 
+import json
 import os
 from pathlib import Path
+from typing import Any
 
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from mq.tools.base import Scan
 
 
-def ingest_raw(scan: Scan, data: dict[str, int]) -> int:
+def ingest_raw(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
         fn_path = Path(os.path.relpath(fn_path, scan.cwd))
@@ -23,14 +25,15 @@ def ingest_raw(scan: Scan, data: dict[str, int]) -> int:
             single_comments=radon_result["single_comments"],
         )
 
-    rows = [_json_to_row(fn_, results) for fn_, results in data.items()]
+    json_ = json.loads(data)
+    rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
     for row in rows:
         row.scan = scan.id
         row.save()
     return len(rows)
 
 
-def ingest_mi(scan: Scan, data: dict[str, int]) -> int:
+def ingest_mi(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
         fn_path = Path(os.path.relpath(fn_path, scan.cwd))
@@ -41,17 +44,19 @@ def ingest_mi(scan: Scan, data: dict[str, int]) -> int:
             rank=radon_result["rank"],
         )
 
-    rows = [_json_to_row(fn_, results) for fn_, results in data.items()]
+    json_ = json.loads(data)
+    rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
     for row in rows:
         row.scan = scan.id
         row.save()
     return len(rows)
 
 
-def ingest_cc(scan: Scan, data: dict[str, int]) -> int:
+def ingest_cc(scan: Scan, data: Any) -> int:
     mapping = dict(F="Function", M="Method", C="Class")
     rows = []
-    for fn_, entities in data.items():
+    json_ = json.loads(data)
+    for fn_, entities in json_.items():
         fn_path = Path(fn_)
         fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         for entity in entities:
@@ -74,10 +79,11 @@ def ingest_cc(scan: Scan, data: dict[str, int]) -> int:
     return len(rows)
 
 
-def ingest_hal(scan: Scan, data: dict[str, int]) -> int:
+def ingest_hal(scan: Scan, data: Any) -> int:
     # Have to do this nested to reflect json file structure:
     count = 0
-    for fn_, results in data.items():
+    json_ = json.loads(data)
+    for fn_, results in json_.items():
         total = results["total"]
         fn_path = Path(fn_)
         fn_path = Path(os.path.relpath(fn_path, scan.cwd))

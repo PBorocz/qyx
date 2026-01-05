@@ -1,6 +1,7 @@
 """Fxtd Models and Queries."""
 
 from argparse import Namespace
+from collections import defaultdict
 
 from peewee import fn, CharField, IntegerField, JOIN
 
@@ -58,6 +59,7 @@ def query(
             )
 
         case "h" | "history":
+            # FIXME: This query is COMMON across a bunch of stuff...
             scans = (
                 Scan.select()
                 .where(
@@ -75,30 +77,35 @@ def query(
             rows = (
                 Scan.select(
                     Scan.as_of.alias("timestamp"),
+                    Fxtd.type,
                     fn.COUNT(Fxtd.id).alias("count"),
                 )
                 .join(Fxtd, JOIN.LEFT_OUTER)
-                .where(
-                    Scan.id.in_(scans),
+                .where(Scan.id.in_(scans))
+                .group_by(
+                    Scan.as_of,
+                    Fxtd.type,
                 )
-                .group_by(Scan.as_of)
                 .order_by(Scan.as_of)
                 .objects()
             )
-            timestamps = [row.timestamp for row in rows]
 
             ################################################################################################
             # Transpose (to get timestamps *across* instead of down and calculate grand totals)
             ################################################################################################
-            transposed = {row.timestamp: row.count for row in rows}
+            timestamps = list({result.timestamp for result in rows})
+            transposed = defaultdict(lambda: defaultdict(dict))
+            for row in rows:
+                if row.count:
+                    transposed[row.type][row.timestamp] = row.count
 
             # Calculate ROC if we can..
+            rocs = dict()
             if len(timestamps) > 1:
-                roc = rate_of_change_percentage(
-                    transposed[timestamps[-2]],
-                    transposed[timestamps[-1]],
-                )
-            else:
-                roc = 0.00
+                for type, values_by_timestamp in transposed.items():
+                    rocs[type] = rate_of_change_percentage(
+                        values_by_timestamp[timestamps[-2]],
+                        values_by_timestamp[timestamps[-1]],
+                    )
 
-            return timestamps, transposed, roc
+            return timestamps, transposed, rocs

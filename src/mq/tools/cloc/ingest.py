@@ -1,13 +1,15 @@
 """Ingest json data after running 'cloc' tool."""
 
+import json
 import os
 from pathlib import Path
+from typing import Any
 
 from mq.tools.cloc.models import Cloc
 from mq.tools.base import Scan
 
 
-def ingest(scan: Scan, data: dict) -> int:
+def ingest(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, cloc_result: dict) -> Cloc:
         fn_path = Path(fn_)
         fn_path = Path(os.path.relpath(fn_path, scan.cwd))
@@ -20,7 +22,9 @@ def ingest(scan: Scan, data: dict) -> int:
         )
 
     # Parse..
-    rows = [_json_to_row(fn_, check) for fn_, check in data.items() if fn_ not in ("header", "SUM")]
+    json_ = json.loads(data)
+
+    rows = [_json_to_row(fn_, check) for fn_, check in json_.items() if fn_ not in ("header", "SUM")]
 
     # Save
     for row in rows:

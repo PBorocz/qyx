@@ -1,12 +1,11 @@
 """Master ingest logic."""
 
-import json
 import logging
 import subprocess
 import sys
 from argparse import Namespace
 from datetime import datetime, UTC
-from typing import Callable, Iterator
+from typing import Any, Callable, Iterator
 
 from mq.tools import generate_ta_pairs
 from mq.tools.base import AbstractModuleConfiguration, Project, Request, Scan
@@ -95,21 +94,21 @@ def _ingest_analysis(
     # Get the tool's data EITHER directly from stdin OR by running it!
     ################################################################################################
     if args.stdin:
-        # Pipeline mode - parse JSON from stdin:
-        json_: list | dict = json.loads(sys.stdin.read())
+        # Pipeline mode - get from stdin:
+        datum: Any = sys.stdin.read()
     else:
         # Direct mode - run the tool's command ourselves
         command: list[str] = tool_configuration.get_ingest_command(args.project, analysis)
         log.debug(f"Executing {' '.join(command)=} in {scan_request.cwd}")
 
         result = subprocess.run(command, cwd=scan_request.cwd, capture_output=True, check=True)
-        json_: list | dict = json.loads(result.stdout)
+        datum = result.stdout
 
     ################################################################################################
     # Parse & save the results received...
     ################################################################################################
     ingest_method: Callable = tool_configuration.get_ingest_method(analysis)
-    num: int = ingest_method(scan, json_)
+    num: int = ingest_method(scan, datum)
 
     ################################################################################################
     # Report status

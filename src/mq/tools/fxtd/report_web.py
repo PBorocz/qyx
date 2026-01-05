@@ -1,4 +1,4 @@
-"""Report data obo running 'cloc' tool."""
+"""Report data obo running 'fxtd' tool/script."""
 
 from argparse import Namespace
 from datetime import datetime
@@ -9,7 +9,7 @@ from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 
-from mq.tools.cloc.models import query
+from mq.tools.fxtd.models import query
 from mq.web.page import render_page
 
 
@@ -31,6 +31,7 @@ def render(request, name, config):
 ################################################################################################
 # Project Selector
 ################################################################################################
+# FIXME: This is VERY COMMON across all tools, refactor to make it so!
 def render_project_selector(request):
     projects = Project.select().order_by(Project.name)
     if not projects:
@@ -53,7 +54,7 @@ def render_project_selector(request):
                 *fh_select_items,
                 name="project",
                 aria_label="Select your project...",
-                hx_get="/partials/cloc_set_project",  # HTMX endpoint
+                hx_get="/partials/fxtd_set_project",  # HTMX endpoint
                 hx_target="#project-content",  # Where to update
                 hx_swap="innerHTML",  # How to update
                 hx_trigger="load, change",  # Trigger on page load *AND* selection change
@@ -70,111 +71,57 @@ def render_accordion_levels(request, s_project_id: str = None):
         return fh.Section()
     args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
-    scan = Scan.get_most_recent(project, "cloc", "cloc")
+    scan = Scan.get_most_recent(project, "fxtd", "fxtd")
 
     return fh.Section(
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display(full=True)}")),
         fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level_0(args, scan)),
-        fh.Details(fh.Summary("By Directory"), name="details", *render_level_1(args, scan)),
+        fh.Details(fh.Summary("By Type"), name="details", *render_level_1(args, scan)),
         fh.Details(fh.Summary("By File"), name="details", *render_level_2(args, scan)),
         cls="bordered",
     )
 
 
 def render_level_0(args: Namespace, scan: Scan):
-    results = query(args, "0", scan=scan)
+    row = query(args, "0", scan=scan)
+
+    t_body = [
+        fh.Tr(
+            fh.Td("FixMe's & ToDo's Encountered", style="text-align: left"),
+            fh.Td(f"{row.count:,d}", style="text-align: right"),
+        ),
+    ]
     return (
         fh.Table(
-            fh.Thead(
-                fh.Tr(
-                    fh.Th("Lines of Code", scope="col", style="text-align: right"),
-                    fh.Th("Comment Lines", scope="col", style="text-align: right"),
-                    fh.Th("Blank Lines", scope="col", style="text-align: right"),
-                    fh.Th("TOTAL", scope="col", style="text-align: right"),
-                ),
-            ),
-            fh.Tbody(
-                fh.Tr(
-                    fh.Td(f"{results.lines_code:,d}", style="text-align: right"),
-                    fh.Td(f"{results.lines_comment:,d}", style="text-align: right"),
-                    fh.Td(f"{results.lines_blank:,d}", style="text-align: right"),
-                    fh.Td(f"{results.lines_total:,d}", style="text-align: right"),
-                ),
-            ),
+            fh.Tbody(*t_body),
+            fh.Tfoot(),
+            id="fxtd_0",
         ),
+        fh.Script("new Tablesort(document.getElementById('fxtd_0'));"),
     )
 
 
 def render_level_1(args: Namespace, scan: Scan):
-    grand_total = query(args, "0", scan=scan)
-    detail_rows = query(args, "1", scan=scan)
+    summary = query(args, "0", scan=scan)
+    results = query(args, "1", scan=scan)
 
     t_head = fh.Tr(
-        fh.Th("Directory", scope="col", style="text-align: left"),
-        fh.Th("Lines of Code", scope="col", style="text-align: right"),
-        fh.Th("Comment Lines", scope="col", style="text-align: right"),
-        fh.Th("Blank Lines", scope="col", style="text-align: right"),
-        fh.Th("TOTAL", scope="col", style="text-align: right"),
-    )
-
-    t_body = []
-    for result in detail_rows:
-        t_row = fh.Tr(
-            fh.Td(result.directory, style="text-align: left"),
-            fh.Td(f"{result.lines_code:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_comment:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_blank:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_total:,d}", style="text-align: right"),
-        )
-        t_body.append(t_row)
-
-    t_total = fh.Tr(
-        fh.Td("TOTAL", style="text-align: left"),
-        fh.Td(f"{grand_total.lines_code:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total.lines_comment:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total.lines_blank:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total.lines_total:,d}", style="text-align: right"),
-    )
-
-    return (
-        fh.Table(
-            fh.Thead(t_head),
-            fh.Tbody(*t_body),
-            fh.Tfoot(t_total),
-            id="level_1",
-        ),
-        fh.Script("new Tablesort(document.getElementById('level_1'));"),
-    )
-
-
-def render_level_2(args: Namespace, scan: Scan):
-    results, column_totals, grand_total = query(args, "2", scan=scan)
-
-    t_head = fh.Tr(
-        fh.Th("File", scope="col", style="text-align: left"),
-        fh.Th("Lines of Code", scope="col", style="text-align: right"),
-        fh.Th("Comment Lines", scope="col", style="text-align: right"),
-        fh.Th("Blank Lines", scope="col", style="text-align: right"),
-        fh.Th("TOTAL", scope="col", style="text-align: right"),
+        fh.Th("Type", scope="col", style="text-align: left"),
+        fh.Th("Count", scope="col", style="text-align: right"),
     )
 
     t_body = []
     for result in results:
         t_row = fh.Tr(
-            fh.Td(f"{result.directory}/{result.filename}", style="text-align: left"),
-            fh.Td(f"{result.lines_code:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_comment:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_blank:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_total:,d}", style="text-align: right"),
+            fh.Td(result.type, style="text-align: left"),
+            fh.Td(f"{result.count:,d}", style="text-align: right"),
         )
         t_body.append(t_row)
 
     t_total = fh.Tr(
         fh.Td("TOTAL", style="text-align: left"),
-        fh.Td(f"{column_totals['lines_code']:,d}", style="text-align: right"),
-        fh.Td(f"{column_totals['lines_comment']:,d}", style="text-align: right"),
-        fh.Td(f"{column_totals['lines_blank']:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total:,d}", style="text-align: right"),
+        fh.Td(f"{summary.count:,d}", style="text-align: right"),
+        fh.Td(""),
     )
 
     return (
@@ -182,9 +129,37 @@ def render_level_2(args: Namespace, scan: Scan):
             fh.Thead(t_head),
             fh.Tbody(*t_body),
             fh.Tfoot(t_total),
-            id="level_2",
+            id="fxtd_1",
         ),
-        fh.Script("new Tablesort(document.getElementById('level_2'));"),
+        fh.Script("new Tablesort(document.getElementById('fxtd_1'));"),
+    )
+
+
+def render_level_2(args: Namespace, scan: Scan):
+    rows = query(args, "2", scan=scan)
+
+    t_head = fh.Tr(
+        fh.Th("Type", scope="col", style="text-align: center"),
+        fh.Th("File [line]", scope="col", style="text-align: left"),
+        fh.Th("Message", scope="col", style="text-align: left"),
+    )
+
+    t_body = []
+    for row in rows:
+        t_row = fh.Tr(
+            fh.Td(row.type, style="text-align: center"),
+            fh.Td(f"{row.directory}/{row.filename} [{row.line}]", style="text-align: left"),
+            fh.Td(row.message, style="text-align: left"),
+        )
+        t_body.append(t_row)
+
+    return (
+        fh.Table(
+            fh.Thead(t_head),
+            fh.Tbody(*t_body),
+            id="fxtd_2",
+        ),
+        fh.Script("new Tablesort(document.getElementById('fxtd_2'));"),
     )
 
 
@@ -196,10 +171,12 @@ def render_history_chart(request, s_project_id: str = None):
     if not s_project_id:
         return fh.Section()
     project = Project.get(Project.id == int(s_project_id))
+
     args = request.app.state.args
     args.options.last = 999  # Override to get ALL the data we have!
-    _, rows, _, _, _, _ = query(args, "history", project=project)
+    timestamps, transposed, rocs = query(args, "history", project=project)
 
+    # FIXME: Make this common across all tools!
     custom_style = Style(
         background="transparent",
         font_family="Inter",
@@ -212,25 +189,22 @@ def render_history_chart(request, s_project_id: str = None):
         transition="400ms ease-in",
     )
 
+    # FIXME: Make a bunch of these COMMON across all tools!
     chart = DateTimeLine(
-        y_title="Lines",
+        y_title="Issues",
         dots_size=1,
         height=500,
         legend_at_bottom=True,
-        legend_at_bottom_columns=3,
         style=custom_style,
         tooltip_border_radius=10,
         x_label_rotation=45,  # Angle labels to prevent overlap
         x_labels_major_every=2,  # Show every 5th label
         x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
     )
-    datetime_values_cd = [(datetime.fromisoformat(row.timestamp), row.total_code) for row in rows]
-    datetime_values_cm = [(datetime.fromisoformat(row.timestamp), row.total_comment) for row in rows]
-    datetime_values_bl = [(datetime.fromisoformat(row.timestamp), row.total_blank) for row in rows]
-
-    chart.add("Code", datetime_values_cd)
-    chart.add("Comments", datetime_values_cm)
-    chart.add("Blanks", datetime_values_bl)
+    for metric in ("FIXME", "TODO"):
+        dt_values = transposed[metric]
+        datetime_values = [(datetime.fromisoformat(ts_), count) for ts_, count in dt_values.items()]
+        chart.add(metric, datetime_values)
 
     svg_chart = chart.render()  # Render as SVG and return bytes
 

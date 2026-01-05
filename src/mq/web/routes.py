@@ -9,7 +9,6 @@ from fasthtml import common as fh
 from mq.web.page import render_page
 
 log = logging.getLogger("uvicorn")
-# log = logging.getLogger(__name__)
 
 
 def register(args, rt):
@@ -28,36 +27,46 @@ def register(args, rt):
             fh.P("This is the home page. Use the navbar above to navigate.", cls="text-gray-600"),
         )
 
-    @rt("/about")
-    def about(request):
-        return render_page(
-            request,
-            "About",
-            "About",
-            fh.H1("About Us", cls="text-3xl font-bold mb-4"),
-            fh.P("Learn more about our application here.", cls="text-gray-600 mb-2"),
-            fh.P("We build amazing things with FastHTML!", cls="text-gray-600"),
-        )
+    # @rt("/about")
+    # def about(request):
+    #     return render_page(
+    #         request,
+    #         "About",
+    #         "About",
+    #         fh.H1("About Us", cls="text-3xl font-bold mb-4"),
+    #         fh.P("Learn more about our application here.", cls="text-gray-600 mb-2"),
+    #         fh.P("We build amazing things with FastHTML!", cls="text-gray-600"),
+    #     )
 
-    @rt("/contact")
-    def contact(request):
-        return render_page(
-            request,
-            "Contact",
-            "Contact",
-            fh.H1("Contact Us", cls="text-3xl font-bold mb-4"),
-            fh.P("Get in touch with us:", cls="text-gray-600 mb-4"),
-            fh.Ul(
-                fh.Li("Email: hello@example.com"),
-                fh.Li("Phone: (555) 123-4567"),
-                cls="list-disc list-inside text-gray-600",
-            ),
-        )
+    # @rt("/contact")
+    # def contact(request):
+    #     return render_page(
+    #         request,
+    #         "Contact",
+    #         "Contact",
+    #         fh.H1("Contact Us", cls="text-3xl font-bold mb-4"),
+    #         fh.P("Get in touch with us:", cls="text-gray-600 mb-4"),
+    #         fh.Ul(
+    #             fh.Li("Email: hello@example.com"),
+    #             fh.Li("Phone: (555) 123-4567"),
+    #             cls="list-disc list-inside text-gray-600",
+    #         ),
+    #     )
 
     @rt("/partials/cloc_set_project")
     def cloc_set_project(request, project: str):
         """HTMX endpoint to update content based on project selection."""
         from mq.tools.cloc.report_web import render_accordion_levels, render_history_chart
+
+        return (
+            *render_accordion_levels(request, project),
+            *render_history_chart(request, project),
+        )
+
+    @rt("/partials/fxtd_set_project")
+    def fxtd_set_project(request, project: str):
+        """HTMX endpoint to update content based on project selection."""
+        from mq.tools.fxtd.report_web import render_accordion_levels, render_history_chart
 
         return (
             *render_accordion_levels(request, project),
@@ -98,7 +107,7 @@ def register(args, rt):
     # Dynamic routes (ie. for each tool)
     ################################################################################
     for tool_name, tool_config in args.tools.items():
-        # Create a closure to capture tool_name and tool_config
+        # Create a closure to capture tool_name and tool_configuration
         def make_tool_route(name, config):
             @rt(f"/{name}")
             def render_tool_page_method(request):

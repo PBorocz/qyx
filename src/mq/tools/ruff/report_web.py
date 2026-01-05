@@ -89,8 +89,7 @@ def render_accordion_levels(request, s_project_id: str = None):
     scan = Scan.get_most_recent(project, "ruff", "ruff")
 
     return fh.Section(
-        fh.H1("Current Status"),
-        fh.H4(f"As Of {scan.as_of_display(full=False)}"),
+        fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display(full=True)}")),
         fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level_0(args, scan)),
         fh.Details(fh.Summary("By Rule"), name="details", *render_level_1(args, scan)),
         fh.Details(fh.Summary("By File"), name="details", *render_level_2(args, scan)),

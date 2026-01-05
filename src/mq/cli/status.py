@@ -8,6 +8,7 @@ from rich import print
 
 from mq.tools.base import Project, Request, Scan
 from mq.tools.cloc.models import Cloc
+from mq.tools.fxtd.models import Fxtd
 from mq.tools.radon.models import RadonCc, RadonHal, RadonMi, RadonRaw
 from mq.tools.ruff.models import Ruff
 
@@ -45,6 +46,8 @@ def _get_scan_count(scan: Scan) -> str:  # noqa: C901
             # FIXME: Do this dynamically instead of hard-coding models?
             case "cloc":
                 count = Cloc.filter(Cloc.scan == scan).count()
+            case "fxtd":
+                count = Fxtd.filter(Fxtd.scan == scan).count()
             case "ruff":
                 count = Ruff.filter(Ruff.scan == scan).count()
             case "radon":

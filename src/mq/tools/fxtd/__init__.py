@@ -1,5 +1,8 @@
 """FixMe ToDo Module Configuration."""
 
+import logging
+from pathlib import Path
+
 from importlib import import_module
 from typing import Callable
 
@@ -15,7 +18,7 @@ class Configuration(AbstractModuleConfiguration):
     def __init__(self):
         """..."""
         super(Configuration, self).__init__(
-            module_name="FixMeToDo",
+            module_name="fxtd",
             models=(Fxtd,),
             analyses=("fxtd",),
             results_required=False,  # In this case,  Scans without data ARE valid!
@@ -23,13 +26,15 @@ class Configuration(AbstractModuleConfiguration):
 
     def get_ingest_command(self, project_path: str, _) -> list[str]:
         """Return the command sent to subprocess to directly perform the scan operation."""
-        return [
-            "ruff",
-            "check",
-            "--exit-zero",
-            "--output-format=json",
-            project_path,
-        ]
+        script_dir = Path(__file__).parent
+        logging.debug(f"{script_dir=}")
+
+        fxtd_script = script_dir / "fxtd.sh"
+        logging.debug(f"{fxtd_script=}")
+
+        assert fxtd_script.exists()
+        return [str(fxtd_script)]
+        # return [str(fxtd_script), project_path]
 
     def get_ingest_method(self, _) -> Callable:
         """Return the ingest method to parse and save the output."""

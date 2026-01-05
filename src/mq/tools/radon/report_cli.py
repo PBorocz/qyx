@@ -326,7 +326,6 @@ def _cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta")
 
-    print(roc)
     for entity_type, values in transposed.items():
         t_row = [entity_type]
         for timestamp in sorted(timestamps):
