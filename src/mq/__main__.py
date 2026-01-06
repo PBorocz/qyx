@@ -26,7 +26,7 @@ def get_args():
     parser_root.add_argument(
         "--log-level",
         default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        choices=["debug", "info", "warning", "error", "critical"],
         help="Set logging level",
     )
 
@@ -36,10 +36,16 @@ def get_args():
     ################################################################################
     # Status command
     ################################################################################
-    subparsers.add_parser(
+    parse_status = subparsers.add_parser(
         "status",
         parents=[parser_root],
         help="Report current status.",
+    )
+    parse_status.add_argument(
+        "-l",
+        "--level",
+        help="Level to report on, e.g. 0 summary, 1 (detail)",
+        default="0",
     )
 
     ################################################################################

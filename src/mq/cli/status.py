@@ -1,6 +1,7 @@
 """CLI report rendering obo 'cloc' tool."""
 
 from argparse import Namespace
+from collections import defaultdict
 
 from peewee import InterfaceError
 from rich.tree import Tree
@@ -11,6 +12,7 @@ from mq.tools.cloc.models import Cloc
 from mq.tools.fxtd.models import Fxtd
 from mq.tools.radon.models import RadonCc, RadonHal, RadonMi, RadonRaw
 from mq.tools.ruff.models import Ruff
+from mq.utils import timestamp_display
 
 
 def show_status(args: Namespace) -> None:
@@ -24,17 +26,43 @@ def show_status(args: Namespace) -> None:
             s_request = f"Request at {request.timestamp_display(full=True)} {source} [{request.id}]"
             scan_tree = project_tree.add(s_request)
 
-            for scan in Scan.select().order_by(Scan.as_of).where(Scan.request == request):
-                s_scan_count = _get_scan_count(scan)
-                s_analysis = scan.tool_analysis_display()
-                delimiter = "asOf" if request.from_git() else "@  "
-                s_as_of_display = f"{delimiter} {scan.as_of_display(full=True)}"
-                s_scan = f"Scan -> {s_analysis} {s_scan_count:4s} {s_as_of_display} [{scan.id}]"
-
-                scan_tree.add(s_scan)
+            scans_for_request = Scan.select().order_by(Scan.as_of).where(Scan.request == request)
+            if request.from_git() and int(args.level) == 0:
+                scan_tree = scan_tree_summary(request, scans_for_request, scan_tree)
+            else:
+                scan_tree = scan_tree_detailed(request, scans_for_request, scan_tree)
 
     if tree.children:
         print(tree)
+
+
+def scan_tree_summary(request, scans_for_request, scan_tree):
+    total_requests = len(scans_for_request)
+
+    dates_ = [scan.as_of for scan in scans_for_request]
+    max_date, min_date = max(dates_), min(dates_)
+    s_max_date, s_min_date = timestamp_display(max_date), timestamp_display(min_date)
+    ta_tree = scan_tree.add(f"Scan -> {total_requests:,d} from {s_min_date} to {s_max_date}")
+
+    # Count up the total number of scans by tool/analysis:
+    counts = defaultdict(int)
+    for scan in scans_for_request:
+        s_analysis = scan.tool_analysis_display()
+        counts[s_analysis] += 1
+    for s_analysis, count in sorted(counts.items()):
+        ta_tree.add(f"{s_analysis.title()} -> {count:,d} scans")
+
+    scan_tree.add(ta_tree)
+
+
+def scan_tree_detailed(request, scans_for_request, scan_tree):
+    for scan in scans_for_request:
+        s_scan_count = _get_scan_count(scan)
+        s_analysis = scan.tool_analysis_display()
+        delimiter = "asOf" if request.from_git() else "@  "
+        s_as_of_display = f"{delimiter} {scan.as_of_display(full=True)}"
+        s_scan = f"Scan -> {s_analysis} {s_scan_count:4s} {s_as_of_display} [{scan.id}]"
+        scan_tree.add(s_scan)
 
 
 # FIXME: Make not as complex! ;-)
