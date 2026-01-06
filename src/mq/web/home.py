@@ -30,14 +30,13 @@ def render(request):
                 name="projects",
                 open=True,
                 *(
-                    fh.Section(*content[(1, "cloc", "cloc")], cls="bordered"),
-                    fh.Section(*content[(1, "ruff", "ruff")], cls="bordered"),
-                    fh.Section(*content[(1, "radon", "cc")], cls="bordered"),
-                    fh.Section(*content[(1, "radon", "hal")], cls="bordered"),
-                    fh.Section(*content[(1, "radon", "mi")], cls="bordered"),
-                    fh.Section(*content[(1, "radon", "raw")], cls="bordered"),
+                    *content[(1, "cloc", "cloc")],
+                    *content[(1, "ruff", "ruff")],
+                    *content[(1, "radon", "cc")],
+                    *content[(1, "radon", "hal")],
+                    *content[(1, "radon", "mi")],
+                    *content[(1, "radon", "raw")],
                 ),
-                cls="bordered",
             ),
         ),
         fh.Section(
@@ -53,7 +52,6 @@ def render(request):
                     *content[(1, "radon", "raw")],
                 ),
             ),
-            cls="bordered",
         ),
     )
 

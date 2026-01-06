@@ -266,9 +266,9 @@ class Scan(BaseModel):
         else:
             return f"{self.tool:5s}:{self.analysis:3}"
 
-    def as_of_display(self) -> str:
+    def as_of_display(self, **kwargs) -> str:
         """Return the scan AsOf date nicely formatted in local time."""
-        return dt_to_display(self.as_of)
+        return dt_to_display(self.as_of, **kwargs)
 
 
 class BaseResultsModel(pw.Model):

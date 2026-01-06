@@ -27,6 +27,7 @@ STYLE = """
    /* Make tables more compact */
    table {
       font-size: 0.9rem;
+      width: auto;
    }
    table th, table td {
       padding: 0.2rem 0.5rem;
