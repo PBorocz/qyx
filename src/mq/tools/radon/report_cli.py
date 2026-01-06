@@ -248,6 +248,9 @@ def _mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 ################################################################################################
 def _cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     rows = query_cc(args, "0", scan)
+
+    print(f"{scan.id=}")
+    print(f"{len(rows)}")
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")

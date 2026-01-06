@@ -7,6 +7,7 @@ import types
 from fasthtml import common as fh
 
 from mq.web.page import render_page
+from mq.web.home import render as render_home
 
 log = logging.getLogger("uvicorn")
 
@@ -19,13 +20,7 @@ def register(args, rt):
     ################################################################################
     @rt("/")
     def get(request):
-        return render_page(
-            request,
-            "Home",
-            "Home",
-            fh.H1("Code Quality Data Dashboard", cls="text-3xl font-bold mb-4"),
-            fh.P("This is the home page. Use the navbar above to navigate.", cls="text-gray-600"),
-        )
+        return render_home(request)
 
     # @rt("/about")
     # def about(request):

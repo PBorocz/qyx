@@ -117,12 +117,11 @@ def query(
             transposed = {row.timestamp: row.count for row in rows}
 
             # Calculate ROC if we can..
+            roc = 0.00
             if len(timestamps) > 1:
-                roc = rate_of_change_percentage(
-                    transposed[timestamps[-2]],
-                    transposed[timestamps[-1]],
-                )
-            else:
-                roc = 0.00
+                value_2 = transposed.get(timestamps[-2])
+                value_1 = transposed.get(timestamps[-1])
+                if value_2 is not None and value_1 is not None:
+                    roc = rate_of_change_percentage(value_2, value_1)
 
             return timestamps, transposed, roc

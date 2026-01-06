@@ -94,7 +94,7 @@ def query(
             # Transpose (to get timestamps *across* instead of down and calculate grand totals)
             ################################################################################################
             timestamps = list({result.timestamp for result in rows})
-            transposed = defaultdict(lambda: defaultdict(dict))
+            transposed = defaultdict(dict)
             for row in rows:
                 if row.count:
                     transposed[row.type][row.timestamp] = row.count
@@ -102,10 +102,10 @@ def query(
             # Calculate ROC if we can..
             rocs = dict()
             if len(timestamps) > 1:
-                for type, values_by_timestamp in transposed.items():
-                    rocs[type] = rate_of_change_percentage(
-                        values_by_timestamp[timestamps[-2]],
-                        values_by_timestamp[timestamps[-1]],
-                    )
+                for type_, values_by_timestamp in transposed.items():
+                    value_2 = values_by_timestamp.get(timestamps[-2])
+                    value_1 = values_by_timestamp.get(timestamps[-1])
+                    if value_2 is not None and value_1 is not None:
+                        rocs[type_] = rate_of_change_percentage(value_2, value_1)
 
             return timestamps, transposed, rocs

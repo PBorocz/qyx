@@ -1,12 +1,15 @@
 """..."""
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from mq.tools.base import Scan
+
+log = logging.getLogger(__name__)
 
 
 def ingest_raw(scan: Scan, data: Any) -> int:
@@ -60,10 +63,17 @@ def ingest_cc(scan: Scan, data: Any) -> int:
         fn_path = Path(fn_)
         fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         for entity in entities:
+            try:
+                entity_type = mapping.get(entity["type"][0].upper())
+            except TypeError:
+                # Radon encountered an error parsing the file..
+                log.error(f"Radon unable to parse: {fn_}[{scan.git_commit_hash[:8]}] {entities=}")
+                continue
+
             row = RadonCc(
                 directory=fn_path.parent,
                 filename=fn_path.name,
-                entity_type=mapping[entity["type"][0].upper()],
+                entity_type=entity_type,
                 entity_name=entity["name"],
                 line_start=entity["lineno"],
                 line_end=entity["endline"],
