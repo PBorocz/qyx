@@ -10,7 +10,7 @@ from mq import setup_logging, setup_sqlite
 
 from mq.cli.admin.clear import clear
 from mq.cli.admin.delete import delete
-from mq.cli.admin.housekeeping import housekeeping
+from mq.cli.admin.clean import clean
 from mq.cli.admin.trim import trim
 from mq.cli.ingest import ingest
 from mq.cli.report import report
@@ -242,6 +242,8 @@ def main():
             serve(args)
         case "admin":
             match args.admin_command:
+                case "clean":
+                    clean(args)
                 case "trim":
                     trim(args)
                 case "clear":
@@ -254,4 +256,4 @@ def main():
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
     # Do database housekeeping
-    housekeeping(args)
+    clean(args)

@@ -1,7 +1,6 @@
 """Common utilities."""
 
 import logging
-import os
 import zoneinfo
 from collections import defaultdict
 from datetime import datetime
@@ -10,25 +9,8 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
-def remove_common_prefixes(rows: list) -> list:
-    """Remove common prefix from a list of file paths."""
-    if not rows:
-        return []
-
-    paths = [row.filename for row in rows]
-    if not paths:
-        return []
-
-    # Find the common prefix
-    common_prefix = os.path.commonpath(paths)
-
-    for row in rows:
-        row.filename = os.path.relpath(row.filename, common_prefix)
-    return rows
-
-
-def timestamp_display(timestamp: str, full: bool = False) -> str:
-    """..."""
+def dt_to_local(timestamp: str) -> str:
+    """Convert a db-based timestamp to local."""
     # Parse the string timestamp from database
     dt_utc = datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else timestamp
 
@@ -36,14 +18,19 @@ def timestamp_display(timestamp: str, full: bool = False) -> str:
     if dt_utc.tzinfo is None:
         dt_utc = dt_utc.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
 
-    # Convert to local timezone
-    dt_local = dt_utc.astimezone()
+    # Return as local timezone
+    return dt_utc.astimezone()
 
-    # Choose format based on whether it's today
-    if not full and dt_local.date() == datetime.now().date():
+
+def dt_to_display(timestamp: str, collapse_today=False) -> str:
+    """..."""
+    # Parse the string timestamp from database to local time.
+    dt_local = dt_to_local(timestamp)
+
+    # Choose format based on whether it's today and we want to collapse today's date.
+    format = "%Y-%m-%d %H:%M%p"  # Default format..
+    if collapse_today and dt_local.date() == datetime.now().date():
         format = "%I:%M%p"
-    else:
-        format = "%Y-%m-%d %H:%M%p"
 
     return dt_local.strftime(format)
 

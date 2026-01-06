@@ -21,14 +21,14 @@ class Configuration(AbstractModuleConfiguration):
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
 
-    def get_ingest_command(self, project_path: str, _) -> list[str]:
+    def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
         """Return the command sent to subprocess to directly perform a Ruff operation."""
         return [
             "ruff",
             "check",
             "--exit-zero",
             "--output-format=json",
-            project_path,
+            relative,
         ]
 
     def get_ingest_method(self, _) -> Callable:

@@ -8,7 +8,7 @@ from mq.tools.base import AbstractModuleConfiguration, Project, Request, Scan
 log = logging.getLogger(__name__)
 
 
-def housekeeping(args: Namespace) -> None:
+def clean(args: Namespace) -> None:
     """Clean out extraneous Scans that don't have data and Projects that don't have Scans."""
     _delete_extraneous_scans(args)
     _delete_extraneous_requests(args)
@@ -16,7 +16,7 @@ def housekeeping(args: Namespace) -> None:
 
 
 def _delete_extraneous_scans(args: Namespace) -> None:
-    """Delete orphaned Sequests, ie. that don't have results associated with 'em."""
+    """Delete orphaned Scan, ie. that don't have results associated with 'em."""
 
     def __clean_scans(tool_name: str, tool_config: AbstractModuleConfiguration) -> None:
         # log.debug(f"Cleanup {tool_name=}")

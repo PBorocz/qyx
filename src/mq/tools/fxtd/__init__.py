@@ -24,17 +24,12 @@ class Configuration(AbstractModuleConfiguration):
             results_required=False,  # In this case,  Scans without data ARE valid!
         )
 
-    def get_ingest_command(self, project_path: str, _) -> list[str]:
+    def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
         """Return the command sent to subprocess to directly perform the scan operation."""
         script_dir = Path(__file__).parent
-        logging.debug(f"{script_dir=}")
-
         fxtd_script = script_dir / "fxtd.sh"
-        logging.debug(f"{fxtd_script=}")
-
-        assert fxtd_script.exists()
-        return [str(fxtd_script)]
-        # return [str(fxtd_script), project_path]
+        assert fxtd_script.exists(), f"Sorry, we expected to find 'fxtd.sh' at {script_dir}!"
+        return [str(fxtd_script), str(absolute)]
 
     def get_ingest_method(self, _) -> Callable:
         """Return the ingest method to parse and save the output."""

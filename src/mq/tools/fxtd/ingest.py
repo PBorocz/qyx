@@ -14,7 +14,6 @@ def ingest(scan: Scan, data: Any) -> int:
             return None
         (type_, dir_file, line, message) = s_result.split("|", 3)
         fn_path = Path(dir_file)
-        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         return Fxtd(
             directory=fn_path.parent,
             filename=fn_path.name,

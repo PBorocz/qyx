@@ -11,7 +11,7 @@ from pathlib import Path
 
 import peewee as pw
 
-from mq.utils import detect_project_name, timestamp_display
+from mq.utils import detect_project_name, dt_to_display
 
 
 log = logging.getLogger(__name__)
@@ -207,10 +207,6 @@ class Request(BaseModel):
         """Return true if this request is based on a git repository history."""
         return self.git_repo is not None
 
-    def timestamp_display(self, full: bool = False) -> str:
-        """..."""
-        return timestamp_display(self.timestamp)
-
 
 class Scan(BaseModel):
     """A 'Scan' is the execution of a particular tool at a particular time obo of a specific request."""
@@ -263,16 +259,16 @@ class Scan(BaseModel):
             return run
         return None
 
-    def as_of_display(self, full: bool = False) -> str:
-        """..."""
-        return timestamp_display(self.as_of)
-
     def tool_analysis_display(self) -> str:
         """Return a nicely formatted tool + analysis."""
         if self.tool == self.analysis:
             return f"{self.tool:9s}"
         else:
             return f"{self.tool:5s}:{self.analysis:3}"
+
+    def as_of_display(self) -> str:
+        """Return the scan AsOf date nicely formatted in local time."""
+        return dt_to_display(self.as_of)
 
 
 class BaseResultsModel(pw.Model):
@@ -281,6 +277,6 @@ class BaseResultsModel(pw.Model):
     # fmt: off
     id        = pw.AutoField()
     scan      = pw.ForeignKeyField(Scan, backref="modules", on_delete="CASCADE")
-    directory = pw.CharField(help_text="eg. src/mq/")
+    directory = pw.CharField(help_text="eg. src/mq/") # Relative to project's root!
     filename  = pw.CharField(help_text="eg. foo.py")
     # fmt: on

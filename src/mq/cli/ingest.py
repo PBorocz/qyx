@@ -5,6 +5,7 @@ import subprocess
 import sys
 from argparse import Namespace
 from datetime import datetime, UTC
+from pathlib import Path
 from typing import Any, Callable, Iterator
 
 from rich.console import Console
@@ -50,7 +51,7 @@ def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]
     else:
         yield Namespace(
             as_git=False,
-            cwd=args.project,
+            cwd=Path(args.project),
             as_of=datetime.now(UTC),
             hash=get_git_commit_hash(),
         )
@@ -99,14 +100,37 @@ def _ingest_analysis(
     # Get the tool's data EITHER directly from stdin OR by running it!
     ################################################################################################
     if args.stdin:
-        # Pipeline mode - get from stdin:
+        # PIPELINE mode - data was run externally and is passed in to us directly via stdin:
         datum: Any = sys.stdin.read()
     else:
-        # Direct mode - run the tool's command ourselves
-        command: list[str] = tool_configuration.get_ingest_command(args.project, analysis)
+        # DIRECT mode - run the tool's command ourselves
+        command: list[str] = tool_configuration.get_ingest_command(
+            relative=args.project,  # eg. "." usually
+            absolute=scan_request.cwd,  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
+            analysis=analysis,
+        )
         log.debug(f"Executing {' '.join(command)=} in {scan_request.cwd}")
 
-        result = subprocess.run(command, cwd=scan_request.cwd, capture_output=True, check=True)
+        try:
+            # log.info(f"{scan_request.as_of=}")
+            # log.info(f"{scan_request.hash[:8]=}")
+            # log.info(f"{scan_request.cwd=}")
+            # log.info(f"{command=}")
+            # log.info(f"cwd exists: {scan_request.cwd.exists()}")
+            # log.info(
+            #     f"cwd contents: {list(scan_request.cwd.iterdir()) if scan_request.cwd.exists() else 'DOES NOT EXIST'}"
+            # )
+            result = subprocess.run(command, cwd=str(scan_request.cwd), capture_output=True, check=True)
+        except subprocess.CalledProcessError as exc:
+            log.error(f"{str(exc)}")
+            log.error(f"{exc.stdout.decode()=}")
+            log.error(f"{exc.stderr.decode()=}")
+            log.error(f"{scan_request.as_of=}")
+            log.error(f"{scan_request.hash[:8]=}")
+            log.error(f"{scan_request.cwd=}")
+            log.error(f"{command=}")
+            sys.exit(1)
+
         datum = result.stdout
 
     ################################################################################################
@@ -123,4 +147,4 @@ def _ingest_analysis(
         s_from += f":{analysis}"
     # from rich import print
     # print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
-    log.info(f"Ingested {num:>5,d} results from {s_from:10s} as of {scan.as_of_display()}")
+    log.info(f"{scan.as_of_display()} {s_from:10s}: {num:>5,d} results.")

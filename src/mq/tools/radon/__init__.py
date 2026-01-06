@@ -20,7 +20,7 @@ class Configuration(AbstractModuleConfiguration):
             analyses=("cc", "hal", "mi", "raw"),
         )
 
-    def get_ingest_command(self, project_path: str, analysis: str) -> list[str]:
+    def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
         """Return the command sent to subprocess to directly perform an ingest operation."""
         assert analysis, "Sorry, we need a sub_module here!"
         return [
@@ -28,7 +28,7 @@ class Configuration(AbstractModuleConfiguration):
             "radon",
             analysis,
             "--json",
-            project_path,
+            relative,
         ]
 
     def get_ingest_method(self, analysis: str) -> Callable:

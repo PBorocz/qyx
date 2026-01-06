@@ -15,7 +15,6 @@ log = logging.getLogger(__name__)
 def ingest_raw(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
-        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         return RadonRaw(
             directory=fn_path.parent,
             filename=fn_path.name,
@@ -39,19 +38,23 @@ def ingest_raw(scan: Scan, data: Any) -> int:
 def ingest_mi(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
         fn_path = Path(fn_)
-        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
-        return RadonMi(
-            directory=fn_path.parent,
-            filename=fn_path.name,
-            mi=radon_result["mi"],
-            rank=radon_result["rank"],
-        )
+        try:
+            return RadonMi(
+                directory=fn_path.parent,
+                filename=fn_path.name,
+                mi=radon_result["mi"],
+                rank=radon_result["rank"],
+            )
+        except KeyError:
+            log.error(f"Unable to parse radon mi: {fn_}[{scan.git_commit_hash[:8]}] {radon_result=}")
+            return None
 
     json_ = json.loads(data)
     rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
     for row in rows:
-        row.scan = scan.id
-        row.save()
+        if row:  # Skip the entries that had errors..
+            row.scan = scan.id
+            row.save()
     return len(rows)
 
 
@@ -61,13 +64,12 @@ def ingest_cc(scan: Scan, data: Any) -> int:
     json_ = json.loads(data)
     for fn_, entities in json_.items():
         fn_path = Path(fn_)
-        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         for entity in entities:
             try:
                 entity_type = mapping.get(entity["type"][0].upper())
             except TypeError:
                 # Radon encountered an error parsing the file..
-                log.error(f"Radon unable to parse: {fn_}[{scan.git_commit_hash[:8]}] {entities=}")
+                log.error(f"Unable to parse radon cc: {fn_}[{scan.git_commit_hash[:8]}] {entities=}")
                 continue
 
             row = RadonCc(
@@ -94,9 +96,14 @@ def ingest_hal(scan: Scan, data: Any) -> int:
     count = 0
     json_ = json.loads(data)
     for fn_, results in json_.items():
-        total = results["total"]
+        try:
+            total = results["total"]
+        except KeyError:
+            # Radon encountered an error parsing the file..
+            log.error(f"Unable to parse radon hal: {fn_}[{scan.git_commit_hash[:8]}] {results=}")
+            continue
+
         fn_path = Path(fn_)
-        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         radon_hal = RadonHal(
             scan=scan.id,
             directory=fn_path.parent,
