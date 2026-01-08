@@ -37,9 +37,9 @@ def ingest(args: Namespace) -> None:
 
 
 def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:
-    if request.from_git():
+    if request.is_git:
         console = Console()
-        for repo_path, commit_date, commit_hash in git_commits(args):
+        for repo_path, commit_date, commit_hash in git_commits(request.arg_normalised):
             console.print(f"[bold cyan]Processing...[/] {commit_date.strftime('%Y-%m-%dT%H:%M:%S')}", end="\r")
             yield Namespace(
                 as_git=True,
@@ -51,7 +51,7 @@ def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]
     else:
         yield Namespace(
             as_git=False,
-            cwd=Path(args.project),
+            cwd=Path(request.arg_normalised),
             as_of=datetime.now(UTC),
             hash=get_git_commit_hash(),
         )
@@ -64,10 +64,45 @@ def _ingest_analysis(
     analysis: str,
     scan_request: Namespace,
 ) -> None:
-    if args.git:
-        ################################################################################################
-        # Have we already done this scan? If so, save to skip...
-        ################################################################################################
+    """Do the specified analysis for respective tool, running the respective command, parsing and saving results!."""
+    # Get the scan (if necessary) on whose behalf the results will be stored.
+    if not (scan := _get_ingest_scan(args, request, tool_configuration, analysis, scan_request)):
+        return
+
+    ################################################################################################
+    # Get the results of running the tool/analysis against the respective state of code!
+    ################################################################################################
+    datum = _get_ta_results(args, request, tool_configuration, analysis, scan_request)
+
+    ################################################################################################
+    # Parse & save the results received...
+    ################################################################################################
+    ingest_method: Callable = tool_configuration.get_ingest_method(analysis)
+    num: int = ingest_method(scan, datum)
+
+    ################################################################################################
+    # Report status
+    ################################################################################################
+    s_from: str = tool_configuration.module_name
+    if tool_configuration.module_name != analysis:
+        s_from += f":{analysis}"
+    # from rich import print
+    # print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
+    log.info(f"{scan.as_of_display()} {s_from:10s}: {num:>5,d} results.")
+
+
+def _get_ingest_scan(
+    args: Namespace,
+    request: Request,
+    tool_configuration: AbstractModuleConfiguration,
+    analysis: str,
+    scan_request: Namespace,
+) -> Scan | None:
+    """Return the appropriate (usually an new) scan instance."""
+    if request.is_git:
+        # For git projects, since we REUSE the same request over time,
+        # we don't want/need duplicate scans for the same request,
+        # tool, analysis and revision:
         try:
             scan = (
                 Scan.select()
@@ -83,7 +118,7 @@ def _ingest_analysis(
                 f"Skipping...we've already scanned {scan.tool}:{scan.analysis} "
                 f"as of: {scan.as_of} obo {scan.git_commit_hash[:8]}",
             )
-            return
+            return None
         except Scan.DoesNotExist:
             ...
 
@@ -96,17 +131,29 @@ def _ingest_analysis(
         as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
     )
 
-    ################################################################################################
-    # Get the tool's data EITHER directly from stdin OR by running it!
-    ################################################################################################
+    return scan
+
+
+def _get_ta_results(
+    args: Namespace,
+    request: Request,
+    tool_configuration: AbstractModuleConfiguration,
+    analysis: str,
+    scan_request: Namespace,
+) -> Any:
+    """Return the results associated with the tool/analysis, either from stdin or by running the respective tool."""
     if args.stdin:
+        ################################################################################################
         # PIPELINE mode - data was run externally and is passed in to us directly via stdin:
+        ################################################################################################
         datum: Any = sys.stdin.read()
     else:
+        ################################################################################################
         # DIRECT mode - run the tool's command ourselves
+        ################################################################################################
         command: list[str] = tool_configuration.get_ingest_command(
-            relative=args.project,  # eg. "." usually
-            absolute=scan_request.cwd,  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
+            relative=str(request.arg_raw),  # eg. "." usually
+            absolute=str(scan_request.cwd),  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
             analysis=analysis,
         )
         log.debug(f"Executing {' '.join(command)=} in {scan_request.cwd}")
@@ -133,18 +180,4 @@ def _ingest_analysis(
 
         datum = result.stdout
 
-    ################################################################################################
-    # Parse & save the results received...
-    ################################################################################################
-    ingest_method: Callable = tool_configuration.get_ingest_method(analysis)
-    num: int = ingest_method(scan, datum)
-
-    ################################################################################################
-    # Report status
-    ################################################################################################
-    s_from: str = tool_configuration.module_name
-    if tool_configuration.module_name != analysis:
-        s_from += f":{analysis}"
-    # from rich import print
-    # print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
-    log.info(f"{scan.as_of_display()} {s_from:10s}: {num:>5,d} results.")
+    return datum

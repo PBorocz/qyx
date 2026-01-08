@@ -5,6 +5,7 @@ import zoneinfo
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
 
@@ -108,64 +109,37 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     return {ts: __local(ts).strftime(fmt_) for ts in timestamps}
 
 
-# Potentially unused after Project refactor of 2025-12-24.
-# def generate_display_name(path_absolute: str) -> str:
-#     """Generate a human-friendly display name for the project."""
-#     # Try project name from config files
-#     if project_name := detect_project_name(path_absolute):
-#         return project_name
+def parse_path_arg(arg_path: str) -> tuple[str, str, bool]:
+    """Parse user input and return (normalised, display_string).
 
-#     # Use relative path if shorter and not too many levels up
-#     try:
-#         abs_path = Path(path_absolute)
-#         cwd = Path.cwd()
-#         rel_path = abs_path.relative_to(cwd)
+    Args:
+        arg_path: Command-line argument from user
 
-#         # Use relative if reasonable length and not too nested
-#         if len(str(rel_path)) < len(str(abs_path)) and len(rel_path.parts) <= 3:
-#             return str(rel_path)
-#     except ValueError:
-#         # abs_path is not relative to cwd
-#         pass
+    Returns:
+        tuple: (normalised, name)
+    """
+    # Check if it's a URL
+    if arg_path.startswith(("http://", "https://", "git@")):
+        normalised = arg_path
 
-#     # Fall back to directory name
-#     return Path(path_absolute).name
+        # Parse URL to get project name
+        if arg_path.startswith("git@"):
+            # Handle git@github.com:user/project.git format
+            project_part = arg_path.split(":")[-1]
+            name = project_part.rstrip("/").split("/")[-1].removesuffix(".git")
+        else:
+            parsed = urlparse(arg_path)
+            path_parts = parsed.path.rstrip("/").split("/")
+            name = path_parts[-1].removesuffix(".git")
 
+        return name, normalised, True
 
-def detect_project_name(arg_path: str) -> str | None:
-    """Detect Python project name from common config files."""
+    # It's a file path (relative or absolute or ".")
+    # Convert to absolute path
     path = Path(arg_path).resolve()
-    log.debug(f"{path=}")
+    normalised = str(path)
 
-    # Walk up the directory tree looking for project indicators
-    for parent in [path] + list(path.parents):
-        log.debug(f"-{parent=}")
+    # Get the last component of the path for display
+    name = path.name
 
-        # Git repository name
-        if (parent / ".git").exists():
-            log.debug(f"=matched git: {parent.name=}!")
-            return parent.name
-
-        # pyproject.toml
-        pyproject = parent / "pyproject.toml"
-        if pyproject.exists():
-            try:
-                import tomllib
-
-                with open(pyproject, "rb") as f:
-                    data = tomllib.load(f)
-                    if name := data.get("project", {}).get("name"):
-                        log.debug(f"=project.name from pyproject.toml: {name=}!")
-                        return name
-                    if name := data.get("tool", {}).get("poetry", {}).get("name"):
-                        log.debug(f"=tool.poetry.name from pyproject.toml: {name=}!")
-                        return name
-            except Exception:
-                pass
-
-        # setup.py fallback
-        if (parent / "setup.py").exists():
-            log.debug(f"=fallback to having setup.py: {parent.name=}!")
-            return parent.name
-
-    return None
+    return name, normalised, False

@@ -29,7 +29,7 @@ def clear(args: Namespace) -> None:
             cli_console.print("[blue]Ok, nothing done.[/blue]")
 
     if args.project:
-        if not (project := Project.get_by_identifier(args.project)):
+        if not (project := Project.find_from_args(args)):
             cli_console.print("[red]Sorry, unable to find project: {args.project}[/red]")
             return
 

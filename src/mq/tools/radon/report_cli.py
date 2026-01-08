@@ -25,7 +25,7 @@ RADON_SUB_TOOLS = ("raw", "mi", "hal", "cc")
 
 
 def report(args: Namespace, o_tool, analysis: str) -> None:
-    if not (project := Project.get_by_identifier(args.project)):
+    if not (project := Project.find_from_args(args)):
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
 
@@ -248,9 +248,6 @@ def _mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 ################################################################################################
 def _cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     rows = query_cc(args, "0", scan)
-
-    print(f"{scan.id=}")
-    print(f"{len(rows)}")
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")

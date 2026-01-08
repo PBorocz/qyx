@@ -103,7 +103,7 @@ def render_level_0(args: Namespace, scan: Scan):
         fh.Table(
             fh.Tbody(
                 fh.Tr(
-                    fh.Th("Issues", style="text-align: left"),
+                    fh.Th("Ruff Issues", style="text-align: left"),
                     fh.Td(f"{int(row.count):,d}", style="text-align: right"),
                 ),
             ),

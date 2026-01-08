@@ -7,11 +7,10 @@ import types
 from abc import ABC
 from argparse import Namespace
 from datetime import datetime, UTC
-from pathlib import Path
 
 import peewee as pw
 
-from mq.utils import detect_project_name, dt_to_display
+from mq.utils import dt_to_display, parse_path_arg
 
 
 log = logging.getLogger(__name__)
@@ -70,80 +69,53 @@ class BaseModel(pw.Model):
 
 
 class Project(BaseModel):
-    """Root of result storage, a 'project' is essentially just a project root directory.
-
-    We store this 3 ways:
-    - As the user entered it (relative or absolute), ie. both are possible:
-      1. "."
-      2. /user/me/development/projects/myproject
-
-    - As the absolute (ie. resolved) path, for the 2 cases above, this might be:
-      1. /user/me/development/projects/myproject
-      2. /user/me/development/projects/myproject
-
-    - As a "display" name for use in reporting
-      (this uses logic at creation time)
-    """
+    """Root of result storage, a 'project' is primarily just a project "name"."""
 
     id = pw.AutoField()
 
     name = pw.CharField(
-        help_text="Descriptive name of the project, either as assigned by the user or calculated.",
-    )
-    input_path = pw.CharField(
-        help_text="Path as entered by user, eg '.' or '../src', '/abs/path').",
-        null=True,
-    )
-    input_git_url = pw.CharField(
-        help_text="Github repo url as entered by user, eg., 'https://github.com/foo/bar'",
-        null=True,
-    )
-    path_absolute = pw.CharField(
-        help_text="Resolved absolute path to project root directory (only available for input_path)",
+        help_text="Name of the project, used for display purposes and to match obo uniqueness.",
         unique=True,
-        null=True,
     )
+
     created = pw.DateTimeField(
         help_text="GMT/UTC datetime the project was created.",
         default=lambda: datetime.now(UTC),
     )
 
-    class Meta:
-        """Define peewee meta data."""
-
-        indexes = ((("name",), True),)
-
     @classmethod
-    def get_by_identifier(cls, arg_input: str) -> Project | None:
-        """Get the project using name or either input definition in Priority order!."""
-        for field in [cls.name, cls.input_path, cls.input_git_url]:
-            instance = cls.get_or_none(field == arg_input)
-            if instance:
-                return instance
-        return None
+    def find_from_args(cls, args: Namespace) -> Project | str:
+        """Get the project of the specified input name or path."""
+        if args.name:
+            name = args.name
+        else:
+            # No name provided...can we get the name from the path?
+            (name, _, _) = parse_path_arg(args.path)
+
+        # Can we find it?
+        if project := cls.get_or_none(cls.name == name):
+            return project
+
+        return name
 
     @classmethod
     def create_from_args(cls, args: Namespace) -> Project:
         """Get the project of the specified input path, even if we have to insert."""
-        if project := cls.get_by_identifier(args.project):
+        if project := cls.find_from_args(args):
             return project
 
-        name = detect_project_name(args.project)
-        if args.git:
-            instance = cls.create(name=name, input_git_url=args.project)
-            msg = "Created a new project obo Git url.."
-        else:
-            path_absolute = str(Path(args.project).resolve())
-            msg = "Created a new project obo input path.."
-            instance = cls.create(name=name, input_path=args.project, path_absolute=path_absolute)
-        log.debug(msg)
-        return instance
+        # Nope, create a new instance...
+        name = args.name if args.name else parse_path_arg(args.path)[0]
+        project = cls.create(name=name)
+        log.info(f"Created a new project: {name=}")
+        return project
 
 
 class Request(BaseModel):
     """A 'Request' captures the user desire to perform an analysis."""
 
     id = pw.AutoField()
+
     project = pw.ForeignKeyField(
         Project,
         backref="requests",
@@ -153,9 +125,17 @@ class Request(BaseModel):
         help_text="GMT/UTC datetime the ingest occurred",
         default=lambda: datetime.now(UTC),
     )
-    git_repo = pw.CharField(
-        help_text="If the source of this request was a git, what was it?",
-        null=True,
+
+    arg_raw = pw.CharField(
+        help_text="Project argument as entered by user, eg '.' or '../src', '/abs/path', 'https:...').",
+    )
+
+    arg_normalised = pw.CharField(
+        help_text="Arg_Normalised identifier for pathing (could be file path or git repo!)",
+    )
+
+    is_git = pw.BooleanField(
+        help_text="Is this a git project?",
     )
 
     class Meta:
@@ -164,16 +144,14 @@ class Request(BaseModel):
         indexes = ((("project", "timestamp"), True),)
 
     @classmethod
-    def create_from_args(cls, args: Namespace, project: Project) -> Request:
-        """Create a new request instance taking care to set the input based on CLI args."""
-        return cls.create(project=project, git_repo=args.git)
-
-    @classmethod
     def get_or_create(cls, args: Namespace, project: Project) -> Request:
         """Return the appropriate request instance, whether (back)filling a git history or new."""
-        if not args.git:
-            # For a NON git-based scan (ie. a directory), we create a new Request each time...
-            return cls.create_from_args(args, project)
+        (name, normalised, is_git) = parse_path_arg(args.path)
+
+        if not is_git:
+            # For a NON git-based scan (ie. a directory), we create a new Request each time, easy!!
+            log.debug("Creating new request this project...")
+            return cls.create_from_args(project, args, normalised, is_git)
 
         # Otherwise, we first look for the most recent git-based Request for this project.
         request = (
@@ -181,7 +159,7 @@ class Request(BaseModel):
             .order_by(Request.timestamp.asc())
             .where(
                 Request.project == project,
-                Request.git_repo.is_null(False),
+                Request.is_git,
             )
             .first()
         )
@@ -191,21 +169,18 @@ class Request(BaseModel):
             request.save()
         else:
             log.debug("No existing git request found for this project, creating a new one.")
-            request = cls.create_from_args(args, project)
+            request = cls.create_from_args(project, args, normalised, is_git)
         return request
 
-    # NOTE: IS THIS USED ANYMORE ANYWHERE?
-    # @classmethod
-    # def get_most_recent(cls, project: Project) -> Request | None:
-    #     """Find the most recent request for he specified project."""
-    #     query = Request.select().order_by(Request.timestamp.desc()).where(Request.project == project.id)
-    #     if run := query.first():
-    #         return run
-    #     return None
-
-    def from_git(self) -> bool:
-        """Return true if this request is based on a git repository history."""
-        return self.git_repo is not None
+    @classmethod
+    def create_from_args(cls, project: Project, args: Namespace, normalised: str, is_git: bool) -> Request:
+        """Create a new request instance on behalf of the specified Project."""
+        return cls.create(
+            project=project,
+            arg_raw=args.path,
+            arg_normalised=normalised,
+            is_git=is_git,
+        )
 
 
 class Scan(BaseModel):

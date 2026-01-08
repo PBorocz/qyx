@@ -7,16 +7,14 @@ import sys
 from rich import print
 
 from mq import setup_logging, setup_sqlite
-
 from mq.cli.admin.clear import clear
 from mq.cli.admin.delete import delete
 from mq.cli.admin.clean import clean
 from mq.cli.admin.trim import trim
 from mq.cli.ingest import ingest
 from mq.cli.report import report
-from mq.cli.status import show_status
-from mq.tools import split_arg_tool_analysis
-from mq.tools import setup_tools
+from mq.cli.status import status
+from mq.tools import setup_tools, split_arg_tool_analysis
 from mq.web.serve import serve
 
 
@@ -57,10 +55,14 @@ def get_args():
         help="Ingest code quality results from supported tools.",
     )
     parse_ingest.add_argument(
+        "-n",
+        "--name",
+        help="Project name, if not specified, will be determined from path.",
+    )
+    parse_ingest.add_argument(
         "-p",
-        "--project",
-        default=".",
-        help='Base path to project, defaults to "."',
+        "--path",
+        help="Path to work on, e.g. '.', '../src', '/abs/path', 'https:...').",
     )
     parse_ingest.add_argument(
         "-a",
@@ -74,10 +76,6 @@ def get_args():
         action="store_true",
         help="Read JSON from stdin instead of running command.",
     )
-    parse_ingest.add_argument(
-        "--git",
-        help="Ingest historically from the specified github repo.",
-    )
 
     ################################################################################
     # Report command
@@ -88,10 +86,9 @@ def get_args():
         help="Report on code quality for the specified (or all) projects.",
     )
     parse_report.add_argument(
-        "-p",
-        "--project",
-        default=".",
-        help='Base path to project, defaults to "."',
+        "-n",
+        "--name",
+        help="Project name, if not specified, will be determined from path.",
     )
     parse_report.add_argument(
         "-a",
@@ -127,11 +124,19 @@ def get_args():
     parse_serve.add_argument("--browser", action="store_true", help="Auto-open browser", default=False)
 
     ################################################################################
-    # Admin command
+    # Admin sub-commands
     ################################################################################
     parse_admin = subparsers.add_parser("admin", help="Administration commands")
     subparser_admin = parse_admin.add_subparsers(dest="admin_command", help="Administration subcommands")
 
+    ################################################################################
+    subparser_admin.add_parser(
+        "clean",
+        parents=[parser_root],
+        help="Clean extraneous fluff from db",
+    )
+
+    ################################################################################
     parse_trim = subparser_admin.add_parser(
         "trim",
         parents=[parser_root],
@@ -140,17 +145,20 @@ def get_args():
     parse_trim.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
     parse_trim.add_argument("-a", "--analysis", help="Analysis to trim data for, e.g. radon-cc, ruff, cloc etc.")
     # TODO: Implement this:
-    # parse_trim.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
+    # parse_trim.add_argument("-n", "--name", help='Name of project')
 
+    ################################################################################
     parse_clear = subparser_admin.add_parser(
         "clear",
         parents=[parser_root],
         help="Clear the database, either for all analyses (default) or a specific one.",
     )
     parse_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
-    parse_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
+    # TODO: Implement this:
+    # parse_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
     parse_clear.add_argument("-a", "--analysis", help="Optional, analysis to clear for, e.g. radon:cc, ruff, cloc etc.")
 
+    ################################################################################
     parse_delete = subparser_admin.add_parser(
         "delete",
         parents=[parser_root],
@@ -199,16 +207,46 @@ def parse_arg_option_str(options_str: str, defaults: dict = {}):
 
 def validate_args(args: argparse.Namespace) -> bool:
     """Validate arguments now that we've got everything setup."""
+    if args.command is None:
+        if not args.name and not args.path:
+            print("[red]Sorry! one of either [bold]-n/--name[/bold] or  [bold]-p/--project[/bold] is required")
+
     if "analysis" in args:
         tool, analysis, sub = split_arg_tool_analysis(args.tool_analysis)
         if tool not in args.tools:
             s_names = ", ".join(args.tools.keys())
             print(
                 f"[red]Sorry! analysis: [bold]{args.tool_analysis}[/bold] is not valid, "
-                f"tool must be one of {s_names}[/red]",
+                f"tool must be one of:[/red] [blue]{s_names}[/blue]",
             )
             return False
     return True
+
+
+def dispatch(args: argparse.Namespace) -> None:
+    match args.command:
+        case "ingest":
+            ingest(args)
+        case "report":
+            report(args)
+        case "status":
+            status(args)
+        case "serve":
+            serve(args)
+        case "admin":
+            match args.admin_command:
+                case "clean":
+                    clean(args)
+                case "trim":
+                    trim(args)
+                case "clear":
+                    clear(args)
+                case "delete":
+                    delete(args)
+                case _:
+                    raise RuntimeError("Sorry, invalid admin option selected, must be one of 'trim' or 'clear'")
+        case _:
+            raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
 
 def main():
@@ -231,29 +269,7 @@ def main():
     setup_sqlite(args)
 
     # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
-    match args.command:
-        case "ingest":
-            ingest(args)
-        case "report":
-            report(args)
-        case "status":
-            show_status(args)
-        case "serve":
-            serve(args)
-        case "admin":
-            match args.admin_command:
-                case "clean":
-                    clean(args)
-                case "trim":
-                    trim(args)
-                case "clear":
-                    clear(args)
-                case "delete":
-                    delete(args)
-                case _:
-                    raise RuntimeError("Sorry, invalid admin option selected, must be one of 'trim' or 'clear'")
-        case _:
-            raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
+    dispatch(args)
 
     # Do database housekeeping
     clean(args)

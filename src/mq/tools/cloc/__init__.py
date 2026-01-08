@@ -26,7 +26,7 @@ class Configuration(AbstractModuleConfiguration):
             "--by-file",
             "--json",
             "--exclude-dir=.venv",
-            relative,
+            absolute,
         ]
 
     def get_ingest_method(self, _) -> Callable:

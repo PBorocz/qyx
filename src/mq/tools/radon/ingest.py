@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any
 
@@ -13,30 +12,40 @@ log = logging.getLogger(__name__)
 
 
 def ingest_raw(scan: Scan, data: Any) -> int:
-    def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
+    def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(fn_)
-        return RadonRaw(
-            directory=fn_path.parent,
-            filename=fn_path.name,
-            loc=radon_result["loc"],
-            lloc=radon_result["lloc"],
-            sloc=radon_result["sloc"],
-            comments=radon_result["comments"],
-            multi=radon_result["multi"],
-            blank=radon_result["blank"],
-            single_comments=radon_result["single_comments"],
-        )
+        try:
+            return RadonRaw(
+                directory=fn_path.parent,
+                filename=fn_path.name,
+                loc=radon_result["loc"],
+                lloc=radon_result["lloc"],
+                sloc=radon_result["sloc"],
+                comments=radon_result["comments"],
+                multi=radon_result["multi"],
+                blank=radon_result["blank"],
+                single_comments=radon_result["single_comments"],
+            )
+        except KeyError:
+            log.error(f"Unable to parse radon raw: {fn_}[{scan.git_commit_hash[:8]}] {radon_result=}")
+            return None
 
-    json_ = json.loads(data)
+    try:
+        json_ = json.loads(data)
+    except json.decoder.JSONDecoderError as exc:
+        log.error(f"Unable to parse radon raw scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
+        return 0
+
     rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
     for row in rows:
-        row.scan = scan.id
-        row.save()
+        if row:
+            row.scan = scan.id
+            row.save()
     return len(rows)
 
 
 def ingest_mi(scan: Scan, data: Any) -> int:
-    def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw:
+    def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(fn_)
         try:
             return RadonMi(
@@ -49,7 +58,12 @@ def ingest_mi(scan: Scan, data: Any) -> int:
             log.error(f"Unable to parse radon mi: {fn_}[{scan.git_commit_hash[:8]}] {radon_result=}")
             return None
 
-    json_ = json.loads(data)
+    try:
+        json_ = json.loads(data)
+    except json.decoder.JSONDecoderError as exc:
+        log.error(f"Unable to parse radon mi scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
+        return 0
+
     rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
     for row in rows:
         if row:  # Skip the entries that had errors..
@@ -61,7 +75,12 @@ def ingest_mi(scan: Scan, data: Any) -> int:
 def ingest_cc(scan: Scan, data: Any) -> int:
     mapping = dict(F="Function", M="Method", C="Class")
     rows = []
-    json_ = json.loads(data)
+    try:
+        json_ = json.loads(data)
+    except json.decoder.JSONDecoderError as exc:
+        log.error(f"Unable to parse radon cc scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
+        return 0
+
     for fn_, entities in json_.items():
         fn_path = Path(fn_)
         for entity in entities:
@@ -94,7 +113,12 @@ def ingest_cc(scan: Scan, data: Any) -> int:
 def ingest_hal(scan: Scan, data: Any) -> int:
     # Have to do this nested to reflect json file structure:
     count = 0
-    json_ = json.loads(data)
+    try:
+        json_ = json.loads(data)
+    except json.decoder.JSONDecoderError as exc:
+        log.error(f"Unable to parse radon hal scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
+        return 0
+
     for fn_, results in json_.items():
         try:
             total = results["total"]
@@ -103,6 +127,7 @@ def ingest_hal(scan: Scan, data: Any) -> int:
             log.error(f"Unable to parse radon hal: {fn_}[{scan.git_commit_hash[:8]}] {results=}")
             continue
 
+        # (if we get this far, most likely the entry is good and we don't need to check for KeyError.)
         fn_path = Path(fn_)
         radon_hal = RadonHal(
             scan=scan.id,

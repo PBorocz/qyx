@@ -28,7 +28,7 @@ class Configuration(AbstractModuleConfiguration):
             "check",
             "--exit-zero",
             "--output-format=json",
-            relative,
+            absolute,
         ]
 
     def get_ingest_method(self, _) -> Callable:

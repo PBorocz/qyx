@@ -8,6 +8,7 @@ from mq.web.page import render_page
 from mq.tools.base import Project, Scan
 from mq.tools.cloc.report_web import render_level_0 as cloc_level_0
 from mq.tools.ruff.report_web import render_level_0 as ruff_level_0
+from mq.tools.fxtd.report_web import render_level_0 as fxtd_level_0
 from mq.tools.radon.report_web_renderers.cc_0 import cc_0
 from mq.tools.radon.report_web_renderers.hal_0 import hal_0
 from mq.tools.radon.report_web_renderers.mi_0 import mi_0
@@ -23,7 +24,7 @@ def render(request):
 
     content = get_content(args)
 
-    page_content = (
+    page_content = [
         fh.Section(
             fh.Details(
                 fh.Summary("A project Name"),
@@ -32,6 +33,7 @@ def render(request):
                 *(
                     *content[(1, "cloc", "cloc")],
                     *content[(1, "ruff", "ruff")],
+                    *content[(1, "fxtd", "fxtd")],
                     *content[(1, "radon", "cc")],
                     *content[(1, "radon", "hal")],
                     *content[(1, "radon", "mi")],
@@ -44,16 +46,17 @@ def render(request):
                 fh.Summary("Another project Name"),
                 name="projects",
                 *(
-                    *content[(1, "cloc", "cloc")],
-                    *content[(1, "ruff", "ruff")],
-                    *content[(1, "radon", "cc")],
-                    *content[(1, "radon", "hal")],
-                    *content[(1, "radon", "mi")],
-                    *content[(1, "radon", "raw")],
+                    *content[(2, "cloc", "cloc")],
+                    *content[(2, "ruff", "ruff")],
+                    *content[(2, "fxtd", "fxtd")],
+                    *content[(2, "radon", "cc")],
+                    *content[(2, "radon", "hal")],
+                    *content[(2, "radon", "mi")],
+                    *content[(2, "radon", "raw")],
                 ),
             ),
         ),
-    )
+    ]
 
     # for project in Project.select():
     #     project_sections = [fh.H3(project.name)]
@@ -122,6 +125,10 @@ def get_content(args: Namespace) -> dict:
         # ruff:
         if scan := Scan.get_most_recent(project, "ruff", "ruff"):
             content[(project.id, "ruff", "ruff")] = ruff_level_0(args, scan)
+
+        # fxtd:
+        if scan := Scan.get_most_recent(project, "fxtd", "fxtd"):
+            content[(project.id, "fxtd", "fxtd")] = fxtd_level_0(args, scan)
 
         # ruff et al
         if scan := Scan.get_most_recent(project, "radon", "cc"):

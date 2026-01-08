@@ -28,7 +28,7 @@ class Configuration(AbstractModuleConfiguration):
             "radon",
             analysis,
             "--json",
-            relative,
+            absolute,
         ]
 
     def get_ingest_method(self, analysis: str) -> Callable:

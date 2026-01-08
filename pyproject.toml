@@ -55,8 +55,12 @@ help = "Run/ingest all modules."
 [tool.poe.tasks.ingest-git]
 shell = """
   # uv run mq admin clear --no_confirm
-  poe mq ingest --git https://github.com/pborocz/mq
-  # uv run mq report      --analysis cloc --project https://github.com/pborocz/mq --level h --options "last:99"
+  # poe mq ingest --name python-code-quality --path "." --log-level debug
+  # poe mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git --log-level debug
+
+  # poe mq ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
+
+  #
   """
 help = "Run/ingest all modules."
 
@@ -110,6 +114,7 @@ shell = """
   set -e
   uv run mq
   uv run mq status
+  uv run mq status --level 1
 
   uv run mq report --analysis cloc
   uv run mq report --analysis cloc --level 0
@@ -172,3 +177,8 @@ shell = """
   uv run mq report --analysis radon:hal --level h --options last:4
 """
 help = "Run smoke test suite"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
