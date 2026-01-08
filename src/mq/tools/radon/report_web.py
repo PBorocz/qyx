@@ -5,9 +5,29 @@ from argparse import Namespace
 
 from fasthtml import common as fh
 
-import mq.tools.radon.report_web_renderers as renderers
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import RadonHal
+from mq.tools.radon.report_web_renderers.cc_0 import cc_0
+from mq.tools.radon.report_web_renderers.cc_1 import cc_1
+from mq.tools.radon.report_web_renderers.cc_2 import cc_2
+from mq.tools.radon.report_web_renderers.cc_3 import cc_3
+from mq.tools.radon.report_web_renderers.cc_h import cc_h
+
+from mq.tools.radon.report_web_renderers.hal_0 import hal_0
+from mq.tools.radon.report_web_renderers.hal_1 import hal_1
+from mq.tools.radon.report_web_renderers.hal_2 import hal_2
+from mq.tools.radon.report_web_renderers.hal_3 import hal_3
+from mq.tools.radon.report_web_renderers.hal_h import hal_h
+
+from mq.tools.radon.report_web_renderers.mi_0 import mi_0
+from mq.tools.radon.report_web_renderers.mi_1 import mi_1
+from mq.tools.radon.report_web_renderers.mi_2 import mi_2
+from mq.tools.radon.report_web_renderers.mi_h import mi_h
+
+from mq.tools.radon.report_web_renderers.raw_0 import raw_0
+from mq.tools.radon.report_web_renderers.raw_1 import raw_1
+from mq.tools.radon.report_web_renderers.raw_2 import raw_2
+from mq.tools.radon.report_web_renderers.raw_h import raw_h
 from mq.web.page import render_page
 
 log = logging.getLogger("uvicorn")
@@ -89,6 +109,9 @@ def render_selectors(request):
 # Current Status at 3 Levels
 ################################################################################################
 def render_accordion_levels(request, s_project_id: str = None, s_analysis: str = None):
+    if not s_project_id:
+        return fh.Section()
+
     args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
     scan = Scan.get_most_recent(project, "radon", s_analysis)
@@ -113,13 +136,13 @@ def render_accordion_levels(request, s_project_id: str = None, s_analysis: str =
 def render_level_0(args: Namespace, scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return renderers.cc_0(args, scan)
+            return cc_0(args, scan)
         case "hal":
-            return renderers.hal_0(args, scan)
+            return hal_0(args, scan)
         case "mi":
-            return renderers.mi_0(args, scan)
+            return mi_0(args, scan)
         case "raw":
-            return renderers.raw_0(args, scan)
+            return raw_0(args, scan)
         case _:
             return fh.Section()
 
@@ -127,13 +150,13 @@ def render_level_0(args: Namespace, scan: Scan):
 def render_level_1(args: Namespace, scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return renderers.cc_1(args, scan)
+            return cc_1(args, scan)
         case "hal":
-            return renderers.hal_1(args, scan)
+            return hal_1(args, scan)
         case "mi":
-            return renderers.mi_1(args, scan)
+            return mi_1(args, scan)
         case "raw":
-            return renderers.raw_1(args, scan)
+            return raw_1(args, scan)
         case _:
             return fh.Section()
 
@@ -141,13 +164,13 @@ def render_level_1(args: Namespace, scan: Scan):
 def render_level_2(args: Namespace, scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return renderers.cc_2(args, scan)
+            return cc_2(args, scan)
         case "hal":
-            return renderers.hal_2(args, scan)
+            return hal_2(args, scan)
         case "mi":
-            return renderers.mi_2(args, scan)
+            return mi_2(args, scan)
         case "raw":
-            return renderers.raw_2(args, scan)
+            return raw_2(args, scan)
         case _:
             return fh.Section()
 
@@ -155,9 +178,9 @@ def render_level_2(args: Namespace, scan: Scan):
 def render_level_3(args: Namespace, scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return renderers.cc_3(args, scan)
+            return cc_3(args, scan)
         case "hal":
-            return renderers.hal_3(args, scan)
+            return hal_3(args, scan)
         case _:
             return fh.Section()
 
@@ -166,22 +189,25 @@ def render_level_3(args: Namespace, scan: Scan):
 # History
 ################################################################################################
 def render_history_chart(request, s_project_id: str = None, s_analysis: str = None):
+    if not s_project_id:
+        return fh.Section()
+
     args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
 
     match s_analysis.lower():
         case "cc":
             single = True
-            chart = renderers.cc_h(args, project)
+            chart = cc_h(args, project)
         case "hal":
             single = False
-            charts = renderers.hal_h(args, project)
+            charts = hal_h(args, project)
         case "mi":
             single = True
-            chart = renderers.mi_h(args, project)
+            chart = mi_h(args, project)
         case "raw":
             single = True
-            chart = renderers.raw_h(args, project)
+            chart = raw_h(args, project)
         case _:
             raise RuntimeError(f"Sorry, unrecognised {s_analysis=}")
 

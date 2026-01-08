@@ -4,15 +4,15 @@ from argparse import Namespace
 
 from fasthtml import common as fh
 
-from mq.web.page import render_page
 from mq.tools.base import Project, Scan
-from mq.tools.cloc.report_web import render_level_0 as cloc_level_0
-from mq.tools.ruff.report_web import render_level_0 as ruff_level_0
-from mq.tools.fxtd.report_web import render_level_0 as fxtd_level_0
+from mq.tools.cloc.report_web_renderers.cloc_0 import cloc_0
+from mq.tools.fxtd.report_web_renderers.fxtd_0 import fxtd_0
 from mq.tools.radon.report_web_renderers.cc_0 import cc_0
 from mq.tools.radon.report_web_renderers.hal_0 import hal_0
 from mq.tools.radon.report_web_renderers.mi_0 import mi_0
 from mq.tools.radon.report_web_renderers.raw_0 import raw_0
+from mq.tools.ruff.report_web_renderers.ruff_0 import ruff_0
+from mq.web.page import render_page
 
 
 ################################################################################################
@@ -66,15 +66,15 @@ def get_summaries(args: Namespace) -> dict:
     for project in Project.select():
         # cloc:
         if scan := Scan.get_most_recent(project, "cloc", "cloc"):
-            content[(project.id, "cloc", "cloc")] = cloc_level_0(args, scan)
+            content[(project.id, "cloc", "cloc")] = cloc_0(args, scan)
 
         # ruff:
         if scan := Scan.get_most_recent(project, "ruff", "ruff"):
-            content[(project.id, "ruff", "ruff")] = ruff_level_0(args, scan)
+            content[(project.id, "ruff", "ruff")] = ruff_0(args, scan)
 
         # fxtd:
         if scan := Scan.get_most_recent(project, "fxtd", "fxtd"):
-            content[(project.id, "fxtd", "fxtd")] = fxtd_level_0(args, scan)
+            content[(project.id, "fxtd", "fxtd")] = fxtd_0(args, scan)
 
         # ruff et al
         if scan := Scan.get_most_recent(project, "radon", "cc"):

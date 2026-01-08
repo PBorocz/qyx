@@ -6,20 +6,14 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Project, Scan
-from mq.tools.ruff import COLORS
+from mq.tools.ruff import get_ruff_rule_name, COLORS
 from mq.tools.ruff.models import query
 from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
-RUFF_RULES = None
-
 
 def report(args: Namespace, o_tool, analysis: str) -> None:
-    global RUFF_RULES
-    with open("src/mq/tools/ruff/ruff_rules.json") as f:
-        RUFF_RULES = json.load(f)
-
     if not (project := Project.find_from_args(args)):
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
@@ -53,13 +47,6 @@ def _report_0(args: Namespace, scan: Scan) -> None:
     table.add_column("_", style="bold magenta")
     table.add_row("Issues", f"{row.count:,d}")
     cli_console.print(table)
-
-
-def get_ruff_rule_name(rule_code: str) -> dict:
-    for rule in RUFF_RULES:
-        if rule.get("code").lower() == rule_code.lower():
-            return rule["name"]
-    return "-Unknown Rule: {rule_code}-"
 
 
 def _report_1(args: Namespace, scan: Scan) -> None:
