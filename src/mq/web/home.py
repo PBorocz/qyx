@@ -22,100 +22,40 @@ def render(request):
     """Render the home/summary page."""
     args = request.app.state.args
 
-    content = get_content(args)
+    summaries = get_summaries(args)
 
-    page_content = [
-        fh.Section(
+    page_contents = []
+    for project in Project.select():
+        fh_details = (
+            *summaries[(project.id, "cloc", "cloc")],
+            *summaries[(project.id, "ruff", "ruff")],
+            *summaries[(project.id, "fxtd", "fxtd")],
+            *summaries[(project.id, "radon", "cc")],
+            *summaries[(project.id, "radon", "hal")],
+            *summaries[(project.id, "radon", "mi")],
+            *summaries[(project.id, "radon", "raw")],
+        )
+        fh_section = fh.Section(
             fh.Details(
-                fh.Summary("A project Name"),
+                fh.Summary(project.name),
                 name="projects",
                 open=True,
-                *(
-                    *content[(1, "cloc", "cloc")],
-                    *content[(1, "ruff", "ruff")],
-                    *content[(1, "fxtd", "fxtd")],
-                    *content[(1, "radon", "cc")],
-                    *content[(1, "radon", "hal")],
-                    *content[(1, "radon", "mi")],
-                    *content[(1, "radon", "raw")],
-                ),
+                *fh_details,
             ),
-        ),
-        fh.Section(
-            fh.Details(
-                fh.Summary("Another project Name"),
-                name="projects",
-                *(
-                    *content[(2, "cloc", "cloc")],
-                    *content[(2, "ruff", "ruff")],
-                    *content[(2, "fxtd", "fxtd")],
-                    *content[(2, "radon", "cc")],
-                    *content[(2, "radon", "hal")],
-                    *content[(2, "radon", "mi")],
-                    *content[(2, "radon", "raw")],
-                ),
-            ),
-        ),
-    ]
-
-    # for project in Project.select():
-    #     project_sections = [fh.H3(project.name)]
-
-    #     tools = []
-    #     for tool_name, tool_config in args.tools.items():
-    #         for analysis in tool_config.analyses:
-    #             scan = Scan.get_most_recent(project, tool_name, analysis)
-    #             tools.append(
-    #                 fh.Details(fh.Summary(tool_name), open=True, *cloc_level_0(args, scan)),
-    #             )
-
-    # projects = [
-    #     fh.Section(
-    #         fh.Details(
-    #             fh.Summary("Cloc"),
-    #             open=True,
-    #             *(
-    #                 fh.Table(
-    #                     fh.Thead(
-    #                         fh.Tr(
-    #                             fh.Th("Lines of Code", scope="col", style="text-align: right"),
-    #                             fh.Th("Comment Lines", scope="col", style="text-align: right"),
-    #                             fh.Th("Blank Lines", scope="col", style="text-align: right"),
-    #                             fh.Th("TOTAL", scope="col", style="text-align: right"),
-    #                         ),
-    #                     ),
-    #                     fh.Tbody(
-    #                         fh.Tr(
-    #                             fh.Td(f"{123:,d}", style="text-align: right"),
-    #                             fh.Td(f"{234:,d}", style="text-align: right"),
-    #                             fh.Td(f"{345:,d}", style="text-align: right"),
-    #                             fh.Td(f"{456:,d}", style="text-align: right"),
-    #                         ),
-    #                     ),
-    #                 ),
-    #             ),
-    #         ),
-    #     ),
-    # ]
-    # for project, tool, analysis, scan in iterate_ptas(args):
-    #     print(f"{project=} {tool=} {analysis=} {scan=}")
-    #     projects.append(get_project(project))
-    #     fh_section = fh.Section(
-    #         fh.Details(fh.Summary("Summary"), name="details", open=True, *cloc_level_0(args, scan)),
-    #     )
-    # projects.append(fh_section)
+        )
+        page_contents.append(fh_section)
 
     return render_page(
         request,
         "Home",
         "",
         fh.H1("Code Quality Data Dashboard"),
-        fh.H3("Current Status"),
-        *page_content,
+        fh.H3("Project Summaries"),
+        *page_contents,
     )
 
 
-def get_content(args: Namespace) -> dict:
+def get_summaries(args: Namespace) -> dict:
     content = dict()
     for project in Project.select():
         # cloc:

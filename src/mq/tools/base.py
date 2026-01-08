@@ -84,7 +84,7 @@ class Project(BaseModel):
     )
 
     @classmethod
-    def find_from_args(cls, args: Namespace) -> Project | str:
+    def find_from_args(cls, args: Namespace) -> Project | None:
         """Get the project of the specified input name or path."""
         if args.name:
             name = args.name
@@ -96,7 +96,7 @@ class Project(BaseModel):
         if project := cls.get_or_none(cls.name == name):
             return project
 
-        return name
+        return None
 
     @classmethod
     def create_from_args(cls, args: Namespace) -> Project:
