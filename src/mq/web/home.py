@@ -31,15 +31,15 @@ def render(request):
             fh.Hr(),
             *summaries[(project.id, "ruff", "ruff")],
             fh.Hr(),
-            *summaries[(project.id, "fxtd", "fxtd")],
+            *summaries[(project.id, "radon", "mi")],
             fh.Hr(),
             *summaries[(project.id, "radon", "cc")],
             fh.Hr(),
             *summaries[(project.id, "radon", "hal")],
             fh.Hr(),
-            *summaries[(project.id, "radon", "mi")],
-            fh.Hr(),
             *summaries[(project.id, "radon", "raw")],
+            fh.Hr(),
+            *summaries[(project.id, "fxtd", "fxtd")],
         )
         fh_section = fh.Section(
             fh.Details(

@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 def ingest_raw(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
-        fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
             return RadonRaw(
                 directory=fn_path.parent,
@@ -32,7 +33,7 @@ def ingest_raw(scan: Scan, data: Any) -> int:
 
     try:
         json_ = json.loads(data)
-    except json.decoder.JSONDecoderError as exc:
+    except json.decoder.JSONDecodeError as exc:
         log.error(f"Unable to parse radon raw scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
         return 0
 
@@ -46,7 +47,7 @@ def ingest_raw(scan: Scan, data: Any) -> int:
 
 def ingest_mi(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
-        fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
             return RadonMi(
                 directory=fn_path.parent,
@@ -60,7 +61,7 @@ def ingest_mi(scan: Scan, data: Any) -> int:
 
     try:
         json_ = json.loads(data)
-    except json.decoder.JSONDecoderError as exc:
+    except json.decoder.JSONDecodeError as exc:
         log.error(f"Unable to parse radon mi scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
         return 0
 
@@ -77,12 +78,12 @@ def ingest_cc(scan: Scan, data: Any) -> int:
     rows = []
     try:
         json_ = json.loads(data)
-    except json.decoder.JSONDecoderError as exc:
+    except json.decoder.JSONDecodeError as exc:
         log.error(f"Unable to parse radon cc scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
         return 0
 
     for fn_, entities in json_.items():
-        fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         for entity in entities:
             try:
                 entity_type = mapping.get(entity["type"][0].upper())
@@ -115,7 +116,7 @@ def ingest_hal(scan: Scan, data: Any) -> int:
     count = 0
     try:
         json_ = json.loads(data)
-    except json.decoder.JSONDecoderError as exc:
+    except json.decoder.JSONDecodeError as exc:
         log.error(f"Unable to parse radon hal scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
         return 0
 
@@ -128,7 +129,7 @@ def ingest_hal(scan: Scan, data: Any) -> int:
             continue
 
         # (if we get this far, most likely the entry is good and we don't need to check for KeyError.)
-        fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         radon_hal = RadonHal(
             scan=scan.id,
             directory=fn_path.parent,

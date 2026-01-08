@@ -5,7 +5,7 @@ from argparse import Namespace
 
 from mq.cli import cli_table, cli_console
 from mq.tools import format_int_or_percentage as fmt
-from mq.tools.base import Project, Request, Scan
+from mq.tools.base import Project, Scan
 from mq.tools.cloc.models import query
 from mq.utils import format_timestamp_headers
 

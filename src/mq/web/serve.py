@@ -11,6 +11,8 @@ import uvicorn
 
 from fasthtml import common as fh
 
+import secrets
+
 from mq.web.routes import register
 
 log = logging.getLogger(__name__)
@@ -19,10 +21,11 @@ app, rt = None, None
 
 
 def create_app(args):
-    app, rt = fh.fast_app(debug=True)
+    app, rt = fh.fast_app(debug=True, secret_key=secrets.token_hex(32))
+    # (using secret_key here allows us the ability to do session-based storage)
 
-    # Send our args into the FastHtml environment for availability within
-    # the various page renderers:
+    # Send our args into the FastHtml environment for availability
+    # within the various page renderers:
     app.state.args = args
 
     return app, rt

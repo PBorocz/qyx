@@ -1,0 +1,77 @@
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --pico-font-size: 80%;
+  --pico-font-family: 'Inter', sans-serif;
+  --pico-primary: #2563eb;
+  --pico-primary-hover: #1d4ed8;
+}
+
+/* Get the accordian "arrow" to display right after the text instead of right-aligned. */
+details summary {
+  max-width: fit-content;
+}
+
+/* Make "small"...well...small! */
+small {
+  font-size: 0.75rem;
+}
+
+/* Make tables more compact */
+table {
+  font-size: 0.9rem;
+  width: auto;
+}
+table th, table td {
+  padding: 0.2rem 0.5rem;
+}
+
+/* Style the navbar differently */
+nav {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* Make charts responsive */
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Custom heading spacing */
+h1 {
+  # margin-bottom: 1rem;
+}
+
+h2 {
+  margin-bottom: 0.75rem;
+  color: #6c757d;
+}
+
+/* Our simple "section" container (ie. border) */
+.bordered {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 0rem;
+  background: white;
+}
+
+ th[role=columnheader]:not(.no-sort) {
+   cursor: pointer;
+ }
+ th[role=columnheader]:not(.no-sort):after {
+   content: '';
+   float: right;
+   margin-top: 0.2em;
+   margin-left: 0.25em;
+   font-size: 0.7em;
+   visibility: hidden;
+ }
+ th[aria-sort=ascending]:not(.no-sort):after {
+   content: '↑';
+   visibility: visible;
+ }
+ th[aria-sort=descending]:not(.no-sort):after {
+   content: '↓';
+   visibility: visible;
+ }

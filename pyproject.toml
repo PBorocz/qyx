@@ -46,23 +46,12 @@ cmd = "uv run mq status"
 help = "Report current status"
 
 #-------------------------------------------------------------------------------
-# all
+# Ingest..
+# poe mq ingest --name python-code-quality --path "."                                          --log-level debug
+# poe mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git            --log-level debug
+# poe mq ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
 #-------------------------------------------------------------------------------
-[tool.poe.tasks.ingest]
-cmd = """uv run mq ingest"""
-help = "Run/ingest all modules."
 
-[tool.poe.tasks.ingest-git]
-shell = """
-  # uv run mq admin clear --no_confirm
-  # poe mq ingest --name python-code-quality --path "." --log-level debug
-  # poe mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git --log-level debug
-
-  # poe mq ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
-
-  #
-  """
-help = "Run/ingest all modules."
 
 [tool.poe.tasks.report]
 cmd = """uv run mq report"""
@@ -70,37 +59,32 @@ help = "Display summary report across all modules."
 
 #-------------------------------------------------------------------------------
 # Radon
+# uvx radon cc  . --json | uv run mq ingest --name python-code-quality --path "." --stdin --analysis radon:cc
+# uvx radon hal . --json | uv run mq ingest --name python-code-quality --path "." --stdin --analysis radon:hal
+# uvx radon mi  . --json | uv run mq ingest --name python-code-quality --path "." --stdin --analysis radon:mi
+# uvx radon raw . --json | uv run mq ingest --name python-code-quality --path "." --stdin --analysis radon:raw
 #-------------------------------------------------------------------------------
-[tool.poe.tasks.radon]
-shell = """
-  uvx radon cc  . --json | uv run mq ingest --stdin --analysis radon:cc
-  uvx radon hal . --json | uv run mq ingest --stdin --analysis radon:hal
-  uvx radon mi  . --json | uv run mq ingest --stdin --analysis radon:mi
-  uvx radon raw . --json | uv run mq ingest --stdin --analysis radon:raw
-  """
-help = "Ingest radon checks"
 
 #-------------------------------------------------------------------------------
 # Cloc
+# cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --stdin --name python-code-quality --path "." --analysis cloc
 #-------------------------------------------------------------------------------
-[tool.poe.tasks.cloc]
-shell = """cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --analysis cloc"""
-help = "Run cloc and report on results."
 
 #-------------------------------------------------------------------------------
 # Ruff (Check)
+# ruff check --output-format=json | uv run mq ingest --stdin --name python-code-quality --path "." --analysis ruff
 #-------------------------------------------------------------------------------
-[tool.poe.tasks.ruff]
-shell = """ruff check --output-format=json | uv run mq ingest --analysis ruff"""
-help = "Run current ruff check and report on results."
+
+#-------------------------------------------------------------------------------
+# ADMIN Commands!
+#-------------------------------------------------------------------------------
+[tool.poe.tasks.clean]
+cmd = "uv run mq admin clean"
+help = "Clean the database (ie. do housekeeping) Low Risk."
 
 [tool.poe.tasks.clear]
 cmd = "uv run mq admin clear"
-help = "Clear the database entirely(!)."
-
-[tool.poe.tasks.trim]
-cmd = "uv run mq admin trim"
-help = "Delete -old- runs from the database, leaving the most recent."
+help = "Clear the database entirely(!) 🔥 HIGH RISK 🔥"
 
 [tool.poe.tasks.sql]
 cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""

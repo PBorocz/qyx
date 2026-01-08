@@ -18,7 +18,12 @@ from mq.utils import dt_to_display
 def status(args: Namespace) -> None:
     """Use a simple terminal tree to display current db information."""
     tree = Tree("MQ Status")
-    for project in Project.select():
+
+    projects = Project.select()
+    if args.name:
+        projects = projects.where(Project.name == args.name)
+
+    for project in projects:
         project_tree = tree.add(f"[red]Project[/red] [{project.id:3d}] → {project.name}")
 
         for request in Request.select().where(Request.project == project):
@@ -41,7 +46,9 @@ def scan_tree_summary(request, scans_for_request, scan_tree):
     dates_ = [scan.as_of for scan in scans_for_request]
     max_date, min_date = max(dates_), min(dates_)
     s_max_date, s_min_date = dt_to_display(max_date), dt_to_display(min_date)
-    ta_tree = scan_tree.add(f"[bright_green]Scans[/bright_green] {s_min_date} → {s_max_date}")
+    ta_tree = scan_tree.add(
+        f"[bright_green]Scans[/bright_green] {len(scans_for_request):,d} {s_min_date} → {s_max_date}",
+    )
 
     # Count up the total number of scans by tool/analysis:
     counts = defaultdict(int)

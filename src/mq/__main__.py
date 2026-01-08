@@ -45,6 +45,11 @@ def get_args():
         help="Level to report on, e.g. 0 summary, 1 (detail)",
         default="0",
     )
+    parse_status.add_argument(
+        "-n",
+        "--name",
+        help="Project name, if not specified, defaults to ALL projects.",
+    )
 
     ################################################################################
     # Ingest command

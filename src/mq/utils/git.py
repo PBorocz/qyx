@@ -2,7 +2,6 @@
 
 import logging
 import subprocess
-from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 from platformdirs import user_cache_dir

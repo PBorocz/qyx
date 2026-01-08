@@ -11,7 +11,7 @@ from mq.tools.base import Scan
 
 def ingest(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, cloc_result: dict) -> Cloc:
-        fn_path = Path(fn_)
+        fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         return Cloc(
             directory=fn_path.parent,
             filename=fn_path.name,
@@ -22,7 +22,6 @@ def ingest(scan: Scan, data: Any) -> int:
 
     # Parse..
     json_ = json.loads(data)
-
     rows = [_json_to_row(fn_, check) for fn_, check in json_.items() if fn_ not in ("header", "SUM")]
 
     # Save

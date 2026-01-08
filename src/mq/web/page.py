@@ -1,88 +1,10 @@
 """."""
 
+from pathlib import Path
+
 from fasthtml import common as ft
 
-
-STYLE = """
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-   :root {
-      --pico-font-size: 80%;
-      --pico-font-family: 'Inter', sans-serif;
-      --pico-primary: #2563eb;
-      --pico-primary-hover: #1d4ed8;
-   }
-
-   /* Get the accordian "arrow" to display right after the text instead of right-aligned. */
-   details summary {
-      max-width: fit-content;
-   }
-
-   /* Make "small"...well...small! */
-   small {
-      font-size: 0.75rem;
-   }
-
-   /* Make tables more compact */
-   table {
-      font-size: 0.9rem;
-      width: auto;
-   }
-   table th, table td {
-      padding: 0.2rem 0.5rem;
-   }
-
-   /* Style the navbar differently */
-   nav {
-       background-color: #f8f9fa;
-       border-bottom: 2px solid #e9ecef;
-   }
-
-   /* Make charts responsive */
-   svg {
-       max-width: 100%;
-       height: auto;
-   }
-
-   /* Custom heading spacing */
-   h1 {
-       # margin-bottom: 1rem;
-   }
-
-   h2 {
-       margin-bottom: 0.75rem;
-       color: #6c757d;
-   }
-
-   /* Our simple "section" container (ie. border) */
-   .bordered {
-       border: 1px solid #dee2e6;
-       border-radius: 0.5rem;
-       padding: 0rem;
-       background: white;
-    }
-
-    th[role=columnheader]:not(.no-sort) {
-        cursor: pointer;
-    }
-    th[role=columnheader]:not(.no-sort):after {
-        content: '';
-        float: right;
-        margin-top: 0.2em;
-        margin-left: 0.25em;
-        font-size: 0.7em;
-        visibility: hidden;
-    }
-    th[aria-sort=ascending]:not(.no-sort):after {
-        content: '↑';
-        visibility: visible;
-    }
-    th[aria-sort=descending]:not(.no-sort):after {
-        content: '↓';
-        visibility: visible;
-    }
-
-"""
+CSS = None  # Will be read ONCE on first render..
 
 
 def render_navbar(request, active_page):
@@ -92,7 +14,7 @@ def render_navbar(request, active_page):
 
     # Right nav is a listing of all the tools currently available.
     r_nav = []
-    for tool_name, tool_config in request.app.state.args.tools.items():
+    for tool_name in sorted(request.app.state.args.tools.keys()):
         name = tool_name.title()
         path = f"/{tool_name}"
         kwargs = dict(aria_current="page") if active_page == name else dict()
@@ -106,6 +28,10 @@ def render_navbar(request, active_page):
 
 def render_page(request, title, active_page, *main_page_content):
     """Render the content provided into this base page template."""
+    global CSS
+    if not CSS:
+        CSS = Path("src/mq/web/app.css").read_text(encoding="utf-8")
+
     return ft.Html(
         ft.Head(
             ft.Meta(charset="utf-8"),
@@ -116,7 +42,7 @@ def render_page(request, title, active_page, *main_page_content):
             ft.Script(src="https://unpkg.com/htmx.org@1.9.10"),
             ft.Script(src="https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js"),
             ft.Script(src="https://unpkg.com/tablesort@5.3.0/dist/sorts/tablesort.number.min.js"),
-            ft.Style(STYLE),
+            ft.Style(CSS),
             ft.Title(f"MQ-{title}"),
             lang="en",
         ),

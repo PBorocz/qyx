@@ -14,9 +14,9 @@ def cc_0(args: Namespace, scan: Scan):
 
     # fmt: off
     t_head = fh.Tr(
-        fh.Th("Entity Type" , scope="col", style="text-align: left"),
-        fh.Th("Complexity"  , scope="col", style="text-align: right"),
-        fh.Th("Rank"        , scope="col", style="text-align: center"),
+        fh.Th("Entity Type", scope="col", style="text-align: left"),
+        fh.Th("Complexity" , scope="col", style="text-align: right"),
+        fh.Th("Rank"       , scope="col", style="text-align: center"),
     )
     # fmt: on
 

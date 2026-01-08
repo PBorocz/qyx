@@ -28,6 +28,7 @@ from mq.tools.radon.report_web_renderers.raw_0 import raw_0
 from mq.tools.radon.report_web_renderers.raw_1 import raw_1
 from mq.tools.radon.report_web_renderers.raw_2 import raw_2
 from mq.tools.radon.report_web_renderers.raw_h import raw_h
+from mq.web import get_project_select
 from mq.web.page import render_page
 
 log = logging.getLogger("uvicorn")
@@ -36,13 +37,13 @@ log = logging.getLogger("uvicorn")
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(request, name, config):
+def render(request, name, config, session):
     """Do the primary page layout for this tools display page."""
     return render_page(
         request,
         name,
         name.title(),
-        *render_selectors(request),
+        *render_selectors(request, session, "/partials/new_project/radon"),
         fh.Div(id="project-content"),  # This Div will be updated as the project changes via HTMX!
     )
 
@@ -50,25 +51,14 @@ def render(request, name, config):
 ################################################################################################
 # Selectors
 ################################################################################################
-def render_selectors(request):
-    projects = Project.select().order_by(Project.name)
-    if not projects:
-        return None
+def render_selectors(request, session, hx_get: str):
+    ############################################################################################
+    # Get our (generic) project selector widget
+    ############################################################################################
+    fh_select_project = get_project_select(request, session, hx_get)
 
     ############################################################################################
-    # Convert our project(s) into selector items..
-    ############################################################################################
-    elif len(projects) > 1:
-        fh_select_project = [fh.Option("Project...", value="")]
-        for project in projects:
-            fh_select_project.append(fh.Option(project.name, value=str(project.id)))
-
-    elif len(projects) == 1:
-        project = projects[0]
-        fh_select_project = [fh.Option(project.name, value=str(project.id), selected=True)]
-
-    ############################################################################################
-    # Convert our project(s) into selector items..
+    # Get radon-specific analysis selector
     ############################################################################################
     analyses = (
         ("cc", "Cyclomatic Complexity"),
@@ -78,24 +68,15 @@ def render_selectors(request):
     )
     fh_select_analyses = [fh.Option(description, value=value) for value, description in analyses]
 
-    # And return our selector form
+    # And return our COMBINED selector form (ie. across both projects and analyses)
     return fh.Form(
         fh.Fieldset(
-            fh.Select(
-                *fh_select_project,
-                name="project",
-                aria_label="Select your project...",
-                hx_get="/partials/radon_set_project",  # HTMX endpoint
-                hx_target="#project-content",  # Where to update
-                hx_swap="innerHTML",  # How to update
-                hx_trigger="load, change",  # Trigger on page load *AND* selection change
-                hx_include="[name='analysis']",  # Include analysis selector value
-            ),
+            fh_select_project,
             fh.Select(
                 *fh_select_analyses,
                 name="analysis",
                 aria_label="Select your Radon analysis...",
-                hx_get="/partials/radon_set_analysis",  # HTMX endpoint
+                hx_get="/partials/new_project/radon",  # HTMX endpoint
                 hx_target="#project-content",  # Where to update
                 hx_swap="innerHTML",  # How to update
                 hx_trigger="load, change",  # Trigger on page load *AND* selection change
@@ -108,15 +89,15 @@ def render_selectors(request):
 ################################################################################################
 # Current Status at 3 Levels
 ################################################################################################
-def render_accordion_levels(request, s_project_id: str = None, s_analysis: str = None):
+def render_current(request, s_project_id: str = None, analysis: str = None):
     if not s_project_id:
         return fh.Section()
 
     args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
-    scan = Scan.get_most_recent(project, "radon", s_analysis)
+    scan = Scan.get_most_recent(project, "radon", analysis)
     if not scan:
-        log.warning(f"Sorry, no Scan's performed yet for radon:{s_analysis}")
+        log.warning(f"Sorry, no Scan's performed yet for radon:{analysis}")
         return fh.Section()
 
     fh_sections = [
@@ -188,14 +169,14 @@ def render_level_3(args: Namespace, scan: Scan):
 ################################################################################################
 # History
 ################################################################################################
-def render_history_chart(request, s_project_id: str = None, s_analysis: str = None):
+def render_history(request, s_project_id: str = None, analysis: str = None):
     if not s_project_id:
         return fh.Section()
 
     args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
 
-    match s_analysis.lower():
+    match analysis.lower():
         case "cc":
             single = True
             chart = cc_h(args, project)
@@ -209,7 +190,7 @@ def render_history_chart(request, s_project_id: str = None, s_analysis: str = No
             single = True
             chart = raw_h(args, project)
         case _:
-            raise RuntimeError(f"Sorry, unrecognised {s_analysis=}")
+            raise RuntimeError(f"Sorry, unrecognised {analysis=}")
 
     if single:
         return fh.Section(
