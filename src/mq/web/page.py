@@ -18,8 +18,7 @@ STYLE = """
       max-width: fit-content;
    }
 
-
-   /* Make "small"...well small! */
+   /* Make "small"...well...small! */
    small {
       font-size: 0.75rem;
    }

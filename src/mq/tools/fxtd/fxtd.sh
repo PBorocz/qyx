@@ -1,14 +1,12 @@
 #!/bin/bash
 
-# set -euo pipefail
+set -euo pipefail
 
 # Use ${1:-.} to accept directory as argument, default to current dir
 TARGET_DIR="${1:-.}"
 
-# Find all .py files, excluding hidden directories, and search with grep
-# find "."         -path "./.*" -name ".*" -prune -o -type f \( -name "*.py" -o -name "*.js" \) -print0 | \
-echo "here!"
-find "$TARGET_DIR" -path "./.*" -name ".*" -prune -o -type f \( -name "*.py" -o -name "*.js" \) -print0 | \
+# Find all .py/.js files, excluding hidden directories (those starting with .)
+find "$TARGET_DIR" -type d -name ".*" -prune -o -type f \( -name "*.py" -o -name "*.js" \) -print0 | \
 
     xargs -0 grep -in "# \(FIXME\|TODO\|HACK\|XXX\)" | \
 

@@ -34,9 +34,6 @@ def query(
 ) -> Fxtd:
     match level.lower():
         case "0":
-            return Fxtd.select(fn.COUNT(Fxtd.id).alias("count")).where(Fxtd.scan == scan).first()
-
-        case "1":
             return (
                 Fxtd.select(
                     Fxtd.type,
@@ -44,6 +41,18 @@ def query(
                 )
                 .where(Fxtd.scan == scan)
                 .group_by(Fxtd.type)
+                .order_by(fn.COUNT(Fxtd.id).desc())
+            )
+
+        case "1":
+            return (
+                Fxtd.select(
+                    Fxtd.directory,
+                    Fxtd.type,
+                    fn.COUNT(Fxtd.id).alias("count"),
+                )
+                .where(Fxtd.scan == scan)
+                .group_by(Fxtd.directory, Fxtd.type)
                 .order_by(fn.COUNT(Fxtd.id).desc())
             )
 

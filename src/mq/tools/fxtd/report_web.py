@@ -76,34 +76,34 @@ def render_accordion_levels(request, s_project_id: str = None):
     return fh.Section(
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display(collapse_today=True)}")),
         fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level_0(args, scan)),
-        fh.Details(fh.Summary("By Type"), name="details", *render_level_1(args, scan)),
+        fh.Details(fh.Summary("By Directory"), name="details", *render_level_1(args, scan)),
         fh.Details(fh.Summary("By File"), name="details", *render_level_2(args, scan)),
         cls="bordered",
     )
 
 
+# def render_level_0(args: Namespace, scan: Scan):
+#     row = query(args, "0", scan=scan)
+
+#     t_body = [
+#         fh.Tr(
+#             fh.Td("FixMe's & ToDo's Encountered", style="text-align: left"),
+#             fh.Td(f"{row.count:,d}", style="text-align: right"),
+#         ),
+#     ]
+#     return (
+#         fh.Table(
+#             fh.Tbody(*t_body),
+#             fh.Tfoot(),
+#             id="fxtd_0",
+#         ),
+#         fh.Script("new Tablesort(document.getElementById('fxtd_0'));"),
+#     )
+
+
 def render_level_0(args: Namespace, scan: Scan):
-    row = query(args, "0", scan=scan)
-
-    t_body = [
-        fh.Tr(
-            fh.Td("FixMe's & ToDo's Encountered", style="text-align: left"),
-            fh.Td(f"{row.count:,d}", style="text-align: right"),
-        ),
-    ]
-    return (
-        fh.Table(
-            fh.Tbody(*t_body),
-            fh.Tfoot(),
-            id="fxtd_0",
-        ),
-        fh.Script("new Tablesort(document.getElementById('fxtd_0'));"),
-    )
-
-
-def render_level_1(args: Namespace, scan: Scan):
-    summary = query(args, "0", scan=scan)
-    results = query(args, "1", scan=scan)
+    results = query(args, "0", scan=scan)
+    grand_total = sum([result.count for result in results])
 
     t_head = fh.Tr(
         fh.Th("Type", scope="col", style="text-align: left"),
@@ -113,15 +113,51 @@ def render_level_1(args: Namespace, scan: Scan):
     t_body = []
     for result in results:
         t_row = fh.Tr(
+            fh.Th(result.type, style="text-align: left"),
+            fh.Th(f"{result.count:,d}", style="text-align: right"),
+        )
+        t_body.append(t_row)
+
+    t_total = fh.Tr(
+        fh.Th("TOTAL", style="text-align: left"),
+        fh.Th(f"{grand_total:,d}", style="text-align: right"),
+        fh.Td(""),
+    )
+
+    return (
+        fh.Table(
+            fh.Thead(t_head),
+            fh.Tbody(*t_body),
+            fh.Tfoot(t_total),
+            id="fxtd_1",
+        ),
+        fh.Script("new Tablesort(document.getElementById('fxtd_1'));"),
+    )
+
+
+def render_level_1(args: Namespace, scan: Scan):
+    results = query(args, "1", scan=scan)
+    grand_total = sum([result.count for result in results])
+
+    t_head = fh.Tr(
+        fh.Th("Type", scope="col", style="text-align: left"),
+        fh.Th("Directory", scope="col", style="text-align: left"),
+        fh.Th("Count", scope="col", style="text-align: right"),
+    )
+
+    t_body = []
+    for result in results:
+        t_row = fh.Tr(
             fh.Td(result.type, style="text-align: left"),
+            fh.Td(result.directory, style="text-align: right"),
             fh.Td(f"{result.count:,d}", style="text-align: right"),
         )
         t_body.append(t_row)
 
     t_total = fh.Tr(
         fh.Td("TOTAL", style="text-align: left"),
-        fh.Td(f"{summary.count:,d}", style="text-align: right"),
         fh.Td(""),
+        fh.Td(f"{grand_total:,d}", style="text-align: right"),
     )
 
     return (

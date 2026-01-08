@@ -28,11 +28,17 @@ def render(request):
     for project in Project.select():
         fh_details = (
             *summaries[(project.id, "cloc", "cloc")],
+            fh.Hr(),
             *summaries[(project.id, "ruff", "ruff")],
+            fh.Hr(),
             *summaries[(project.id, "fxtd", "fxtd")],
+            fh.Hr(),
             *summaries[(project.id, "radon", "cc")],
+            fh.Hr(),
             *summaries[(project.id, "radon", "hal")],
+            fh.Hr(),
             *summaries[(project.id, "radon", "mi")],
+            fh.Hr(),
             *summaries[(project.id, "radon", "raw")],
         )
         fh_section = fh.Section(

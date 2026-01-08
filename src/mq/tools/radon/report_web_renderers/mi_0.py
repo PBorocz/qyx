@@ -13,8 +13,8 @@ def mi_0(args: Namespace, scan: Scan):
 
     # fmt: off
     t_body = (
-        fh.Td("Composite Maintainability Score", style="text-align: left"),
-        fh.Td(f"{row.mi_mean:.2f}"             , style="text-align: right"),
+        fh.Th(fh.B("Composite Maintainability Score"), style="text-align: left" ),
+        fh.Th(fh.B(f"{row.mi_mean:.2f}"             ), style="text-align: right"),
     )
     # fmt: on
 
