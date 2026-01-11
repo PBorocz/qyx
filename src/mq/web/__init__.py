@@ -43,7 +43,7 @@ def get_project_select(request, session, hx_get: str):
         name="project",
         aria_label="Select your project...",
         hx_get=hx_get,  # HTMX endpoint
-        hx_target="#project-content",  # Where to update
+        hx_target="#page-body-content",  # Where to update
         hx_swap="innerHTML",  # How to update
         hx_trigger="load, change",  # Trigger on page load *AND* selection change
         hx_include="[name='analysis']",  # Include analysis selector value

@@ -21,8 +21,11 @@ app, rt = None, None
 
 
 def create_app(args):
-    app, rt = fh.fast_app(debug=True, secret_key=secrets.token_hex(32))
-    # (using secret_key here allows us the ability to do session-based storage)
+    app, rt = fh.fast_app(
+        debug=True,
+        secret_key=secrets.token_hex(32),  # (using secret_key here allows us the ability to do session-based storage)
+        static_path="src/mq/web/static",
+    )
 
     # Send our args into the FastHtml environment for availability
     # within the various page renderers:

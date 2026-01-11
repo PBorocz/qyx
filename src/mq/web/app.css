@@ -75,3 +75,8 @@ h2 {
    content: '↓';
    visibility: visible;
  }
+
+/* What pico provides is way too subtle! */
+[aria-current="page"] {
+    font-weight: bold !important;
+}

@@ -12,81 +12,75 @@ from mq.tools.radon.report_web_renderers.hal_0 import hal_0
 from mq.tools.radon.report_web_renderers.mi_0 import mi_0
 from mq.tools.radon.report_web_renderers.raw_0 import raw_0
 from mq.tools.ruff.report_web_renderers.ruff_0 import ruff_0
+from mq.web import render_project_selector
 from mq.web.page import render_page
 
 
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(request):
-    """Render the home/summary page."""
-    args = request.app.state.args
-
-    summaries = get_summaries(args)
-
-    page_contents = []
-    for project in Project.select():
-        fh_details = (
-            *summaries[(project.id, "cloc", "cloc")],
-            fh.Hr(),
-            *summaries[(project.id, "ruff", "ruff")],
-            fh.Hr(),
-            *summaries[(project.id, "radon", "mi")],
-            fh.Hr(),
-            *summaries[(project.id, "radon", "cc")],
-            fh.Hr(),
-            *summaries[(project.id, "radon", "hal")],
-            fh.Hr(),
-            *summaries[(project.id, "radon", "raw")],
-            fh.Hr(),
-            *summaries[(project.id, "fxtd", "fxtd")],
-        )
-        fh_section = fh.Section(
-            fh.Details(
-                fh.Summary(project.name),
-                name="projects",
-                open=True,
-                *fh_details,
-            ),
-        )
-        page_contents.append(fh_section)
-
+def render_page_home(request, session):
     return render_page(
         request,
-        "Home",
-        "",
-        fh.H1("Code Quality Data Dashboard"),
-        fh.H3("Project Summaries"),
-        *page_contents,
+        None,
+        None,
+        session,
+        fh.H1("Code Quality - Project Summary"),
+        *render_project_selector(request, session, "/partials/new_project/_main_"),
+        fh.Div(id="page-body-content"),
     )
 
 
-def get_summaries(args: Namespace) -> dict:
+def render_partial_project_summary(request, session, s_project_id: str):
+    """Render the home/summary page."""
+    if not s_project_id:
+        return fh.Section()
+    args = request.app.state.args
+    project = Project.get(Project.id == int(s_project_id))
+    project_summaries = get_project_summaries(args, project)
+
+    page_contents = []
+
+    fh_section = fh.Section(
+        *project_summaries[("cloc", "cloc")],
+        fh.Hr(),
+        *project_summaries[("ruff", "ruff")],
+        fh.Hr(),
+        *project_summaries[("radon", "mi")],
+        fh.Hr(),
+        *project_summaries[("radon", "cc")],
+        fh.Hr(),
+        *project_summaries[("radon", "hal")],
+        fh.Hr(),
+        *project_summaries[("radon", "raw")],
+        fh.Hr(),
+        *project_summaries[("fxtd", "fxtd")],
+    )
+    page_contents.append(fh_section)
+
+    # Testing..
+    # page_contents.append(
+    #     fh.Div(fh.Div("div 1"), fh.Div("div 2"), fh.Div("div 2"), cls="grid"),
+    # )
+
+    return (*page_contents,)
+
+
+def get_project_summaries(args: Namespace, project: Project) -> dict:
     content = dict()
-    for project in Project.select():
-        # cloc:
-        if scan := Scan.get_most_recent(project, "cloc", "cloc"):
-            content[(project.id, "cloc", "cloc")] = cloc_0(args, scan)
 
-        # ruff:
-        if scan := Scan.get_most_recent(project, "ruff", "ruff"):
-            content[(project.id, "ruff", "ruff")] = ruff_0(args, scan)
-
-        # fxtd:
-        if scan := Scan.get_most_recent(project, "fxtd", "fxtd"):
-            content[(project.id, "fxtd", "fxtd")] = fxtd_0(args, scan)
-
-        # ruff et al
-        if scan := Scan.get_most_recent(project, "radon", "cc"):
-            content[(project.id, "radon", "cc")] = cc_0(args, scan)
-
-        if scan := Scan.get_most_recent(project, "radon", "hal"):
-            content[(project.id, "radon", "hal")] = hal_0(args, scan)
-
-        if scan := Scan.get_most_recent(project, "radon", "mi"):
-            content[(project.id, "radon", "mi")] = mi_0(args, scan)
-
-        if scan := Scan.get_most_recent(project, "radon", "raw"):
-            content[(project.id, "radon", "raw")] = raw_0(args, scan)
+    for tool, analysis, level_0_method in (
+        ("cloc", "cloc", cloc_0),
+        ("ruff", "ruff", ruff_0),
+        ("fxtd", "fxtd", fxtd_0),
+        ("radon", "cc", cc_0),
+        ("radon", "hal", hal_0),
+        ("radon", "mi", mi_0),
+        ("radon", "raw", raw_0),
+    ):
+        if scan := Scan.get_most_recent(project, tool, analysis):
+            if level_0_contents := level_0_method(args, scan):
+                h3 = tool.title() if tool == analysis else f"{tool.title()}: {analysis.upper()}"
+                content[(tool, analysis)] = (fh.H4(h3), *level_0_contents)
 
     return content

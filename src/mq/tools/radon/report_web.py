@@ -41,10 +41,11 @@ def render(request, name, config, session):
     """Do the primary page layout for this tools display page."""
     return render_page(
         request,
-        name,
         name.title(),
+        name,
+        session,
         *render_selectors(request, session, "/partials/new_project/radon"),
-        fh.Div(id="project-content"),  # This Div will be updated as the project changes via HTMX!
+        fh.Div(id="page-body-content"),  # This Div will be updated as the project changes via HTMX!
     )
 
 
@@ -77,7 +78,7 @@ def render_selectors(request, session, hx_get: str):
                 name="analysis",
                 aria_label="Select your Radon analysis...",
                 hx_get="/partials/new_project/radon",  # HTMX endpoint
-                hx_target="#project-content",  # Where to update
+                hx_target="#page-body-content",  # Where to update
                 hx_swap="innerHTML",  # How to update
                 hx_trigger="load, change",  # Trigger on page load *AND* selection change
                 hx_include="[name='project']",  # Include project selector value

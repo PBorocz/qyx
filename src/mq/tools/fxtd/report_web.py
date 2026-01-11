@@ -18,10 +18,11 @@ def render(request, name, config, session):
     """Do the primary page layout for this tools display page."""
     return render_page(
         request,
-        name,
         name.title(),
+        name,
+        session,
         *render_project_selector(request, session, "/partials/new_project/fxtd"),
-        fh.Div(id="project-content"),
+        fh.Div(id="page-body-content"),
     )
 
 
