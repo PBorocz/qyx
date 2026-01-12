@@ -6,6 +6,7 @@ from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 from mq.tools.cloc.report_web_renderers.cloc_0 import cloc_0
+from mq.tools.cloc.report_web_renderers.cloc_d import cloc_d
 from mq.tools.fxtd.report_web_renderers.fxtd_0 import fxtd_0
 from mq.tools.radon.report_web_renderers.cc_0 import cc_0
 from mq.tools.radon.report_web_renderers.hal_0 import hal_0
@@ -37,39 +38,57 @@ def render_partial_project_summary(request, session, s_project_id: str):
         return fh.Section()
     args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
-    project_summaries = get_project_summaries(args, project)
+    project_level_0s = get_project_level_0s(args, project)
+    project_level_ds = get_project_level_ds(args, project)
 
     page_contents = []
 
     fh_section = fh.Section(
-        *project_summaries[("cloc", "cloc")],
-        fh.Hr(),
-        *project_summaries[("ruff", "ruff")],
-        fh.Hr(),
-        *project_summaries[("radon", "mi")],
-        fh.Hr(),
-        *project_summaries[("radon", "cc")],
-        fh.Hr(),
-        *project_summaries[("radon", "hal")],
-        fh.Hr(),
-        *project_summaries[("radon", "raw")],
-        fh.Hr(),
-        *project_summaries[("fxtd", "fxtd")],
+        fh.Div(
+            fh.Div(*project_level_0s[("cloc", "cloc")]),
+            fh.Div(*project_level_ds[("cloc", "cloc")]),
+            cls="grid",
+        ),
+        fh.Div(
+            fh.Div(*project_level_0s[("ruff", "ruff")]),
+            # fh.Div(*project_level_0s[("ruff", "ruff")]),
+            cls="grid",
+        ),
+        fh.Div(
+            fh.Div(*project_level_0s[("radon", "mi")]),
+            # fh.Div(*project_level_0s[("radon", "mi")]),
+            cls="grid",
+        ),
+        fh.Div(
+            fh.Div(*project_level_0s[("radon", "cc")]),
+            # fh.Div(*project_level_0s[("radon", "cc")]),
+            cls="grid",
+        ),
+        fh.Div(
+            fh.Div(*project_level_0s[("radon", "hal")]),
+            # fh.Div(*project_level_0s[("radon", "hal")]),
+            cls="grid",
+        ),
+        fh.Div(
+            fh.Div(*project_level_0s[("radon", "raw")]),
+            # fh.Div(*project_level_0s[("radon", "raw")]),
+            cls="grid",
+        ),
+        fh.Div(
+            fh.Div(*project_level_0s[("fxtd", "fxtd")]),
+            # fh.Div(*project_level_0s[("fxtd", "fxtd")]),
+            cls="grid",
+        ),
     )
     page_contents.append(fh_section)
-
-    # Testing..
-    # page_contents.append(
-    #     fh.Div(fh.Div("div 1"), fh.Div("div 2"), fh.Div("div 2"), cls="grid"),
-    # )
 
     return (*page_contents,)
 
 
-def get_project_summaries(args: Namespace, project: Project) -> dict:
+def get_project_level_0s(args: Namespace, project: Project) -> dict:
     content = dict()
 
-    for tool, analysis, level_0_method in (
+    for tool, analysis, level_method in (
         ("cloc", "cloc", cloc_0),
         ("ruff", "ruff", ruff_0),
         ("fxtd", "fxtd", fxtd_0),
@@ -79,8 +98,28 @@ def get_project_summaries(args: Namespace, project: Project) -> dict:
         ("radon", "raw", raw_0),
     ):
         if scan := Scan.get_most_recent(project, tool, analysis):
-            if level_0_contents := level_0_method(args, scan):
+            if level_contents := level_method(args, scan):
                 h3 = tool.title() if tool == analysis else f"{tool.title()}: {analysis.upper()}"
-                content[(tool, analysis)] = (fh.H4(h3), *level_0_contents)
+                content[(tool, analysis)] = (fh.H4(h3), *level_contents)
+
+    return content
+
+
+def get_project_level_ds(args: Namespace, project: Project) -> dict:
+    content = dict()
+
+    for tool, analysis, level_method in (
+        ("cloc", "cloc", cloc_d),
+        # ("ruff", "ruff", ruff_0),
+        # ("fxtd", "fxtd", fxtd_0),
+        # ("radon", "cc", cc_0),
+        # ("radon", "hal", hal_0),
+        # ("radon", "mi", mi_0),
+        # ("radon", "raw", raw_0),
+    ):
+        if scan := Scan.get_most_recent(project, tool, analysis):
+            if level_contents := level_method(args, scan):
+                h3 = tool.title() if tool == analysis else f"{tool.title()}: {analysis.upper()}"
+                content[(tool, analysis)] = (fh.H4(h3), *level_contents)
 
     return content

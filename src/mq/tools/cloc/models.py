@@ -40,16 +40,18 @@ def query(
 ) -> Any:
     match level.lower():
         case "0":
-            return _query_summary(scan, percentages=args.options.percentages)
+            return _query_0(scan)
         case "1":
-            return _query_detail(scan, percentages=args.options.percentages)
+            return _query_1(scan)
         case "2":
-            return _query_full(scan, percentages=args.options.percentages)
-        case "h" | "history":
-            return _query_history(project, last=args.options.last)
+            return _query_2(scan)
+        case "h":
+            return _query_h(project, last=args.options.last)
+        case "d":
+            return _query_d(scan)
 
 
-def _query_summary(scan: Scan, percentages: bool = False) -> Any:
+def _query_0(scan: Scan, percentages: bool = False) -> Any:
     row = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -71,8 +73,8 @@ def _query_summary(scan: Scan, percentages: bool = False) -> Any:
     return row
 
 
-def _query_detail(scan: Scan, percentages: bool = False) -> Any:
-    grand_total = _query_summary(scan, percentages=False)
+def _query_1(scan: Scan, percentages: bool = False) -> Any:
+    grand_total = _query_0(scan, percentages=False)
     rows = (
         Cloc.select(
             Cloc.directory,
@@ -97,7 +99,7 @@ def _query_detail(scan: Scan, percentages: bool = False) -> Any:
     return rows
 
 
-def _query_full(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str, int], int]:
+def _query_2(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str, int], int]:
     rows = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename)
     column_totals = defaultdict(int)
     for row in rows:
@@ -121,7 +123,7 @@ def _query_full(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str,
     return rows, dict(column_totals), grand_total
 
 
-def _query_history(project: Project, last: int) -> tuple[list[str], defaultdict, defaultdict]:
+def _query_h(project: Project, last: int) -> tuple[list[str], defaultdict, defaultdict]:
     # TODO: Add support for percentages here..
 
     # If the most recent request (provided) has more than one scan,
@@ -199,6 +201,49 @@ def _query_history(project: Project, last: int) -> tuple[list[str], defaultdict,
         adgs["total_blank"  ] = (query[-1].total_blank   - query[0].total_blank  ) / days
         # fmt: on
     return timestamps, query, transposed, grand_totals, roc, adgs
+
+
+def _query_d(scan: Scan) -> Any:
+    # Essentially query 0 but in percentages."""
+    row = _query_0(scan)
+
+    ################################################################################
+    # Calculate the "Comment Ratio"
+    ################################################################################
+    comment_ratio = row.lines_comment / (row.lines_code + row.lines_comment)
+    if comment_ratio >= 0.20:
+        grade, color = "A", "#22c55e"
+    elif comment_ratio >= 0.15:
+        grade, color = "B", "#84cc16"
+    elif comment_ratio >= 0.10:
+        grade, color = "C", "#eab308"
+    elif comment_ratio >= 0.50:
+        grade, color = "D", "#f97316"
+    else:
+        grade, color = "F", "#ef4444"
+    row.comment_ratio = Namespace(score=comment_ratio, grade=grade, color=color)
+
+    ################################################################################
+    # Calculate the "Code Density"
+    ################################################################################
+    code_density = row.lines_code / (row.lines_code + row.lines_blank)
+    if code_density >= 0.85:
+        grade, color = "C", "#eab308"
+    elif code_density >= 0.60:
+        grade, color = "A", "#22c55e"
+    elif code_density >= 10.0:
+        grade, color = "B", "#84cc16"
+    row.code_density = Namespace(score=code_density, grade=grade, color=color)
+
+    ################################################################################
+    # Convert to percentage of total:
+    ################################################################################
+    row.lines_blank = (row.lines_blank / row.lines_total) * 100.0
+    row.lines_code = (row.lines_code / row.lines_total) * 100.0
+    row.lines_comment = (row.lines_comment / row.lines_total) * 100.0
+    row.lines_total = Decimal(100.0)
+
+    return row
 
 
 def days_between(timestamp1: str, timestamp2: str) -> float:
