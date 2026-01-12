@@ -1,15 +1,13 @@
 """CC - Level 3."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.radon.models import query_cc
 
 
-def cc_3(args: Namespace, scan: Scan):
-    rows = query_cc(args, "3", scan=scan)
+def cc_3(scan: Scan):
+    rows = query_cc("3", scan=scan)
 
     # fmt: off
     t_head = fh.Tr(

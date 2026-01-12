@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Python Code Quality Data Warehouse"
 readme = "README.md"
 requires-python = ">=3.11.9"
-authors = [{name = "Your Name", email = "your.email@example.com"}]
+authors = [{name = "Peter Borocz", email = "peter.borocz+mq@gmail.com"}]
 dependencies = [
     "peewee>=3.18.3",
     "platformdirs>=4.5.1",
@@ -20,6 +20,9 @@ mq = "mq.__main__:main"
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+#-----------------------------------------------------------------------------------------------
+# POE Configuration and tasks:
+#-----------------------------------------------------------------------------------------------
 [tool.poe]
 verbosity = -1
 
@@ -41,12 +44,16 @@ shell = """
 cmd = "uv run mq"
 help = "Run the mq command"
 
+[tool.poe.tasks.serve]
+cmd = "uv run mq serve --log-level debug"
+help = "Run the mq command"
+
 [tool.poe.tasks.status]
 cmd = "uv run mq status"
 help = "Report current status"
 
 #-------------------------------------------------------------------------------
-# Ingest..
+# Ingest examples
 # poe mq ingest --name python-code-quality --path "."                                          --log-level debug
 # poe mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git            --log-level debug
 # poe mq ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
@@ -58,7 +65,7 @@ cmd = """uv run mq report"""
 help = "Display summary report across all modules."
 
 #-------------------------------------------------------------------------------
-# Radon
+# Radon - Run direct!
 # uvx radon cc  . --json | uv run mq ingest --name python-code-quality --path "." --stdin --analysis radon:cc
 # uvx radon hal . --json | uv run mq ingest --name python-code-quality --path "." --stdin --analysis radon:hal
 # uvx radon mi  . --json | uv run mq ingest --name python-code-quality --path "." --stdin --analysis radon:mi
@@ -66,12 +73,12 @@ help = "Display summary report across all modules."
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-# Cloc
+# Cloc - Run direct!
 # cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --stdin --name python-code-quality --path "." --analysis cloc
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-# Ruff (Check)
+# Ruff (Check)  - Run direct!
 # ruff check --output-format=json | uv run mq ingest --stdin --name python-code-quality --path "." --analysis ruff
 #-------------------------------------------------------------------------------
 
@@ -88,7 +95,7 @@ help = "Clear the database entirely(!) 🔥 HIGH RISK 🔥"
 
 [tool.poe.tasks.sql]
 cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""
-help = "Run the litecli command against our database"
+help = "Run the litecli command against our persistent store."
 
 #-------------------------------------------------------------------------------
 # Tests

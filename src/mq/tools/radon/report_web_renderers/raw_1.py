@@ -1,15 +1,13 @@
 """Raw - Level 1."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.radon.models import query_raw
 
 
-def raw_1(args: Namespace, scan: Scan):
-    rows, totals = query_raw(args, "1", scan)
+def raw_1(scan: Scan):
+    rows, totals = query_raw("1", scan)
 
     # fmt: off
     t_head = fh.Tr(

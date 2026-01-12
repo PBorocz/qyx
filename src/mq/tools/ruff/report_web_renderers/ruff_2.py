@@ -1,15 +1,13 @@
 """Report data obo running 'ruff' tool for level 2."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.ruff.models import query
 
 
-def ruff_2(args: Namespace, scan: Scan):
-    rows = query(args, "2", scan=scan)
+def ruff_2(scan: Scan):
+    rows = query("2", scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Rule", scope="col", style="text-align: left"),

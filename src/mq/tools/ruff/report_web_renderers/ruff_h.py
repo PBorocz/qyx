@@ -1,6 +1,5 @@
 """Report data obo running 'ruff' tool."""
 
-from argparse import Namespace
 from datetime import datetime
 
 from pygal import DateTimeLine
@@ -11,10 +10,9 @@ from mq.tools.ruff.models import query
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def ruff_h(args: Namespace, project: Project):
+def ruff_h(project: Project):
     # Create Pygal chart
-    args.options.last = 999  # Override to get ALL the data we have!
-    _, rows, _ = query(args, "history", project=project)
+    _, rows, _ = query("h", project=project)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

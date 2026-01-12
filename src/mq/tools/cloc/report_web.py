@@ -37,9 +37,9 @@ def render_current(request, s_project_id: str = None, analysis: str = None):
 
     return fh.Section(
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display(collapse_today=True)}")),
-        fh.Details(fh.Summary("Summary"), name="details", open=True, *cloc_0(args, scan)),
-        fh.Details(fh.Summary("By Directory"), name="details", *cloc_1(args, scan)),
-        fh.Details(fh.Summary("By File"), name="details", *cloc_2(args, scan)),
+        fh.Details(fh.Summary("Summary"), name="details", open=True, *cloc_0(scan)),
+        fh.Details(fh.Summary("By Directory"), name="details", *cloc_1(scan)),
+        fh.Details(fh.Summary("By File"), name="details", *cloc_2(scan)),
         cls="bordered",
     )
 

@@ -1,15 +1,13 @@
 """HAL - Level 1."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.radon.models import query_hal, RadonHal
 
 
-def hal_1(args: Namespace, scan: Scan):
-    rows, mean_means = query_hal(args, "1", scan)
+def hal_1(scan: Scan):
+    rows, mean_means = query_hal("1", scan)
 
     t_tr = [fh.Th("Metric", scope="col", style="text-align: left")]
     for display, attr, _ in RadonHal.attrs():

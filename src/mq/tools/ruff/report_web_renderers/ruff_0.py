@@ -1,7 +1,5 @@
 """Report data obo running 'ruff' tool for level 0."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
@@ -9,8 +7,8 @@ from mq.tools.base import Scan
 from mq.tools.ruff.models import query
 
 
-def ruff_0(args: Namespace, scan: Scan):
-    row = query(args, "0", scan=scan)
+def ruff_0(scan: Scan):
+    row = query("0", scan=scan)
     return (
         fh.Table(
             fh.Tbody(

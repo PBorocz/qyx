@@ -27,10 +27,10 @@ class Fxtd(BaseResultsModel):
 
 
 def query(
-    args: Namespace,
     level: str,
     project: Project = None,
     scan: Scan = None,
+    last: int = 5,
 ) -> Fxtd:
     match level.lower():
         case "0":
@@ -77,7 +77,7 @@ def query(
                 )
                 .join(Request)
                 .order_by(Scan.as_of.desc())
-                .limit(args.options.last)
+                .limit(last)
             )
 
             ################################################################################################

@@ -1,6 +1,5 @@
 """Report history for the Radon tool - Raw analysis."""
 
-from argparse import Namespace
 from datetime import datetime
 
 from pygal import DateTimeLine
@@ -11,10 +10,9 @@ from mq.tools.radon.models import query_raw
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def raw_h(args: Namespace, project: Project):
+def raw_h(project: Project):
     """Create Pygal chart."""
-    args.options.last = 9999
-    timestamps, transposed, rocs, roc_gt = query_raw(args, "h", project=project)
+    timestamps, transposed, rocs, roc_gt = query_raw("h", project=project)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

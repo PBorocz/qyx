@@ -27,37 +27,36 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
 
     match args.level.lower():
         case "0":
-            _report_0(args, scan)
+            _report_0(scan)
         case "1":
-            _report_1(args, scan)
+            _report_1(scan)
         case "2":
-            _report_2(args, scan)
+            _report_2(scan)
         case "h" | "history":
-            assert isinstance(scan, Scan)
-            _report_h(args, project, scan)
+            _report_h(project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
 
 
-def _report_0(args: Namespace, scan: Scan) -> None:
-    result = query(args, "0", scan=scan)
+def _report_0(scan: Scan) -> None:
+    result = query("0", scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("Code", justify="center")
     table.add_column("Comment", justify="center")
     table.add_column("Blank", justify="center")
     table.add_column("TOTAL", justify="center")
     table.add_row(
-        fmt(result.lines_code, args.options.percentages),
-        fmt(result.lines_comment, args.options.percentages),
-        fmt(result.lines_blank, args.options.percentages),
-        fmt(result.lines_total, args.options.percentages),
+        f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
+        f"{result.lines_comment:,d} ({result.lines_comment_p:.1f}%)",
+        f"{result.lines_blank:,d} ({result.lines_blank_p:.1f}%)",
+        f"{result.lines_total:,d}",
     )
     cli_console.print(table)
 
 
-def _report_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
-    grand_total = query(args, "0", scan=scan)
-    detail_rows = query(args, "1", scan=scan)
+def _report_1(scan: Scan, percentage: bool = False) -> None:
+    grand_total = query("0", scan=scan)
+    detail_rows = query("1", scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
     table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.options.percentages))
@@ -68,16 +67,16 @@ def _report_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
     for result in detail_rows:
         table.add_row(
             result.directory,
-            fmt(result.lines_code, args.options.percentages),
-            fmt(result.lines_comment, args.options.percentages),
-            fmt(result.lines_blank, args.options.percentages),
-            fmt(result.lines_total, args.options.percentages),
+            f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
+            f"{result.lines_comment:,d} ({result.lines_comment_p:.1f}%)",
+            f"{result.lines_blank:,d} ({result.lines_blank_p:.1f}%)",
+            f"{result.lines_total:,d} ({result.lines_total_p:.1f}%)",
         )
     cli_console.print(table)
 
 
-def _report_2(args: Namespace, scan: Scan) -> None:
-    rows, column_totals, grand_total = query(args, "2", scan=scan)
+def _report_2(scan: Scan) -> None:
+    rows, column_totals, grand_total = query("2", scan=scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
@@ -96,8 +95,8 @@ def _report_2(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _report_h(args: Namespace, project: Project, scan: Scan) -> None:
-    timestamps, rows, transposed, grand_totals, roc, adgs = query(args, "history", project=project, scan=scan)
+def _report_h(project: Project, scan: Scan) -> None:
+    timestamps, rows, transposed, grand_totals, roc, adgs = query("history", project=project, scan=scan)
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)

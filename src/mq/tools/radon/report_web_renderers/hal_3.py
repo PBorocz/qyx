@@ -1,15 +1,13 @@
 """HAL - Level 3."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.radon.models import query_hal, RadonHal
 
 
-def hal_3(args: Namespace, scan: Scan):
-    rows, _ = query_hal(args, "3", scan)
+def hal_3(scan: Scan):
+    rows, _ = query_hal("3", scan)
 
     t_tr = [
         fh.Th("File", scope="col", style="text-align: left"),

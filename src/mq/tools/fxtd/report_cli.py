@@ -39,8 +39,8 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'mq report --help' for valid options.")
 
 
-def _report_0(args: Namespace, scan: Scan) -> None:
-    results = query(args, "0", scan=scan)
+def _report_0(scan: Scan) -> None:
+    results = query("0", scan=scan)
     grand_total = sum([result.count for result in results])
     show_footer = True if results else False
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=show_footer)
@@ -51,8 +51,8 @@ def _report_0(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _report_1(args: Namespace, scan: Scan) -> None:
-    results = query(args, "1", scan=scan)
+def _report_1(scan: Scan) -> None:
+    results = query("1", scan=scan)
     grand_total = sum([result.count for result in results])
     show_footer = True if results else False
 
@@ -65,8 +65,8 @@ def _report_1(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _report_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, "2", scan=scan)
+def _report_2(scan: Scan) -> None:
+    rows = query("2", scan=scan)
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
     table.add_column("Type")
     table.add_column("File [line]")
@@ -77,9 +77,9 @@ def _report_2(args: Namespace, scan: Scan) -> None:
 
 
 # History at the "0" level...
-def _report_h(args: Namespace, project: Project) -> None:
+def _report_h(project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, transposed, rocs = query(args, "history", project=project)
+    timestamps, transposed, rocs = query("history", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -112,9 +112,9 @@ def _report_h(args: Namespace, project: Project) -> None:
 
 
 # History at the "1" level!
-def _report_history(args: Namespace, project: Project) -> None:
+def _report_history(project: Project) -> None:
     """Report on the history of scans "across"."""
-    rows, messages, transposed, grand_totals = query(args, "history", project=project)
+    rows, messages, transposed, grand_totals = query("history", project=project)
     ################################################################################################
     # Render the table
     ################################################################################################

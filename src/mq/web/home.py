@@ -13,6 +13,7 @@ from mq.tools.radon.report_web_renderers.hal_0 import hal_0
 from mq.tools.radon.report_web_renderers.mi_0 import mi_0
 from mq.tools.radon.report_web_renderers.raw_0 import raw_0
 from mq.tools.ruff.report_web_renderers.ruff_0 import ruff_0
+from mq.tools.ruff.report_web_renderers.ruff_d import ruff_d
 from mq.web import render_project_selector
 from mq.web.page import render_page
 
@@ -44,38 +45,38 @@ def render_partial_project_summary(request, s_project_id: str):
 
     fh_section = fh.Section(
         fh.Div(
-            fh.Div(*project_level_0s[("cloc", "cloc")]),
-            fh.Div(*project_level_ds[("cloc", "cloc")]),
+            fh.Div(*project_level_0s.get(("cloc", "cloc"), [])),
+            fh.Div(*project_level_ds.get(("cloc", "cloc"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*project_level_0s[("ruff", "ruff")]),
-            # fh.Div(*project_level_0s[("ruff", "ruff")]),
+            fh.Div(*project_level_0s.get(("ruff", "ruff"), [])),
+            fh.Div(*project_level_ds.get(("ruff", "ruff"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*project_level_0s[("radon", "mi")]),
-            # fh.Div(*project_level_0s[("radon", "mi")]),
+            fh.Div(*project_level_0s.get(("radon", "mi"), [])),
+            fh.Div(*project_level_ds.get(("radon", "mi"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*project_level_0s[("radon", "cc")]),
-            # fh.Div(*project_level_0s[("radon", "cc")]),
+            fh.Div(*project_level_0s.get(("radon", "cc"), [])),
+            fh.Div(*project_level_ds.get(("radon", "cc"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*project_level_0s[("radon", "hal")]),
-            # fh.Div(*project_level_0s[("radon", "hal")]),
+            fh.Div(*project_level_0s.get(("radon", "hal"), [])),
+            fh.Div(*project_level_ds.get(("radon", "hal"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*project_level_0s[("radon", "raw")]),
-            # fh.Div(*project_level_0s[("radon", "raw")]),
+            fh.Div(*project_level_0s.get(("radon", "raw"), [])),
+            fh.Div(*project_level_ds.get(("radon", "raw"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*project_level_0s[("fxtd", "fxtd")]),
-            # fh.Div(*project_level_0s[("fxtd", "fxtd")]),
+            fh.Div(*project_level_0s.get(("fxtd", "fxtd"), [])),
+            fh.Div(*project_level_ds.get(("fxtd", "fxtd"), [])),
             cls="grid",
         ),
     )
@@ -97,7 +98,7 @@ def get_project_level_0s(args: Namespace, project: Project) -> dict:
         ("radon", "raw", raw_0),
     ):
         if scan := Scan.get_most_recent(project, tool, analysis):
-            if level_contents := level_method(args, scan):
+            if level_contents := level_method(scan):
                 h3 = tool.title() if tool == analysis else f"{tool.title()}: {analysis.upper()}"
                 content[(tool, analysis)] = (fh.H4(h3), *level_contents)
 
@@ -109,16 +110,15 @@ def get_project_level_ds(args: Namespace, project: Project) -> dict:
 
     for tool, analysis, level_method in (
         ("cloc", "cloc", cloc_d),
-        # ("ruff", "ruff", ruff_0),
-        # ("fxtd", "fxtd", fxtd_0),
-        # ("radon", "cc", cc_0),
-        # ("radon", "hal", hal_0),
-        # ("radon", "mi", mi_0),
-        # ("radon", "raw", raw_0),
+        ("ruff", "ruff", ruff_d),
+        # ("fxtd", "fxtd", fxtd_d),
+        # ("radon", "cc", cc_d),
+        # ("radon", "hal", hal_d),
+        # ("radon", "mi", mi_d),
+        # ("radon", "raw", raw_d),
     ):
         if scan := Scan.get_most_recent(project, tool, analysis):
-            if level_contents := level_method(args, scan):
-                h3 = tool.title() if tool == analysis else f"{tool.title()}: {analysis.upper()}"
-                content[(tool, analysis)] = (fh.H4(h3), *level_contents)
+            if level_contents := level_method(project, scan):
+                content[(tool, analysis)] = (fh.H4("Derived"), *level_contents)
 
     return content

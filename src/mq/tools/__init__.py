@@ -54,7 +54,7 @@ def setup_tools(args: Namespace) -> dict:
 ################################################################################################
 # Misc. utilities functions
 ################################################################################################
-def format_int_or_percentage(value, as_percentage):
+def format_int_or_percentage(value: float, as_percentage: bool = False) -> str:
     return f"{value:.0f}%" if as_percentage else f"{value:,}"
 
 

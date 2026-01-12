@@ -33,10 +33,10 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
         log.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
         return None
 
-    _dispatch_level_submodule(args, project=project, scan=scan, analysis=analysis)
+    _dispatch_level_submodule(project=project, scan=scan, analysis=analysis)
 
 
-def _dispatch_level_submodule(args: Namespace, project: Project, scan: Scan, analysis: str) -> None:
+def _dispatch_level_submodule(project: Project, scan: Scan, analysis: str) -> None:
     """Dispatch to the report method using the report level and sub_module requested."""
     current_module: types.Module = sys.modules[__name__]
     method_name: str = f"_{analysis}_{args.level.lower()}"
@@ -48,13 +48,13 @@ def _dispatch_level_submodule(args: Namespace, project: Project, scan: Scan, ana
         log.error(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
         return
 
-    method(args, project=project, scan=scan)
+    method(project=project, scan=scan)
 
 
 ################################################################################################
 # RAW
 ################################################################################################
-def _raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
+def _raw_0(project: Project = None, scan: Scan = None) -> None:
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}")
     # fmt: off
     table.add_column("LLOC"            , justify="right")
@@ -65,7 +65,7 @@ def _raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Single Comments" , justify="right")
     table.add_column("Total"           , justify="right")
     # fmt: on
-    for row in query_raw(args, "0", scan):
+    for row in query_raw("0", scan):
         table.add_row(
             f"{row.lloc:,}",
             f"{row.sloc:,}",
@@ -78,8 +78,8 @@ def _raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, totals = query_raw(args, "1", scan)
+def _raw_1(project: Project = None, scan: Scan = None) -> None:
+    rows, totals = query_raw("1", scan)
 
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}", show_footer=True)
     # fmt: off
@@ -106,8 +106,8 @@ def _raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_raw(args, "2", scan)
+def _raw_2(project: Project = None, scan: Scan = None) -> None:
+    rows = query_raw("2", scan)
     # Calculate grand totals
     totals = defaultdict(int)
     for row in rows:
@@ -141,8 +141,8 @@ def _raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _raw_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, rocs, roc_gt = query_raw(args, "h", project=project)
+def _raw_h(project: Project = None, scan: Scan = None) -> None:
+    timestamps, transposed, rocs, roc_gt = query_raw("h", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-RAW Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")
@@ -172,8 +172,8 @@ def _raw_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 ################################################################################################
 # MI
 ################################################################################################
-def _mi_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    row = query_mi(args, "0", scan)
+def _mi_0(project: Project = None, scan: Scan = None) -> None:
+    row = query_mi("0", scan)
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -184,8 +184,8 @@ def _mi_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _mi_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, mean_mi_mean, mean_mi_mean_footer, show_footer = query_mi(args, "1", scan)
+def _mi_1(project: Project = None, scan: Scan = None) -> None:
+    rows, mean_mi_mean, mean_mi_mean_footer, show_footer = query_mi("1", scan)
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
@@ -198,8 +198,8 @@ def _mi_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _mi_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, avg_footer, show_footer = query_mi(args, "2", scan)
+def _mi_2(project: Project = None, scan: Scan = None) -> None:
+    rows, avg_footer, show_footer = query_mi("2", scan)
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
@@ -216,8 +216,8 @@ def _mi_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_mi(args, "h", project=project)
+def _mi_h(project: Project = None, scan: Scan = None) -> None:
+    timestamps, transposed, roc = query_mi("h", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-MI Results Over Time")
     table.add_column("Metric")
@@ -246,8 +246,8 @@ def _mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 ################################################################################################
 # CC
 ################################################################################################
-def _cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "0", scan)
+def _cc_0(project: Project = None, scan: Scan = None) -> None:
+    rows = query_cc("0", scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")
@@ -262,8 +262,8 @@ def _cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "1", scan)
+def _cc_1(project: Project = None, scan: Scan = None) -> None:
+    rows = query_cc("1", scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Directory", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -280,8 +280,8 @@ def _cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "2", scan)
+def _cc_2(project: Project = None, scan: Scan = None) -> None:
+    rows = query_cc("2", scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -298,8 +298,8 @@ def _cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _cc_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "3", scan)
+def _cc_3(project: Project = None, scan: Scan = None) -> None:
+    rows = query_cc("3", scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Name", justify="left")
@@ -317,8 +317,8 @@ def _cc_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_cc(args, "h", project=project)
+def _cc_h(project: Project = None, scan: Scan = None) -> None:
+    timestamps, transposed, roc = query_cc("h", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-CC Results Over Time")
     table.add_column("Complexity", justify="left")
@@ -352,8 +352,8 @@ def _cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 ################################################################################################
 # HAL
 ################################################################################################
-def _hal_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    row = query_hal(args, "0", scan)
+def _hal_0(project: Project = None, scan: Scan = None) -> None:
+    row = query_hal("0", scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     table.add_column("Metric")
     table.add_column("Value", justify="right")
@@ -362,8 +362,8 @@ def _hal_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _hal_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, mean_means = query_hal(args, "1", scan)
+def _hal_1(project: Project = None, scan: Scan = None) -> None:
+    rows, mean_means = query_hal("1", scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="Mean")
     for display, attr, _ in RadonHal.attrs():
@@ -376,8 +376,8 @@ def _hal_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _hal_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, means = query_hal(args, "2", scan)
+def _hal_2(project: Project = None, scan: Scan = None) -> None:
+    rows, means = query_hal("2", scan)
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
@@ -395,8 +395,8 @@ def _hal_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _hal_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, means = query_hal(args, "3", scan)
+def _hal_3(project: Project = None, scan: Scan = None) -> None:
+    rows, means = query_hal("3", scan)
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
@@ -415,8 +415,8 @@ def _hal_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def _hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, rocs = query_hal(args, "h", project=project)
+def _hal_h(project: Project = None, scan: Scan = None) -> None:
+    timestamps, transposed, rocs = query_hal("h", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-HAL Results Over Time")
     table.add_column("Metric", justify="left")

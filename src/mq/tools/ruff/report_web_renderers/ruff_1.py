@@ -1,7 +1,5 @@
 """Report data obo running 'ruff' tool for level 1."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
@@ -9,9 +7,9 @@ from mq.tools.ruff.models import query
 from mq.tools.ruff import get_ruff_rule_name
 
 
-def ruff_1(args: Namespace, scan: Scan):
-    summary = query(args, "0", scan=scan)
-    results = query(args, "1", scan=scan)
+def ruff_1(scan: Scan):
+    summary = query("0", scan=scan)
+    results = query("1", scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Rule", scope="col", style="text-align: left"),

@@ -28,19 +28,19 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
     log.debug(f"{scan=}")
     match args.level.lower():
         case "0":
-            _report_0(args, scan)
+            _report_0(scan)
         case "1":
-            _report_1(args, scan)
+            _report_1(scan)
         case "2":
-            _report_2(args, scan)
+            _report_2(scan)
         case "h":
-            _report_h(args, project)
+            _report_h(project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'mq report --help' for valid options.")
 
 
-def _report_0(args: Namespace, scan: Scan) -> None:
-    row = query(args, "0", scan=scan)
+def _report_0(scan: Scan) -> None:
+    row = query("0", scan=scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -48,9 +48,9 @@ def _report_0(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _report_1(args: Namespace, scan: Scan) -> None:
-    summary = query(args, "0", scan=scan)
-    results = query(args, "1", scan=scan)
+def _report_1(scan: Scan) -> None:
+    summary = query("0", scan=scan)
+    results = query("1", scan=scan)
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
@@ -62,8 +62,8 @@ def _report_1(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def _report_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, "2", scan=scan)
+def _report_2(scan: Scan) -> None:
+    rows = query("2", scan=scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule")
     table.add_column("File [line]")
@@ -74,9 +74,9 @@ def _report_2(args: Namespace, scan: Scan) -> None:
 
 
 # History at the "0" level...
-def _report_h(args: Namespace, project: Project) -> None:
+def _report_h(project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, rows, roc = query(args, "history", project=project)
+    timestamps, rows, roc = query("history", project=project)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -110,9 +110,9 @@ def _report_h(args: Namespace, project: Project) -> None:
 
 
 # History at the "1" level!
-def _report_history(args: Namespace, project: Project) -> None:
+def _report_history(project: Project) -> None:
     """Report on the history of scans "across"."""
-    rows, messages, transposed, grand_totals = query(args, "history", project=project)
+    rows, messages, transposed, grand_totals = query("history", project=project)
     ################################################################################################
     # Render the table
     ################################################################################################

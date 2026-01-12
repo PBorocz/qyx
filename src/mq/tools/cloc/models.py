@@ -33,7 +33,6 @@ class Cloc(BaseResultsModel):
 
 
 def query(
-    args: Namespace,
     level: str = "0",
     project: Project = None,
     scan: Scan = None,
@@ -45,13 +44,13 @@ def query(
             return _query_1(scan)
         case "2":
             return _query_2(scan)
-        case "h":
-            return _query_h(project, last=args.options.last)
         case "d":
             return _query_d(scan)
+        case "h":
+            return _query_h(project)
 
 
-def _query_0(scan: Scan, percentages: bool = False) -> Any:
+def _query_0(scan: Scan) -> Any:
     row = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -64,17 +63,17 @@ def _query_0(scan: Scan, percentages: bool = False) -> Any:
         .where(Cloc.scan == scan)
         .get()
     )
-    if percentages:
-        # Convert to percentage of total:
-        row.lines_blank = (row.lines_blank / row.lines_total) * 100.0
-        row.lines_code = (row.lines_code / row.lines_total) * 100.0
-        row.lines_comment = (row.lines_comment / row.lines_total) * 100.0
-        row.lines_total = Decimal(100.0)
+
+    # Convert to percentage of total:
+    row.lines_blank_p = (row.lines_blank / row.lines_total) * 100.0
+    row.lines_code_p = (row.lines_code / row.lines_total) * 100.0
+    row.lines_comment_p = (row.lines_comment / row.lines_total) * 100.0
+
     return row
 
 
-def _query_1(scan: Scan, percentages: bool = False) -> Any:
-    grand_total = _query_0(scan, percentages=False)
+def _query_1(scan: Scan) -> Any:
+    grand_total = _query_0(scan)
     rows = (
         Cloc.select(
             Cloc.directory,
@@ -89,17 +88,16 @@ def _query_1(scan: Scan, percentages: bool = False) -> Any:
         .group_by(Cloc.directory)
         .order_by(Cloc.directory)
     )
-    if percentages:
-        # Convert to percentage of total:
-        for row in rows:
-            row.lines_code = (row.lines_code / grand_total.lines_code) * 100.0
-            row.lines_blank = (row.lines_blank / grand_total.lines_blank) * 100.0
-            row.lines_comment = (row.lines_comment / grand_total.lines_comment) * 100.0
-            row.lines_total = (row.lines_total / grand_total.lines_total) * 100.0
+    # Convert to percentage of total:
+    for row in rows:
+        row.lines_code_p = (row.lines_code / grand_total.lines_code) * 100.0
+        row.lines_blank_p = (row.lines_blank / grand_total.lines_blank) * 100.0
+        row.lines_comment_p = (row.lines_comment / grand_total.lines_comment) * 100.0
+        row.lines_total_p = (row.lines_total / grand_total.lines_total) * 100.0
     return rows
 
 
-def _query_2(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str, int], int]:
+def _query_2(scan: Scan) -> [list[Cloc], dict[str, int], int]:
     rows = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename)
     column_totals = defaultdict(int)
     for row in rows:
@@ -109,23 +107,20 @@ def _query_2(scan: Scan, percentages: bool = False) -> [list[Cloc], dict[str, in
         row.lines_total = row.lines_blank + row.lines_comment + row.lines_code
     grand_total = sum(list(column_totals.values()))
 
-    if percentages:
-        for row in rows:
-            row.lines_code = (row.lines_code / column_totals["lines_code"]) * 100.0
-            row.lines_comment = (row.lines_comment / column_totals["lines_blank"]) * 100.0
-            row.lines_blank = (row.lines_blank / column_totals["lines_code"]) * 100.0
-            row.lines_total = (row.lines_total / grand_total) * 100.0
+    for row in rows:
+        row.lines_code_p = (row.lines_code / column_totals["lines_code"]) * 100.0
+        row.lines_comment_p = (row.lines_comment / column_totals["lines_blank"]) * 100.0
+        row.lines_blank_p = (row.lines_blank / column_totals["lines_code"]) * 100.0
+        row.lines_total_p = (row.lines_total / grand_total) * 100.0
 
-        column_totals["lines_blank"] = (column_totals["lines_blank"] / grand_total) * 100.0
-        column_totals["lines_code"] = (column_totals["lines_code"] / grand_total) * 100.0
-        column_totals["lines_comment"] = (column_totals["lines_comment"] / grand_total) * 100.0
-        grand_total = 100.0
+    column_totals["lines_blank"] = (column_totals["lines_blank"] / grand_total) * 100.0
+    column_totals["lines_code"] = (column_totals["lines_code"] / grand_total) * 100.0
+    column_totals["lines_comment"] = (column_totals["lines_comment"] / grand_total) * 100.0
+    grand_total = 100.0
     return rows, dict(column_totals), grand_total
 
 
-def _query_h(project: Project, last: int) -> tuple[list[str], defaultdict, defaultdict]:
-    # TODO: Add support for percentages here..
-
+def _query_h(project: Project, last: int = 5) -> tuple[list[str], defaultdict, defaultdict]:
     # If the most recent request (provided) has more than one scan,
     # use only the scan in THAT request! otherwise, scan over all the
     # scans for the project.
@@ -204,44 +199,36 @@ def _query_h(project: Project, last: int) -> tuple[list[str], defaultdict, defau
 
 
 def _query_d(scan: Scan) -> Any:
-    # Essentially query 0 but in percentages."""
+    """Calculate all 'derived' report values."""
     row = _query_0(scan)
-
-    ################################################################################
-    # Calculate the "Comment Ratio"
-    ################################################################################
-    comment_ratio = row.lines_comment / (row.lines_code + row.lines_comment)
-    if comment_ratio >= 0.20:
-        grade, color = "A", "#22c55e"
-    elif comment_ratio >= 0.15:
-        grade, color = "B", "#84cc16"
-    elif comment_ratio >= 0.10:
-        grade, color = "C", "#eab308"
-    elif comment_ratio >= 0.50:
-        grade, color = "D", "#f97316"
-    else:
-        grade, color = "F", "#ef4444"
-    row.comment_ratio = Namespace(score=comment_ratio, grade=grade, color=color)
 
     ################################################################################
     # Calculate the "Code Density"
     ################################################################################
-    code_density = row.lines_code / (row.lines_code + row.lines_blank)
-    if code_density >= 0.85:
+    code_density = (row.lines_code / (row.lines_code + row.lines_blank)) * 100.0
+    if code_density >= 85.0:
         grade, color = "C", "#eab308"
-    elif code_density >= 0.60:
+    elif code_density >= 60.0:
         grade, color = "A", "#22c55e"
     elif code_density >= 10.0:
         grade, color = "B", "#84cc16"
     row.code_density = Namespace(score=code_density, grade=grade, color=color)
 
     ################################################################################
-    # Convert to percentage of total:
+    # Calculate the "Comment Ratio"
     ################################################################################
-    row.lines_blank = (row.lines_blank / row.lines_total) * 100.0
-    row.lines_code = (row.lines_code / row.lines_total) * 100.0
-    row.lines_comment = (row.lines_comment / row.lines_total) * 100.0
-    row.lines_total = Decimal(100.0)
+    comment_ratio = row.lines_comment / (row.lines_code + row.lines_comment) * 100.0
+    if comment_ratio >= 20.0:
+        grade, color = "A", "#22c55e"
+    elif comment_ratio >= 15.0:
+        grade, color = "B", "#84cc16"
+    elif comment_ratio >= 10.0:
+        grade, color = "C", "#eab308"
+    elif comment_ratio >= 5.0:
+        grade, color = "D", "#f97316"
+    else:
+        grade, color = "F", "#ef4444"
+    row.comment_ratio = Namespace(score=comment_ratio, grade=grade, color=color)
 
     return row
 

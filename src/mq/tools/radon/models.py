@@ -1,6 +1,5 @@
 """..."""
 
-from argparse import Namespace
 from collections import defaultdict
 from typing import Any
 
@@ -157,21 +156,21 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 # Queries..
 ################################################################################################
-def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_raw(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     match level.lower():
         case "0":
-            return query_raw_0(args, level, scan, project)
+            return query_raw_0(level, scan, project)
         case "1":
-            return query_raw_1(args, level, scan, project)
+            return query_raw_1(level, scan, project)
         case "2":
-            return query_raw_2(args, level, scan, project)
+            return query_raw_2(level, scan, project)
         case "h" | "history":
-            return query_raw_h(args, level, scan, project)
+            return query_raw_h(level, scan, project)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def query_raw_0(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_raw_0(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     return RadonRaw.select(
         fn.SUM(RadonRaw.loc).alias("loc"),
         fn.SUM(RadonRaw.lloc).alias("lloc"),
@@ -183,7 +182,7 @@ def query_raw_0(args: Namespace, level: str = "0", scan: Scan = None, project: P
     ).where(RadonRaw.scan == scan)
 
 
-def query_raw_1(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_raw_1(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     rows = (
         RadonRaw.select(
@@ -209,11 +208,11 @@ def query_raw_1(args: Namespace, level: str = "0", scan: Scan = None, project: P
     return rows, totals
 
 
-def query_raw_2(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_raw_2(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.directory, RadonRaw.filename)
 
 
-def query_raw_h(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_raw_h(level: str = "0", scan: Scan = None, project: Project = None, last: int = 5) -> Any:
     # FIXME: Refactor to make this a "common" query given the number of places we use it:
     raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     scans = (
@@ -225,7 +224,7 @@ def query_raw_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
         )
         .join(Request)
         .order_by(Scan.as_of.desc())
-        .limit(args.options.last)
+        .limit(last)
     )
 
     query = (
@@ -280,23 +279,23 @@ def query_raw_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
     return timestamps, transposed, rocs, roc_gt
 
 
-def query_hal(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_hal(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     match level.lower():
         case "0":
-            return query_hal_0(args, level, scan, project)
+            return query_hal_0(level, scan, project)
         case "1":
-            return query_hal_1(args, level, scan, project)
+            return query_hal_1(level, scan, project)
         case "2":
-            return query_hal_2(args, level, scan, project)
+            return query_hal_2(level, scan, project)
         case "3":
-            return query_hal_3(args, level, scan, project)
+            return query_hal_3(level, scan, project)
         case "h":
-            return query_hal_h(args, level, scan, project)
+            return query_hal_h(level, scan, project)
         case _:
             raise RuntimeError(f"Sorry, invalid query level requested {level=}")
 
 
-def query_hal_0(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_hal_0(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     return (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
@@ -319,7 +318,7 @@ def query_hal_0(args: Namespace, level: str = "0", scan: Scan = None, project: P
     )
 
 
-def query_hal_1(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_hal_1(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     rows = (
         RadonHal.select(
             RadonHal.directory,
@@ -349,7 +348,7 @@ def query_hal_1(args: Namespace, level: str = "0", scan: Scan = None, project: P
     return rows, mean_means
 
 
-def query_hal_2(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_hal_2(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     rows = RadonHal.select().where(RadonHal.scan == scan).order_by(RadonHal.directory, RadonHal.filename)
 
     # Calculate means
@@ -360,7 +359,7 @@ def query_hal_2(args: Namespace, level: str = "0", scan: Scan = None, project: P
     return rows, means
 
 
-def query_hal_3(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_hal_3(level: str = "0", scan: Scan = None, project: Project = None) -> Any:
     rows = (
         RadonHalFunction.select(
             RadonHal.directory,
@@ -393,7 +392,7 @@ def query_hal_3(args: Namespace, level: str = "0", scan: Scan = None, project: P
     return rows, means
 
 
-def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_hal_h(level: str = "0", scan: Scan = None, project: Project = None, last: int = 5) -> Any:
     scans = (
         Scan.select()
         .where(
@@ -403,7 +402,7 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
         )
         .join(Request)
         .order_by(Scan.as_of.desc())
-        .limit(args.options.last)
+        .limit(last)
     )
 
     query = (
@@ -455,7 +454,7 @@ def query_hal_h(args: Namespace, level: str = "0", scan: Scan = None, project: P
     return timestamps, transposed, rocs
 
 
-def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_mi(level: str = "0", scan: Scan = None, project: Project = None, last: int = 5) -> Any:
     match level.lower():
         case "0":
             return RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.scan == scan).get()
@@ -507,7 +506,7 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 )
                 .join(Request)
                 .order_by(Scan.as_of.desc())
-                .limit(args.options.last)
+                .limit(last)
             )
             scan_ids = [scan.id for scan in scans]
 
@@ -545,7 +544,7 @@ def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None) -> Any:
+def query_cc(level: str = "0", scan: Scan = None, project: Project = None, last: int = 5) -> Any:
     match level.lower():
         case "0":
             return (
@@ -600,7 +599,7 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
                 )
                 .join(Request)
                 .order_by(Scan.as_of.desc())
-                .limit(args.options.last)
+                .limit(last)
             )
             query = (
                 RadonCc.select(

@@ -1,15 +1,13 @@
 """Report data obo running 'cloc' tool for level 0."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.cloc.models import query
 
 
-def cloc_0(args: Namespace, scan: Scan):
-    results = query(args, "0", scan=scan)
+def cloc_0(scan: Scan):
+    results = query("0", scan=scan)
     return (
         fh.Table(
             fh.Thead(
@@ -22,9 +20,9 @@ def cloc_0(args: Namespace, scan: Scan):
             ),
             fh.Tbody(
                 fh.Tr(
-                    fh.Td(f"{results.lines_code:,d}", style="text-align: right"),
-                    fh.Td(f"{results.lines_comment:,d}", style="text-align: right"),
-                    fh.Td(f"{results.lines_blank:,d}", style="text-align: right"),
+                    fh.Td(f"{results.lines_code:,d} ({results.lines_code_p:.1f}%)", style="text-align: right"),
+                    fh.Td(f"{results.lines_comment:,d} ({results.lines_comment_p:.1f}%)", style="text-align: right"),
+                    fh.Td(f"{results.lines_blank:,d} ({results.lines_blank_p:.1f}%)", style="text-align: right"),
                     fh.Td(f"{results.lines_total:,d}", style="text-align: right"),
                 ),
             ),
