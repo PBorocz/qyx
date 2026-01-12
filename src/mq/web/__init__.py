@@ -3,15 +3,16 @@
 from fasthtml import common as fh
 
 from mq.tools.base import Project
+from mq.utils.state import load_state
 
 
-def render_project_selector(request, session, hx_get: str):
+def render_project_selector(request, hx_get: str):
     """Return a form to allow selection over all projects."""
-    fh_select = get_project_select(request, session, hx_get)
+    fh_select = get_project_select(request, hx_get)
     return fh.Form(fh.Fieldset(fh_select))
 
 
-def get_project_select(request, session, hx_get: str):
+def get_project_select(request, hx_get: str):
     """Return a select widget with options across all projects, reflecting state.
 
     We keep this separate as some tools will want to create their own "composite"
@@ -24,11 +25,12 @@ def get_project_select(request, session, hx_get: str):
 
     # Convert our project(s) into selector items..
     elif len(projects) > 1:
-        last_project = session.get("last_project", None)
+        state = load_state()  # Just load it here!
+        last_project_id = state.get("last_project_id", None)
         fh_select_items = [fh.Option("Project...", value="")]
         for project in projects:
             option_kwargs = dict(value=str(project.id))
-            if last_project and str(project.id) == last_project:
+            if last_project_id and str(project.id) == last_project_id:
                 option_kwargs["selected"] = True
             fh_select_items.append(
                 fh.Option(project.name, **option_kwargs),

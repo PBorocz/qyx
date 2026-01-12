@@ -48,11 +48,11 @@ def cloc_d(args: Namespace, scan: Scan):
                 ),
                 fh.Tr(
                     fh.Td("Code Density", style="text-align: left"),
-                    fh.Td(f"{row.code_density.score:.2f}", style="text-align: center;"),
                     fh.Td(
                         f"{row.code_density.grade}",
                         style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.code_density.color}",
                     ),
+                    fh.Td(f"{row.code_density.score:.2f}", style="text-align: center;"),
                 ),
             ),
         ),

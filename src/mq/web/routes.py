@@ -7,6 +7,7 @@ import types
 from fasthtml import common as ft
 
 from mq.web.home import render_page_home, render_partial_project_summary
+from mq.utils.state import update_state
 
 log = logging.getLogger("uvicorn")
 
@@ -18,8 +19,8 @@ def register(args, rt):
     # Static routes...
     ################################################################################
     @rt("/")
-    def get(request, session):
-        return render_page_home(request, session)
+    def get(request):
+        return render_page_home(request)
 
     # @rt("/about")
     # def about(request):
@@ -48,14 +49,14 @@ def register(args, rt):
     #     )
 
     @rt("/partials/new_project/_main_")
-    def set_project_main(request, session, project: str):
+    def set_project_main(request, project: str):
         """HTMX endpoint to update content on the main/summary page based on project selection."""
         if project:
-            session["last_project"] = project
-        return (*render_partial_project_summary(request, session, s_project_id=project),)
+            update_state("last_project_id", project)
+        return (*render_partial_project_summary(request, s_project_id=project),)
 
     @rt("/partials/new_project/{tool}")
-    def set_project_tool(request, session, tool: str, project: str, analysis: str = None):
+    def set_project_tool(request, tool: str, project: str, analysis: str = None):
         """HTMX endpoint to update content based on project selection."""
         log.debug(f"{tool=}")
         try:
@@ -65,7 +66,8 @@ def register(args, rt):
             return ft.Div(f"Unknown tool: {tool}", cls="error")
 
         if project:
-            session["last_project"] = project
+            update_state("last_project_id", project)
+            update_state("last_tool", tool)
 
         return (
             *module.render_current(request, s_project_id=project, analysis=analysis),
@@ -79,11 +81,11 @@ def register(args, rt):
         # Create a closure to capture tool_name and tool_configuration
         def make_tool_route(name, config):
             @rt(f"/{name}")
-            def render_tool_page_method(request, session):
+            def render_tool_page_method(request):
                 path_ = f"mq.tools.{name}.report_web"
                 report_web: types.Module = importlib.import_module(path_)
                 render_method = getattr(report_web, "render")
-                return render_method(request, name, config, session)
+                return render_method(request, name, config)
 
             return render_tool_page_method
 

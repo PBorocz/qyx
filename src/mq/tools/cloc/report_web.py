@@ -14,14 +14,13 @@ from mq.web.page import render_page
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(request, name, config, session):
+def render(request, name, config):
     """Do the primary page layout for this tools display page."""
     return render_page(
         request,
         name.title(),
         name,
-        session,
-        *render_project_selector(request, session, "/partials/new_project/cloc"),
+        *render_project_selector(request, "/partials/new_project/cloc"),
         fh.Div(id="page-body-content"),
     )
 

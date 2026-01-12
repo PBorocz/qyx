@@ -9,7 +9,7 @@ from fasthtml import common as ft
 CSS = None  # Will be read ONCE on first render..
 
 
-def render_navbar(request, active_page, session):
+def render_navbar(request, active_page):
     """Render our navbar."""
     # Left nav is simply branding and link back to home page...
     kwargs = dict(aria_current="page") if not active_page else dict()
@@ -22,13 +22,13 @@ def render_navbar(request, active_page, session):
         l_nav.append(ft.Li(ft.A(name, href=path, **kwargs)))
 
     # Right nav is a listing of all the tools currently available.
-    # r_nav = [*render_project_selector(request, session, "/partials")]
+    # r_nav = [*render_project_selector(request, "/partials")]
     # r_nav = []
 
     return ft.Nav(ft.Ul(*(l_nav)))
 
 
-def render_page(request, title, active_page, session, *main_page_content):
+def render_page(request, title, active_page, *main_page_content):
     """Render the content provided into this base page template."""
     global CSS
     if not CSS:
@@ -57,7 +57,7 @@ def render_page(request, title, active_page, session, *main_page_content):
             lang="en",
         ),
         ft.Body(
-            render_navbar(request, active_page, session),
+            render_navbar(request, active_page),
             ft.Main(*main_page_content),
             cls="container-fluid",
         ),

@@ -37,14 +37,13 @@ log = logging.getLogger("uvicorn")
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(request, name, config, session):
+def render(request, name, config):
     """Do the primary page layout for this tools display page."""
     return render_page(
         request,
         name.title(),
         name,
-        session,
-        *render_selectors(request, session, "/partials/new_project/radon"),
+        *render_selectors(request, "/partials/new_project/radon"),
         fh.Div(id="page-body-content"),  # This Div will be updated as the project changes via HTMX!
     )
 
@@ -52,11 +51,11 @@ def render(request, name, config, session):
 ################################################################################################
 # Selectors
 ################################################################################################
-def render_selectors(request, session, hx_get: str):
+def render_selectors(request, hx_get: str):
     ############################################################################################
     # Get our (generic) project selector widget
     ############################################################################################
-    fh_select_project = get_project_select(request, session, hx_get)
+    fh_select_project = get_project_select(request, hx_get)
 
     ############################################################################################
     # Get radon-specific analysis selector

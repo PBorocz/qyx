@@ -15,14 +15,13 @@ from mq.tools.ruff.report_web_renderers.ruff_h import ruff_h
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(request, name, config, session):
+def render(request, name, config):
     """Do the primary page layout for this tools display page."""
     return render_page(
         request,
         name.title(),
         name,
-        session,
-        *render_project_selector(request, session, "/partials/new_project/ruff"),
+        *render_project_selector(request, "/partials/new_project/ruff"),
         fh.Div(id="page-body-content"),
     )
 

@@ -20,19 +20,18 @@ from mq.web.page import render_page
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render_page_home(request, session):
+def render_page_home(request):
     return render_page(
         request,
         None,
         None,
-        session,
         fh.H1("Code Quality - Project Summary"),
-        *render_project_selector(request, session, "/partials/new_project/_main_"),
+        *render_project_selector(request, "/partials/new_project/_main_"),
         fh.Div(id="page-body-content"),
     )
 
 
-def render_partial_project_summary(request, session, s_project_id: str):
+def render_partial_project_summary(request, s_project_id: str):
     """Render the home/summary page."""
     if not s_project_id:
         return fh.Section()
