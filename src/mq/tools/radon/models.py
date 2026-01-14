@@ -793,36 +793,37 @@ def _query_cc_h(project: Project, last: int = None) -> Any:
     return timestamps, transposed, rocs
 
 
-def _query_cc_d(scan: Scan):
+def _query_cc_d(scan: Scan):  # noqa: C901
     """Calculate derived radon-cc metric(s)."""
     # Standards reference:
     # - McCabe (1976)*: CC > 10 indicates high risk
     # - NIST          : CC > 15 is concerning, > 20 is dangerous
     results = _query_cc_0(scan)
     for result in results:
-        if result.entity_type.lower() == "class":
-            if result.mean_complexity <= 20:
-                grade, color = "A", "#22c55e"  # Simple
-            elif result.mean_complexity <= 40:
-                grade, color = "B", "#84cc16"  # Low risk
-            elif result.mean_complexity <= 80:
-                grade, color = "C", "#eab308"  # Moderate
-            elif result.mean_complexity <= 150:
-                grade, color = "D", "#f97316"  # Complex
-            else:
-                grade, color = "F", "#ef4444"  # Untestable
-        else:
-            # Functions and methods...
-            if result.mean_complexity <= 5:
-                grade, color = "A", "#22c55e"  # Simple
-            elif result.mean_complexity <= 10:
-                grade, color = "B", "#84cc16"  # Low risk
-            elif result.mean_complexity <= 20:
-                grade, color = "C", "#eab308"  # Moderate
-            elif result.mean_complexity <= 50:
-                grade, color = "D", "#f97316"  # Complex
-            else:
-                grade, color = "F", "#ef4444"  # Untestable
+        match result.entity_type.lower():
+            case "class":
+                if result.mean_complexity <= 20:
+                    grade, color = "A", "#22c55e"  # Simple
+                elif result.mean_complexity <= 40:
+                    grade, color = "B", "#84cc16"  # Low risk
+                elif result.mean_complexity <= 80:
+                    grade, color = "C", "#eab308"  # Moderate
+                elif result.mean_complexity <= 150:
+                    grade, color = "D", "#f97316"  # Complex
+                else:
+                    grade, color = "F", "#ef4444"  # Untestable
+            case _:
+                # Functions and methods...
+                if result.mean_complexity <= 5:
+                    grade, color = "A", "#22c55e"  # Simple
+                elif result.mean_complexity <= 10:
+                    grade, color = "B", "#84cc16"  # Low risk
+                elif result.mean_complexity <= 20:
+                    grade, color = "C", "#eab308"  # Moderate
+                elif result.mean_complexity <= 50:
+                    grade, color = "D", "#f97316"  # Complex
+                else:
+                    grade, color = "F", "#ef4444"  # Untestable
 
         result.cc_d = Namespace(score=result.mean_complexity, grade=grade, color=color)
 

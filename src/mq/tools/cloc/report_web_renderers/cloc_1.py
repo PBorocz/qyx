@@ -1,7 +1,5 @@
 """Report data obo running 'cloc' tool for level 1."""
 
-from argparse import Namespace
-
 from fasthtml import common as fh
 
 from mq.tools.base import Scan

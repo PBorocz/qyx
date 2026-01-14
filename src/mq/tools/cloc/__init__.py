@@ -1,8 +1,5 @@
 """Cloc Module Configuration."""
 
-from importlib import import_module
-from typing import Callable
-
 from mq.tools.base import AbstractModuleConfiguration
 from mq.tools.cloc.models import Cloc
 
@@ -28,8 +25,3 @@ class Configuration(AbstractModuleConfiguration):
             "--exclude-dir=.venv",
             absolute,
         ]
-
-    def get_ingest_method(self, _) -> Callable:
-        """Return the ingest method to parse and save Cloc JSON output."""
-        py_ingest = import_module(f"mq.tools.{self.module_name}.ingest")  # eg. .../<module>/ingest.py
-        return getattr(py_ingest, "ingest")

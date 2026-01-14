@@ -1,13 +1,11 @@
 """Ruff Module Configuration."""
 
 import json
-from importlib import import_module
-from typing import Callable
 
 from mq.tools.base import AbstractModuleConfiguration
 from mq.tools.ruff.models import Ruff
 
-RUFF_RULES = None
+RUFF_RULES = None  # Hold as a cache after first read
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
@@ -33,17 +31,12 @@ class Configuration(AbstractModuleConfiguration):
             absolute,
         ]
 
-    def get_ingest_method(self, _) -> Callable:
-        """Return the ingest method to parse and save this Ruff JSON output."""
-        py_ingest = import_module(f"mq.tools.{self.module_name}.ingest")  # eg. .../<module>/ingest.py
-        return getattr(py_ingest, "ingest")
-
 
 def get_ruff_rule_name(rule_code: str) -> dict:
     """Lookup the description of the ruff rule name for a rule code."""
     global RUFF_RULES
     if not RUFF_RULES:
-        with open("src/mq/tools/ruff/ruff_rules.json") as f:
+        with open("src/mq/tools/ruff/data/ruff_rules.json") as f:
             RUFF_RULES = json.load(f)
 
     for rule in RUFF_RULES:

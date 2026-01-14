@@ -1,7 +1,6 @@
 """Report data obo running 'radon' tool."""
 
 import logging
-from argparse import Namespace
 
 from fasthtml import common as fh
 

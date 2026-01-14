@@ -222,7 +222,7 @@ def validate_args(args: argparse.Namespace) -> bool:
     if args.command.lower() == "ingest":
         if not args.name or not args.path:
             print(
-                "[red]Sorry! both [bold]-n/--name[/bold] and [bold]-p/--path[/bold] is required to perform an ingest."
+                "[red]Sorry! both [bold]-n/--name[/bold] and [bold]-p/--path[/bold] is required to perform an ingest.",
             )
             return False
 

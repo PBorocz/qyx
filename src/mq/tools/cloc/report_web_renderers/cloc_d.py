@@ -22,7 +22,9 @@ def cloc_d(project: Project, scan: Scan):
                     fh.Td("Code Density", style="text-align: left"),
                     fh.Td(
                         f"{row.code_density.grade}",
-                        style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.code_density.color}",
+                        style="text-align: center; "
+                        "color: var(--pico-muted-color); "
+                        f"background-color: {row.code_density.color}",
                     ),
                     fh.Td(f"{row.code_density.score:.0f}%", style="text-align: center;"),
                 ),
@@ -30,7 +32,9 @@ def cloc_d(project: Project, scan: Scan):
                     fh.Td("Comment Ratio", style="text-align: left"),
                     fh.Td(
                         f"{row.comment_ratio.grade}",
-                        style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.comment_ratio.color}",
+                        style="text-align: center; "
+                        "color: var(--pico-muted-color); "
+                        f"background-color: {row.comment_ratio.color}",
                     ),
                     fh.Td(f"{row.comment_ratio.score:.0f}%", style="text-align: center;"),
                 ),

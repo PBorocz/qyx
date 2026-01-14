@@ -23,7 +23,9 @@ def ruff_d(project: Project, scan: Scan):
                     fh.Td("Violations per kLOC (Simple)", style="text-align: left"),
                     fh.Td(
                         f"{row.violations_per_kloc.grade}",
-                        style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.violations_per_kloc.color}",
+                        style="text-align: center; "
+                        "color: var(--pico-muted-color); "
+                        f"background-color: {row.violations_per_kloc.color}",
                     ),
                     fh.Td(f"{row.violations_per_kloc.score:.0f}", style="text-align: center;"),
                 ),
@@ -31,7 +33,9 @@ def ruff_d(project: Project, scan: Scan):
                     fh.Td("Violations per kLOC (Weighted)", style="text-align: left"),
                     fh.Td(
                         f"{row.weighted_violations_per_kloc.grade}",
-                        style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.weighted_violations_per_kloc.color}",
+                        style="text-align: center; "
+                        "color: var(--pico-muted-color); "
+                        f"background-color: {row.weighted_violations_per_kloc.color}",
                     ),
                     fh.Td(f"{row.weighted_violations_per_kloc.score:.0f}", style="text-align: center;"),
                 ),

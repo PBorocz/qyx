@@ -7,6 +7,8 @@ import types
 from abc import ABC
 from argparse import Namespace
 from datetime import datetime, UTC
+from importlib import import_module
+from typing import Callable
 
 import peewee as pw
 
@@ -51,9 +53,12 @@ class AbstractModuleConfiguration(ABC):
         """Return the command sent to subprocess to directly perform a CLOC operation."""
         raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
 
-    def get_ingest_method(self, *args, **kwargs):
-        """Return the parse method to parse this Radon sub_module's JSON output."""
-        raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
+    def get_ingest_method(self, *args, **kwargs) -> Callable:
+        """Return the parse method to parse this tool's JSON output."""
+        # NOTE: This implementation is the "single"-analysis tools (ruff, cloc etc.).
+        # For multi-analysis tools (like radon), this method is overridden in their respective __init__.py.
+        py_ingest = import_module(f"mq.tools.{self.module_name}.ingest")  # eg. .../<module>/ingest.py
+        return getattr(py_ingest, "ingest")
 
 
 ################################################################################################

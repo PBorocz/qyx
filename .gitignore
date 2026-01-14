@@ -10,7 +10,6 @@
 .env_dev
 .env_prod
 *.org
-*.json
 *.out
 *.toml.backup
 requirements.txt

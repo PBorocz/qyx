@@ -18,10 +18,7 @@ app, rt = None, None
 
 
 def create_app(args):
-    app, rt = fh.fast_app(
-        debug=True,
-        static_path="src/mq/web/static",
-    )
+    app, rt = fh.fast_app(static_path="src/mq/web/static")
 
     # Send our args into the FastHtml environment for availability
     # within the various page renderers:

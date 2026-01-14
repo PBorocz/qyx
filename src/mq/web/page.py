@@ -6,8 +6,6 @@ from fasthtml import common as ft
 
 # from mq.web import render_project_selector
 
-CSS = None  # Will be read ONCE on first render..
-
 
 def render_navbar(request, active_page):
     """Render our navbar."""
@@ -28,11 +26,14 @@ def render_navbar(request, active_page):
     return ft.Nav(ft.Ul(*(l_nav)))
 
 
+CSS = None  # Will be read ONCE on first render..
+
+
 def render_page(request, title, active_page, *main_page_content):
     """Render the content provided into this base page template."""
     global CSS
     if not CSS:
-        CSS = Path("src/mq/web/app.css").read_text(encoding="utf-8")
+        CSS = Path("src/mq/web/css/app.css").read_text(encoding="utf-8")
 
     s_title = "MQ"
     if title:
