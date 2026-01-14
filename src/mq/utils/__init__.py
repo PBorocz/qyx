@@ -36,7 +36,7 @@ def dt_to_display(timestamp: str, collapse_today=False) -> str:
     return dt_local.strftime(format)
 
 
-def rate_of_change_percentage(old_value: int | float, new_value: int | float):
+def rate_of_change_percentage(old_value: int | float, new_value: int | float) -> float | None:
     """Calculate the rate of change percentage between two values.
 
     Args:
@@ -50,7 +50,8 @@ def rate_of_change_percentage(old_value: int | float, new_value: int | float):
         ZeroDivisionError: If old_value is zero
     """
     if old_value == 0:
-        raise ZeroDivisionError("Cannot calculate rate of change when old_value is zero")
+        log.warning("Cannot calculate rate of change when old_value is 0.0")
+        return None
 
     assert isinstance(new_value, (int, float)), f"Sorry, got {new_value=} {type(new_value)=}"
     assert isinstance(old_value, (int, float)), f"Sorry, got {old_value=} {type(old_value)=}"

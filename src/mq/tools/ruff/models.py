@@ -35,7 +35,7 @@ def query(
     level: str,
     project: Project = None,
     scan: Scan = None,
-    last: int = 5,
+    last: int = None,
 ) -> Ruff:
     match level.lower():
         case "0":
@@ -47,7 +47,7 @@ def query(
         case "d":
             return _query_d(project, scan)
         case "h":
-            return _query_h(project)
+            return _query_h(project, last)
 
 
 def _query_0(scan: Scan):
@@ -94,7 +94,7 @@ def _query_2(scan: Scan):
     )
 
 
-def _query_h(project: Project, last: int = 5):
+def _query_h(project: Project, last: int = None):
     scans = (
         Scan.select()
         .where(
@@ -105,8 +105,9 @@ def _query_h(project: Project, last: int = 5):
         .order_by(
             Scan.as_of.desc(),
         )
-        .limit(last)
     )
+    if last:
+        scans = scans.limit(last)
 
     ################################################################################################
     # Query
@@ -140,7 +141,8 @@ def _query_h(project: Project, last: int = 5):
         value_2 = transposed.get(timestamps[-2])
         value_1 = transposed.get(timestamps[-1])
         if value_2 is not None and value_1 is not None:
-            roc = rate_of_change_percentage(value_2, value_1)
+            if not (roc := rate_of_change_percentage(value_2, value_1)):
+                log.debug(f"{timestamps[-2]=}:{value_2=} {timestamps[-1]=}:{value_1=}")
 
     return timestamps, transposed, roc
 
@@ -161,11 +163,13 @@ def _query_d(project: Project, scan: Scan):
             return None
 
     result = _query_0(scan)
+    result = _derived_violations_per_kloc(lines_of_code, result)
+    result = _derived_weighted_violations_per_kloc(lines_of_code, result, scan)
+    return result
 
-    ################################################################################
-    # Calculate simple violations per thousand loc (not including
-    # comments and blank lines)
-    ################################################################################
+
+def _derived_violations_per_kloc(lines_of_code: int, result):
+    """Calculate simple violations per thousand loc (not including comments and blank lines)."""
     violations_per_kloc = (result.count / lines_of_code) * 1000
     if violations_per_kloc == 0:
         grade, color = "A+", "#22c55e"
@@ -181,5 +185,59 @@ def _query_d(project: Project, scan: Scan):
         grade, color = "F", "#ef4444"
 
     result.violations_per_kloc = Namespace(score=violations_per_kloc, grade=grade, color=color)
-
     return result
+
+
+def _derived_weighted_violations_per_kloc(lines_of_code: int, result, scan: Scan):
+    """Calculate *weighted* violations per thousand loc (not including comments and blank lines)."""
+    weights = {
+        "F": 5,  # Pyflakes - likely bugs, runtime errors
+        "E": 3,  # Errors - PEP8 violations, code correctness
+        "B": 4,  # flake8-bugbear - likely bugs, design issues
+        "S": 4,  # Security issues - potential vulnerabilities
+        "D": 1,  # Docstring conventions - documentation quality
+        "R": 2,  # Refactoring suggestions - maintainability
+        "C": 2,  # Complexity (mccabe) - maintainability
+        "P": 1,  # Pylint conventions - style preferences
+        "A": 2,  # flake8-builtins - shadowing built-ins
+        "Q": 1,  # Quote consistency - minor style
+        "I": 1,  # Import sorting - organization
+        "N": 1,  # Naming conventions - readability
+        "T": 1,  # Print statements - debugging leftovers
+        "U": 2,  # Unused code - dead code
+        "W": 2,  # Warnings - various issues
+    }
+    violations_by_severity = __query_counts_by_rule_code_prefix(scan)
+    weighted_score = sum(violations_by_severity.get(code, 0) * weight for code, weight in weights.items())
+    weighted_violations_per_kloc = (weighted_score / lines_of_code) * 1000
+    if weighted_violations_per_kloc < 10:
+        grade, color = "A+", "#22c55e"
+    elif weighted_violations_per_kloc < 25:
+        grade, color = "B", "#84cc16"
+    elif weighted_violations_per_kloc < 50:
+        grade, color = "C", "#eab308"
+    elif weighted_violations_per_kloc < 100:
+        grade, color = "D", "#f97316"
+    else:
+        grade, color = "F", "#ef4444"
+
+    result.weighted_violations_per_kloc = Namespace(score=weighted_violations_per_kloc, grade=grade, color=color)
+    return result
+
+
+def __query_counts_by_rule_code_prefix(scan: Scan) -> dict[str, int]:
+    """Return the count of ruff results for the scan by rule code prefix."""
+    rows = (
+        Ruff.select(
+            fn.SUBSTR(Ruff.rule_code, 1, 1).alias("rule_prefix"),
+            fn.COUNT(Ruff.id).alias("count"),
+        )
+        .where(
+            Ruff.scan == scan,
+        )
+        .group_by(
+            fn.SUBSTR(Ruff.rule_code, 1, 1),
+            Ruff.rule_code,
+        )
+    )
+    return {row.rule_prefix: row.count for row in rows}

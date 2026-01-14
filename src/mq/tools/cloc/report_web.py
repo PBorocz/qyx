@@ -31,7 +31,6 @@ def render(request, name, config):
 def render_current(request, s_project_id: str = None, analysis: str = None):
     if not s_project_id:
         return fh.Section()
-    args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
     scan = Scan.get_most_recent(project, "cloc", "cloc")
 
@@ -51,7 +50,7 @@ def render_history(request, s_project_id: str = None, analysis: str = None):
     if not s_project_id:
         return fh.Section()
     project = Project.get(Project.id == int(s_project_id))
-    chart = cloc_h(request.app.state.args, project)
+    chart = cloc_h(project)
     return fh.Section(
         fh.H1("History", style="margin-top: 1rem;"),
         fh.Div(

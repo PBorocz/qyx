@@ -56,7 +56,7 @@ def scan_tree_summary(request, scans_for_request, scan_tree):
         s_analysis = scan.tool_analysis_display()
         counts[s_analysis] += 1
     for s_analysis, count in sorted(counts.items()):
-        s_scan = f"[cyan]{s_analysis.title()}[/cyan] → [green]{count:,d}[/green] scans"
+        s_scan = f"[cyan]{s_analysis}[/cyan] → [green]{count:,d}[/green] scans"
         ta_tree.add(s_scan)
 
     return scan_tree
@@ -66,13 +66,13 @@ def scan_tree_detailed(request, scans_for_request, scan_tree):
     for scan in scans_for_request:
         s_scan_count = _get_scan_count(scan)
         s_analysis = scan.tool_analysis_display()
-        delimiter = "asOf" if request.is_git else " at "
-        s_as_of_display = f"{delimiter} {dt_to_display(scan.as_of)}"
+        # delimiter = "asOf" if request.is_git else " at "
+        # s_as_of_display = f"{delimiter} {dt_to_display(scan.as_of)}"
         s_scan = (
             f"[bright_green]Scan[/bright_green] [{scan.id:3d}] → "
             f"[cyan]{s_analysis}[/cyan] "
             f"[green]{s_scan_count:4s}[/green] "
-            f"[dim]{s_as_of_display}[/dim]"
+            # f"[dim]{s_as_of_display}[/dim]"
         )
         scan_tree.add(s_scan)
 

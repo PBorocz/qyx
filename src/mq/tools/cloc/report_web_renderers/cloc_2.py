@@ -30,10 +30,10 @@ def cloc_2(scan: Scan):
 
     t_total = fh.Tr(
         fh.Td("TOTAL", style="text-align: left"),
-        fh.Td(f"{column_totals['lines_code']:,d}", style="text-align: right"),
-        fh.Td(f"{column_totals['lines_comment']:,d}", style="text-align: right"),
-        fh.Td(f"{column_totals['lines_blank']:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total:,d}", style="text-align: right"),
+        fh.Td(f"{column_totals['lines_code']:.0f}", style="text-align: right"),
+        fh.Td(f"{column_totals['lines_comment']:.0f}", style="text-align: right"),
+        fh.Td(f"{column_totals['lines_blank']:.0f}", style="text-align: right"),
+        fh.Td(f"{grand_total:.0f}", style="text-align: right"),
     )
 
     return (

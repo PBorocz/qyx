@@ -28,4 +28,4 @@ def report(args: Namespace) -> None:
             logging.error("Unable to find 'report' method in {o_tool.module_name}'s report_cli.py file!")
             return sys.exit(1)
 
-        report_method(o_tool, analysis)
+        report_method(args, o_tool, analysis)

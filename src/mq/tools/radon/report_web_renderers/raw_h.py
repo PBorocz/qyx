@@ -12,7 +12,7 @@ from mq.web import DEFAULT_CHART_STYLE
 
 def raw_h(project: Project):
     """Create Pygal chart."""
-    timestamps, transposed, rocs, roc_gt = query_raw("h", project=project)
+    timestamps, transposed, rocs, roc_gt = query_raw("h", project=project, last=None)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

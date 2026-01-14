@@ -76,7 +76,7 @@ def _report_2(scan: Scan) -> None:
 # History at the "0" level...
 def _report_h(project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, rows, roc = query("history", project=project)
+    timestamps, rows, roc = query("h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -112,7 +112,7 @@ def _report_h(project: Project) -> None:
 # History at the "1" level!
 def _report_history(project: Project) -> None:
     """Report on the history of scans "across"."""
-    rows, messages, transposed, grand_totals = query("history", project=project)
+    rows, messages, transposed, grand_totals = query("h", project=project, last=5)
     ################################################################################################
     # Render the table
     ################################################################################################

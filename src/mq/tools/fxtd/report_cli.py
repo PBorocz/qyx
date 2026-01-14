@@ -28,13 +28,13 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
     log.debug(f"{scan=}")
     match args.level.lower():
         case "0":
-            _report_0(args, scan)
+            _report_0(scan)
         case "1":
-            _report_1(args, scan)
+            _report_1(scan)
         case "2":
-            _report_2(args, scan)
+            _report_2(scan)
         case "h":
-            _report_h(args, project)
+            _report_h(project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'mq report --help' for valid options.")
 
@@ -79,7 +79,7 @@ def _report_2(scan: Scan) -> None:
 # History at the "0" level...
 def _report_h(project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, transposed, rocs = query("history", project=project)
+    timestamps, transposed, rocs = query("h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -114,7 +114,7 @@ def _report_h(project: Project) -> None:
 # History at the "1" level!
 def _report_history(project: Project) -> None:
     """Report on the history of scans "across"."""
-    rows, messages, transposed, grand_totals = query("history", project=project)
+    rows, messages, transposed, grand_totals = query("h", project=project, last=5)
     ################################################################################################
     # Render the table
     ################################################################################################

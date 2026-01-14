@@ -33,10 +33,10 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
         log.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
         return None
 
-    _dispatch_level_submodule(project=project, scan=scan, analysis=analysis)
+    _dispatch_level_submodule(args, project=project, scan=scan, analysis=analysis)
 
 
-def _dispatch_level_submodule(project: Project, scan: Scan, analysis: str) -> None:
+def _dispatch_level_submodule(args: Namespace, project: Project, scan: Scan, analysis: str) -> None:
     """Dispatch to the report method using the report level and sub_module requested."""
     current_module: types.Module = sys.modules[__name__]
     method_name: str = f"_{analysis}_{args.level.lower()}"
@@ -65,16 +65,16 @@ def _raw_0(project: Project = None, scan: Scan = None) -> None:
     table.add_column("Single Comments" , justify="right")
     table.add_column("Total"           , justify="right")
     # fmt: on
-    for row in query_raw("0", scan):
-        table.add_row(
-            f"{row.lloc:,}",
-            f"{row.sloc:,}",
-            f"{row.comments:,}",
-            f"{row.multi:,}",
-            f"{row.blank:,}",
-            f"{row.single_comments:,}",
-            f"{row.loc:,}",
-        )
+    row = query_raw("0", scan)
+    table.add_row(
+        f"{row.lloc:,}",
+        f"{row.sloc:,}",
+        f"{row.comments:,}",
+        f"{row.multi:,}",
+        f"{row.blank:,}",
+        f"{row.single_comments:,}",
+        f"{row.loc:,}",
+    )
     cli_console.print(table)
 
 
@@ -142,7 +142,7 @@ def _raw_2(project: Project = None, scan: Scan = None) -> None:
 
 
 def _raw_h(project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, rocs, roc_gt = query_raw("h", project=project)
+    timestamps, transposed, rocs, roc_gt = query_raw("h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-RAW Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")
@@ -217,7 +217,7 @@ def _mi_2(project: Project = None, scan: Scan = None) -> None:
 
 
 def _mi_h(project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_mi("h", project=project)
+    timestamps, transposed, roc = query_mi("h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-MI Results Over Time")
     table.add_column("Metric")
@@ -318,7 +318,7 @@ def _cc_3(project: Project = None, scan: Scan = None) -> None:
 
 
 def _cc_h(project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_cc("h", project=project)
+    timestamps, transposed, roc = query_cc("h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-CC Results Over Time")
     table.add_column("Complexity", justify="left")
@@ -416,7 +416,7 @@ def _hal_3(project: Project = None, scan: Scan = None) -> None:
 
 
 def _hal_h(project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, rocs = query_hal("h", project=project)
+    timestamps, transposed, rocs = query_hal("h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-HAL Results Over Time")
     table.add_column("Metric", justify="left")

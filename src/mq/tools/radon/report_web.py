@@ -93,7 +93,6 @@ def render_current(request, s_project_id: str = None, analysis: str = None):
     if not s_project_id:
         return fh.Section()
 
-    args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
     scan = Scan.get_most_recent(project, "radon", analysis)
     if not scan:
@@ -102,66 +101,66 @@ def render_current(request, s_project_id: str = None, analysis: str = None):
 
     fh_sections = [
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display()}")),
-        fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level_0(args, scan)),
-        fh.Details(fh.Summary("By Directory"), name="details", *render_level_1(args, scan)),
-        fh.Details(fh.Summary("By File"), name="details", *render_level_2(args, scan)),
+        fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level_0(scan)),
+        fh.Details(fh.Summary("By Directory"), name="details", *render_level_1(scan)),
+        fh.Details(fh.Summary("By File"), name="details", *render_level_2(scan)),
     ]
     if scan.analysis.lower() in ("cc", "hal"):
         fh_sections.append(
-            fh.Details(fh.Summary("By Item"), name="details", *render_level_3(args, scan)),
+            fh.Details(fh.Summary("By Item"), name="details", *render_level_3(scan)),
         )
     return fh.Section(*fh_sections, cls="bordered")
 
 
 # FIXME: Can we make these more dynamic?
-def render_level_0(args: Namespace, scan: Scan):
+def render_level_0(scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return cc_0(args, scan)
+            return cc_0(scan)
         case "hal":
-            return hal_0(args, scan)
+            return hal_0(scan)
         case "mi":
-            return mi_0(args, scan)
+            return mi_0(scan)
         case "raw":
-            return raw_0(args, scan)
+            return raw_0(scan)
         case _:
             return fh.Section()
 
 
-def render_level_1(args: Namespace, scan: Scan):
+def render_level_1(scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return cc_1(args, scan)
+            return cc_1(scan)
         case "hal":
-            return hal_1(args, scan)
+            return hal_1(scan)
         case "mi":
-            return mi_1(args, scan)
+            return mi_1(scan)
         case "raw":
-            return raw_1(args, scan)
+            return raw_1(scan)
         case _:
             return fh.Section()
 
 
-def render_level_2(args: Namespace, scan: Scan):
+def render_level_2(scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return cc_2(args, scan)
+            return cc_2(scan)
         case "hal":
-            return hal_2(args, scan)
+            return hal_2(scan)
         case "mi":
-            return mi_2(args, scan)
+            return mi_2(scan)
         case "raw":
-            return raw_2(args, scan)
+            return raw_2(scan)
         case _:
             return fh.Section()
 
 
-def render_level_3(args: Namespace, scan: Scan):
+def render_level_3(scan: Scan):
     match scan.analysis.lower():
         case "cc":
-            return cc_3(args, scan)
+            return cc_3(scan)
         case "hal":
-            return hal_3(args, scan)
+            return hal_3(scan)
         case _:
             return fh.Section()
 
@@ -173,22 +172,21 @@ def render_history(request, s_project_id: str = None, analysis: str = None):
     if not s_project_id:
         return fh.Section()
 
-    args = request.app.state.args
     project = Project.get(Project.id == int(s_project_id))
 
     match analysis.lower():
         case "cc":
             single = True
-            chart = cc_h(args, project)
+            chart = cc_h(project)
         case "hal":
             single = False
-            charts = hal_h(args, project)
+            charts = hal_h(project)
         case "mi":
             single = True
-            chart = mi_h(args, project)
+            chart = mi_h(project)
         case "raw":
             single = True
-            chart = raw_h(args, project)
+            chart = raw_h(project)
         case _:
             raise RuntimeError(f"Sorry, unrecognised {analysis=}")
 

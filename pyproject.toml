@@ -105,67 +105,57 @@ shell = """
   set -e
   uv run mq
   uv run mq status
-  uv run mq status --level 1
+  uv run mq status --name python-code-quality --level 1
 
-  uv run mq report --analysis cloc
-  uv run mq report --analysis cloc --level 0
-  uv run mq report --analysis cloc --level 0 --options percentage
-  uv run mq report --analysis cloc --level 1
-  uv run mq report --analysis cloc --level 1 --options percentage
-  uv run mq report --analysis cloc --level 2
-  uv run mq report --analysis cloc --level 2 --options percentage
-  uv run mq report --analysis cloc --level h
+  uv run mq report --name python-code-quality --analysis cloc
+  uv run mq report --name python-code-quality --analysis cloc --level 0
+  uv run mq report --name python-code-quality --analysis cloc --level 1
+  uv run mq report --name python-code-quality --analysis cloc --level 2
+  uv run mq report --name python-code-quality --analysis cloc --level h
 
-  uv run mq report --analysis fxtd
-  uv run mq report --analysis fxtd --level 0
-  uv run mq report --analysis fxtd --level 1
-  uv run mq report --analysis fxtd --level 2
-  uv run mq report --analysis fxtd --level h
-  uv run mq report --analysis fxtd --level h --options last:4
+  uv run mq report --name python-code-quality --analysis fxtd
+  uv run mq report --name python-code-quality --analysis fxtd --level 0
+  uv run mq report --name python-code-quality --analysis fxtd --level 1
+  uv run mq report --name python-code-quality --analysis fxtd --level 2
+  uv run mq report --name python-code-quality --analysis fxtd --level h
 
-  uv run mq report --analysis ruff
-  uv run mq report --analysis ruff --level 0
-  uv run mq report --analysis ruff --level 1
-  uv run mq report --analysis ruff --level 2
-  uv run mq report --analysis ruff --level h
-  uv run mq report --analysis ruff --level h --options last:4
+  uv run mq report --name python-code-quality --analysis ruff
+  uv run mq report --name python-code-quality --analysis ruff --level 0
+  uv run mq report --name python-code-quality --analysis ruff --level 1
+  uv run mq report --name python-code-quality --analysis ruff --level 2
+  uv run mq report --name python-code-quality --analysis ruff --level h
 
-  uv run mq report --analysis radon
-  uv run mq report --analysis radon --level 0
-  uv run mq report --analysis radon --level 1
-  uv run mq report --analysis radon --level 2
-  uv run mq report --analysis radon --level h
-  uv run mq report --analysis radon --level h --options last:4
+  uv run mq report --name python-code-quality --analysis radon
+  uv run mq report --name python-code-quality --analysis radon --level 0
+  uv run mq report --name python-code-quality --analysis radon --level 1
+  uv run mq report --name python-code-quality --analysis radon --level 2
+  uv run mq report --name python-code-quality --analysis radon --level h
 
-  uv run mq report --analysis radon:mi
-  uv run mq report --analysis radon:mi --level 0
-  uv run mq report --analysis radon:mi --level 1
-  uv run mq report --analysis radon:mi --level 2
-  uv run mq report --analysis radon:mi --level h
-  uv run mq report --analysis radon:mi --level h --options last:4
+  uv run mq report --name python-code-quality --analysis radon:mi
+  uv run mq report --name python-code-quality --analysis radon:mi --level 0
+  uv run mq report --name python-code-quality --analysis radon:mi --level 1
+  uv run mq report --name python-code-quality --analysis radon:mi --level 2
+  uv run mq report --name python-code-quality --analysis radon:mi --level h
 
-  uv run mq report --analysis radon:raw
-  uv run mq report --analysis radon:raw --level 0
-  uv run mq report --analysis radon:raw --level 1
-  uv run mq report --analysis radon:raw --level 2
-  uv run mq report --analysis radon:raw --level h
-  uv run mq report --analysis radon:raw --level h --options last:4
+  uv run mq report --name python-code-quality --analysis radon:raw
+  uv run mq report --name python-code-quality --analysis radon:raw --level 0
+  uv run mq report --name python-code-quality --analysis radon:raw --level 1
+  uv run mq report --name python-code-quality --analysis radon:raw --level 2
+  uv run mq report --name python-code-quality --analysis radon:raw --level h
 
-  uv run mq report --analysis radon:cc
-  uv run mq report --analysis radon:cc --level 0
-  uv run mq report --analysis radon:cc --level 1
-  uv run mq report --analysis radon:cc --level 2
-  uv run mq report --analysis radon:cc --level 3
-  uv run mq report --analysis radon:cc --level h
-  uv run mq report --analysis radon:cc --level h --options last:4
+  uv run mq report --name python-code-quality --analysis radon:cc
+  uv run mq report --name python-code-quality --analysis radon:cc --level 0
+  uv run mq report --name python-code-quality --analysis radon:cc --level 1
+  uv run mq report --name python-code-quality --analysis radon:cc --level 2
+  uv run mq report --name python-code-quality --analysis radon:cc --level 3
+  uv run mq report --name python-code-quality --analysis radon:cc --level h
 
-  uv run mq report --analysis radon:hal
-  uv run mq report --analysis radon:hal --level 0
-  uv run mq report --analysis radon:hal --level 1
-  uv run mq report --analysis radon:hal --level 2
-  uv run mq report --analysis radon:hal --level 3
-  uv run mq report --analysis radon:hal --level h
-  uv run mq report --analysis radon:hal --level h --options last:4
+  uv run mq report --name python-code-quality --analysis radon:hal
+  uv run mq report --name python-code-quality --analysis radon:hal --level 0
+  uv run mq report --name python-code-quality --analysis radon:hal --level 1
+  uv run mq report --name python-code-quality --analysis radon:hal --level 2
+  uv run mq report --name python-code-quality --analysis radon:hal --level 3
+  uv run mq report --name python-code-quality --analysis radon:hal --level h
 """
 help = "Run smoke test suite"
 

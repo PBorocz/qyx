@@ -12,7 +12,7 @@ from mq.web import DEFAULT_CHART_STYLE
 
 def cloc_h(project: Project):
     # Create Pygal chart
-    _, rows, _, _, _, _ = query("history", project=project)
+    _, rows, _, _, _, _ = query("h", project=project)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

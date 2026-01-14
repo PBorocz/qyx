@@ -1,12 +1,18 @@
 """Fxtd Models and Queries."""
 
+import logging
 from argparse import Namespace
 from collections import defaultdict
 
 from peewee import fn, CharField, IntegerField, JOIN
 
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
+from mq.tools.cloc.models import query as query_cloc
+from mq.tools.radon.models import query_raw
 from mq.utils import rate_of_change_percentage
+
+
+log = logging.getLogger(__name__)
 
 
 class Fxtd(BaseResultsModel):
@@ -30,91 +36,165 @@ def query(
     level: str,
     project: Project = None,
     scan: Scan = None,
-    last: int = 5,
+    last: int = None,
 ) -> Fxtd:
     match level.lower():
         case "0":
-            return (
-                Fxtd.select(
-                    Fxtd.type,
-                    fn.COUNT(Fxtd.id).alias("count"),
-                )
-                .where(Fxtd.scan == scan)
-                .group_by(Fxtd.type)
-                .order_by(fn.COUNT(Fxtd.id).desc())
-            )
-
+            return _query_0(scan)
         case "1":
-            return (
-                Fxtd.select(
-                    Fxtd.directory,
-                    Fxtd.type,
-                    fn.COUNT(Fxtd.id).alias("count"),
-                )
-                .where(Fxtd.scan == scan)
-                .group_by(Fxtd.directory, Fxtd.type)
-                .order_by(fn.COUNT(Fxtd.id).desc())
-            )
-
+            return _query_1(scan)
         case "2":
-            return (
-                Fxtd.select()
-                .where(Fxtd.scan == scan)
-                .order_by(
-                    Fxtd.directory,
-                    Fxtd.filename,
-                    Fxtd.line,
-                )
-            )
+            return _query_2(scan)
+        case "d":
+            return _query_d(project, scan)
+        case "h":
+            return _query_h(project, last)
 
-        case "h" | "history":
-            # FIXME: This query is COMMON across a bunch of stuff...
-            scans = (
-                Scan.select()
-                .where(
-                    Request.project == project,
-                    Scan.tool == "fxtd",
-                )
-                .join(Request)
-                .order_by(Scan.as_of.desc())
-                .limit(last)
-            )
 
-            ################################################################################################
-            # Query
-            ################################################################################################
-            rows = (
-                Scan.select(
-                    Scan.as_of.alias("timestamp"),
-                    Fxtd.type,
-                    fn.COUNT(Fxtd.id).alias("count"),
-                )
-                .join(Fxtd, JOIN.LEFT_OUTER)
-                .where(Scan.id.in_(scans))
-                .group_by(
-                    Scan.as_of,
-                    Fxtd.type,
-                )
-                .order_by(Scan.as_of)
-                .objects()
-            )
+def _query_0(scan: Scan):
+    return (
+        Fxtd.select(
+            Fxtd.type,
+            fn.COUNT(Fxtd.id).alias("count"),
+        )
+        .where(Fxtd.scan == scan)
+        .group_by(Fxtd.type)
+        .order_by(fn.COUNT(Fxtd.id).desc())
+    )
 
-            ################################################################################################
-            # Transpose (to get timestamps *across* instead of down and calculate grand totals)
-            ################################################################################################
-            timestamps = list({result.timestamp for result in rows})
-            transposed = defaultdict(dict)
-            for row in rows:
-                if row.count:
-                    transposed[row.type][row.timestamp] = row.count
 
-            # Calculate ROC if we can..
-            rocs = dict()
-            if len(timestamps) > 1:
-                for type_, values_by_timestamp in transposed.items():
-                    value_2 = values_by_timestamp.get(timestamps[-2])
-                    value_1 = values_by_timestamp.get(timestamps[-1])
-                    if value_2 is not None and value_1 is not None:
-                        rocs[type_] = rate_of_change_percentage(value_2, value_1)
+def _query_1(scan: Scan):
+    return (
+        Fxtd.select(
+            Fxtd.directory,
+            Fxtd.type,
+            fn.COUNT(Fxtd.id).alias("count"),
+        )
+        .where(Fxtd.scan == scan)
+        .group_by(Fxtd.directory, Fxtd.type)
+        .order_by(fn.COUNT(Fxtd.id).desc())
+    )
 
-            return timestamps, transposed, rocs
+
+def _query_2(scan: Scan):
+    return (
+        Fxtd.select()
+        .where(Fxtd.scan == scan)
+        .order_by(
+            Fxtd.directory,
+            Fxtd.filename,
+            Fxtd.line,
+        )
+    )
+
+
+def _query_h(project: Project, last: int = None):
+    # FIXME: This query is COMMON across a bunch of stuff...
+    scans = (
+        Scan.select()
+        .where(
+            Request.project == project,
+            Scan.tool == "fxtd",
+        )
+        .join(Request)
+        .order_by(Scan.as_of.desc())
+    )
+    if last:
+        scans = scans.limit(last)
+
+    ################################################################################################
+    # Query
+    ################################################################################################
+    rows = (
+        Scan.select(
+            Scan.as_of.alias("timestamp"),
+            Fxtd.type,
+            fn.COUNT(Fxtd.id).alias("count"),
+        )
+        .join(Fxtd, JOIN.LEFT_OUTER)
+        .where(Scan.id.in_(scans))
+        .group_by(
+            Scan.as_of,
+            Fxtd.type,
+        )
+        .order_by(Scan.as_of)
+        .objects()
+    )
+
+    ################################################################################################
+    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+    ################################################################################################
+    timestamps = list({result.timestamp for result in rows})
+    transposed = defaultdict(dict)
+    for row in rows:
+        if row.count:
+            transposed[row.type][row.timestamp] = row.count
+
+    # Calculate ROC if we can..
+    rocs = dict()
+    if len(timestamps) > 1:
+        for type_, values_by_timestamp in transposed.items():
+            value_2 = values_by_timestamp.get(timestamps[-2])
+            value_1 = values_by_timestamp.get(timestamps[-1])
+            if value_2 is not None and value_1 is not None:
+                rocs[type_] = rate_of_change_percentage(value_2, value_1)
+
+    return timestamps, transposed, rocs
+
+
+def _query_d(project: Project, fxtd_scan: Scan):
+    """Calculate derived fxtd metrics."""
+    # FIXME: We use this in multiple _d methods, can we centralise it?
+    cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
+    if cloc_scan:
+        result = query_cloc("0", scan=cloc_scan)
+        lines_of_code = result.lines_code
+    else:
+        radon_scan = Scan.get_most_recent(project, "radon", "raw")
+        if radon_scan:
+            result = query_raw("0", scan=radon_scan)
+            lines_of_code = result.loc
+        else:
+            log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have an LOC metrics yet!")
+            return None
+
+    results = _query_0(fxtd_scan)
+    result = _derived_scores_per_kloc(lines_of_code, results)
+    return result
+
+
+def _derived_scores_per_kloc(lines_of_code: int, rows):
+    """Calculate number of FixMe issues per thousand loc (not including comments and blank lines)."""
+    # fmt: off
+    weights = {
+        "FIXME"    : 3   ,  # Critical - broken or needs immediate fix
+        "XXX"      : 3   ,  # Critical - danger/warning marker
+        "HACK"     : 3   ,  # Critical - temporary workaround
+        "BUG"      : 3   ,  # Critical - known bug
+        "TODO"     : 1   ,  # Normal - planned work
+        "REFACTOR" : 1   ,  # Normal - planned improvement
+        "NOTE"     : 0.5 ,  # Low priority - informational
+        "OPTIMIZE" : 0.5 ,  # Low priority - performance opportunity
+        "IDEA"     : 0.5 ,  # Low priority - future consideration
+    }
+    # fmt: on
+
+    for row in rows:
+        weighting = weights.get(row.type.upper(), 1)
+        weighted_score = row.count * weighting
+        score_per_kloc = (weighted_score / lines_of_code) * 1000
+
+        if score_per_kloc < 2:
+            grade, color = "A", "#22c55e"  # < 2 weighted per kloc - Clean
+        elif score_per_kloc < 5:
+            grade, color = "B", "#84cc16"  # 2-5 per kloc - Normal
+        elif score_per_kloc < 10:
+            grade, color = "C", "#eab308"  # 5-10 per kloc - Some debt
+        elif score_per_kloc < 20:
+            grade, color = "D", "#f97316"  # 10-20 per kloc - Concerning
+        else:
+            grade, color = "F", "#ef4444"  # 20+ per kloc - Technical debt crisis
+
+        row.fxtd_d = Namespace(score=score_per_kloc, grade=grade, color=color)
+
+    return rows

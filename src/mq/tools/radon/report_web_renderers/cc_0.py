@@ -13,8 +13,7 @@ def cc_0(scan: Scan):
     # fmt: off
     t_head = fh.Tr(
         fh.Th("Entity Type", scope="col", style="text-align: left"),
-        fh.Th("Complexity" , scope="col", style="text-align: right"),
-        fh.Th("Rank"       , scope="col", style="text-align: center"),
+        fh.Th("Cyclomatic Complexity" , scope="col", style="text-align: right"),
     )
     # fmt: on
 
@@ -22,9 +21,9 @@ def cc_0(scan: Scan):
     # fmt: off
     for row in rows:
         t_row = fh.Tr(
-            fh.Td(plurals[row.entity_type]         , style="text-align: left"),
-            fh.Td(f"{row.mean_complexity:.2f}"     , style="text-align: right"),
-            fh.Td(row.get_rank(row.mean_complexity), style="text-align: center"),
+            fh.Td(plurals[row.entity_type]    , style="text-align: left"),
+
+fh.Td(f"{row.mean_complexity:.2f}", style="text-align: right"),
         )
         t_body.append(t_row)
     # fmt: off

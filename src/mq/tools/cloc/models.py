@@ -1,7 +1,6 @@
 """..."""
 
 from argparse import Namespace
-from decimal import Decimal
 from datetime import datetime
 from collections import defaultdict
 from typing import Any
@@ -32,11 +31,7 @@ class Cloc(BaseResultsModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-def query(
-    level: str = "0",
-    project: Project = None,
-    scan: Scan = None,
-) -> Any:
+def query(level: str = "0", project: Project = None, scan: Scan = None, last: int = None) -> Any:
     match level.lower():
         case "0":
             return _query_0(scan)
@@ -47,7 +42,7 @@ def query(
         case "d":
             return _query_d(scan)
         case "h":
-            return _query_h(project)
+            return _query_h(project, last)
 
 
 def _query_0(scan: Scan) -> Any:
@@ -113,14 +108,10 @@ def _query_2(scan: Scan) -> [list[Cloc], dict[str, int], int]:
         row.lines_blank_p = (row.lines_blank / column_totals["lines_code"]) * 100.0
         row.lines_total_p = (row.lines_total / grand_total) * 100.0
 
-    column_totals["lines_blank"] = (column_totals["lines_blank"] / grand_total) * 100.0
-    column_totals["lines_code"] = (column_totals["lines_code"] / grand_total) * 100.0
-    column_totals["lines_comment"] = (column_totals["lines_comment"] / grand_total) * 100.0
-    grand_total = 100.0
     return rows, dict(column_totals), grand_total
 
 
-def _query_h(project: Project, last: int = 5) -> tuple[list[str], defaultdict, defaultdict]:
+def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict, defaultdict]:
     # If the most recent request (provided) has more than one scan,
     # use only the scan in THAT request! otherwise, scan over all the
     # scans for the project.
@@ -139,8 +130,9 @@ def _query_h(project: Project, last: int = 5) -> tuple[list[str], defaultdict, d
             Scan.tool == "cloc",
         )
         .order_by(Scan.as_of.desc())
-        .limit(last)
     )
+    if last:
+        scans = scans.limit(last)
 
     query = (
         Cloc.select(
@@ -195,6 +187,7 @@ def _query_h(project: Project, last: int = 5) -> tuple[list[str], defaultdict, d
         adgs["total_comment"] = (query[-1].total_comment - query[0].total_comment) / days
         adgs["total_blank"  ] = (query[-1].total_blank   - query[0].total_blank  ) / days
         # fmt: on
+
     return timestamps, query, transposed, grand_totals, roc, adgs
 
 

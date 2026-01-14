@@ -20,12 +20,20 @@ def ruff_d(project: Project, scan: Scan):
             ),
             fh.Tbody(
                 fh.Tr(
-                    fh.Td("Violations per kLOC", style="text-align: left"),
+                    fh.Td("Violations per kLOC (Simple)", style="text-align: left"),
                     fh.Td(
                         f"{row.violations_per_kloc.grade}",
                         style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.violations_per_kloc.color}",
                     ),
                     fh.Td(f"{row.violations_per_kloc.score:.0f}", style="text-align: center;"),
+                ),
+                fh.Tr(
+                    fh.Td("Violations per kLOC (Weighted)", style="text-align: left"),
+                    fh.Td(
+                        f"{row.weighted_violations_per_kloc.grade}",
+                        style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.weighted_violations_per_kloc.color}",
+                    ),
+                    fh.Td(f"{row.weighted_violations_per_kloc.score:.0f}", style="text-align: center;"),
                 ),
             ),
         ),

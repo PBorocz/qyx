@@ -32,7 +32,7 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
             _report_1(scan)
         case "2":
             _report_2(scan)
-        case "h" | "history":
+        case "h":
             _report_h(project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
@@ -59,10 +59,17 @@ def _report_1(scan: Scan, percentage: bool = False) -> None:
     detail_rows = query("1", scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=fmt(grand_total.lines_code, args.options.percentages))
-    table.add_column("Comment", justify="right", footer=fmt(grand_total.lines_comment, args.options.percentages))
-    table.add_column("Blank", justify="right", footer=fmt(grand_total.lines_blank, args.options.percentages))
-    table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, args.options.percentages))
+
+    footer = f"{grand_total.lines_code:,d} ({grand_total.lines_code_p:.1f}%)"
+    table.add_column("Code", justify="right", footer=footer)
+
+    footer = f"{grand_total.lines_comment:,d} ({grand_total.lines_comment_p:.1f}%)"
+    table.add_column("Comment", justify="right", footer=footer)
+
+    footer = f"{grand_total.lines_blank:,d} ({grand_total.lines_blank_p:.1f}%)"
+    table.add_column("Blank", justify="right", footer=footer)
+
+    table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, False))
 
     for result in detail_rows:
         table.add_row(
@@ -80,23 +87,23 @@ def _report_2(scan: Scan) -> None:
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], args.options.percentages))
-    table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], args.options.percentages))
-    table.add_column("Blank", justify="right", footer=fmt(column_totals["lines_blank"], args.options.percentages))
-    table.add_column("TOTAL", justify="right", footer=fmt(grand_total, args.options.percentages))
+    table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], False))
+    table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], False))
+    table.add_column("Blank", justify="right", footer=fmt(column_totals["lines_blank"], False))
+    table.add_column("TOTAL", justify="right", footer=fmt(grand_total, False))
     for row in rows:
         table.add_row(
             f"{row.directory}/{row.filename}",
-            fmt(row.lines_code, args.options.percentages),
-            fmt(row.lines_comment, args.options.percentages),
-            fmt(row.lines_blank, args.options.percentages),
-            fmt(row.lines_total, args.options.percentages),
+            fmt(row.lines_code, False),
+            fmt(row.lines_comment, False),
+            fmt(row.lines_blank, False),
+            fmt(row.lines_total, False),
         )
     cli_console.print(table)
 
 
 def _report_h(project: Project, scan: Scan) -> None:
-    timestamps, rows, transposed, grand_totals, roc, adgs = query("history", project=project, scan=scan)
+    timestamps, rows, transposed, grand_totals, roc, adgs = query("h", project=project, scan=scan, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)
@@ -120,7 +127,7 @@ def _report_h(project: Project, scan: Scan) -> None:
             table.add_row(*row)
     else:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)
-        table.add_column("", justify="left", footer="Average Daily Growth")
+        table.add_column("", justify="left", footer="Mean Daily Growth")
         table.add_column("Code", justify="right", footer=f"{adgs['total_code']:,.0f}")
         table.add_column("Comment", justify="right", footer=f"{adgs['total_comment']:,.0f}")
         table.add_column("Blank", justify="right", footer=f"{adgs['total_blank']:,.0f}")

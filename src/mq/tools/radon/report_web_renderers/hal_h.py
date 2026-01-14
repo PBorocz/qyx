@@ -11,7 +11,7 @@ from mq.web import DEFAULT_CHART_STYLE
 
 
 def hal_h(project: Project):
-    timestamps, transposed, _ = query_hal("h", project=project)
+    timestamps, transposed, _ = query_hal("h", project=project, last=None)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

@@ -180,6 +180,8 @@ def get_args():
     # Enforce that no command defaults to "status"
     if args.command is None:
         args.command = "status"
+        args.name = None
+        args.level = "0"
 
     # Set report options (used both by cli and web)
     d_option_defaults = dict(percentages=False, last=2)
@@ -215,6 +217,20 @@ def validate_args(args: argparse.Namespace) -> bool:
     if args.command is None:
         if not args.name and not args.path:
             print("[red]Sorry! one of either [bold]-n/--name[/bold] or  [bold]-p/--project[/bold] is required")
+
+    # Commands that deal with projects may need BOTH a name and a path, others only a name.
+    if args.command.lower() == "ingest":
+        if not args.name or not args.path:
+            print(
+                "[red]Sorry! both [bold]-n/--name[/bold] and [bold]-p/--path[/bold] is required to perform an ingest."
+            )
+            return False
+
+    if args.command.lower() == "report":
+        if not args.name:
+            print("[red]Sorry! [bold]-n/--name[/bold] is required to report results.")
+            return False
+        # --name is OPTIONAL for status command.
 
     if "analysis" in args:
         tool, analysis, sub = split_arg_tool_analysis(args.tool_analysis)
