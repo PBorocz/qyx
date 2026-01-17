@@ -19,31 +19,24 @@ log = logging.getLogger(__name__)
 
 
 ################################################################################################
-class AbstractModuleConfiguration(ABC):
+class AbstractToolConfiguration(ABC):
     """Defines all the semantics of a code quality tool (aka module) supported by this package."""
 
     def __init__(
         self,
         module_name: str,
-        analyses: tuple[str],
-        models: tuple[BaseModel],
+        models: dict[str, BaseModel],
         **kwargs,
-    ) -> "AbstractModuleConfiguration":
+    ) -> "AbstractToolConfiguration":
         """..."""
         # Name of directory implementing the tool, e.g. "ruff" obo ../src/mq/tools/ruff
         self.module_name: str = module_name
 
         # Peewee storage models used by this tool.
-        self.models: tuple[BaseModel] = models
-
-        # Analyses support by the tool (even if 1 for stuff like cloc and ruff)
-        self.analyses: tuple[str] = analyses
+        self.models: dict[str, BaseModel] = models
 
         # Are Results "required" for a Scan to be valid? (usually yes)
         self.results_required = True
-
-        # Handle to the mq/tools/{module_name}/ module itself!
-        self.py_module: types.ModuleType = None
 
         # Save any other values sent in...
         for attr, value in kwargs.items():
@@ -53,12 +46,24 @@ class AbstractModuleConfiguration(ABC):
         """Return the command sent to subprocess to directly perform a CLOC operation."""
         raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
 
+    def import_component(self, component: str) -> types.ModuleType:
+        """Dynamically import a component from this module."""
+        return import_module(f"mq.tools.{self.module_name}.{component}")
+
     def get_ingest_method(self, *args, **kwargs) -> Callable:
         """Return the parse method to parse this tool's JSON output."""
-        # NOTE: This implementation is the "single"-analysis tools (ruff, cloc etc.).
-        # For multi-analysis tools (like radon), this method is overridden in their respective __init__.py.
-        py_ingest = import_module(f"mq.tools.{self.module_name}.ingest")  # eg. .../<module>/ingest.py
+        # NOTE: This implementation is the "single"-analysis tools
+        # (ruff, cloc etc.). For multi-analysis tools (like radon),
+        # this method is *OVERRIDDEN* in their respective __init__.py.
+        py_ingest: types.ModuleType = self.import_component("ingest")
         return getattr(py_ingest, "ingest")
+
+    def iter_tool_analysis(self):
+        """Iterator over tools and analysis returning the respective pymodule."""
+        for analysis in self.models:
+            if analysis.startswith("_"):
+                continue
+            yield self.module_name, analysis
 
 
 ################################################################################################

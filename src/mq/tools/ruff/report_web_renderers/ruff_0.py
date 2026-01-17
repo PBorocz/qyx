@@ -7,14 +7,19 @@ from mq.tools.base import Scan
 from mq.tools.ruff.models import query
 
 
-def ruff_0(scan: Scan):
+def ruff_0(scan: Scan, **kwargs):
     row = query("0", scan=scan)
     return (
         fh.Table(
+            fh.Thead(
+                fh.Tr(
+                    fh.Th("Ruff", style="text-align: left", colspan="2"),
+                ),
+            ),
             fh.Tbody(
                 fh.Tr(
-                    fh.Th(fh.B("Ruff Issues"), style="text-align: left"),
-                    fh.Td(fh.B(f"{int(row.count):,d}"), style="text-align: right"),
+                    fh.Th("Issues", style="text-align: left"),
+                    fh.Td(f"{int(row.count):,d}", style="text-align: right"),
                 ),
             ),
         ),

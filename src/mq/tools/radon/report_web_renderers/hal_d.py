@@ -25,7 +25,7 @@ def hal_d(project: Project, scan: Scan):
             fh.Td(f"{row.composite_d.score:.4f}", style="text-align: right"),
         ),
         fh.Tr(
-            fh.Td("Mean Bugs per KLOC", style="text-align: left"),
+            fh.Td("Mean Bugs per kLOC", style="text-align: left"),
             fh.Td(
                 f"{row.bugs_d.grade}",
                 style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.bugs_d.color}",

@@ -1,8 +1,11 @@
 """."""
 
+import argparse
 import logging
+import tomllib
 from argparse import Namespace
 from pathlib import Path
+from platformdirs import user_config_dir
 
 from peewee import SqliteDatabase
 from platformdirs import user_data_dir
@@ -12,6 +15,49 @@ from rich.logging import RichHandler
 from mq.tools.base import Project, Request, Scan
 
 
+################################################################################################
+def setup_configuration(app_name: str = "mq") -> tuple[argparse.ArgumentParser, list[str], dict]:
+    configuration_parser = argparse.ArgumentParser(add_help=False)
+    configuration_parser.add_argument("-c", "--config", type=Path)
+    config_args, remaining_args = configuration_parser.parse_known_args()  # Note method used here!
+
+    if config_args.config:
+        configuration = _load_config(config_args.config)
+    else:
+        configuration = _find_and_load_config(app_name)
+
+    # Irrespective of which source, return the parser and configuration settings (if any!)
+    return configuration_parser, remaining_args, configuration
+
+
+def _load_config(config_path: Path | None) -> dict:
+    """Load user's configuration from the specified path."""
+    if not config_path:
+        return {}
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"Sorry, we couldn't find a configuration file at: {config_path}")
+
+    with open(config_path, "rb") as fh_:
+        return tomllib.load(fh_)
+
+
+def _find_and_load_config(app_name: str, filename: str = "config.toml") -> dict:
+    """Find and load config from either of two possible locations: `cwd` and user config dir."""
+    # Current directory?
+    current = Path.cwd() / filename
+    if current.exists():
+        return _load_config(current)
+
+    # User config directory for our app?
+    config_path = Path(user_config_dir(app_name)) / filename
+    if config_path.exists():
+        return _load_config(config_path)
+
+    return {}
+
+
+################################################################################################
 def setup_logging(arg_log_level: str, arg_peewee_debug: bool = False) -> logging.Logger:
     level = getattr(logging, arg_log_level.upper())
     peewee_level = "DEBUG" if arg_peewee_debug else "INFO"
@@ -54,6 +100,7 @@ def setup_logging(arg_log_level: str, arg_peewee_debug: bool = False) -> logging
     peewee_logger.propagate = False
 
 
+################################################################################################
 def setup_sqlite(args: Namespace) -> None:
     db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -62,7 +109,7 @@ def setup_sqlite(args: Namespace) -> None:
     # Make sure our models have tables defined for 'em!
     models = [Project, Request, Scan]
     for configuration in args.tools.values():
-        for tool_peewee_class in configuration.models:
+        for tool_peewee_class in configuration.models.values():
             models.append(tool_peewee_class)
 
     for model_class in models:

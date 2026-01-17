@@ -2,21 +2,20 @@
 
 from pathlib import Path
 
-from mq.tools.base import AbstractModuleConfiguration
+from mq.tools.base import AbstractToolConfiguration
 from mq.tools.fxtd.models import Fxtd
 
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(AbstractModuleConfiguration):
+class Configuration(AbstractToolConfiguration):
     """Configure semantics associated with using the tool."""
 
     def __init__(self):
         """..."""
         super(Configuration, self).__init__(
             module_name="fxtd",
-            models=(Fxtd,),
-            analyses=("fxtd",),
+            models=dict(fxtd=Fxtd),
             results_required=False,  # In this case,  Scans without data ARE valid!
         )
 

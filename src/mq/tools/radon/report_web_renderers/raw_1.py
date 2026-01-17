@@ -11,14 +11,12 @@ def raw_1(scan: Scan):
 
     # fmt: off
     t_head = fh.Tr(
-        fh.Th("Directory"       , scope="col", style="text-align: left"),
-        fh.Th("LLOC"            , scope="col", style="text-align: right"),
-        fh.Th("SLOC"            , scope="col", style="text-align: right"),
-        fh.Th("Comments"        , scope="col", style="text-align: right"),
-        fh.Th("Multi"           , scope="col", style="text-align: right"),
-        fh.Th("Blank"           , scope="col", style="text-align: right"),
-        fh.Th("Single Comments" , scope="col", style="text-align: right"),
-        fh.Th("Total"           , scope="col", style="text-align: right"),
+        fh.Th("Directory" , scope="col", style="text-align: left"),
+        fh.Th("SLOC"      , scope="col", style="text-align: right"),
+        fh.Th("Comments"  , scope="col", style="text-align: right"),
+        fh.Th("Multi"     , scope="col", style="text-align: right"),
+        fh.Th("Blank"     , scope="col", style="text-align: right"),
+        fh.Th("Total"     , scope="col", style="text-align: right"),
     )
     # fmt: on
 
@@ -26,14 +24,12 @@ def raw_1(scan: Scan):
     for row in rows:
         # fmt: off
         t_row = fh.Tr(
-            fh.Td(row.directory              , style="text-align: left"),
-            fh.Td(f"{row.lloc:,}"            , style="text-align: right"),
-            fh.Td(f"{row.sloc:,}"            , style="text-align: right"),
-            fh.Td(f"{row.comments:,}"        , style="text-align: right"),
-            fh.Td(f"{row.multi:,}"           , style="text-align: right"),
-            fh.Td(f"{row.blank:,}"           , style="text-align: right"),
-            fh.Td(f"{row.single_comments:,}" , style="text-align: right"),
-            fh.Td(f"{row.loc:,}"             , style="text-align: right"),
+            fh.Td(row.directory       , style="text-align: left"),
+            fh.Td(f"{row.sloc:,}"     , style="text-align: right"),
+            fh.Td(f"{row.comments:,}" , style="text-align: right"),
+            fh.Td(f"{row.multi:,}"    , style="text-align: right"),
+            fh.Td(f"{row.blank:,}"    , style="text-align: right"),
+            fh.Td(f"{row.loc:,}"      , style="text-align: right"),
         )
         # fmt: on
         t_body.append(t_row)

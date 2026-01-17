@@ -6,7 +6,7 @@ from mq.tools.base import Scan
 from mq.tools.fxtd.models import query
 
 
-def fxtd_0(scan: Scan):
+def fxtd_0(scan: Scan, **kwargs):
     results = query("0", scan=scan)
     grand_total = sum([result.count for result in results])
 

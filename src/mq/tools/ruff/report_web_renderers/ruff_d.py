@@ -20,7 +20,7 @@ def ruff_d(project: Project, scan: Scan):
             ),
             fh.Tbody(
                 fh.Tr(
-                    fh.Td("Violations per kLOC (Simple)", style="text-align: left"),
+                    fh.Td("Raw Ruff Issues per kLOC", style="text-align: left"),
                     fh.Td(
                         f"{row.violations_per_kloc.grade}",
                         style="text-align: center; "
@@ -30,7 +30,7 @@ def ruff_d(project: Project, scan: Scan):
                     fh.Td(f"{row.violations_per_kloc.score:.0f}", style="text-align: center;"),
                 ),
                 fh.Tr(
-                    fh.Td("Violations per kLOC (Weighted)", style="text-align: left"),
+                    fh.Td("Weighted Ruff Issues per kLOC", style="text-align: left"),
                     fh.Td(
                         f"{row.weighted_violations_per_kloc.grade}",
                         style="text-align: center; "

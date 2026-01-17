@@ -15,6 +15,7 @@ def cloc_d(project: Project, scan: Scan):
                     fh.Th("Metric", scope="col", style="text-align: left"),
                     fh.Th("Grade", scope="col", style="text-align: center"),
                     fh.Th("Value", scope="col", style="text-align: center"),
+                    fh.Th(fh.Small("Explanation"), scope="col", style="text-align: left;"),
                 ),
             ),
             fh.Tbody(
@@ -27,6 +28,7 @@ def cloc_d(project: Project, scan: Scan):
                         f"background-color: {row.code_density.color}",
                     ),
                     fh.Td(f"{row.code_density.score:.0f}%", style="text-align: center;"),
+                    fh.Td(fh.Small("Loc / (Loc + Blanks)"), style="text-align: left;"),
                 ),
                 fh.Tr(
                     fh.Td("Comment Ratio", style="text-align: left"),
@@ -37,6 +39,7 @@ def cloc_d(project: Project, scan: Scan):
                         f"background-color: {row.comment_ratio.color}",
                     ),
                     fh.Td(f"{row.comment_ratio.score:.0f}%", style="text-align: center;"),
+                    fh.Td(fh.Small("Comments / (Comments + Loc)"), style="text-align: left;"),
                 ),
             ),
         ),

@@ -1,8 +1,8 @@
 """Primary routes for MQ app, static, partial and dynamically created."""
 
-import importlib
 import logging
-import types
+from typing import Callable
+from types import ModuleType
 
 from fasthtml import common as ft
 
@@ -48,30 +48,31 @@ def register(args, rt):
     #         ),
     #     )
 
-    @rt("/partials/new_project/_main_")
+    @rt("/partials/set_project/_main_")
     def set_project_main(request, project: str):
         """HTMX endpoint to update content on the main/summary page based on project selection."""
         if project:
             update_state("last_project_id", project)
         return (*render_partial_project_summary(request, s_project_id=project),)
 
-    @rt("/partials/new_project/{tool}")
+    @rt("/partials/set_project/{tool}")
     def set_project_tool(request, tool: str, project: str, analysis: str = None):
         """HTMX endpoint to update content based on project selection."""
-        log.debug(f"{tool=}")
-        try:
-            # Dynamically import based on tool name
-            module = importlib.import_module(f"mq.tools.{tool}.report_web")
-        except ImportError:
+        if not (tool_config := args.tools.get(tool)):
             return ft.Div(f"Unknown tool: {tool}", cls="error")
+
+        try:
+            report_web_module = tool_config.import_component("report_web")
+        except ImportError:
+            return ft.Div(f"Couldn't find 'report_web' module in '{tool}'", cls="error")
 
         if project:
             update_state("last_project_id", project)
             update_state("last_tool", tool)
 
         return (
-            *module.render_current(request, s_project_id=project, analysis=analysis),
-            *module.render_history(request, s_project_id=project, analysis=analysis),
+            *report_web_module.render_current(request, s_project_id=project, analysis=analysis),
+            *report_web_module.render_history(request, s_project_id=project, analysis=analysis),
         )
 
     ################################################################################
@@ -82,9 +83,8 @@ def register(args, rt):
         def make_tool_route(name, config):
             @rt(f"/{name}")
             def render_tool_page_method(request):
-                path_ = f"mq.tools.{name}.report_web"
-                report_web: types.Module = importlib.import_module(path_)
-                render_method = getattr(report_web, "render")
+                report_web: ModuleType = config.import_component("report_web")
+                render_method: Callable = getattr(report_web, "render")
                 return render_method(request, name, config)
 
             return render_tool_page_method

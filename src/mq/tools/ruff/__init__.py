@@ -2,22 +2,21 @@
 
 import json
 
-from mq.tools.base import AbstractModuleConfiguration
+from mq.tools.base import AbstractToolConfiguration
 from mq.tools.ruff.models import Ruff
 
 RUFF_RULES = None  # Hold as a cache after first read
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(AbstractModuleConfiguration):
+class Configuration(AbstractToolConfiguration):
     """Configure semantics associated with using the ruff tool."""
 
     def __init__(self):
         """..."""
         super(Configuration, self).__init__(
             module_name="ruff",
-            models=(Ruff,),
-            analyses=("ruff",),
+            models=dict(ruff=Ruff),
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
 

@@ -17,13 +17,14 @@ log = logging.getLogger(__name__)
 class RadonRaw(BaseResultsModel):
     """Radon "RAW" metric storage."""
 
+    # NOTE: LOC = SLOC + Multi + Comments + Blanks
     # fmt: off
     loc             = IntegerField(help_text="Lines of code")
-    lloc            = IntegerField(help_text="Logical lines of code")
     sloc            = IntegerField(help_text="Source lines of code")
     comments        = IntegerField(help_text="Comment lines")
     multi           = IntegerField(help_text="Multi-line strings")
     blank           = IntegerField(help_text="Blank lines")
+    lloc            = IntegerField(help_text="Logical lines of code")
     single_comments = IntegerField(help_text="Single-line comments")
     # fmt: on
 
@@ -32,6 +33,11 @@ class RadonRaw(BaseResultsModel):
 
         table_name = "radon_raw"
         indexes = ((("scan", "directory", "filename"), True),)
+
+    @classmethod
+    def attrs(cls) -> tuple[str]:
+        """Return the "core" list of attributes (the other 2 are FYI)."""
+        return ("loc", "sloc", "comments", "multi", "blank")
 
 
 class RadonMi(BaseResultsModel):
@@ -104,21 +110,22 @@ class RadonHal(BaseResultsModel):
 
     @classmethod
     def attrs(cls):
-        """Return a list of the attributes/metrics for the model (display, attr, type)."""
+        """Return a list of the attributes/metrics for the model (display, calculation, attr, type)."""
         # fmt: off
         return (
-            ("Estimated Bugs For File (V / 3000)"          , "bugs"               , "float"),
-            ("Total Time (E / 18 seconds)"                 , "time"               , "float"),
-            ("Total Effort (E = D * V)"                    , "effort"             , "float"),
-            ("Mean Difficulty (D = ((h1/2) * (N2/h2)))" , "difficulty"         , "float"),
-            ("Volume (V = N log2 h))"                          , "volume"             , "float"),
-            ("Calculated Length"                           , "calculated_length"  , "float"),
-            ("Program Length (N = N1 + N2)"                , "program_length"     , "int"  ),
-            ("Program Vocabulary (h = h1 + h2)"            , "program_vocabulary" , "int"  ),
-            ("Total Operands in File (N2)"                 , "N2"                 , "int"  ),
-            ("Total Operators in File (N1)"                , "N1"                 , "int"  ),
-            ("Total Distinct Operands (h2)"                , "h2"                 , "int"  ),
-            ("Total Distinct Operators (h1)"               , "h1"                 , "int"  ),
+            # Display                     Calculation                  ShortName              Type
+            ("Estimated Bugs For File"  , "(V / 3000)"               , "bugs"               , "float"),
+            ("Total Time"               , "(E / 18 seconds)"         , "time"               , "float"),
+            ("Total Effort"             , "(E = D * V)"              , "effort"             , "float"),
+            ("Mean Difficulty"          , "(D = ((h1/2) * (N2/h2)))" , "difficulty"         , "float"),
+            ("Volume"                   , "(V = N log2 h))"          , "volume"             , "float"),
+            ("Calculated Length"        , ""                         , "calculated_length"  , "float"),
+            ("Program Length"           , "(N = N1 + N2)"            , "program_length"     , "int"  ),
+            ("Program Vocabulary"       , "(h = h1 + h2)"            , "program_vocabulary" , "int"  ),
+            ("Total Operands in File"   , "(N2)"                     , "N2"                 , "int"  ),
+            ("Total Operators in File"  , "(N1)"                     , "N1"                 , "int"  ),
+            ("Total Distinct Operands"  , "(h2)"                     , "h2"                 , "int"  ),
+            ("Total Distinct Operators" , "(h1)"                     , "h1"                 , "int"  ),
         )
         # fmt: on
 
@@ -178,13 +185,11 @@ def query_raw(level: str = "0", scan: Scan = None, project: Project = None, last
 def _query_raw_0(scan: Scan) -> Any:
     return (
         RadonRaw.select(
-            fn.SUM(RadonRaw.loc).alias("loc"),
-            fn.SUM(RadonRaw.lloc).alias("lloc"),
-            fn.SUM(RadonRaw.sloc).alias("sloc"),
-            fn.SUM(RadonRaw.comments).alias("comments"),
-            fn.SUM(RadonRaw.multi).alias("multi"),
             fn.SUM(RadonRaw.blank).alias("blank"),
-            fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+            fn.SUM(RadonRaw.comments).alias("comments"),
+            fn.SUM(RadonRaw.loc).alias("loc"),
+            fn.SUM(RadonRaw.multi).alias("multi"),
+            fn.SUM(RadonRaw.sloc).alias("sloc"),
         )
         .where(RadonRaw.scan == scan)
         .first()
@@ -192,17 +197,14 @@ def _query_raw_0(scan: Scan) -> Any:
 
 
 def _query_raw_1(scan: Scan) -> Any:
-    raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     rows = (
         RadonRaw.select(
             RadonRaw.directory,
-            fn.SUM(RadonRaw.loc).alias("loc"),
-            fn.SUM(RadonRaw.lloc).alias("lloc"),
-            fn.SUM(RadonRaw.sloc).alias("sloc"),
-            fn.SUM(RadonRaw.comments).alias("comments"),
-            fn.SUM(RadonRaw.multi).alias("multi"),
             fn.SUM(RadonRaw.blank).alias("blank"),
-            fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+            fn.SUM(RadonRaw.comments).alias("comments"),
+            fn.SUM(RadonRaw.loc).alias("loc"),
+            fn.SUM(RadonRaw.multi).alias("multi"),
+            fn.SUM(RadonRaw.sloc).alias("sloc"),
         )
         .where(RadonRaw.scan == scan)
         .group_by(RadonRaw.directory)
@@ -212,7 +214,7 @@ def _query_raw_1(scan: Scan) -> Any:
     # Calculate totals
     totals = defaultdict(int)
     for row in rows:
-        for attr in raw_attrs:
+        for attr in RadonRaw.attrs():
             totals[attr] += getattr(row, attr)
     return rows, totals
 
@@ -223,7 +225,6 @@ def _query_raw_2(scan: Scan) -> Any:
 
 def _query_raw_h(project: Project, last: int = None) -> Any:
     # FIXME: Refactor to make this a "common" query given the number of places we use it:
-    raw_attrs = ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments")
     scans = (
         Scan.select()
         .where(
@@ -240,13 +241,11 @@ def _query_raw_h(project: Project, last: int = None) -> Any:
     query = (
         RadonRaw.select(
             Scan.as_of.alias("timestamp"),
-            fn.SUM(RadonRaw.loc).alias("loc"),
-            fn.SUM(RadonRaw.lloc).alias("lloc"),
-            fn.SUM(RadonRaw.sloc).alias("sloc"),
-            fn.SUM(RadonRaw.comments).alias("comments"),
-            fn.SUM(RadonRaw.multi).alias("multi"),
             fn.SUM(RadonRaw.blank).alias("blank"),
-            fn.SUM(RadonRaw.single_comments).alias("single_comments"),
+            fn.SUM(RadonRaw.comments).alias("comments"),
+            fn.SUM(RadonRaw.loc).alias("loc"),
+            fn.SUM(RadonRaw.multi).alias("multi"),
+            fn.SUM(RadonRaw.sloc).alias("sloc"),
         )
         .join(Scan)
         .where(Scan.id.in_(scans))
@@ -262,14 +261,14 @@ def _query_raw_h(project: Project, last: int = None) -> Any:
     transposed = defaultdict(lambda: defaultdict(dict))
     for result in query:
         total = 0
-        for attr in raw_attrs:
+        for attr in RadonRaw.attrs():
             lines = int(getattr(result, attr))
             transposed[attr][result.timestamp] = lines
             total += lines  # Calculate grand totals for each timestamp as we go
 
     # Calculate rate of change of last 2 entries..
     rocs = dict()
-    for attr in raw_attrs:
+    for attr in RadonRaw.attrs():
         if len(timestamps) > 1:
             rocs[attr] = rate_of_change_percentage(
                 transposed[attr][timestamps[-2]],
@@ -505,25 +504,25 @@ def _derived_hal_composite(row):
 
 
 def _derived_hal_bugs(raw_scan, row):
-    """Calculate score of Halstead effort per line of code."""
-    bugs_per_kloc = (row.bugs / raw_scan.loc) * 1000
+    """Calculate score of Halstead effort per 1000 source lines of code."""
+    bugs_per_kloc = (row.bugs / raw_scan.sloc) * 1000
     if bugs_per_kloc <= 0.1:
-        grade, color = "A", "#22c55e"  # < 0.1 bugs/KLOC
+        grade, color = "A", "#22c55e"  # < 0.1 bugs/kLOC
     elif bugs_per_kloc <= 0.3:
-        grade, color = "B", "#84cc16"  # 0.1-0.3 bugs/KLOC
+        grade, color = "B", "#84cc16"  # 0.1-0.3 bugs/kLOC
     elif bugs_per_kloc <= 0.6:
-        grade, color = "C", "#eab308"  # 0.3-0.6 bugs/KLOC
+        grade, color = "C", "#eab308"  # 0.3-0.6 bugs/kLOC
     elif bugs_per_kloc <= 1.0:
-        grade, color = "D", "#f97316"  # 0.6-1.0 bugs/KLOC
+        grade, color = "D", "#f97316"  # 0.6-1.0 bugs/kLOC
     else:
-        grade, color = "F", "#ef4444"  # > 1 bug/KLOC
+        grade, color = "F", "#ef4444"  # > 1 bug/kLOC
     row.bugs_d = Namespace(score=bugs_per_kloc, grade=grade, color=color)
     return row
 
 
 def _derived_hal_effort(raw_scan, row):
-    """Calculate score of Halstead effort per line of code."""
-    effort_per_loc = row.effort / raw_scan.loc
+    """Calculate score of Halstead effort per source line of code."""
+    effort_per_loc = row.effort / raw_scan.sloc
 
     if effort_per_loc <= 100:
         grade, color = "A", "#22c55e"  # Low effort

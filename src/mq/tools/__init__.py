@@ -32,7 +32,7 @@ def setup_tools(args: Namespace) -> dict:
                 raise RuntimeError(f"Sorry, can't import: '{s_import_path}': {exc}!")
 
             ################################################################################
-            # Now, find the configuration Class
+            # Now, find the configuration class
             ################################################################################
             try:
                 tool_configuration_class = getattr(tool_module, "Configuration")
@@ -43,9 +43,7 @@ def setup_tools(args: Namespace) -> dict:
             ################################################################################
             # ...instantiate it and store it!
             ################################################################################
-            tool_configuration_instance = tool_configuration_class()
-            tool_configuration_instance.py_module = tool_module
-            tools[tool_name] = tool_configuration_instance
+            tools[tool_name] = tool_configuration_class()
 
     log.debug(f"Tools available: {', '.join(tools.keys())}")
     return tools
@@ -68,7 +66,9 @@ def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
     if not args.tool_analysis:
         for tool_name in args.tools.keys():
             tool_configuration = args.tools[tool_name]
-            for analysis_name in tool_configuration.analyses:
+            for analysis_name in tool_configuration.models.keys():
+                if analysis_name.startswith("_"):
+                    continue
                 return_.append((tool_configuration, analysis_name))
         return return_
 
@@ -79,7 +79,9 @@ def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
     ################################################################################
     if not s_analysis:
         tool_configuration = args.tools[s_tool]
-        for analysis_name in tool_configuration.analyses:
+        for analysis_name in tool_configuration.models.keys():
+            if analysis_name.startswith("_"):
+                continue
             return_.append((tool_configuration, analysis_name))
         return return_
 

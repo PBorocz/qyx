@@ -11,7 +11,7 @@ from typing import Any, Callable, Iterator
 from rich.console import Console
 
 from mq.tools import generate_ta_pairs
-from mq.tools.base import AbstractModuleConfiguration, Project, Request, Scan
+from mq.tools.base import AbstractToolConfiguration, Project, Request, Scan
 from mq.utils.git import get_git_commit_hash, git_commits
 
 log = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def ingest(args: Namespace) -> None:
     project: Project = Project.create_from_args(args)
     request: Request = Request.get_or_create(args, project)
 
-    tools_analyses: list[tuple[AbstractModuleConfiguration, str]] = generate_ta_pairs(args)
+    tools_analyses: list[tuple[AbstractToolConfiguration, str]] = generate_ta_pairs(args)
 
     for scan_request in iter_scan_requests(args, request):
         for o_tool, analysis in tools_analyses:
@@ -60,7 +60,7 @@ def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]
 def _ingest_analysis(
     args: Namespace,
     request: Request,
-    tool_configuration: AbstractModuleConfiguration,
+    tool_configuration: AbstractToolConfiguration,
     analysis: str,
     scan_request: Namespace,
 ) -> None:
@@ -94,7 +94,7 @@ def _ingest_analysis(
 def _get_ingest_scan(
     args: Namespace,
     request: Request,
-    tool_configuration: AbstractModuleConfiguration,
+    tool_configuration: AbstractToolConfiguration,
     analysis: str,
     scan_request: Namespace,
 ) -> Scan | None:
@@ -137,7 +137,7 @@ def _get_ingest_scan(
 def _get_ta_results(
     args: Namespace,
     request: Request,
-    tool_configuration: AbstractModuleConfiguration,
+    tool_configuration: AbstractToolConfiguration,
     analysis: str,
     scan_request: Namespace,
 ) -> Any:

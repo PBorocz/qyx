@@ -6,7 +6,7 @@ import sys
 # from rich.traceback import install as install_traceback
 from rich import print
 
-from mq import setup_logging, setup_sqlite
+from mq import setup_configuration, setup_logging, setup_sqlite
 from mq.cli.admin.clear import clear
 from mq.cli.admin.delete import delete
 from mq.cli.admin.clean import clean
@@ -20,119 +20,134 @@ from mq.web.serve import serve
 
 def get_args():
     """Create a command-line argument structure."""
-    parser_root = argparse.ArgumentParser(add_help=False)
+    ################################################################################################
+    # Bootstrap arg parsing for configuration file specification
+    ################################################################################################
+    configuration_parser, remaining_args, configuration = setup_configuration()
+
+    ################################################################################################
+    # Primary arg parsing: Setup a root/parent parser (from which child command parser will come)
+    ################################################################################################
+    defaults = configuration.get("command_line_defaults", {})
+    parser_root = argparse.ArgumentParser(
+        add_help=False,
+        parents=[configuration_parser],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser_root.add_argument(
         "--log-level",
-        default="INFO",
+        default=defaults.get("log_level", "info"),
         choices=["debug", "info", "warning", "error", "critical"],
         help="Set logging level",
     )
-
     parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment", parents=[parser_root])
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     ################################################################################
     # Status command
     ################################################################################
-    parse_status = subparsers.add_parser(
+    parser_status = subparsers.add_parser(
         "status",
         parents=[parser_root],
         help="Report current status.",
     )
-    parse_status.add_argument(
+    parser_status.add_argument(
         "-l",
         "--level",
-        help="Level to report on, e.g. 0 summary, 1 (detail)",
-        default="0",
+        help="Level to report on, e.g. 0 (summary), 1 (usually directory) or 2 (usually file).",
+        default=defaults.get("level", "0"),
     )
-    parse_status.add_argument(
+    parser_status.add_argument(
         "-n",
         "--name",
+        default=defaults.get("name"),
         help="Project name, if not specified, defaults to ALL projects.",
     )
 
     ################################################################################
     # Ingest command
     ################################################################################
-    parse_ingest = subparsers.add_parser(
+    parser_ingest = subparsers.add_parser(
         "ingest",
         parents=[parser_root],
-        help="Ingest code quality results from supported tools.",
+        help="Ingest code quality results.",
     )
-    parse_ingest.add_argument(
+    parser_ingest.add_argument(
         "-n",
         "--name",
-        help="Project name, if not specified, will be determined from path.",
+        default=defaults.get("name"),
+        help="Project name, required to ingest data.",
     )
-    parse_ingest.add_argument(
+    parser_ingest.add_argument(
         "-p",
         "--path",
-        help="Path to work on, e.g. '.', '../src', '/abs/path', 'https:...').",
+        default=defaults.get("path"),
+        help="Path to run analysis tool against, eg. '.', '../src', '/abs/path', 'https:...'.",
     )
-    parse_ingest.add_argument(
+    parser_ingest.add_argument(
         "-a",
         "--analysis",
         dest="tool_analysis",
-        default=None,
-        help="Analysis to run, eg. cloc, radon:cc, ruff etc.",
+        help="Tool & analysis to run, eg. cloc, radon:cc, ruff etc.",
     )
-    parse_ingest.add_argument(
+    parser_ingest.add_argument(
         "--stdin",
         action="store_true",
-        help="Read JSON from stdin instead of running command.",
+        help="Read JSON from stdin instead of running ingest command (--path not required)",
     )
 
     ################################################################################
     # Report command
     ################################################################################
-    parse_report = subparsers.add_parser(
+    parser_report = subparsers.add_parser(
         "report",
         parents=[parser_root],
         help="Report on code quality for the specified (or all) projects.",
     )
-    parse_report.add_argument(
+    parser_report.add_argument(
         "-n",
         "--name",
+        default=defaults.get("name"),
         help="Project name, if not specified, will be determined from path.",
     )
-    parse_report.add_argument(
+    parser_report.add_argument(
         "-a",
         "--analysis",
         dest="tool_analysis",
-        default=None,
         help="Analysis to report on, e.g. cloc, radon:cc, ruff etc.",
     )
-    parse_report.add_argument(
-        "-o",
-        "--options",
-        help="Report option(s), eg. 'last:5,percentage' etc.",
-        type=str,
-        dest="options_str",
-        default="",
-    )
-    parse_report.add_argument(
+    parser_report.add_argument(
         "-l",
         "--level",
         help="Level to report on, e.g. 0 (summary & default), 1 (detail), 2 (full) or h (history).",
-        default="0",
+        default=defaults.get("level", "0"),
     )
 
     ################################################################################
     # Serve command
     ################################################################################
-    parse_serve = subparsers.add_parser(
+    parser_serve = subparsers.add_parser(
         "serve",
         parents=[parser_root],
         help="Run built-in web server for reporting.",
     )
-    parse_serve.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-    parse_serve.add_argument("--browser", action="store_true", help="Auto-open browser", default=False)
+    parser_serve.add_argument(
+        "--port",
+        help="Optional port, default is 5011.",
+        default=defaults.get("port", "5011"),
+    )
+    parser_serve.add_argument(
+        "--browser",
+        action="store_true",
+        help="Auto-open browser",
+        default=defaults.get("browser", False),
+    )
 
     ################################################################################
     # Admin sub-commands
     ################################################################################
-    parse_admin = subparsers.add_parser("admin", help="Administration commands")
-    subparser_admin = parse_admin.add_subparsers(dest="admin_command", help="Administration subcommands")
+    parser_admin = subparsers.add_parser("admin", help="Administration commands")
+    subparser_admin = parser_admin.add_subparsers(dest="admin_command", help="Administration subcommands")
 
     ################################################################################
     subparser_admin.add_parser(
@@ -142,74 +157,48 @@ def get_args():
     )
 
     ################################################################################
-    parse_trim = subparser_admin.add_parser(
+    parser_trim = subparser_admin.add_parser(
         "trim",
         parents=[parser_root],
         help="Trim old data, leaving the most recent run for each analysis",
     )
-    parse_trim.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
-    parse_trim.add_argument("-a", "--analysis", help="Analysis to trim data for, e.g. radon-cc, ruff, cloc etc.")
+    parser_trim.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
+    parser_trim.add_argument("-a", "--analysis", help="Analysis to trim data for, e.g. radon-cc, ruff, cloc etc.")
     # TODO: Implement this:
     # parse_trim.add_argument("-n", "--name", help='Name of project')
 
     ################################################################################
-    parse_clear = subparser_admin.add_parser(
+    parser_clear = subparser_admin.add_parser(
         "clear",
         parents=[parser_root],
         help="Clear the database, either for all analyses (default) or a specific one.",
     )
-    parse_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
+    parser_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
+    parser_clear.add_argument("-a", "--analysis", help="Optional, analysis clear, e.g. radon:cc, ruff, cloc etc.")
     # TODO: Implement this:
-    # parse_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
-    parse_clear.add_argument("-a", "--analysis", help="Optional, analysis to clear for, e.g. radon:cc, ruff, cloc etc.")
+    # parser_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
 
     ################################################################################
-    parse_delete = subparser_admin.add_parser(
+    parser_delete = subparser_admin.add_parser(
         "delete",
         parents=[parser_root],
         help="Delete a particular Project, Request or Scan.",
     )
-    parse_delete.add_argument("--no_confirm", action="store_true", help="Run delete *without* confirmation(!)")
-    parse_delete.add_argument("--arg", dest="delete_target", help="delete p:<id>, r:<id> or s:<id>")
+    parser_delete.add_argument("--no_confirm", action="store_true", help="Run delete *without* confirmation(!)")
+    parser_delete.add_argument("--arg", dest="delete_target", help="delete p:<id>, r:<id> or s:<id>")
 
     ################################################################################################
     # PARSE!!!
     ################################################################################################
-    args = parser.parse_args()
+    args = parser.parse_args(remaining_args)
 
     # Enforce that no command defaults to "status"
     if args.command is None:
         args.command = "status"
-        args.name = None
-        args.level = "0"
 
-    # Set report options (used both by cli and web)
-    d_option_defaults = dict(percentages=False, last=2)
-    options_str = args.options_str if hasattr(args, "options_str") else ""
-    args.options = parse_arg_option_str(options_str, d_option_defaults)
-
+    # Before we go, send the "configuration" file values through the rest of our codebase in args!
+    args.config = configuration
     return args
-
-
-def parse_arg_option_str(options_str: str, defaults: dict = {}):
-    """Parse any/all options provided (usually for reporting)."""
-    opts = argparse.Namespace(**(defaults))
-    if not options_str:
-        return opts
-
-    for item in options_str.split(","):
-        if ":" in item:
-            key, value = item.split(":", 1)
-            try:
-                value = int(value)
-            except ValueError:
-                ...
-            setattr(opts, key, value)
-        else:
-            # Boolean flag
-            setattr(opts, item, True)
-
-    return opts
 
 
 def validate_args(args: argparse.Namespace) -> bool:
@@ -220,9 +209,12 @@ def validate_args(args: argparse.Namespace) -> bool:
 
     # Commands that deal with projects may need BOTH a name and a path, others only a name.
     if args.command.lower() == "ingest":
-        if not args.name or not args.path:
+        if not args.name:
+            print("[red]Sorry! [bold]-n/--name[/bold] is required to perform an ingest!")
+        if not args.path and not args.stdin:
             print(
-                "[red]Sorry! both [bold]-n/--name[/bold] and [bold]-p/--path[/bold] is required to perform an ingest.",
+                "[red]Sorry! you need to either specify [bold]-p/--path[/bold] "
+                "OR provide data from [bold]--stdin[/bold] to perform an ingest.",
             )
             return False
 
@@ -273,7 +265,7 @@ def dispatch(args: argparse.Namespace) -> None:
 def main():
     # install_traceback(show_locals=False)  # Before anything else, setup colorful/informative tracebacks
 
-    # Get/process all command-line arguments
+    # Get/read configuration file (if any) and process all command-line arguments.
     args = get_args()
 
     # Setup logging (now that we know what potential level to log to)

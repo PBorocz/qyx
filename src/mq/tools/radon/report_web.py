@@ -42,7 +42,7 @@ def render(request, name, config):
         request,
         name.title(),
         name,
-        *render_selectors(request, "/partials/new_project/radon"),
+        *render_selectors(request, "/partials/set_project/radon"),
         fh.Div(id="page-body-content"),  # This Div will be updated as the project changes via HTMX!
     )
 
@@ -75,7 +75,7 @@ def render_selectors(request, hx_get: str):
                 *fh_select_analyses,
                 name="analysis",
                 aria_label="Select your Radon analysis...",
-                hx_get="/partials/new_project/radon",  # HTMX endpoint
+                hx_get="/partials/set_project/radon",  # HTMX endpoint
                 hx_target="#page-body-content",  # Where to update
                 hx_swap="innerHTML",  # How to update
                 hx_trigger="load, change",  # Trigger on page load *AND* selection change

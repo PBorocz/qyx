@@ -57,22 +57,18 @@ def _dispatch_level_submodule(args: Namespace, project: Project, scan: Scan, ana
 def _raw_0(project: Project = None, scan: Scan = None) -> None:
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}")
     # fmt: off
-    table.add_column("LLOC"            , justify="right")
     table.add_column("SLOC"            , justify="right")
     table.add_column("Comments"        , justify="right")
     table.add_column("Multi"           , justify="right")
     table.add_column("Blank"           , justify="right")
-    table.add_column("Single Comments" , justify="right")
     table.add_column("Total"           , justify="right")
     # fmt: on
     row = query_raw("0", scan)
     table.add_row(
-        f"{row.lloc:,}",
         f"{row.sloc:,}",
         f"{row.comments:,}",
         f"{row.multi:,}",
         f"{row.blank:,}",
-        f"{row.single_comments:,}",
         f"{row.loc:,}",
     )
     cli_console.print(table)
@@ -84,23 +80,19 @@ def _raw_1(project: Project = None, scan: Scan = None) -> None:
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}", show_footer=True)
     # fmt: off
     table.add_column("Directory"       , justify="left")
-    table.add_column("LLOC"            , justify="right", footer=f"{totals['lloc'            ]:,}")
     table.add_column("SLOC"            , justify="right", footer=f"{totals['sloc'            ]:,}")
     table.add_column("Comments"        , justify="right", footer=f"{totals['comments'        ]:,}")
     table.add_column("Multi"           , justify="right", footer=f"{totals['multi'           ]:,}")
     table.add_column("Blank"           , justify="right", footer=f"{totals['blank'           ]:,}")
-    table.add_column("Single Comments" , justify="right", footer=f"{totals['single_comments' ]:,}")
     table.add_column("Total"           , justify="right", footer=f"{totals['loc'             ]:,}")
     # fmt: on
     for row in rows:
         table.add_row(
             row.directory,
-            f"{row.lloc:,}",
             f"{row.sloc:,}",
             f"{row.comments:,}",
             f"{row.multi:,}",
             f"{row.blank:,}",
-            f"{row.single_comments:,}",
             f"{row.loc:,}",
         )
     cli_console.print(table)
@@ -111,19 +103,17 @@ def _raw_2(project: Project = None, scan: Scan = None) -> None:
     # Calculate grand totals
     totals = defaultdict(int)
     for row in rows:
-        for attr in ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments"):
+        for attr in ("loc", "sloc", "comments", "multi", "blank"):
             totals[attr] += getattr(row, attr)
 
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}", show_footer=True)
     # fmt: off
     table.add_column("Directory"       , justify="left")
     table.add_column("File"            , justify="left")
-    table.add_column("LLOC"            , justify="right", footer=f"{totals['lloc'            ]:,}")
     table.add_column("SLOC"            , justify="right", footer=f"{totals['sloc'            ]:,}")
     table.add_column("Comments"        , justify="right", footer=f"{totals['comments'        ]:,}")
     table.add_column("Multi"           , justify="right", footer=f"{totals['multi'           ]:,}")
     table.add_column("Blank"           , justify="right", footer=f"{totals['blank'           ]:,}")
-    table.add_column("Single Comments" , justify="right", footer=f"{totals['single_comments' ]:,}")
     table.add_column("Total"           , justify="right", footer=f"{totals['loc'             ]:,}")
     # fmt: on
     for row in rows:
@@ -131,12 +121,10 @@ def _raw_2(project: Project = None, scan: Scan = None) -> None:
             row.directory,
             row.filename,
             f"{row.loc:,}",
-            f"{row.lloc:,}",
             f"{row.sloc:,}",
             f"{row.comments:,}",
             f"{row.multi:,}",
             f"{row.blank:,}",
-            f"{row.single_comments:,}",
         )
     cli_console.print(table)
 

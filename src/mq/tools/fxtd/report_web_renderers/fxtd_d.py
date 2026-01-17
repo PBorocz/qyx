@@ -18,7 +18,7 @@ def fxtd_d(project: Project, scan: Scan):
     t_body = []
     for row in rows:
         t_row = fh.Tr(
-            fh.Td(f"{row.type}'s per KLOC", style="text-align: left"),
+            fh.Td(f"{row.type}'s per kLOC", style="text-align: left"),
             fh.Td(
                 f"{row.fxtd_d.grade}",
                 style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.fxtd_d.color}",

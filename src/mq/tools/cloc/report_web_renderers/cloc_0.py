@@ -6,7 +6,7 @@ from mq.tools.base import Scan
 from mq.tools.cloc.models import query
 
 
-def cloc_0(scan: Scan):
+def cloc_0(scan: Scan, **kwargs):
     results = query("0", scan=scan)
     return (
         fh.Table(

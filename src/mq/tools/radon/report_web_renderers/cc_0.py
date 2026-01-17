@@ -6,27 +6,24 @@ from mq.tools.base import Scan
 from mq.tools.radon.models import query_cc
 
 
-def cc_0(scan: Scan):
+def cc_0(scan: Scan, **kwargs):
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     rows = query_cc("0", scan=scan)
 
     # fmt: off
     t_head = fh.Tr(
-        fh.Th("Entity Type", scope="col", style="text-align: left"),
+        fh.Th("Entity Type"           , scope="col", style="text-align: left"),
         fh.Th("Cyclomatic Complexity" , scope="col", style="text-align: right"),
     )
-    # fmt: on
 
     t_body = []
-    # fmt: off
     for row in rows:
         t_row = fh.Tr(
             fh.Td(plurals[row.entity_type]    , style="text-align: left"),
-
-fh.Td(f"{row.mean_complexity:.2f}", style="text-align: right"),
+            fh.Td(f"{row.mean_complexity:.2f}", style="text-align: right"),
         )
         t_body.append(t_row)
-    # fmt: off
+    # fmt: on
 
     return (
         fh.Table(

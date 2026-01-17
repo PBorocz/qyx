@@ -21,7 +21,7 @@ def render(request, name, config):
         request,
         name.title(),
         name,
-        *render_project_selector(request, "/partials/new_project/ruff"),
+        *render_project_selector(request, "/partials/set_project/ruff"),
         fh.Div(id="page-body-content"),
     )
 

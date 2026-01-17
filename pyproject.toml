@@ -47,7 +47,7 @@ cmd = "uv run mq"
 help = "Run the mq command"
 
 [tool.poe.tasks.serve]
-cmd = "uv run mq serve --log-level debug"
+cmd = "uv run mq serve"
 help = "Run the mq command"
 
 [tool.poe.tasks.status]
