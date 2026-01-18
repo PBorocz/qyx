@@ -1,6 +1,8 @@
 """Ruff Module Configuration."""
 
+import gzip
 import json
+from pathlib import Path
 
 from mq.tools.base import AbstractToolConfiguration
 from mq.tools.ruff.models import Ruff
@@ -34,8 +36,11 @@ class Configuration(AbstractToolConfiguration):
 def get_ruff_rule_name(rule_code: str) -> dict:
     """Lookup the description of the ruff rule name for a rule code."""
     global RUFF_RULES
+
+    # Load in rule definitions if we haven't already..
     if not RUFF_RULES:
-        with open("src/mq/tools/ruff/data/ruff_rules.json") as f:
+        rules_path: Path = "src/mq/tools/ruff/data/ruff_rules.json.gz"
+        with gzip.open(rules_path, "rt", encoding="utf-8") as f:
             RUFF_RULES = json.load(f)
 
     for rule in RUFF_RULES:

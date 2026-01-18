@@ -7,7 +7,7 @@ from mq.tools.fxtd.models import query
 
 
 def fxtd_d(project: Project, scan: Scan):
-    rows = query("d", project=project, scan=scan)
+    rows, composite = query("d", project=project, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Metric", scope="col", style="text-align: left"),
@@ -27,9 +27,19 @@ def fxtd_d(project: Project, scan: Scan):
         )
         t_body.append(t_row)
 
+    t_foot = fh.Tr(
+        fh.Th("Composite (weighted)", scope="col", style="text-align: left"),
+        fh.Td(
+            f"{composite.grade}",
+            style=f"text-align: center; color: var(--pico-muted-color); background-color: {composite.color}",
+        ),
+        fh.Td(f"{composite.score:.2f}", style="text-align: right"),
+    )
+
     return (
         fh.Table(
             fh.Thead(t_head),
             fh.Tbody(*t_body),
+            fh.Tfoot(*t_foot),
         ),
     )

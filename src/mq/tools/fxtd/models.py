@@ -10,6 +10,7 @@ from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.tools.cloc.models import query as query_cloc
 from mq.tools.radon.models import query_raw
 from mq.utils import rate_of_change_percentage
+from mq.utils.scoring import score_metric
 
 
 log = logging.getLogger(__name__)
@@ -144,7 +145,7 @@ def _query_h(project: Project, last: int = None):
 
 def _query_d(project: Project, fxtd_scan: Scan):
     """Calculate derived fxtd metrics."""
-    # FIXME: We use this in multiple _d methods, can we centralise it?
+    # FIXME: We lookup the respective SLOC in multiple _d methods, can we centralise it?
     cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
     if cloc_scan:
         result = query_cloc("0", scan=cloc_scan)
@@ -153,48 +154,45 @@ def _query_d(project: Project, fxtd_scan: Scan):
         radon_scan = Scan.get_most_recent(project, "radon", "raw")
         if radon_scan:
             result = query_raw("0", scan=radon_scan)
-            lines_of_code = result.loc
+            lines_of_code = result.sloc
         else:
-            log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have an LOC metrics yet!")
+            log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have any LOC metrics yet!")
             return None
 
-    results = _query_0(fxtd_scan)
-    result = _derived_scores_per_kloc(lines_of_code, results)
-    return result
+    score_by_type = _query_0(fxtd_scan)
+    score_by_type = _by_type_per_kloc(lines_of_code, score_by_type)
+    composite_weighted_score = _composite_per_kloc(lines_of_code, score_by_type)
+    return score_by_type, composite_weighted_score
 
 
-def _derived_scores_per_kloc(lines_of_code: int, rows):
-    """Calculate number of FixMe issues per thousand loc (not including comments and blank lines)."""
+def _by_type_per_kloc(lines_of_code: int, rows):
+    """Calculate score of FixMe issues for a particular "type" per thousand sloc."""
+    from mq.tools.fxtd import DEFAULT_SCORING
+
+    for row in rows:
+        score_per_kloc = (row.count / lines_of_code) * 1000
+        row.fxtd_d = score_metric("fxtd.by_type_per_kloc", score_per_kloc, DEFAULT_SCORING)
+    return rows
+
+
+def _composite_per_kloc(lines_of_code: int, rows) -> Namespace:
+    """Calculate composite_weighted score of FixMe issues per thousand loc (not including comments and blank lines)."""
+    from mq.tools.fxtd import DEFAULT_SCORING
+
     # fmt: off
     weights = {
-        "FIXME"    : 3   ,  # Critical - broken or needs immediate fix
-        "XXX"      : 3   ,  # Critical - danger/warning marker
-        "HACK"     : 3   ,  # Critical - temporary workaround
-        "BUG"      : 3   ,  # Critical - known bug
-        "TODO"     : 1   ,  # Normal - planned work
-        "REFACTOR" : 1   ,  # Normal - planned improvement
-        "NOTE"     : 0.5 ,  # Low priority - informational
-        "OPTIMIZE" : 0.5 ,  # Low priority - performance opportunity
-        "IDEA"     : 0.5 ,  # Low priority - future consideration
+        "FIXME"    : 3   ,  # Critical     - broken or needs immediate fix
+        "XXX"      : 3   ,  # Critical     - danger/warning marker
+        "HACK"     : 3   ,  # Critical     - temporary workaround
+        "BUG"      : 3   ,  # Critical     - known bug
+        "TODO"     : 2   ,  # Normal       - planned work
+        "REFACTOR" : 1   ,  # Normal       - planned improvement
+        "NOTE"     : 0.5 ,  # Low Priority - informational
+        "OPTIMIZE" : 0.5 ,  # Low Priority - performance opportunity
+        "IDEA"     : 0.5 ,  # Low Priority - future consideration
     }
     # fmt: on
 
-    for row in rows:
-        weighting = weights.get(row.type.upper(), 1)
-        weighted_score = row.count * weighting
-        score_per_kloc = (weighted_score / lines_of_code) * 1000
-
-        if score_per_kloc < 2:
-            grade, color = "A", "#22c55e"  # < 2 weighted per kloc - Clean
-        elif score_per_kloc < 5:
-            grade, color = "B", "#84cc16"  # 2-5 per kloc - Normal
-        elif score_per_kloc < 10:
-            grade, color = "C", "#eab308"  # 5-10 per kloc - Some debt
-        elif score_per_kloc < 20:
-            grade, color = "D", "#f97316"  # 10-20 per kloc - Concerning
-        else:
-            grade, color = "F", "#ef4444"  # 20+ per kloc - Technical debt crisis
-
-        row.fxtd_d = Namespace(score=score_per_kloc, grade=grade, color=color)
-
-    return rows
+    composite_weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows])
+    composite_weighted_score_per_kloc = (composite_weighted_score / lines_of_code) * 1000
+    return score_metric("fxtd.composite_weighted_per_kloc", composite_weighted_score_per_kloc, DEFAULT_SCORING)
