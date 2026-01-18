@@ -9,6 +9,7 @@ from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.tools.cloc.models import query as query_cloc
 from mq.tools.radon.models import query_raw as query_radon_raw
 from mq.utils import rate_of_change_percentage
+from mq.utils.scoring import score_metric
 
 log = logging.getLogger(__name__)
 
@@ -170,58 +171,48 @@ def _query_d(project: Project, scan: Scan):
 
 def _derived_violations_per_kloc(lines_of_code: int, result):
     """Calculate simple violations per thousand loc (not including comments and blank lines)."""
-    violations_per_kloc = (result.count / lines_of_code) * 1000
-    if violations_per_kloc == 0:
-        grade, color = "A+", "#22c55e"
-    elif violations_per_kloc < 5:
-        grade, color = "A", "#22c55e"
-    elif violations_per_kloc < 10:
-        grade, color = "B", "#84cc16"
-    elif violations_per_kloc < 20:
-        grade, color = "C", "#eab308"
-    elif violations_per_kloc < 40:
-        grade, color = "D", "#f97316"
-    else:
-        grade, color = "F", "#ef4444"
+    from mq.tools.ruff import DEFAULT_SCORING
 
-    result.violations_per_kloc = Namespace(score=violations_per_kloc, grade=grade, color=color)
+    metric_value = (result.count / lines_of_code) * 1000
+    result.violations_per_kloc = score_metric("ruff.violations_per_kloc", metric_value, DEFAULT_SCORING)
     return result
 
 
 def _derived_weighted_violations_per_kloc(lines_of_code: int, result, scan: Scan):
     """Calculate *weighted* violations per thousand loc (not including comments and blank lines)."""
+    from mq.tools.ruff import DEFAULT_SCORING
+
+    # fmt: off
     weights = {
-        "F": 5,  # Pyflakes - likely bugs, runtime errors
-        "E": 3,  # Errors - PEP8 violations, code correctness
-        "B": 4,  # flake8-bugbear - likely bugs, design issues
-        "S": 4,  # Security issues - potential vulnerabilities
-        "D": 1,  # Docstring conventions - documentation quality
-        "R": 2,  # Refactoring suggestions - maintainability
-        "C": 2,  # Complexity (mccabe) - maintainability
-        "P": 1,  # Pylint conventions - style preferences
-        "A": 2,  # flake8-builtins - shadowing built-ins
-        "Q": 1,  # Quote consistency - minor style
-        "I": 1,  # Import sorting - organization
-        "N": 1,  # Naming conventions - readability
-        "T": 1,  # Print statements - debugging leftovers
-        "U": 2,  # Unused code - dead code
-        "W": 2,  # Warnings - various issues
+        "F": 5,  # Pyflakes                (likely bugs, runtime errors)
+
+        "B": 4,  # Flake8                  (bugbear - likely bugs, design issues)
+        "S": 4,  # Security issues         (potential vulnerabilities)
+
+        "E": 3,  # Errors                  (PEP8 violations, code correctness)
+
+        "A": 2,  # Flake8                  (builtins - shadowing built-ins)
+        "C": 2,  # Complexity (mccabe)     (maintainability)
+        "R": 2,  # Refactoring suggestions (maintainability)
+        "U": 2,  # Unused code             (dead code)
+        "W": 2,  # Warnings                (various issues)
+
+        "D": 1,  # Docstring conventions   (documentation quality)
+        "I": 1,  # Import sorting          (organization)
+        "N": 1,  # Naming conventions      (readability)
+        "P": 1,  # Pylint conventions      (style preferences)
+        "Q": 1,  # Quote consistency       (minor style)
+        "T": 1,  # Print statements        (debugging leftovers)
     }
+    # fmt: off
     violations_by_severity = __query_counts_by_rule_code_prefix(scan)
     weighted_score = sum(violations_by_severity.get(code, 0) * weight for code, weight in weights.items())
-    weighted_violations_per_kloc = (weighted_score / lines_of_code) * 1000
-    if weighted_violations_per_kloc < 10:
-        grade, color = "A+", "#22c55e"
-    elif weighted_violations_per_kloc < 25:
-        grade, color = "B", "#84cc16"
-    elif weighted_violations_per_kloc < 50:
-        grade, color = "C", "#eab308"
-    elif weighted_violations_per_kloc < 100:
-        grade, color = "D", "#f97316"
-    else:
-        grade, color = "F", "#ef4444"
-
-    result.weighted_violations_per_kloc = Namespace(score=weighted_violations_per_kloc, grade=grade, color=color)
+    metric_value = (weighted_score / lines_of_code) * 1000
+    result.weighted_violations_per_kloc = score_metric(
+        "ruff.weighted_violations_per_kloc",
+        metric_value,
+        DEFAULT_SCORING,
+    )
     return result
 
 

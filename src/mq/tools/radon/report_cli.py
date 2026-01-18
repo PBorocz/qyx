@@ -65,10 +65,10 @@ def _raw_0(project: Project = None, scan: Scan = None) -> None:
     # fmt: on
     row = query_raw("0", scan)
     table.add_row(
-        f"{row.sloc:,}",
-        f"{row.comments:,}",
-        f"{row.multi:,}",
-        f"{row.blank:,}",
+        f"{row.sloc:,} ({row.sloc_p:.1f}%)",
+        f"{row.comments:,} ({row.comments_p:.1f}%)",
+        f"{row.multi:,} ({row.multi_p:.1f}%)",
+        f"{row.blank:,} ({row.blank_p:.1f}%)",
         f"{row.loc:,}",
     )
     cli_console.print(table)
@@ -345,8 +345,8 @@ def _hal_0(project: Project = None, scan: Scan = None) -> None:
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     table.add_column("Metric")
     table.add_column("Value", justify="right")
-    for display, attr, _ in RadonHal.attrs():
-        table.add_row(display, f"{getattr(row, attr):.2f}")
+    for attr in RadonHal.attrs():
+        table.add_row(attr.display, f"{getattr(row, attr.name):.2f}")
     cli_console.print(table)
 
 
@@ -354,12 +354,12 @@ def _hal_1(project: Project = None, scan: Scan = None) -> None:
     rows, mean_means = query_hal("1", scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="Mean")
-    for display, attr, _ in RadonHal.attrs():
-        table.add_column(display, justify="right", footer=f"{mean_means[attr]:.2f}")
+    for attr in RadonHal.attrs():
+        table.add_column(attr.display, justify="right", footer=f"{mean_means[attr.name]:.2f}")
     for row in rows:
         t_row = [row.directory]
-        for _, attr, _ in RadonHal.attrs():
-            t_row.append(f"{getattr(row, attr):.2f}")
+        for attr in RadonHal.attrs():
+            t_row.append(f"{getattr(row, attr.name):.2f}")
         table.add_row(*t_row)
     cli_console.print(table)
 
@@ -369,15 +369,15 @@ def _hal_2(project: Project = None, scan: Scan = None) -> None:
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
-    for display, attr, _ in RadonHal.attrs():
-        table.add_column(display, justify="right", footer=f"{means[attr]:.2f}")
+    for attr in RadonHal.attrs():
+        table.add_column(attr.display, justify="right", footer=f"{means[attr.name]:.2f}")
     for row in rows:
         t_row = [f"{row.directory}/{row.filename}"]
-        for _, attr, fmt in RadonHal.attrs():
-            if fmt == "float":
-                value = f"{getattr(row, attr):.2f}"
-            elif fmt == "int":
-                value = f"{getattr(row, attr):,d}"
+        for attr in RadonHal.attrs():
+            if attr.type == "float":
+                value = f"{getattr(row, attr.name):.2f}"
+            elif attr.type == "int":
+                value = f"{getattr(row, attr.name):,d}"
             t_row.append(value)
         table.add_row(*t_row)
     cli_console.print(table)
@@ -389,15 +389,15 @@ def _hal_3(project: Project = None, scan: Scan = None) -> None:
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
     table.add_column("Name", justify="left")
-    for display, attr, _ in RadonHal.attrs():
-        table.add_column(display, justify="right", footer=f"{means[attr]:.2f}")
+    for attr in RadonHal.attrs():
+        table.add_column(attr.display, justify="right", footer=f"{means[attr.name]:.2f}")
     for row in rows:
         t_row = [f"{row.directory}/{row.filename}", row.name]
-        for _, attr, fmt in RadonHal.attrs():
-            if fmt == "float":
-                value = f"{getattr(row, attr):.2f}"
-            elif fmt == "int":
-                value = f"{getattr(row, attr):,d}"
+        for attr in RadonHal.attrs():
+            if attr.type == "float":
+                value = f"{getattr(row, attr.name):.2f}"
+            elif attr.type == "int":
+                value = f"{getattr(row, attr.name):,d}"
             t_row.append(value)
         table.add_row(*t_row)
     cli_console.print(table)

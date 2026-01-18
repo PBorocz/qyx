@@ -32,7 +32,7 @@ def cloc_h(project: Project):
     datetime_values_cm = [(datetime.fromisoformat(row.timestamp), row.total_comment) for row in rows]
     datetime_values_bl = [(datetime.fromisoformat(row.timestamp), row.total_blank) for row in rows]
 
-    chart.add("Code", datetime_values_cd)
+    chart.add("LOC", datetime_values_cd)
     chart.add("Comments", datetime_values_cm)
     chart.add("Blanks", datetime_values_bl)
 

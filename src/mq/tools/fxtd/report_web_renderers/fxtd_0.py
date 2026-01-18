@@ -34,7 +34,6 @@ def fxtd_0(scan: Scan, **kwargs):
             fh.Thead(t_head),
             fh.Tbody(*t_body),
             fh.Tfoot(t_total),
-            id="fxtd_1",
+            id="fxtd_0",
         ),
-        fh.Script("new Tablesort(document.getElementById('fxtd_1'));"),
     )

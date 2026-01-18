@@ -10,23 +10,21 @@ COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 DEFAULT_SCORING = {
     "fxtd.by_type_per_kloc": {
-        "reverse": False,  # Lower is better...
         "thresholds": [
-            {"max": 2, "grade": "A", "color": "#22c55e"},
-            {"max": 5, "grade": "B", "color": "#84cc16"},
-            {"max": 10, "grade": "C", "color": "#eab308"},
-            {"max": 20, "grade": "D", "color": "#f97316"},
-            {"max": "inf", "grade": "F", "color": "#ef4444"},
+            {"min": 0, "max": 2, "grade": "A", "color": "#22c55e"},
+            {"min": 2, "max": 5, "grade": "B", "color": "#84cc16"},
+            {"min": 5, "max": 10, "grade": "C", "color": "#eab308"},
+            {"min": 10, "max": 20, "grade": "D", "color": "#f97316"},
+            {"min": 20, "max": "inf", "grade": "F", "color": "#ef4444"},
         ],
     },
     "fxtd.composite_weighted_per_kloc": {
-        "reverse": False,  # Lower is better...
         "thresholds": [
-            {"max": 2, "grade": "A", "color": "#22c55e"},
-            {"max": 5, "grade": "B", "color": "#84cc16"},
-            {"max": 10, "grade": "C", "color": "#eab308"},
-            {"max": 20, "grade": "D", "color": "#f97316"},
-            {"max": "inf", "grade": "F", "color": "#ef4444"},
+            {"min": 0, "max": 2, "grade": "A", "color": "#22c55e"},
+            {"min": 2, "max": 5, "grade": "B", "color": "#84cc16"},
+            {"min": 5, "max": 10, "grade": "C", "color": "#eab308"},
+            {"min": 10, "max": 20, "grade": "D", "color": "#f97316"},
+            {"min": 20, "max": "inf", "grade": "F", "color": "#ef4444"},
         ],
     },
 }

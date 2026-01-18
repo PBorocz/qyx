@@ -1,6 +1,7 @@
 """Report data obo running 'radon' tool."""
 
 import logging
+from argparse import Namespace
 
 from fasthtml import common as fh
 
@@ -48,47 +49,16 @@ def render(request, name, config):
 
 
 ################################################################################################
-# Selectors
-################################################################################################
-def render_selectors(request, hx_get: str):
-    ############################################################################################
-    # Get our (generic) project selector widget
-    ############################################################################################
-    fh_select_project = get_project_select(request, hx_get)
-
-    ############################################################################################
-    # Get radon-specific analysis selector
-    ############################################################################################
-    analyses = (
-        ("cc", "Cyclomatic Complexity"),
-        ("mi", "Maintainability Index"),
-        ("raw", "Raw Metrics"),
-        ("hal", "Halstead Complexity Measures"),
-    )
-    fh_select_analyses = [fh.Option(description, value=value) for value, description in analyses]
-
-    # And return our COMBINED selector form (ie. across both projects and analyses)
-    return fh.Form(
-        fh.Fieldset(
-            fh_select_project,
-            fh.Select(
-                *fh_select_analyses,
-                name="analysis",
-                aria_label="Select your Radon analysis...",
-                hx_get="/partials/set_project/radon",  # HTMX endpoint
-                hx_target="#page-body-content",  # Where to update
-                hx_swap="innerHTML",  # How to update
-                hx_trigger="load, change",  # Trigger on page load *AND* selection change
-                hx_include="[name='project']",  # Include project selector value
-            ),
-        ),
+def render_content(args, request, s_project_id: str = None, analysis: str = None):
+    """Render the content portion (ie. body) of the page."""
+    return (
+        *_render_current(args, request, s_project_id, analysis),
+        *_render_history(args, request, s_project_id, analysis),
     )
 
 
-################################################################################################
-# Current Status at 3 Levels
-################################################################################################
-def render_current(request, s_project_id: str = None, analysis: str = None):
+def _render_current(args: Namespace, request, s_project_id: str = None, analysis: str = None):
+    """Render current status at 3 Levels."""
     if not s_project_id:
         return fh.Section()
 
@@ -165,9 +135,8 @@ def render_level_3(scan: Scan):
 
 
 ################################################################################################
-# History
-################################################################################################
-def render_history(request, s_project_id: str = None, analysis: str = None):
+def _render_history(args: Namespace, request, s_project_id: str = None, analysis: str = None):
+    """Render History portion of the page."""
     if not s_project_id:
         return fh.Section()
 
@@ -204,7 +173,7 @@ def render_history(request, s_project_id: str = None, analysis: str = None):
         fh.Form(
             fh.Fieldset(
                 fh.Select(
-                    *[fh.Option(t_attr[0].split("(")[0], value=t_attr[1]) for t_attr in RadonHal.attrs()],
+                    *[fh.Option(attr.display, value=attr.name) for attr in RadonHal.attrs()],
                     onchange="showChart(this.value)",  # this.value/value "h1", "N1", "bugs", etc.
                     style="max-width: 300px; margin-bottom: 2rem;",
                 ),
@@ -240,3 +209,41 @@ def render_history(request, s_project_id: str = None, analysis: str = None):
             ),
         )
     return fh.Section(*fh_sections)
+
+
+################################################################################################
+# Selectors
+################################################################################################
+def render_selectors(request, hx_get: str):
+    ############################################################################################
+    # Get our (generic) project selector widget
+    ############################################################################################
+    fh_select_project = get_project_select(request, hx_get)
+
+    ############################################################################################
+    # Get radon-specific analysis selector
+    ############################################################################################
+    analyses = (
+        ("cc", "Cyclomatic Complexity"),
+        ("mi", "Maintainability Index"),
+        ("raw", "Raw Metrics"),
+        ("hal", "Halstead Complexity Measures"),
+    )
+    fh_select_analyses = [fh.Option(description, value=value) for value, description in analyses]
+
+    # And return our COMBINED selector form (ie. across both projects and analyses)
+    return fh.Form(
+        fh.Fieldset(
+            fh_select_project,
+            fh.Select(
+                *fh_select_analyses,
+                name="analysis",
+                aria_label="Select your Radon analysis...",
+                hx_get="/partials/set_project/radon",  # HTMX endpoint
+                hx_target="#page-body-content",  # Where to update
+                hx_swap="innerHTML",  # How to update
+                hx_trigger="load, change",  # Trigger on page load *AND* selection change
+                hx_include="[name='project']",  # Include project selector value
+            ),
+        ),
+    )

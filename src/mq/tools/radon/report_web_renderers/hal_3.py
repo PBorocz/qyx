@@ -13,8 +13,8 @@ def hal_3(scan: Scan):
         fh.Th("File", scope="col", style="text-align: left"),
         fh.Th("Name", scope="col", style="text-align: left"),
     ]
-    for display, attr, _ in RadonHal.attrs():
-        t_tr.append(fh.Th(display, scope="col", style="text-align: right"))
+    for attr in RadonHal.attrs():
+        t_tr.append(fh.Th(attr.display, scope="col", style="text-align: right"))
     t_head = fh.Tr(*t_tr)
 
     t_body = []
@@ -23,11 +23,11 @@ def hal_3(scan: Scan):
             fh.Td(f"{row.directory}/{row.filename}", style="text-align: left"),
             fh.Td(row.name, style="text-align: left"),
         ]
-        for _, attr, fmt in RadonHal.attrs():
-            if fmt == "float":
-                s_value = f"{getattr(row, attr):.3f}"
-            elif fmt == "int":
-                s_value = f"{getattr(row, attr):,d}"
+        for attr in RadonHal.attrs():
+            if attr.type == "float":
+                s_value = f"{getattr(row, attr.name):.3f}"
+            elif attr.type == "int":
+                s_value = f"{getattr(row, attr.name):,d}"
             t_row.append(fh.Td(s_value, style="text-align: right"))
         t_body.append(fh.Tr(*t_row))
 

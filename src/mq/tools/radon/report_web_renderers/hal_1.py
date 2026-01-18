@@ -10,15 +10,15 @@ def hal_1(scan: Scan):
     rows, mean_means = query_hal("1", scan)
 
     t_tr = [fh.Th("Metric", scope="col", style="text-align: left")]
-    for display, attr, _ in RadonHal.attrs():
-        t_tr.append(fh.Th(display, scope="col", style="text-align: right"))
+    for attr in RadonHal.attrs():
+        t_tr.append(fh.Th(attr.display, scope="col", style="text-align: right"))
     t_head = fh.Tr(*t_tr)
 
     t_body = []
     for row in rows:
         t_row = [fh.Th(row.directory, style="text-align: left")]
-        for _, attr, _ in RadonHal.attrs():
-            t_row.append(fh.Td(f"{getattr(row, attr):.2f}", style="text-align: right"))
+        for attr in RadonHal.attrs():
+            t_row.append(fh.Td(f"{getattr(row, attr.name):.2f}", style="text-align: right"))
         t_body.append(fh.Tr(*t_row))
 
     return (

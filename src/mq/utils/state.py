@@ -12,11 +12,12 @@ STATE_FILE = Path(user_state_dir("mq")) / "state.json"
 STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
-def update_state(key, value):
+def update_state(**kwargs):
     """Update state and persist automatically."""
     state = load_state()
-    state[key] = value
-    # log.debug(f"Set state {key=} to {value=}")
+    for key, value in kwargs.items():
+        state[key] = value
+        # log.debug(f"Set state {key=} to {value=}")
     save_state(state)
 
 

@@ -9,21 +9,63 @@ from mq.tools.radon.models import query_raw
 def raw_0(scan: Scan, **kwargs):
     row = query_raw("0", scan=scan)
 
-    # fmt: off
     t_head = fh.Tr(
-        fh.Th("SLOC"        , scope="col", style="text-align: center"),
-        fh.Th("Multi"       , scope="col", style="text-align: center"),
-        fh.Th("Comments"    , scope="col", style="text-align: center"),
-        fh.Th("Blank"       , scope="col", style="text-align: center"),
-        fh.Th(fh.B("Total") , scope="col", style="text-align: center"),
+        fh.Th(
+            "SLOC",
+            scope="col",
+            style="text-align: center",
+        ),
+        fh.Th(
+            "Multi",
+            scope="col",
+            style="text-align: center",
+        ),
+        fh.Th(
+            "Comments",
+            scope="col",
+            style="text-align: center",
+        ),
+        fh.Th(
+            "Blank",
+            scope="col",
+            style="text-align: center",
+        ),
+        fh.Th(
+            fh.B("Total"),
+            scope="col",
+            style="text-align: center",
+        ),
     )
 
     t_body = fh.Tr(
-        fh.Td(f"{row.sloc:,}"      , style="text-align: center"),
-        fh.Td(f"{row.multi:,}"     , style="text-align: center"),
-        fh.Td(f"{row.comments:,}"  , style="text-align: center"),
-        fh.Td(f"{row.blank:,}"     , style="text-align: center"),
-        fh.Td(fh.B(f"{row.loc:,}") , style="text-align: center"),
+        fh.Td(
+            f"{row.sloc:,}",
+            " ",
+            fh.Small(f"({row.sloc_p:.1f}%)"),
+            style="text-align: center",
+        ),
+        fh.Td(
+            f"{row.multi:,}",
+            " ",
+            fh.Small(f"({row.multi_p:.1f}%)"),
+            style="text-align: center",
+        ),
+        fh.Td(
+            f"{row.comments:,}",
+            " ",
+            fh.Small(f"({row.comments_p:.1f}%)"),
+            style="text-align: center",
+        ),
+        fh.Td(
+            f"{row.blank:,}",
+            " ",
+            fh.Small(f"({row.blank_p:.1f}%)"),
+            style="text-align: center",
+        ),
+        fh.Td(
+            fh.B(f"{row.loc:,}"),
+            style="text-align: center",
+        ),
     )
 
     return (

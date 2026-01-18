@@ -17,7 +17,7 @@ def hal_h(project: Project):
 
     # Create a chart for EACH separate metric!
     charts = dict()
-    radon_names = {attr[1]: attr[0].split("(")[0] for attr in RadonHal.attrs()}
+    radon_names = {attr.name: attr.display for attr in RadonHal.attrs()}
     for metric, values_by_timestamp in transposed.items():
         dt_values = [(datetime.fromisoformat(ts_), value) for ts_, value in values_by_timestamp.items()]
         chart = DateTimeLine(

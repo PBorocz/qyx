@@ -12,9 +12,9 @@ def cloc_1(scan: Scan):
 
     t_head = fh.Tr(
         fh.Th("Directory", scope="col", style="text-align: left"),
-        fh.Th("Lines of Code", scope="col", style="text-align: right"),
-        fh.Th("Comment Lines", scope="col", style="text-align: right"),
-        fh.Th("Blank Lines", scope="col", style="text-align: right"),
+        fh.Th("LOC", scope="col", style="text-align: right"),
+        fh.Th("Comments", scope="col", style="text-align: right"),
+        fh.Th("Blanks", scope="col", style="text-align: right"),
         fh.Th("TOTAL", scope="col", style="text-align: right"),
     )
 

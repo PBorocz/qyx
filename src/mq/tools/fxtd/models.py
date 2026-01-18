@@ -170,8 +170,8 @@ def _by_type_per_kloc(lines_of_code: int, rows):
     from mq.tools.fxtd import DEFAULT_SCORING
 
     for row in rows:
-        score_per_kloc = (row.count / lines_of_code) * 1000
-        row.fxtd_d = score_metric("fxtd.by_type_per_kloc", score_per_kloc, DEFAULT_SCORING)
+        metric_value = (row.count / lines_of_code) * 1000
+        row.fxtd_d = score_metric("fxtd.by_type_per_kloc", metric_value, DEFAULT_SCORING)
     return rows
 
 
@@ -194,5 +194,5 @@ def _composite_per_kloc(lines_of_code: int, rows) -> Namespace:
     # fmt: on
 
     composite_weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows])
-    composite_weighted_score_per_kloc = (composite_weighted_score / lines_of_code) * 1000
-    return score_metric("fxtd.composite_weighted_per_kloc", composite_weighted_score_per_kloc, DEFAULT_SCORING)
+    metric_value = (composite_weighted_score / lines_of_code) * 1000
+    return score_metric("fxtd.composite_weighted_per_kloc", metric_value, DEFAULT_SCORING)

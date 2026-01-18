@@ -3,12 +3,14 @@
 import logging
 from argparse import Namespace
 from collections import defaultdict
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Literal
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
 from mq.tools.base import BaseModel, BaseResultsModel, Project, Request, Scan
 from mq.utils import rate_of_change_percentage
+from mq.utils.scoring import score_metric
 
 
 log = logging.getLogger(__name__)
@@ -113,19 +115,19 @@ class RadonHal(BaseResultsModel):
         """Return a list of the attributes/metrics for the model (display, calculation, attr, type)."""
         # fmt: off
         return (
-            # Display                     Calculation                  ShortName              Type
-            ("Estimated Bugs For File"  , "(V / 3000)"               , "bugs"               , "float"),
-            ("Total Time"               , "(E / 18 seconds)"         , "time"               , "float"),
-            ("Total Effort"             , "(E = D * V)"              , "effort"             , "float"),
-            ("Mean Difficulty"          , "(D = ((h1/2) * (N2/h2)))" , "difficulty"         , "float"),
-            ("Volume"                   , "(V = N log2 h))"          , "volume"             , "float"),
-            ("Calculated Length"        , ""                         , "calculated_length"  , "float"),
-            ("Program Length"           , "(N = N1 + N2)"            , "program_length"     , "int"  ),
-            ("Program Vocabulary"       , "(h = h1 + h2)"            , "program_vocabulary" , "int"  ),
-            ("Total Operands in File"   , "(N2)"                     , "N2"                 , "int"  ),
-            ("Total Operators in File"  , "(N1)"                     , "N1"                 , "int"  ),
-            ("Total Distinct Operands"  , "(h2)"                     , "h2"                 , "int"  ),
-            ("Total Distinct Operators" , "(h1)"                     , "h1"                 , "int"  ),
+            #              Display                      Calculation                  ShortName              Type
+            ModelAttribute("Estimated Bugs For File"  , "(V / 3000)"               , "bugs"               , "float"),
+            ModelAttribute("Total Time"               , "(E / 18 seconds)"         , "time"               , "float"),
+            ModelAttribute("Total Effort"             , "(E = D * V)"              , "effort"             , "float"),
+            ModelAttribute("Mean Difficulty"          , "(D = ((h1/2) * (N2/h2)))" , "difficulty"         , "float"),
+            ModelAttribute("Volume"                   , "(V = N log2 h))"          , "volume"             , "float"),
+            ModelAttribute("Calculated Length"        , ""                         , "calculated_length"  , "float"),
+            ModelAttribute("Program Length"           , "(N = N1 + N2)"            , "program_length"     , "int"  ),
+            ModelAttribute("Program Vocabulary"       , "(h = h1 + h2)"            , "program_vocabulary" , "int"  ),
+            ModelAttribute("Total Operands in File"   , "(N2)"                     , "N2"                 , "int"  ),
+            ModelAttribute("Total Operators in File"  , "(N1)"                     , "N1"                 , "int"  ),
+            ModelAttribute("Total Distinct Operands"  , "(h2)"                     , "h2"                 , "int"  ),
+            ModelAttribute("Total Distinct Operators" , "(h1)"                     , "h1"                 , "int"  ),
         )
         # fmt: on
 
@@ -183,7 +185,7 @@ def query_raw(level: str = "0", scan: Scan = None, project: Project = None, last
 
 
 def _query_raw_0(scan: Scan) -> Any:
-    return (
+    row = (
         RadonRaw.select(
             fn.SUM(RadonRaw.blank).alias("blank"),
             fn.SUM(RadonRaw.comments).alias("comments"),
@@ -194,6 +196,16 @@ def _query_raw_0(scan: Scan) -> Any:
         .where(RadonRaw.scan == scan)
         .first()
     )
+
+    # Convert to percentage of total:
+    # fmt: off
+    row.blank_p    = (row.blank    / row.loc) * 100.0
+    row.comments_p = (row.comments / row.loc) * 100.0
+    row.multi_p    = (row.multi    / row.loc) * 100.0
+    row.sloc_p     = (row.sloc     / row.loc) * 100.0
+    # fmt: on
+
+    return row
 
 
 def _query_raw_1(scan: Scan) -> Any:
@@ -214,8 +226,8 @@ def _query_raw_1(scan: Scan) -> Any:
     # Calculate totals
     totals = defaultdict(int)
     for row in rows:
-        for attr in RadonRaw.attrs():
-            totals[attr] += getattr(row, attr)
+        for attr_name in RadonRaw.attrs():
+            totals[attr_name] += getattr(row, attr_name)
     return rows, totals
 
 
@@ -261,18 +273,18 @@ def _query_raw_h(project: Project, last: int = None) -> Any:
     transposed = defaultdict(lambda: defaultdict(dict))
     for result in query:
         total = 0
-        for attr in RadonRaw.attrs():
-            lines = int(getattr(result, attr))
-            transposed[attr][result.timestamp] = lines
+        for attr_name in RadonRaw.attrs():
+            lines = int(getattr(result, attr_name))
+            transposed[attr_name][result.timestamp] = lines
             total += lines  # Calculate grand totals for each timestamp as we go
 
     # Calculate rate of change of last 2 entries..
     rocs = dict()
-    for attr in RadonRaw.attrs():
+    for attr_name in RadonRaw.attrs():
         if len(timestamps) > 1:
-            rocs[attr] = rate_of_change_percentage(
-                transposed[attr][timestamps[-2]],
-                transposed[attr][timestamps[-1]],
+            rocs[attr_name] = rate_of_change_percentage(
+                transposed[attr_name][timestamps[-2]],
+                transposed[attr_name][timestamps[-1]],
             )
         else:
             rocs[attr] = 0.0
@@ -355,9 +367,9 @@ def _query_hal_1(scan: Scan) -> Any:
     )
     # Calculate mean of the means
     mean_means = {}
-    for _, attr, _ in RadonHal.attrs():
-        values = [getattr(row, attr) for row in rows]
-        mean_means[attr] = sum(values) / len(values) if values else None
+    for attr in RadonHal.attrs():
+        values = [getattr(row, attr.name) for row in rows]
+        mean_means[attr.name] = sum(values) / len(values) if values else None
 
     return rows, mean_means
 
@@ -367,9 +379,9 @@ def _query_hal_2(scan: Scan) -> Any:
 
     # Calculate means
     means = {}
-    for _, attr, _ in RadonHal.attrs():
-        values = [getattr(row, attr) for row in rows]
-        means[attr] = sum(values) / len(values) if values else None
+    for attr in RadonHal.attrs():
+        values = [getattr(row, attr.name) for row in rows]
+        means[attr.name] = sum(values) / len(values) if values else None
     return rows, means
 
 
@@ -399,9 +411,9 @@ def _query_hal_3(scan: Scan) -> Any:
     )
     # Calculate mean metric values
     means = {}
-    for _, attr, _ in RadonHal.attrs():
-        values = [getattr(row, attr) for row in rows]
-        means[attr] = sum(values) / len(values) if values else None
+    for attr in RadonHal.attrs():
+        values = [getattr(row, attr.name) for row in rows]
+        means[attr.name] = sum(values) / len(values) if values else None
 
     return rows, means
 
@@ -450,18 +462,18 @@ def _query_hal_h(project: Project = None, last: int = 5) -> Any:
     transposed = defaultdict(lambda: defaultdict(dict))
     for result in query:
         total = 0
-        for _, attr, _ in RadonHal.attrs():
-            value = getattr(result, attr)
-            transposed[attr][result.timestamp] = value
+        for attr in RadonHal.attrs():
+            value = getattr(result, attr.name)
+            transposed[attr.name][result.timestamp] = value
             total += value  # Calculate grand totals for each timestamp as we go
 
     # Calculate rate of change of last 2 entries..
     rocs = dict()
-    for _, attr, _ in RadonHal.attrs():
+    for attr in RadonHal.attrs():
         if len(timestamps) > 1:
-            rocs[attr] = rate_of_change_percentage(
-                transposed[attr][timestamps[-2]],
-                transposed[attr][timestamps[-1]],
+            rocs[attr.name] = rate_of_change_percentage(
+                transposed[attr.name][timestamps[-2]],
+                transposed[attr.name][timestamps[-1]],
             )
         else:
             rocs[attr] = 0.00
@@ -471,86 +483,32 @@ def _query_hal_h(project: Project = None, last: int = 5) -> Any:
 
 def _query_hal_d(project: Project, scan: Scan):
     """Calculate derived radon-hal metric(s)."""
-    raw_scan = Scan.get_most_recent(project, "radon", "raw")
-    raw = _query_raw_0(scan=raw_scan)
+    from mq.tools.radon import DEFAULT_SCORING
+
+    raw = _query_raw_0(scan=Scan.get_most_recent(project, "radon", "raw"))
     row = _query_hal_0(scan)
-    row = _derived_hal_bugs(raw, row)
-    row = _derived_hal_effort(raw, row)
-    row = _derived_hal_difficulty(row)
-    row = _derived_hal_composite(row)
-    return row
 
+    ################################################################################
+    # Calculate all HAL metrics
+    ################################################################################
+    # Score Halstead effort per 1000 source lines of code.
+    metric_value = (row.bugs / raw.sloc) * 1000
+    row.bugs_d = score_metric("radon.hal.bugs", metric_value, DEFAULT_SCORING)
 
-def _derived_hal_composite(row):
+    # Score Halstead effort per source line of code.
+    metric_value = row.effort / raw.sloc
+    row.effort_d = score_metric("radon.hal.effort", metric_value, DEFAULT_SCORING)
+
+    # Score Halstead difficulty metric.
+    row.difficulty_d = score_metric("radon.hal.difficulty", row.difficulty, DEFAULT_SCORING)
+
+    # Composite (after the above have been calculated!)
     difficulty_score = max(0, 100 - (row.difficulty_d.score / 40) * 100)
     bugs_score = max(0, 100 - (row.bugs_d.score / 1.0) * 100)
     effort_score = max(0, 100 - (row.effort_d.score / 1000) * 100)
+    metric_value = bugs_score * 0.5 + difficulty_score * 0.3 + effort_score * 0.2
+    row.composite_d = score_metric("radon.hal.composite", metric_value, DEFAULT_SCORING)
 
-    # Weighted average (bugs matter most!)
-    composite = bugs_score * 0.5 + difficulty_score * 0.3 + effort_score * 0.2
-
-    if composite >= 80:
-        grade, color = "A", "#22c55e"
-    elif composite >= 70:
-        grade, color = "B", "#84cc16"
-    elif composite >= 60:
-        grade, color = "C", "#eab308"
-    elif composite >= 50:
-        grade, color = "D", "#f97316"
-    else:
-        grade, color = "F", "#ef4444"
-    row.composite_d = Namespace(score=composite, grade=grade, color=color)
-    return row
-
-
-def _derived_hal_bugs(raw_scan, row):
-    """Calculate score of Halstead effort per 1000 source lines of code."""
-    bugs_per_kloc = (row.bugs / raw_scan.sloc) * 1000
-    if bugs_per_kloc <= 0.1:
-        grade, color = "A", "#22c55e"  # < 0.1 bugs/kLOC
-    elif bugs_per_kloc <= 0.3:
-        grade, color = "B", "#84cc16"  # 0.1-0.3 bugs/kLOC
-    elif bugs_per_kloc <= 0.6:
-        grade, color = "C", "#eab308"  # 0.3-0.6 bugs/kLOC
-    elif bugs_per_kloc <= 1.0:
-        grade, color = "D", "#f97316"  # 0.6-1.0 bugs/kLOC
-    else:
-        grade, color = "F", "#ef4444"  # > 1 bug/kLOC
-    row.bugs_d = Namespace(score=bugs_per_kloc, grade=grade, color=color)
-    return row
-
-
-def _derived_hal_effort(raw_scan, row):
-    """Calculate score of Halstead effort per source line of code."""
-    effort_per_loc = row.effort / raw_scan.sloc
-
-    if effort_per_loc <= 100:
-        grade, color = "A", "#22c55e"  # Low effort
-    elif effort_per_loc <= 300:
-        grade, color = "B", "#84cc16"  # Moderate effort
-    elif effort_per_loc <= 600:
-        grade, color = "C", "#eab308"  # High effort
-    elif effort_per_loc <= 1000:
-        grade, color = "D", "#f97316"  # Very high effort
-    else:
-        grade, color = "F", "#ef4444"  # Extreme effort
-    row.effort_d = Namespace(score=effort_per_loc, grade=grade, color=color)
-    return row
-
-
-def _derived_hal_difficulty(row):
-    """Calculate score of Halstead difficulty metric."""
-    if row.difficulty <= 5:
-        grade, color = "A", "#22c55e"  # Very easy
-    elif row.difficulty <= 10:
-        grade, color = "B", "#84cc16"  # Easy
-    elif row.difficulty <= 20:
-        grade, color = "C", "#eab308"  # Moderate
-    elif row.difficulty <= 40:
-        grade, color = "D", "#f97316"  # Difficult
-    else:
-        grade, color = "F", "#ef4444"  # Very difficult
-    row.difficulty_d = Namespace(score=row.difficulty, grade=grade, color=color)
     return row
 
 
@@ -663,19 +621,10 @@ def _query_mi_h(project, last: int = 5) -> Any:
 
 def _query_mi_d(scan: Scan):
     """Calculate derived radon-mi metric(s)."""
-    result = _query_mi_0(scan)
-    if result.mi_mean >= 85:
-        grade, color = "A", "#22c55e"  # green - Highly maintainable
-    elif result.mi_mean >= 75:
-        grade, color = "B", "#84cc16"  # lime - Good
-    elif result.mi_mean >= 65:
-        grade, color = "C", "#eab308"  # yellow - Moderate
-    elif result.mi_mean >= 50:
-        grade, color = "D", "#f97316"  # orange - Needs work
-    else:
-        grade, color = "F", "#ef4444"  # red - Difficult to maintain
-    result.mi_d = Namespace(score=result.mi_mean, grade=grade, color=color)
+    from mq.tools.radon import DEFAULT_SCORING
 
+    result = _query_mi_0(scan)
+    result.mi_d = score_metric("radon.mi.mean", result.mi_mean, DEFAULT_SCORING)
     return result
 
 
@@ -797,33 +746,24 @@ def _query_cc_d(scan: Scan):  # noqa: C901
     # Standards reference:
     # - McCabe (1976)*: CC > 10 indicates high risk
     # - NIST          : CC > 15 is concerning, > 20 is dangerous
+    from mq.tools.radon import DEFAULT_SCORING
+
     results = _query_cc_0(scan)
     for result in results:
-        match result.entity_type.lower():
-            case "class":
-                if result.mean_complexity <= 20:
-                    grade, color = "A", "#22c55e"  # Simple
-                elif result.mean_complexity <= 40:
-                    grade, color = "B", "#84cc16"  # Low risk
-                elif result.mean_complexity <= 80:
-                    grade, color = "C", "#eab308"  # Moderate
-                elif result.mean_complexity <= 150:
-                    grade, color = "D", "#f97316"  # Complex
-                else:
-                    grade, color = "F", "#ef4444"  # Untestable
-            case _:
-                # Functions and methods...
-                if result.mean_complexity <= 5:
-                    grade, color = "A", "#22c55e"  # Simple
-                elif result.mean_complexity <= 10:
-                    grade, color = "B", "#84cc16"  # Low risk
-                elif result.mean_complexity <= 20:
-                    grade, color = "C", "#eab308"  # Moderate
-                elif result.mean_complexity <= 50:
-                    grade, color = "D", "#f97316"  # Complex
-                else:
-                    grade, color = "F", "#ef4444"  # Untestable
-
-        result.cc_d = Namespace(score=result.mean_complexity, grade=grade, color=color)
+        thresholds = "radon.cc.classes" if result.entity_type.lower() == "class" else "radon.cc.callables"
+        result.cc_d = score_metric(thresholds, result.mean_complexity, DEFAULT_SCORING)
 
     return results
+
+
+################################################################################################
+# Supporting...
+################################################################################################
+@dataclass(frozen=True)
+class ModelAttribute:
+    """Represents a model attribute/metric with its metadata."""
+
+    display: str
+    calculation: str
+    name: str
+    type: Literal["float", "int", "str"]

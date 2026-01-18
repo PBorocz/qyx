@@ -14,30 +14,30 @@ def ruff_d(project: Project, scan: Scan):
             fh.Thead(
                 fh.Tr(
                     fh.Th("Metric", scope="col", style="text-align: left"),
-                    fh.Th("Grade", scope="col", style="text-align: center"),
                     fh.Th("Value", scope="col", style="text-align: center"),
+                    fh.Th("Grade", scope="col", style="text-align: center"),
                 ),
             ),
             fh.Tbody(
                 fh.Tr(
                     fh.Td("Raw Ruff Issues per kLOC", style="text-align: left"),
+                    fh.Td(f"{row.violations_per_kloc.score:.0f}", style="text-align: center;"),
                     fh.Td(
                         f"{row.violations_per_kloc.grade}",
                         style="text-align: center; "
                         "color: var(--pico-muted-color); "
                         f"background-color: {row.violations_per_kloc.color}",
                     ),
-                    fh.Td(f"{row.violations_per_kloc.score:.0f}", style="text-align: center;"),
                 ),
                 fh.Tr(
                     fh.Td("Weighted Ruff Issues per kLOC", style="text-align: left"),
+                    fh.Td(f"{row.weighted_violations_per_kloc.score:.0f}", style="text-align: center;"),
                     fh.Td(
                         f"{row.weighted_violations_per_kloc.grade}",
                         style="text-align: center; "
                         "color: var(--pico-muted-color); "
                         f"background-color: {row.weighted_violations_per_kloc.color}",
                     ),
-                    fh.Td(f"{row.weighted_violations_per_kloc.score:.0f}", style="text-align: center;"),
                 ),
             ),
         ),

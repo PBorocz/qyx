@@ -20,7 +20,7 @@ def cc_0(scan: Scan, **kwargs):
     for row in rows:
         t_row = fh.Tr(
             fh.Td(plurals[row.entity_type]    , style="text-align: left"),
-            fh.Td(f"{row.mean_complexity:.2f}", style="text-align: right"),
+            fh.Td(f"{row.mean_complexity:.1f}", style="text-align: right"),
         )
         t_body.append(t_row)
     # fmt: on

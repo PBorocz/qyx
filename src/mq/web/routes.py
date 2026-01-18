@@ -48,33 +48,6 @@ def register(args, rt):
     #         ),
     #     )
 
-    @rt("/partials/set_project/_main_")
-    def set_project_main(request, project: str):
-        """HTMX endpoint to update content on the main/summary page based on project selection."""
-        if project:
-            update_state("last_project_id", project)
-        return (*render_partial_project_summary(request, s_project_id=project),)
-
-    @rt("/partials/set_project/{tool}")
-    def set_project_tool(request, tool: str, project: str, analysis: str = None):
-        """HTMX endpoint to update content based on project selection."""
-        if not (tool_config := args.tools.get(tool)):
-            return ft.Div(f"Unknown tool: {tool}", cls="error")
-
-        try:
-            report_web_module = tool_config.import_component("report_web")
-        except ImportError:
-            return ft.Div(f"Couldn't find 'report_web' module in '{tool}'", cls="error")
-
-        if project:
-            update_state("last_project_id", project)
-            update_state("last_tool", tool)
-
-        return (
-            *report_web_module.render_current(request, s_project_id=project, analysis=analysis),
-            *report_web_module.render_history(request, s_project_id=project, analysis=analysis),
-        )
-
     ################################################################################
     # Dynamic routes (ie. for each tool)
     ################################################################################
@@ -90,3 +63,26 @@ def register(args, rt):
             return render_tool_page_method
 
         make_tool_route(tool_name, tool_config)
+
+    @rt("/partials/set_project/_main_")
+    def set_project_main(request, project: str):
+        """HTMX endpoint to update content on the main/summary page based on updated project selection."""
+        if project:
+            update_state(last_project_id=project)
+        return (*render_partial_project_summary(request, s_project_id=project),)
+
+    @rt("/partials/set_project/{tool}")
+    def set_project_tool(request, tool: str, project: str, analysis: str = None):
+        """HTMX endpoint to update content on a "tool" page based on an updated project selection."""
+        if not (tool_config := args.tools.get(tool)):
+            return ft.Div(f"Unknown tool: {tool}", cls="error")
+
+        try:
+            report_web_module = tool_config.import_component("report_web")
+        except ImportError:
+            return ft.Div(f"Couldn't find 'report_web' module in '{tool}'", cls="error")
+
+        if project:
+            update_state(last_project_id=project, last_tool=tool)
+
+        return (*report_web_module.render_content(args, request, s_project_id=project, analysis=analysis),)

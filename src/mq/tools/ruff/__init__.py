@@ -11,6 +11,28 @@ RUFF_RULES = None  # Hold as a cache after first read
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
+DEFAULT_SCORING = {
+    "ruff.violations_per_kloc": {
+        "thresholds": [
+            {"min": 0, "max": 5, "grade": "A", "color": "#22c55e"},
+            {"min": 5, "max": 10, "grade": "B", "color": "#84cc16"},
+            {"min": 10, "max": 20, "grade": "C", "color": "#eab308"},
+            {"min": 20, "max": 40, "grade": "D", "color": "#f97316"},
+            {"min": 40, "max": "inf", "grade": "F", "color": "#ef4444"},
+        ],
+    },
+    "ruff.weighted_violations_per_kloc": {
+        "thresholds": [
+            {"min": 0, "max": 10, "grade": "A", "color": "#22c55e"},
+            {"min": 10, "max": 25, "grade": "B", "color": "#84cc16"},
+            {"min": 25, "max": 50, "grade": "C", "color": "#eab308"},
+            {"min": 50, "max": 100, "grade": "D", "color": "#f97316"},
+            {"min": 100, "max": "inf", "grade": "F", "color": "#ef4444"},
+        ],
+    },
+}
+
+
 class Configuration(AbstractToolConfiguration):
     """Configure semantics associated with using the ruff tool."""
 

@@ -41,9 +41,9 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
 def _report_0(scan: Scan) -> None:
     result = query("0", scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
-    table.add_column("Code", justify="center")
-    table.add_column("Comment", justify="center")
-    table.add_column("Blank", justify="center")
+    table.add_column("LOC", justify="center")
+    table.add_column("Comments", justify="center")
+    table.add_column("Blanks", justify="center")
     table.add_column("TOTAL", justify="center")
     table.add_row(
         f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
@@ -61,10 +61,10 @@ def _report_1(scan: Scan, percentage: bool = False) -> None:
     table.add_column("Directory", justify="left", footer="TOTAL")
 
     footer = f"{grand_total.lines_code:,d} ({grand_total.lines_code_p:.1f}%)"
-    table.add_column("Code", justify="right", footer=footer)
+    table.add_column("LOC", justify="right", footer=footer)
 
     footer = f"{grand_total.lines_comment:,d} ({grand_total.lines_comment_p:.1f}%)"
-    table.add_column("Comment", justify="right", footer=footer)
+    table.add_column("Comments", justify="right", footer=footer)
 
     footer = f"{grand_total.lines_blank:,d} ({grand_total.lines_blank_p:.1f}%)"
     table.add_column("Blank", justify="right", footer=footer)
@@ -87,8 +87,8 @@ def _report_2(scan: Scan) -> None:
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
-    table.add_column("Code", justify="right", footer=fmt(column_totals["lines_code"], False))
-    table.add_column("Comment", justify="right", footer=fmt(column_totals["lines_comment"], False))
+    table.add_column("LOC", justify="right", footer=fmt(column_totals["lines_code"], False))
+    table.add_column("Comments", justify="right", footer=fmt(column_totals["lines_comment"], False))
     table.add_column("Blank", justify="right", footer=fmt(column_totals["lines_blank"], False))
     table.add_column("TOTAL", justify="right", footer=fmt(grand_total, False))
     for row in rows:
@@ -128,8 +128,8 @@ def _report_h(project: Project, scan: Scan) -> None:
     else:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)
         table.add_column("", justify="left", footer="Mean Daily Growth")
-        table.add_column("Code", justify="right", footer=f"{adgs['total_code']:,.0f}")
-        table.add_column("Comment", justify="right", footer=f"{adgs['total_comment']:,.0f}")
+        table.add_column("LOC", justify="right", footer=f"{adgs['total_code']:,.0f}")
+        table.add_column("Comments", justify="right", footer=f"{adgs['total_comment']:,.0f}")
         table.add_column("Blank", justify="right", footer=f"{adgs['total_blank']:,.0f}")
         for row in rows:
             t_row = [

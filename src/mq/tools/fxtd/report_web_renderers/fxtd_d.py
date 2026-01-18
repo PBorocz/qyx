@@ -11,29 +11,29 @@ def fxtd_d(project: Project, scan: Scan):
 
     t_head = fh.Tr(
         fh.Th("Metric", scope="col", style="text-align: left"),
-        fh.Th("Grade", scope="col", style="text-align: center"),
         fh.Th("Value", scope="col", style="text-align: right"),
+        fh.Th("Grade", scope="col", style="text-align: center"),
     )
 
     t_body = []
     for row in rows:
         t_row = fh.Tr(
             fh.Td(f"{row.type}'s per kLOC", style="text-align: left"),
+            fh.Td(f"{row.fxtd_d.score:.2f}", style="text-align: right"),
             fh.Td(
                 f"{row.fxtd_d.grade}",
                 style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.fxtd_d.color}",
             ),
-            fh.Td(f"{row.fxtd_d.score:.2f}", style="text-align: right"),
         )
         t_body.append(t_row)
 
     t_foot = fh.Tr(
         fh.Th("Composite (weighted)", scope="col", style="text-align: left"),
+        fh.Td(f"{composite.score:.2f}", style="text-align: right"),
         fh.Td(
             f"{composite.grade}",
             style=f"text-align: center; color: var(--pico-muted-color); background-color: {composite.color}",
         ),
-        fh.Td(f"{composite.score:.2f}", style="text-align: right"),
     )
 
     return (

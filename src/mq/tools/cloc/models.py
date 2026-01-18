@@ -1,15 +1,16 @@
 """..."""
 
-from argparse import Namespace
-from datetime import datetime
-from collections import defaultdict
-from typing import Any
 import logging
+from argparse import Namespace
+from collections import defaultdict
+from datetime import datetime
+from typing import Any
 
-from peewee import fn, IntegerField
+from peewee import IntegerField, fn
 
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.utils import rate_of_change_percentage
+from mq.utils.scoring import score_metric
 
 log = logging.getLogger(__name__)
 
@@ -63,6 +64,9 @@ def _query_0(scan: Scan) -> Any:
     row.lines_blank_p = (row.lines_blank / row.lines_total) * 100.0
     row.lines_code_p = (row.lines_code / row.lines_total) * 100.0
     row.lines_comment_p = (row.lines_comment / row.lines_total) * 100.0
+
+    # Find the number of files
+    row.files_total = Cloc.select(fn.COUNT(Cloc.id).alias("files_total")).where(Cloc.scan == scan).get().files_total
 
     return row
 
@@ -193,35 +197,21 @@ def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict
 
 def _query_d(scan: Scan) -> Any:
     """Calculate all 'derived' report values."""
+    from mq.tools.cloc import DEFAULT_SCORING
+
     row = _query_0(scan)
 
-    ################################################################################
     # Calculate the "Code Density"
-    ################################################################################
-    code_density = (row.lines_code / (row.lines_code + row.lines_blank)) * 100.0
-    if code_density >= 85.0:
-        grade, color = "C", "#eab308"
-    elif code_density >= 60.0:
-        grade, color = "A", "#22c55e"
-    elif code_density >= 10.0:
-        grade, color = "B", "#84cc16"
-    row.code_density = Namespace(score=code_density, grade=grade, color=color)
+    metric_value = (row.lines_code / (row.lines_code + row.lines_blank)) * 100.0
+    row.code_density = score_metric("cloc.code_density", metric_value, DEFAULT_SCORING)
 
-    ################################################################################
     # Calculate the "Comment Ratio"
-    ################################################################################
-    comment_ratio = row.lines_comment / (row.lines_code + row.lines_comment) * 100.0
-    if comment_ratio >= 20.0:
-        grade, color = "A", "#22c55e"
-    elif comment_ratio >= 15.0:
-        grade, color = "B", "#84cc16"
-    elif comment_ratio >= 10.0:
-        grade, color = "C", "#eab308"
-    elif comment_ratio >= 5.0:
-        grade, color = "D", "#f97316"
-    else:
-        grade, color = "F", "#ef4444"
-    row.comment_ratio = Namespace(score=comment_ratio, grade=grade, color=color)
+    metric_value = row.lines_comment / (row.lines_code + row.lines_comment) * 100.0
+    row.comment_ratio = score_metric("cloc.comment_ratio", metric_value, DEFAULT_SCORING)
+
+    # Calculate average lines per file
+    metric_value = int(row.lines_code / row.files_total)
+    row.avg_lines_per_file = score_metric("cloc.avg_lines_per_file", metric_value, DEFAULT_SCORING)
 
     return row
 

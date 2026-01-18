@@ -16,10 +16,10 @@ def hal_0(scan: Scan, **kwargs):
     )
 
     t_body = []
-    for display, calc, attr, _ in RadonHal.attrs():
+    for attr in RadonHal.attrs():
         t_row = fh.Tr(
-            fh.Th(fh.Span(display), " ", fh.Small(calc), style="text-align: left" ),
-            fh.Td(f"{getattr(row, attr):.2f}"     , style="text-align: right"),
+            fh.Th(fh.Span(attr.display), " ", fh.Small(attr.calculation), style="text-align: left" ),
+            fh.Td(f"{getattr(row, attr.name):.1f}"                      , style="text-align: right"),
         )
         t_body.append(t_row)
     # fmt: on
