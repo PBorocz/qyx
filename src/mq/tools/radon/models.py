@@ -1,7 +1,6 @@
 """..."""
 
 import logging
-from argparse import Namespace
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Literal

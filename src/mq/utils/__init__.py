@@ -144,3 +144,59 @@ def parse_path_arg(arg_path: str) -> tuple[str, str, bool]:
     name = path.name
 
     return name, normalised, False
+
+
+def bucket(datum: list, bucket_breaks: list[float], as_percentage: bool = True) -> list[tuple[str, int]]:
+    """Calculate histogram of values provided expressed either raw or as a percentage of the total.
+
+    Args:
+        datum: List of data values to bucket.
+        bucket_breaks: Bucket boundaries (default: [0, 50, 100, 200, ...])
+        as_percentage: If true, return values as percentage of total, else raw count.
+
+    Returns:
+        List of (bucket_label, count) tuples in sorted order.
+    """
+    if bucket_breaks[-1] != float("inf"):
+        bucket_breaks.append(float("inf"))
+
+    raw_histogram = defaultdict(int)
+    total = 0.0
+    for value in datum:
+        bucket_label = _get_bucket_label(value, bucket_breaks)
+        raw_histogram[bucket_label] += 1
+        total += value
+
+    # Convert to percentage of total?
+    if as_percentage:
+        histogram = {label: (value / len(datum)) * 100.0 for label, value in raw_histogram.items()}
+    else:
+        histogram = raw_histogram
+
+    # Return as list of tuples with all buckets (even if zero); in order!
+    return_ = []
+    for i in range(len(bucket_breaks) - 1):
+        label = _format_bucket_label(i, bucket_breaks)
+        count = histogram.get(label, 0)
+        return_.append((label, count))
+    return return_
+
+
+def _get_bucket_label(value: float, breaks: list[float]) -> str:
+    """Find which bucket a value falls into."""
+    for i in range(len(breaks) - 1):
+        if breaks[i] <= value < breaks[i + 1]:
+            return _format_bucket_label(i, breaks)
+    # Shouldn't reach here if breaks include inf
+    return _format_bucket_label(len(breaks) - 2, breaks)
+
+
+def _format_bucket_label(index: int, breaks: list[float]) -> str:
+    """Format a bucket label like '0-50', '50-100', '1000+'."""
+    lower = int(breaks[index])
+    upper = breaks[index + 1]
+
+    if upper == float("inf"):
+        return f"{lower}+"
+    else:
+        return f"{lower}-{int(upper) - 1}"

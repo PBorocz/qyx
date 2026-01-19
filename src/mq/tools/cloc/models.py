@@ -1,7 +1,6 @@
 """..."""
 
 import logging
-from argparse import Namespace
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
@@ -9,8 +8,9 @@ from typing import Any
 from peewee import IntegerField, fn
 
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
-from mq.utils import rate_of_change_percentage
+from mq.utils import bucket, rate_of_change_percentage
 from mq.utils.scoring import score_metric
+
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +42,8 @@ def query(level: str = "0", project: Project = None, scan: Scan = None, last: in
             return _query_2(scan)
         case "d":
             return _query_d(scan)
+        case "f":
+            return _query_f(scan)
         case "h":
             return _query_h(project, last)
 
@@ -214,6 +216,23 @@ def _query_d(scan: Scan) -> Any:
     row.avg_lines_per_file = score_metric("cloc.avg_lines_per_file", metric_value, DEFAULT_SCORING)
 
     return row
+
+
+def _query_f(scan: Scan) -> list[tuple[str, int]]:
+    """Calculate histogram buckets over filesize."""
+    from mq.tools.cloc import DEFAULT_SCORING
+
+    # Get bucket break values from configuration ..
+    buckets = DEFAULT_SCORING.get("cloc.histogram_file_size")["buckets"]
+    bucket_breaks = [level["min"] for level in buckets]
+
+    # Calculate file density histogram
+    file_sizes = [
+        row.lines_code + row.lines_comment + row.lines_blank for row in Cloc.select().where(Cloc.scan == scan)
+    ]
+    histogram_by_file_size = bucket(file_sizes, bucket_breaks, as_percentage=True)
+
+    return histogram_by_file_size
 
 
 def days_between(timestamp1: str, timestamp2: str) -> float:

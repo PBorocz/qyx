@@ -23,7 +23,7 @@ def score_metric(metric_name: str, value: float, configuration: dict) -> Namespa
         log.warning(f"Sorry, couldn't find a scoring configuration for {metric_name=}!")
         return Namespace(score=value, grade="?", color="#6b7280")
 
-    grade, color = _find_grade(value, metric_config["thresholds"])
+    grade, color = find_grade(value, metric_config["thresholds"])
 
     if grade == "?":
         log.warning(f"Configuration issue? Unable to map {value=} to a value metric grading bucket: {metric_name=}")
@@ -31,7 +31,7 @@ def score_metric(metric_name: str, value: float, configuration: dict) -> Namespa
     return Namespace(score=value, grade=grade, color=color)
 
 
-def _find_grade(value: float, thresholds: list[dict]) -> tuple[str, str]:
+def find_grade(value: float, thresholds: list[dict]) -> tuple[str, str]:
     """Find the appropriate grade and color for a value.
 
     Value is checked against each threshold range [min, max).
@@ -48,7 +48,7 @@ def _find_grade(value: float, thresholds: list[dict]) -> tuple[str, str]:
 
         # Check if value falls in this range [min-inclusive, max-below]
         if min_val <= value < max_val:
-            return threshold["grade"], threshold["color"]
+            return threshold.get("grade"), threshold.get("color")
 
     # Fallback if no threshold matched
     return "?", "#6b7280"
