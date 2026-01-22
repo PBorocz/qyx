@@ -12,7 +12,7 @@ from rich.console import Console
 
 from mq.tools import generate_ta_pairs
 from mq.tools.base import AbstractToolConfiguration, Project, Request, Scan
-from mq.utils.git import get_git_commit_hash, git_commits
+from mq.utils.git import get_git_commit_hash, git_checkout, get_git_commits
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +25,8 @@ def ingest(args: Namespace) -> None:
     # "as-of" date associated with the state of the code when the tool
     # runs.
     #
+    console = Console()
+
     # Lookup (or create) our Project and associated Request
     project: Project = Project.create_from_args(args)
     request: Request = Request.get_or_create(args, project)
@@ -33,21 +35,36 @@ def ingest(args: Namespace) -> None:
 
     for scan_request in iter_scan_requests(args, request):
         for o_tool, analysis in tools_analyses:
-            _ingest_analysis(args, request, o_tool, analysis, scan_request)
+            console.print(
+                f"[bold cyan]Considering...[/] {o_tool.module_name}:{analysis} - {scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}",
+                end="\r",
+            )
+            if scan_request.as_git:
+                if is_git_commit_already_ingested(o_tool, analysis, request, scan_request.hash):
+                    log.debug(f"{o_tool.module_name}:{analysis} - {scan_request.hash[:8]=} already done!")
+                    continue
+
+            console.print(f"\n[bold green]Ingesting...[/] {scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}", end="\r")
+
+            # Put the repo into the right git state.
+            git_checkout(scan_request)
+
+            # And then do the respective tool's ingestion
+            # _ingest_analysis(args, request, o_tool, analysis, scan_request)
+
+            console.print("\n[bold green]✓ Done![/]")
 
 
 def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:
     if request.is_git:
-        console = Console()
-        for repo_path, commit_date, commit_hash in git_commits(request.arg_normalised):
-            console.print(f"[bold cyan]Processing...[/] {commit_date.strftime('%Y-%m-%dT%H:%M:%S')}", end="\r")
+        repo_path, commits = get_git_commits(request.arg_normalised)
+        for commit_hash, commit_date in commits:
             yield Namespace(
                 as_git=True,
                 cwd=repo_path,
                 as_of=commit_date,
                 hash=commit_hash,
             )
-        console.print("\n[bold green]✓ Done![/]")
     else:
         yield Namespace(
             as_git=False,
@@ -181,3 +198,28 @@ def _get_ta_results(
         datum = result.stdout
 
     return datum
+
+
+def is_git_commit_already_ingested(
+    o_tool: AbstractToolConfiguration,
+    analysis: str,
+    request: Request,
+    git_hash: str,
+) -> bool:
+    """Have we already processed a scan for this tool/analysis based on the git commit hash provided?"""
+    try:
+        _ = (
+            Scan.select()
+            .where(
+                Scan.request == request,
+                Scan.tool == o_tool.module_name,
+                Scan.analysis == analysis,
+                Scan.git_commit_hash == git_hash,
+            )
+            .get()
+        )
+        # Yes, we've already done it!
+        return True
+    except Scan.DoesNotExist:
+        # No, we haven't done it!
+        return False

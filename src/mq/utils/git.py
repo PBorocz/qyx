@@ -2,10 +2,10 @@
 
 import logging
 import subprocess
+from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 from platformdirs import user_cache_dir
-from typing import Iterator
 from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
@@ -19,8 +19,8 @@ def get_git_commit_hash() -> str:
         return "unknown"  # Not in git repo or git not available
 
 
-def git_commits(git_repo: str, revision_skip: int = 1) -> Iterator[tuple]:
-    """Clone repo and analyze each revision."""
+def get_git_commits(git_repo: str) -> tuple[Path, list[str]]:
+    """Setup the git repository (cloning if necessary) and get the list of commit revisions."""
     repo_path = _get_repo_cache_dir(git_repo)
 
     # Do we need to clone "anew" or can we use an refresh to an existing cached repository?
@@ -36,18 +36,37 @@ def git_commits(git_repo: str, revision_skip: int = 1) -> Iterator[tuple]:
     # Given the repo, find all commit hashes associated all revisions:
     commits: list[str] = _get_commit_hashes(repo_path)
     log.debug(f"{repo_path} has {len(commits)} commits")
-
-    # And iterate (smartly) over each one!
-    for i, commit_info in enumerate_skip(commits, revision_skip):
-        commit_hash, commit_date = commit_info
-        log.debug(f"Processing commit {i + 1:02d}/{len(commits):d}: {commit_date} {commit_hash[:8]}")
-        _checkout_hash(repo_path, commit_hash)
-        yield repo_path, commit_date, commit_hash
+    return repo_path, commits
 
 
-def _checkout_hash(repo_path: Path, commit_hash: str) -> None:
-    """Checkout a specific commit."""
-    subprocess.run(["git", "checkout", "-f", commit_hash], cwd=repo_path, capture_output=True, check=True)
+def git_checkout(scan_request: Namespace) -> bool:
+    """Perform a git checkout for the specified request (which has path and commit hash)."""
+    log.debug(f"git checkout: {scan_request.as_of} {scan_request.hash[:8]}")
+    try:
+        subprocess.run(
+            ["git", "checkout", "-f", scan_request.hash],
+            cwd=scan_request.cwd,
+            capture_output=True,
+            check=True,
+        )
+        return True
+    except subprocess.CalledProcessError as exc:
+        log.error(f"Unable to git checkout: {scan_request.as_of} {scan_request.hash[:8]} -> {exc}")
+        return False
+
+
+# def iter_git_commits(repo_path: Path, commits: list[str]) -> Iterator[tuple[Path, str, str]]:
+#     """Iterator over each commit for the specified repo_path provided."""
+#     for i, commit_info in enumerate_skip(commits, 1):
+#         commit_hash, commit_date = commit_info
+#         log.debug(f"git checkout: commit {i + 1:02d}/{len(commits):d}: {commit_date} {commit_hash[:8]}")
+#         subprocess.run(
+#             ["git", "checkout", "-f", commit_hash],
+#             cwd=repo_path,
+#             capture_output=True,
+#             check=True,
+#         )
+#         yield repo_path, commit_date, commit_hash
 
 
 def _get_repo_cache_dir(git_url: str) -> Path:
