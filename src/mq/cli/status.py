@@ -19,12 +19,17 @@ def status(args: Namespace) -> None:
         projects = projects.where(Project.name == args.name)
 
     for project in projects:
-        project_tree = tree.add(f"[red]Project[/red] [{project.id:3d}] → {project.name}")
+        s_project = f"[red]PROJECT → {project.name}[/red]"
+        if args.log_level != "info":
+            s_project += f" [{project.id:3d}]"
+
+        project_tree = tree.add(s_project)
 
         for request in Request.select().where(Request.project == project):
             source = request.arg_normalised if request.is_git else request.arg_raw
-            timestamp = dt_to_display(request.timestamp, collapse_today=True)
-            s_request = f"[blue]Request[/blue]  [{request.id:3d}] at {timestamp} from '{source}'"
+            s_request = f"[orange1]REQUEST[/orange1] [grey50]source='{source}'[/grey50]"
+            if args.log_level != "info":
+                s_request += f" [{request.id}] "
             scan_tree = project_tree.add(s_request)
 
             scans_for_request = Scan.select().order_by(Scan.as_of).where(Scan.request == request)
@@ -41,9 +46,10 @@ def scan_tree_summary(args: Namespace, request, scans_for_request, scan_tree):
     dates_ = [scan.as_of for scan in scans_for_request]
     max_date, min_date = max(dates_), min(dates_)
     s_max_date, s_min_date = dt_to_display(max_date), dt_to_display(min_date)
-    ta_tree = scan_tree.add(
-        f"[bright_green]Scans[/bright_green] {len(scans_for_request):,d} {s_min_date} → {s_max_date}",
+    s_scans = (
+        f"[bright_green]SCANS[/bright_green] {len(scans_for_request):,d} [grey50]{s_min_date} → {s_max_date}[/grey50]"
     )
+    ta_tree = scan_tree.add(s_scans)
 
     # Count up the total number of scans by tool/analysis:
     counts = defaultdict(int)
@@ -61,14 +67,15 @@ def scan_tree_detailed(args: Namespace, request, scans_for_request, scan_tree):
     for scan in scans_for_request:
         s_scan_count = _get_scan_count(args, scan)
         s_analysis = scan.tool_analysis_display()
-        # delimiter = "asOf" if request.is_git else " at "
-        # s_as_of_display = f"{delimiter} {dt_to_display(scan.as_of)}"
         s_scan = (
-            f"[bright_green]Scan[/bright_green] [{scan.id:3d}] → "
+            f"[bright_green]SCAN[/bright_green] → "
             f"[cyan]{s_analysis}[/cyan] "
             f"[green]{s_scan_count:4s}[/green] "
-            # f"[dim]{s_as_of_display}[/dim]"
+            f"[grey50]{dt_to_display(scan.as_of)}[/grey50]"
         )
+        if args.log_level != "info":
+            s_scan += f" [{scan.id}]"
+
         scan_tree.add(s_scan)
 
 
@@ -77,7 +84,4 @@ def _get_scan_count(args: Namespace, scan: Scan) -> str:
     tool_config = args.tools[scan.tool]
     model_class = tool_config.models[scan.analysis]
     count = model_class.filter(model_class.scan == scan).count()
-    if count == 0:
-        return f"{'  -':3}"
-    else:
-        return f"{count:3d}"
+    return f"{count:3d}"

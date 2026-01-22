@@ -1,4 +1,4 @@
-"""..."""
+"""Define all the "core" peewee models, ie. over and above "tool"-specific storage."""
 
 from __future__ import annotations
 
@@ -131,10 +131,6 @@ class Request(BaseModel):
         backref="requests",
         on_delete="CASCADE",
     )
-    timestamp = pw.DateTimeField(
-        help_text="GMT/UTC datetime the ingest occurred",
-        default=lambda: datetime.now(UTC),
-    )
 
     arg_raw = pw.CharField(
         help_text="Project argument as entered by user, eg '.' or '../src', '/abs/path', 'https:...').",
@@ -151,7 +147,7 @@ class Request(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        indexes = ((("project", "timestamp"), True),)
+        indexes = ((("project", "arg_normalised", "is_git"), True),)
 
     @classmethod
     def get_or_create(cls, args: Namespace, project: Project) -> Request:
@@ -166,7 +162,7 @@ class Request(BaseModel):
         # Otherwise, we first look for the most recent git-based Request for this project.
         request = (
             cls.select()
-            .order_by(Request.timestamp.asc())
+            .order_by(Request.id.asc())
             .where(
                 Request.project == project,
                 Request.is_git,
@@ -175,7 +171,6 @@ class Request(BaseModel):
         )
         if request:
             log.debug(f"Found existing git {request.id=}, using it...")
-            request.timestamp = datetime.now(UTC)
             request.save()
         else:
             log.debug("No existing git request found for this project, creating a new one.")
@@ -204,7 +199,6 @@ class Scan(BaseModel):
     )
     as_of = pw.DateTimeField(
         help_text="As Of GMT/UTC datetime of the code base being analysed",
-        default=lambda: datetime.now(UTC),
     )
     analysis = pw.CharField(
         help_text="Analysis performed, e.g. cloc, cc, mi, hal, ruff etc.",
@@ -214,6 +208,10 @@ class Scan(BaseModel):
         help_text="Tool used, e.g. cloc, radon, ruff etc.",
         null=True,
     )
+    timestamp = pw.DateTimeField(
+        help_text="GMT/UTC datetime the scan/ingest occurred",
+        default=lambda: datetime.now(UTC),
+    )
     # cwd = pw.CharField(
     #     help_text="Directory for tool execuction (ie. /tmp/... for git or /users/dev/project",
     #     null=True,
@@ -221,10 +219,6 @@ class Scan(BaseModel):
     git_commit_hash = pw.CharField(
         help_text="ID from respective sport's site",
         null=True,
-    )
-    timestamp = pw.DateTimeField(
-        help_text="GMT/UTC datetime the scan occurred",
-        default=lambda: datetime.now(UTC),
     )
 
     class Meta:

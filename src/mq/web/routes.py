@@ -56,8 +56,8 @@ def register(args, rt):
         def make_tool_route(name, config):
             @rt(f"/{name}")
             def render_tool_page_method(request):
-                report_web: ModuleType = config.import_component("report_web")
-                render_method: Callable = getattr(report_web, "render")
+                web_file: ModuleType = config.import_component("report.web.web")
+                render_method: Callable = getattr(web_file, "render")
                 return render_method(request, name, config)
 
             return render_tool_page_method
@@ -78,11 +78,11 @@ def register(args, rt):
             return ft.Div(f"Unknown tool: {tool}", cls="error")
 
         try:
-            report_web_module = tool_config.import_component("report_web")
+            web_file_module = tool_config.import_component("report.web.web")
         except ImportError:
-            return ft.Div(f"Couldn't find 'report_web' module in '{tool}'", cls="error")
+            return ft.Div(f"Couldn't find '{tool}/report/web/web.py' file!", cls="error")
 
         if project:
             update_state(last_project_id=project, last_tool=tool)
 
-        return (*report_web_module.render_content(args, request, s_project_id=project, analysis=analysis),)
+        return (*web_file_module.render_content(args, request, s_project_id=project, analysis=analysis),)

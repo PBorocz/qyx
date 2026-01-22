@@ -125,7 +125,7 @@ def _query_h(project: Project, last: int = None):
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    timestamps = list({result.timestamp for result in rows})
+    timestamps = list({row.timestamp for row in rows if row.count})
     transposed = defaultdict(dict)
     for row in rows:
         if row.count:

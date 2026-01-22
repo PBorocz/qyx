@@ -106,7 +106,7 @@ def iter_report_web_render_methods(args: Namespace, level: str, required: bool) 
     for tool_config in args.tools.values():
         for tool, analysis in tool_config.iter_tool_analysis():
             method_name: str = f"{analysis}_{level}"  # e.g. ruff_0, cloc_d or hal_d
-            method_module_name: str = f"report_web_renderers.{method_name}"
+            method_module_name: str = f"report.web.{method_name}"
             try:
                 method_module: ModuleType = tool_config.import_component(method_module_name)
             except ModuleNotFoundError:

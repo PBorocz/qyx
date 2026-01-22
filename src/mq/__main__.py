@@ -5,6 +5,7 @@ import sys
 
 # from rich.traceback import install as install_traceback
 from rich import print
+from rich_argparse import RawDescriptionRichHelpFormatter, RichHelpFormatter
 
 from mq import setup_configuration, setup_logging, setup_sqlite
 from mq.cli.admin.clear import clear
@@ -32,7 +33,6 @@ def get_args():
     parser_root = argparse.ArgumentParser(
         add_help=False,
         parents=[configuration_parser],
-        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser_root.add_argument(
         "--log-level",
@@ -40,7 +40,11 @@ def get_args():
         choices=["debug", "info", "warning", "error", "critical"],
         help="Set logging level",
     )
-    parser = argparse.ArgumentParser(prog="MQ - python MetaQuality environment", parents=[parser_root])
+    parser = argparse.ArgumentParser(
+        prog="mq",
+        parents=[parser_root],
+        formatter_class=RichHelpFormatter,
+    )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     ################################################################################
@@ -50,6 +54,7 @@ def get_args():
         "status",
         parents=[parser_root],
         help="Report current status.",
+        formatter_class=RichHelpFormatter,
     )
     parser_status.add_argument(
         "-l",
@@ -70,7 +75,8 @@ def get_args():
     parser_ingest = subparsers.add_parser(
         "ingest",
         parents=[parser_root],
-        help="Ingest code quality results.",
+        help="Ingest code quality results for a specific project.",
+        formatter_class=RichHelpFormatter,
     )
     parser_ingest.add_argument(
         "-n",
@@ -103,6 +109,7 @@ def get_args():
         "report",
         parents=[parser_root],
         help="Report on code quality for the specified (or all) projects.",
+        formatter_class=RichHelpFormatter,
     )
     parser_report.add_argument(
         "-n",
@@ -130,6 +137,7 @@ def get_args():
         "serve",
         parents=[parser_root],
         help="Run built-in web server for reporting.",
+        formatter_class=RichHelpFormatter,
     )
     parser_serve.add_argument(
         "--port",
@@ -146,7 +154,11 @@ def get_args():
     ################################################################################
     # Admin sub-commands
     ################################################################################
-    parser_admin = subparsers.add_parser("admin", help="Administration commands")
+    parser_admin = subparsers.add_parser(
+        "admin",
+        help="Administration commands",
+        formatter_class=RichHelpFormatter,
+    )
     subparser_admin = parser_admin.add_subparsers(dest="admin_command", help="Administration subcommands")
 
     ################################################################################
@@ -154,6 +166,7 @@ def get_args():
         "clean",
         parents=[parser_root],
         help="Clean extraneous fluff from db",
+        formatter_class=RichHelpFormatter,
     )
 
     ################################################################################
@@ -161,6 +174,7 @@ def get_args():
         "trim",
         parents=[parser_root],
         help="Trim old data, leaving the most recent run for each analysis",
+        formatter_class=RichHelpFormatter,
     )
     parser_trim.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
     parser_trim.add_argument("-a", "--analysis", help="Analysis to trim data for, e.g. radon-cc, ruff, cloc etc.")
@@ -172,6 +186,7 @@ def get_args():
         "clear",
         parents=[parser_root],
         help="Clear the database, either for all analyses (default) or a specific one.",
+        formatter_class=RichHelpFormatter,
     )
     parser_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
     parser_clear.add_argument("-a", "--analysis", help="Optional, analysis clear, e.g. radon:cc, ruff, cloc etc.")
@@ -183,6 +198,7 @@ def get_args():
         "delete",
         parents=[parser_root],
         help="Delete a particular Project, Request or Scan.",
+        formatter_class=RichHelpFormatter,
     )
     parser_delete.add_argument("--no_confirm", action="store_true", help="Run delete *without* confirmation(!)")
     parser_delete.add_argument("--arg", dest="delete_target", help="delete p:<id>, r:<id> or s:<id>")
@@ -192,10 +208,6 @@ def get_args():
     ################################################################################################
     args = parser.parse_args(remaining_args)
 
-    # Enforce that no command defaults to "status"
-    if args.command is None:
-        args.command = "status"
-
     # Before we go, send the "configuration" file values through the rest of our codebase in args!
     args.config = configuration
     return args
@@ -203,9 +215,10 @@ def get_args():
 
 def validate_args(args: argparse.Namespace) -> bool:
     """Validate arguments now that we've got everything setup."""
-    if args.command is None:
-        if not args.name and not args.path:
-            print("[red]Sorry! one of either [bold]-n/--name[/bold] or  [bold]-p/--project[/bold] is required")
+    if args.command and args.command.lower() not in ("serve"):
+        if not getattr(args, "name", None) and not getattr(args, "path", None):
+            print("[red]Sorry! one of either [bold]-n/--name[/bold] or  [bold]-p/--path[/bold] is required")
+            return False
 
     # Commands that deal with projects may need BOTH a name and a path, others only a name.
     if args.command.lower() == "ingest":

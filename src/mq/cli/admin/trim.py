@@ -39,7 +39,7 @@ def _trim(args: Namespace) -> int:
             Project.name.alias("project_name"),
             Scan.module,
             Scan.sub_module,
-            fn.MAX(Request.timestamp).alias("max_timestamp"),
+            fn.MAX(Request.id).alias("max_id"),
         )
         .join(Request)
         .join(Project)
@@ -58,6 +58,6 @@ def _trim(args: Namespace) -> int:
             if args.module and args.module != scan.module:
                 continue
             # Scan.delete().where(Scan.id == scan.id).execute()
-            log.debug(f"Deleted Scan {scan.id} as of {scan.request.timestamp}")
+            log.debug(f"Deleted Scan {scan.id} as of {scan.timestamp}")
             count += 1
     return count

@@ -5,10 +5,10 @@ from argparse import Namespace
 from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
-from mq.tools.fxtd.report_web_renderers.fxtd_0 import fxtd_0
-from mq.tools.fxtd.report_web_renderers.fxtd_1 import fxtd_1
-from mq.tools.fxtd.report_web_renderers.fxtd_2 import fxtd_2
-from mq.tools.fxtd.report_web_renderers.fxtd_h import fxtd_h
+from mq.tools.fxtd.report.web.fxtd_0 import fxtd_0
+from mq.tools.fxtd.report.web.fxtd_1 import fxtd_1
+from mq.tools.fxtd.report.web.fxtd_2 import fxtd_2
+from mq.tools.fxtd.report.web.fxtd_h import fxtd_h
 from mq.web import render_project_selector
 from mq.web.page import render_page
 

@@ -52,7 +52,7 @@ def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]
         yield Namespace(
             as_git=False,
             cwd=Path(request.arg_normalised),
-            as_of=datetime.now(UTC),
+            as_of=datetime.now(UTC).replace(microsecond=0),
             hash=get_git_commit_hash(),
         )
 

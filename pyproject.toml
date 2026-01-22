@@ -11,6 +11,7 @@ dependencies = [
     "pygal>=3.1.0",
     "python-fasthtml>=0.12.36",
     "rich>=14.2.0",
+    "rich-argparse>=1.7.2",
 ]
 
 [project.scripts]
@@ -105,8 +106,7 @@ help = "Run the litecli command against our persistent store."
 [tool.poe.tasks.test_suite_reports]
 shell = """
   set -e
-  uv run mq
-  uv run mq status
+  uv run mq status --name python-code-quality
   uv run mq status --name python-code-quality --level 1
 
   uv run mq report --name python-code-quality --analysis cloc
