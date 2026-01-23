@@ -286,7 +286,7 @@ def _query_raw_h(project: Project, last: int = None) -> Any:
                 transposed[attr_name][timestamps[-1]],
             )
         else:
-            rocs[attr] = 0.0
+            rocs[attr_name] = 0.0
 
     if len(timestamps) > 1:
         roc_gt = rate_of_change_percentage(
@@ -740,7 +740,7 @@ def _query_cc_h(project: Project, last: int = None) -> Any:
     return timestamps, transposed, rocs
 
 
-def _query_cc_d(scan: Scan):  # noqa: C901
+def _query_cc_d(scan: Scan):
     """Calculate derived radon-cc metric(s)."""
     # Standards reference:
     # - McCabe (1976)*: CC > 10 indicates high risk

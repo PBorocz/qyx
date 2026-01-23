@@ -82,8 +82,7 @@ def _get_commit_hashes(repo_path: Path) -> list[tuple[str, str]]:
     for line in result.stdout.strip().split("\n"):
         hash_val, s_date = line.split("|")
         utc_date = datetime.fromtimestamp(int(s_date), tz=timezone.utc)
-        commits.append((hash_val, utc_date))
-
+        commits.append((hash_val, utc_date))  # FIXME: Use a dedicated dataclass here?
     return commits
 
 

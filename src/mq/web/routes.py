@@ -12,7 +12,7 @@ from mq.utils.state import update_state
 log = logging.getLogger("uvicorn")
 
 
-def register(args, rt):
+def register(args, rt):  # noqa: C901
     """Register all the routes for the app."""
 
     ################################################################################

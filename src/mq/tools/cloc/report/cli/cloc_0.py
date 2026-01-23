@@ -1,4 +1,4 @@
-"""CLI report rendering obo 'cloc' tool - level 0"""
+"""CLI report rendering obo 'cloc' tool - level 0."""
 
 import logging
 

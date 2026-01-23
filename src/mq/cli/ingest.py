@@ -44,8 +44,8 @@ def ingest(args: Namespace) -> None:
                     log.debug(f"{o_tool.module_name}:{analysis} - {scan_request.hash[:8]=} already done!")
                     continue
 
-            # Put the repo into the right git state.
-            git_checkout(scan_request)
+                # Put the repo into the right git state for the ingestion
+                git_checkout(scan_request)
 
             # And then do the respective tool's ingestion
             _ingest_analysis(args, request, o_tool, analysis, scan_request)

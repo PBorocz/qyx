@@ -5,7 +5,7 @@ import sys
 
 # from rich.traceback import install as install_traceback
 from rich import print
-from rich_argparse import RawDescriptionRichHelpFormatter, RichHelpFormatter
+from rich_argparse import RichHelpFormatter
 
 from mq import setup_configuration, setup_logging, setup_sqlite
 from mq.cli.admin.clear import clear

@@ -1,7 +1,6 @@
 """..."""
 
 import logging
-from argparse import Namespace
 
 from peewee import fn, CharField, IntegerField, JOIN
 

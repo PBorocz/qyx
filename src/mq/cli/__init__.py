@@ -1,9 +1,7 @@
 """CLI constants and utilities."""
 
-import importlib
 import logging
 import sys
-from typing import Callable
 
 from rich.console import Console
 from rich.table import Table
