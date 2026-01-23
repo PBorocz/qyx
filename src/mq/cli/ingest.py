@@ -35,24 +35,20 @@ def ingest(args: Namespace) -> None:
 
     for scan_request in iter_scan_requests(args, request):
         for o_tool, analysis in tools_analyses:
-            console.print(
-                f"[bold cyan]Considering...[/] {o_tool.module_name}:{analysis} - {scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}",
-                end="\r",
-            )
+            s_as_of = f"{scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}"
+            s_analysis = analysis if o_tool.module_name != analysis else ""
+            console.print(f"{s_as_of} → {o_tool.module_name} {s_analysis}", end="\r")
+
             if scan_request.as_git:
                 if is_git_commit_already_ingested(o_tool, analysis, request, scan_request.hash):
                     log.debug(f"{o_tool.module_name}:{analysis} - {scan_request.hash[:8]=} already done!")
                     continue
 
-            console.print(f"\n[bold green]Ingesting...[/] {scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}", end="\r")
-
             # Put the repo into the right git state.
             git_checkout(scan_request)
 
             # And then do the respective tool's ingestion
-            # _ingest_analysis(args, request, o_tool, analysis, scan_request)
-
-            console.print("\n[bold green]✓ Done![/]")
+            _ingest_analysis(args, request, o_tool, analysis, scan_request)
 
 
 def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:

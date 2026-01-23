@@ -55,20 +55,6 @@ def git_checkout(scan_request: Namespace) -> bool:
         return False
 
 
-# def iter_git_commits(repo_path: Path, commits: list[str]) -> Iterator[tuple[Path, str, str]]:
-#     """Iterator over each commit for the specified repo_path provided."""
-#     for i, commit_info in enumerate_skip(commits, 1):
-#         commit_hash, commit_date = commit_info
-#         log.debug(f"git checkout: commit {i + 1:02d}/{len(commits):d}: {commit_date} {commit_hash[:8]}")
-#         subprocess.run(
-#             ["git", "checkout", "-f", commit_hash],
-#             cwd=repo_path,
-#             capture_output=True,
-#             check=True,
-#         )
-#         yield repo_path, commit_date, commit_hash
-
-
 def _get_repo_cache_dir(git_url: str) -> Path:
     """Return our *local* cache path for the specified git url."""
     # NB: Automatically handles XDG on Linux, AppData on Windows, etc.
