@@ -1,5 +1,6 @@
 """Report data obo running 'fxtd' tool/script for level h."""
 
+from argparse import Namespace
 from datetime import datetime
 
 from pygal import DateTimeLine
@@ -10,9 +11,9 @@ from mq.tools.fxtd.models import query
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def fxtd_h(project: Project):
+def fxtd_h(args: Namespace, project: Project):
     # Create Pygal chart
-    timestamps, transposed, rocs = query("h", project=project)
+    timestamps, transposed, rocs = query(args, "h", project=project)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

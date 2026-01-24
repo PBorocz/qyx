@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Scan
@@ -10,9 +11,9 @@ from mq.tools.ruff.models import query
 log = logging.getLogger(__name__)
 
 
-def ruff_1(scan: Scan) -> None:
-    summary = query("0", scan=scan)
-    results = query("1", scan=scan)
+def ruff_1(args: Namespace, scan: Scan) -> None:
+    summary = query(args, "0", scan=scan)
+    results = query(args, "1", scan=scan)
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")

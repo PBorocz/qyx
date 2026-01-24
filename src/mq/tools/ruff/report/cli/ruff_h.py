@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Project
@@ -12,9 +13,9 @@ log = logging.getLogger(__name__)
 
 
 # History at the "0" level...
-def ruff_h(project: Project) -> None:
+def ruff_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, rows, roc = query("h", project=project, last=5)
+    timestamps, rows, roc = query(args, "h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -33,14 +34,13 @@ def ruff_h(project: Project) -> None:
     for timestamp in sorted(timestamps):
         row.append(str(rows[timestamp]))
 
-    if roc > 0.01:
-        color = COLORS["positive"]
-    elif roc < -0.01:
-        color = COLORS["negative"]
-    else:
-        color = COLORS["neutral"]
-
-    row.append(f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]")
+    color = COLORS["neutral"]
+    if roc:
+        if roc > 0.01:
+            color = COLORS["positive"]
+        elif roc < -0.01:
+            color = COLORS["negative"]
+        row.append(f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]")
 
     table.add_row(*row)
 
@@ -52,7 +52,7 @@ def ruff_h(project: Project) -> None:
 #
 # def _report_history(project: Project) -> None:
 #     """Report on the history of scans "across" at the "1" level."""
-#     rows, messages, transposed, grand_totals = query("h", project=project, last=5)
+#     rows, messages, transposed, grand_totals = query(args, "h", project=project, last=5)
 #     ################################################################################################
 #     # Render the table
 #     ################################################################################################

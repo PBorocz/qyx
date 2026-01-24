@@ -97,7 +97,7 @@ def get_project_content(args: Namespace, project: Project) -> dict:
     content = dict()
     for level, tool, analysis, render_method in web_render_methods:
         if scan := Scan.get_most_recent(project, tool, analysis):
-            if level_contents := render_method(project=project, scan=scan):
+            if level_contents := render_method(args, project=project, scan=scan):
                 content[(level, tool, analysis)] = level_contents
     return content
 
@@ -111,7 +111,9 @@ def iter_report_web_render_methods(args: Namespace, level: str, required: bool) 
                 method_module: ModuleType = tool_config.import_component(method_module_name)
             except ModuleNotFoundError:
                 if required:
-                    log.warning(f"Sorry, we couldn't find a {method_module_name=} in ?")
+                    log.warning(
+                        f"Sorry, We couldn't find a {method_module_name=} in {tool_config.module_name}.report.web",
+                    )
                 continue
             try:
                 method: Callable = getattr(method_module, method_name)

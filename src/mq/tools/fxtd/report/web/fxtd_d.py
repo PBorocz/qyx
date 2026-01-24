@@ -1,13 +1,15 @@
 """Report data obo running 'FXTD' tool for level d or derived data."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 from mq.tools.fxtd.models import query
 
 
-def fxtd_d(project: Project, scan: Scan):
-    rows, composite = query("d", project=project, scan=scan)
+def fxtd_d(args: Namespace, project: Project, scan: Scan):
+    rows, composite = query(args, "d", project=project, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Metric", scope="col", style="text-align: left"),

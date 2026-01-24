@@ -42,14 +42,14 @@ def _render_current(args: Namespace, request, s_project_id: str = None, analysis
     project = Project.get(Project.id == int(s_project_id))
     scan = Scan.get_most_recent(project, "cloc", "cloc")
 
-    chart_file_sizes = cloc_f(scan)
+    chart_file_sizes = cloc_f(args, scan)
 
     return fh.Section(
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display(collapse_today=True)}")),
-        fh.Details(fh.Summary("Summary"), name="details", open=True, *cloc_0(scan)),
-        fh.Details(fh.Summary("By Directory"), name="details", *cloc_1(scan)),
-        fh.Details(fh.Summary("By File"), name="details", *cloc_2(scan)),
-        fh.Details(fh.Summary("Derived"), name="details", *cloc_d(project, scan)),
+        fh.Details(fh.Summary("Summary"), name="details", open=True, *cloc_0(args, scan)),
+        fh.Details(fh.Summary("By Directory"), name="details", *cloc_1(args, scan)),
+        fh.Details(fh.Summary("By File"), name="details", *cloc_2(args, scan)),
+        fh.Details(fh.Summary("Derived"), name="details", *cloc_d(args, project, scan)),
         fh.Details(
             fh.Summary("File Sizes"),
             fh.Section(fh.Div(fh.NotStr(chart_file_sizes.decode("utf-8"))), cls="bordered"),
@@ -64,7 +64,7 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
     if not s_project_id:
         return fh.Section()
     project = Project.get(Project.id == int(s_project_id))
-    chart = cloc_h(project)
+    chart = cloc_h(args, project)
 
     return fh.Section(
         fh.H1("History", style="margin-top: 1rem;"),

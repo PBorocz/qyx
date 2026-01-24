@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Project
@@ -11,9 +12,9 @@ from mq.utils import format_timestamp_headers
 log = logging.getLogger(__name__)
 
 
-def fxtd_h(project: Project) -> None:
+def fxtd_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, transposed, rocs = query("h", project=project, last=5)
+    timestamps, transposed, rocs = query(args, "h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -50,7 +51,7 @@ def fxtd_h(project: Project) -> None:
 #
 # def _report_history(project: Project) -> None:
 #     """Report on the history of scans "across"."""
-#     rows, messages, transposed, grand_totals = query("h", project=project, last=5)
+#     rows, messages, transposed, grand_totals = query(args, "h", project=project, last=5)
 #     ################################################################################################
 #     # Render the table
 #     ################################################################################################

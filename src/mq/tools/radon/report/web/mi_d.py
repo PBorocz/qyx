@@ -1,13 +1,15 @@
 """Report data obo running 'Radon-MI' tool for level d or derived data."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_mi
 
 
-def mi_d(project: Project, scan: Scan):
-    row = query_mi("d", project=project, scan=scan)
+def mi_d(args: Namespace, project: Project, scan: Scan):
+    row = query_mi(args, "d", project=project, scan=scan)
     return (
         fh.Table(
             fh.Thead(

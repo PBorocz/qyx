@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-import tomllib
+import yaml
 from argparse import Namespace
 from pathlib import Path
 from platformdirs import user_config_dir
@@ -39,10 +39,10 @@ def _load_config(config_path: Path | None) -> dict:
         raise FileNotFoundError(f"Sorry, we couldn't find a configuration file at: {config_path}")
 
     with open(config_path, "rb") as fh_:
-        return tomllib.load(fh_)
+        return yaml.safe_load(fh_)
 
 
-def _find_and_load_config(app_name: str, filename: str = "config.toml") -> dict:
+def _find_and_load_config(app_name: str, filename: str = "config.yaml") -> dict:
     """Find and load config from either of two possible locations: `cwd` and user config dir."""
     # Current directory?
     current = Path.cwd() / filename

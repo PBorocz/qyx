@@ -1,13 +1,15 @@
 """Report data obo running 'fxtd' tool/script for level 0."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.fxtd.models import query
 
 
-def fxtd_0(scan: Scan, **kwargs):
-    results = query("0", scan=scan)
+def fxtd_0(args: Namespace, scan: Scan, **kwargs):
+    results = query(args, "0", scan=scan)
     grand_total = sum([result.count for result in results])
 
     t_head = fh.Tr(

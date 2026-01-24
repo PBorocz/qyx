@@ -1,13 +1,15 @@
 """Report data obo running 'fxtd' tool/script for level 2."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.fxtd.models import query
 
 
-def fxtd_2(scan: Scan):
-    rows = query("2", scan=scan)
+def fxtd_2(args: Namespace, scan: Scan):
+    rows = query(args, "2", scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Type", scope="col", style="text-align: center"),

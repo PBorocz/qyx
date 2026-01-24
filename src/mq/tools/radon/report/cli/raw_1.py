@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Project, Scan
@@ -9,8 +10,8 @@ from mq.tools.radon.models import query_raw
 log = logging.getLogger(__name__)
 
 
-def raw_1(project: Project = None, scan: Scan = None) -> None:
-    rows, totals = query_raw("1", scan)
+def raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
+    rows, totals = query_raw(args, "1", scan)
 
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}", show_footer=True)
     # fmt: off

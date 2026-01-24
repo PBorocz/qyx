@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -169,21 +170,21 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 # RAW
 ################################################################################################
-def query_raw(level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
     match level.lower():
         case "0":
-            return _query_raw_0(scan)
+            return _query_raw_0(args, scan)
         case "1":
-            return _query_raw_1(scan)
+            return _query_raw_1(args, scan)
         case "2":
-            return _query_raw_2(scan)
+            return _query_raw_2(args, scan)
         case "h":
-            return _query_raw_h(project, last)
+            return _query_raw_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_raw_0(scan: Scan) -> Any:
+def _query_raw_0(args: Namespace, scan: Scan) -> Any:
     row = (
         RadonRaw.select(
             fn.SUM(RadonRaw.blank).alias("blank"),
@@ -207,7 +208,7 @@ def _query_raw_0(scan: Scan) -> Any:
     return row
 
 
-def _query_raw_1(scan: Scan) -> Any:
+def _query_raw_1(args: Namespace, scan: Scan) -> Any:
     rows = (
         RadonRaw.select(
             RadonRaw.directory,
@@ -230,11 +231,11 @@ def _query_raw_1(scan: Scan) -> Any:
     return rows, totals
 
 
-def _query_raw_2(scan: Scan) -> Any:
+def _query_raw_2(args: Namespace, scan: Scan) -> Any:
     return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.directory, RadonRaw.filename)
 
 
-def _query_raw_h(project: Project, last: int = None) -> Any:
+def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
     # FIXME: Refactor to make this a "common" query given the number of places we use it:
     scans = (
         Scan.select()
@@ -302,25 +303,25 @@ def _query_raw_h(project: Project, last: int = None) -> Any:
 ################################################################################################
 # HAL
 ################################################################################################
-def query_hal(level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_hal(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
     match level.lower():
         case "0":
-            return _query_hal_0(scan)
+            return _query_hal_0(args, scan)
         case "1":
-            return _query_hal_1(scan)
+            return _query_hal_1(args, scan)
         case "2":
-            return _query_hal_2(scan)
+            return _query_hal_2(args, scan)
         case "3":
-            return _query_hal_3(scan)
+            return _query_hal_3(args, scan)
         case "d":
-            return _query_hal_d(project, scan)
+            return _query_hal_d(args, project, scan)
         case "h":
-            return _query_hal_h(project, last)
+            return _query_hal_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level requested {level=}")
 
 
-def _query_hal_0(scan: Scan) -> Any:
+def _query_hal_0(args: Namespace, scan: Scan) -> Any:
     return (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
@@ -343,7 +344,7 @@ def _query_hal_0(scan: Scan) -> Any:
     )
 
 
-def _query_hal_1(scan: Scan) -> Any:
+def _query_hal_1(args: Namespace, scan: Scan) -> Any:
     rows = (
         RadonHal.select(
             RadonHal.directory,
@@ -373,7 +374,7 @@ def _query_hal_1(scan: Scan) -> Any:
     return rows, mean_means
 
 
-def _query_hal_2(scan: Scan) -> Any:
+def _query_hal_2(args: Namespace, scan: Scan) -> Any:
     rows = RadonHal.select().where(RadonHal.scan == scan).order_by(RadonHal.directory, RadonHal.filename)
 
     # Calculate means
@@ -384,7 +385,7 @@ def _query_hal_2(scan: Scan) -> Any:
     return rows, means
 
 
-def _query_hal_3(scan: Scan) -> Any:
+def _query_hal_3(args: Namespace, scan: Scan) -> Any:
     rows = (
         RadonHalFunction.select(
             RadonHal.directory,
@@ -417,7 +418,7 @@ def _query_hal_3(scan: Scan) -> Any:
     return rows, means
 
 
-def _query_hal_h(project: Project = None, last: int = 5) -> Any:
+def _query_hal_h(args: Namespace, project: Project = None, last: int = 5) -> Any:
     scans = (
         Scan.select()
         .where(
@@ -480,33 +481,31 @@ def _query_hal_h(project: Project = None, last: int = 5) -> Any:
     return timestamps, transposed, rocs
 
 
-def _query_hal_d(project: Project, scan: Scan):
+def _query_hal_d(args: Namespace, project: Project, scan: Scan):
     """Calculate derived radon-hal metric(s)."""
-    from mq.tools.radon import DEFAULT_SCORING
-
-    raw = _query_raw_0(scan=Scan.get_most_recent(project, "radon", "raw"))
-    row = _query_hal_0(scan)
+    raw = _query_raw_0(args, scan=Scan.get_most_recent(project, "radon", "raw"))
+    row = _query_hal_0(args, scan)
 
     ################################################################################
     # Calculate all HAL metrics
     ################################################################################
     # Score Halstead effort per 1000 source lines of code.
     metric_value = (row.bugs / raw.sloc) * 1000
-    row.bugs_d = score_metric("radon.hal.bugs", metric_value, DEFAULT_SCORING)
+    row.bugs_d = score_metric(args, "tools.radon.hal.bugs", metric_value)
 
     # Score Halstead effort per source line of code.
     metric_value = row.effort / raw.sloc
-    row.effort_d = score_metric("radon.hal.effort", metric_value, DEFAULT_SCORING)
+    row.effort_d = score_metric(args, "tools.radon.hal.effort", metric_value)
 
     # Score Halstead difficulty metric.
-    row.difficulty_d = score_metric("radon.hal.difficulty", row.difficulty, DEFAULT_SCORING)
+    row.difficulty_d = score_metric(args, "tools.radon.hal.difficulty", row.difficulty)
 
     # Composite (after the above have been calculated!)
     difficulty_score = max(0, 100 - (row.difficulty_d.score / 40) * 100)
     bugs_score = max(0, 100 - (row.bugs_d.score / 1.0) * 100)
     effort_score = max(0, 100 - (row.effort_d.score / 1000) * 100)
     metric_value = bugs_score * 0.5 + difficulty_score * 0.3 + effort_score * 0.2
-    row.composite_d = score_metric("radon.hal.composite", metric_value, DEFAULT_SCORING)
+    row.composite_d = score_metric(args, "tools.radon.hal.composite", metric_value)
 
     return row
 
@@ -514,29 +513,29 @@ def _query_hal_d(project: Project, scan: Scan):
 ################################################################################################
 # MI
 ################################################################################################
-def query_mi(level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
     match level.lower():
         case "0":
-            return _query_mi_0(scan)
+            return _query_mi_0(args, scan)
         case "1":
-            return _query_mi_1(scan)
+            return _query_mi_1(args, scan)
         case "2":
-            return _query_mi_2(scan)
+            return _query_mi_2(args, scan)
         case "d":
-            return _query_mi_d(scan)
+            return _query_mi_d(args, scan)
         case "h":
-            return _query_mi_h(project, last)
+            return _query_mi_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_mi_0(scan: Scan) -> Any:
+def _query_mi_0(args: Namespace, scan: Scan) -> Any:
     # TODO: Should this be weighted by number of lines in file?
     row = RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.scan == scan).get()
     return row
 
 
-def _query_mi_1(scan: Scan) -> Any:
+def _query_mi_1(args: Namespace, scan: Scan) -> Any:
     rows = (
         RadonMi.select(RadonMi.directory, fn.AVG(RadonMi.mi).alias("mi_mean"))
         .where(RadonMi.scan == scan)
@@ -556,7 +555,7 @@ def _query_mi_1(scan: Scan) -> Any:
     return rows, mean_mi_mean, mean_mi_mean_footer, show_footer
 
 
-def _query_mi_2(scan: Scan) -> Any:
+def _query_mi_2(args: Namespace, scan: Scan) -> Any:
     rows = RadonMi.select().where(RadonMi.scan == scan).order_by(RadonMi.mi.asc(), RadonMi.directory, RadonMi.filename)
     # Calculate the average maintainability index
     mi_s = [row.mi for row in rows]
@@ -570,7 +569,7 @@ def _query_mi_2(scan: Scan) -> Any:
     return rows, avg_footer, show_footer
 
 
-def _query_mi_h(project, last: int = 5) -> Any:
+def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
     assert project
     scans = (
         Scan.select(Scan.id)
@@ -618,29 +617,27 @@ def _query_mi_h(project, last: int = 5) -> Any:
     return timestamps, transposed, roc
 
 
-def _query_mi_d(scan: Scan):
+def _query_mi_d(args: Namespace, scan: Scan):
     """Calculate derived radon-mi metric(s)."""
-    from mq.tools.radon import DEFAULT_SCORING
-
-    result = _query_mi_0(scan)
-    result.mi_d = score_metric("radon.mi.mean", result.mi_mean, DEFAULT_SCORING)
+    result = _query_mi_0(args, scan)
+    result.mi_d = score_metric(args, "tools.radon.mi.mean", result.mi_mean)
     return result
 
 
-def query_cc(level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
     match level.lower():
         case "0":
-            return _query_cc_0(scan)
+            return _query_cc_0(args, scan)
         case "1":
-            return _query_cc_1(scan)
+            return _query_cc_1(args, scan)
         case "2":
-            return _query_cc_2(scan)
+            return _query_cc_2(args, scan)
         case "3":
-            return _query_cc_3(scan)
+            return _query_cc_3(args, scan)
         case "d":
-            return _query_cc_d(scan)
+            return _query_cc_d(args, scan)
         case "h":
-            return _query_cc_h(project, last)
+            return _query_cc_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
@@ -648,7 +645,7 @@ def query_cc(level: str = "0", scan: Scan = None, project: Project = None, last:
 ################################################################################################
 # CC
 ################################################################################################
-def _query_cc_0(scan: Scan) -> Any:
+def _query_cc_0(args: Namespace, scan: Scan) -> Any:
     return (
         RadonCc.select(
             RadonCc.entity_type.alias("entity_type"),
@@ -660,7 +657,7 @@ def _query_cc_0(scan: Scan) -> Any:
     )
 
 
-def _query_cc_1(scan: Scan) -> Any:
+def _query_cc_1(args: Namespace, scan: Scan) -> Any:
     return (
         RadonCc.select(
             RadonCc.directory,
@@ -673,7 +670,7 @@ def _query_cc_1(scan: Scan) -> Any:
     )
 
 
-def _query_cc_2(scan: Scan) -> Any:
+def _query_cc_2(args: Namespace, scan: Scan) -> Any:
     return (
         RadonCc.select(
             RadonCc.directory,
@@ -687,13 +684,13 @@ def _query_cc_2(scan: Scan) -> Any:
     )
 
 
-def _query_cc_3(scan: Scan) -> Any:
+def _query_cc_3(args: Namespace, scan: Scan) -> Any:
     return (
         RadonCc.select().where(RadonCc.scan == scan).order_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_name)
     )
 
 
-def _query_cc_h(project: Project, last: int = None) -> Any:
+def _query_cc_h(args: Namespace, project: Project, last: int = None) -> Any:
     scans = (
         Scan.select()
         .where(
@@ -740,17 +737,17 @@ def _query_cc_h(project: Project, last: int = None) -> Any:
     return timestamps, transposed, rocs
 
 
-def _query_cc_d(scan: Scan):
+def _query_cc_d(args: Namespace, scan: Scan):
     """Calculate derived radon-cc metric(s)."""
     # Standards reference:
     # - McCabe (1976)*: CC > 10 indicates high risk
     # - NIST          : CC > 15 is concerning, > 20 is dangerous
-    from mq.tools.radon import DEFAULT_SCORING
-
-    results = _query_cc_0(scan)
+    results = _query_cc_0(args, scan)
     for result in results:
-        thresholds = "radon.cc.classes" if result.entity_type.lower() == "class" else "radon.cc.callables"
-        result.cc_d = score_metric(thresholds, result.mean_complexity, DEFAULT_SCORING)
+        threshold_type = (
+            "tools.radon.cc.classes" if result.entity_type.lower() == "class" else "tools.radon.cc.callables"
+        )
+        result.cc_d = score_metric(args, threshold_type, result.mean_complexity)
 
     return results
 

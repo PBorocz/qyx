@@ -7,6 +7,7 @@ from mq.tools.base import Project, Scan
 from mq.tools.cloc.report.cli.cloc_0 import cloc_0
 from mq.tools.cloc.report.cli.cloc_1 import cloc_1
 from mq.tools.cloc.report.cli.cloc_2 import cloc_2
+from mq.tools.cloc.report.cli.cloc_d import cloc_d
 from mq.tools.cloc.report.cli.cloc_h import cloc_h
 
 log = logging.getLogger(__name__)
@@ -27,12 +28,14 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
 
     match args.level.lower():
         case "0":
-            cloc_0(scan)
+            cloc_0(args, scan)
         case "1":
-            cloc_1(scan)
+            cloc_1(args, scan)
         case "2":
-            cloc_2(scan)
+            cloc_2(args, scan)
+        case "d":
+            cloc_d(args, scan)
         case "h":
-            cloc_h(project, scan)
+            cloc_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")

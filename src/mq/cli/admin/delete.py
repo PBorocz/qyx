@@ -52,7 +52,7 @@ def delete(args: Namespace) -> None:
             )
 
 
-def _confirm_and_execute(args, prompt: str, delete_lambda: Callable) -> None:
+def _confirm_and_execute(args: Namespace, prompt: str, delete_lambda: Callable) -> None:
     """Helper to reduce repetition."""
     if do_it(args, prompt):
         delete_lambda()

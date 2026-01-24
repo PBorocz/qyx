@@ -1,14 +1,16 @@
 """Report data obo running 'cloc' tool for level 1."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.cloc.models import query
 
 
-def cloc_1(scan: Scan):
-    grand_total = query("0", scan=scan)
-    detail_rows = query("1", scan=scan)
+def cloc_1(args: Namespace, scan: Scan):
+    grand_total = query(args, "0", scan=scan)
+    detail_rows = query(args, "1", scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Directory", scope="col", style="text-align: left"),

@@ -1,0 +1,175 @@
+################################################################################
+# MQ Configuration File
+#
+# Location options:
+#  - Current directory
+#  - ~/.config/mq/mq.toml
+#  - Another location with --config <path> on invocation.
+################################################################################
+command_line_defaults:
+  # These set defaults for common command-line arguments (that can still be overridden explicitly)
+  name: "python-code-quality"
+  path: "."
+  level: "1"
+  log_level: "INFO"  # Default log level, ie. DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+tools:
+  cloc:
+    code_density:
+      thresholds:
+        - {min:  0, max:   10, grade: "B", color: "#84cc16"}
+        - {min: 10, max:   60, grade: "A", color: "#22c55e"}
+        - {min: 60, max:   85, grade: "C", color: "#eab308"}
+        - {min: 85, max: .inf, grade: "F", color: "#ef4444"}
+    comment_ratio:
+      # Score falls in range [min, max) - higher is better
+      thresholds:
+        - {min: 20, max: .inf, grade: "A", color: "#22c55e"}
+        - {min: 15, max:   20, grade: "B", color: "#84cc16"}
+        - {min: 10, max:   15, grade: "C", color: "#eab308"}
+        - {min:  5, max:   10, grade: "D", color: "#f97316"}
+        - {min:  0, max:    5, grade: "F", color: "#ef4444"}
+    avg_lines_per_file:
+      # Score falls in range [min, max) - higher is (usually) better
+      thresholds:
+        - {min:   0, max:  200, grade: "A", color: "#22c55e"}
+        - {min: 200, max:  300, grade: "B", color: "#84cc16"}
+        - {min: 300, max:  400, grade: "C", color: "#eab308"}
+        - {min: 400, max:  600, grade: "D", color: "#f97316"}
+        - {min: 600, max: .inf, grade: "F", color: "#ef4444"}
+    histogram_file_size:
+      buckets:
+        - {min:    0, max:   50, color: "#84cc16"} # Tiny files (utilities, __init__)
+        - {min:   50, max:  100, color: "#22c55e"} # Small, focused modules
+        - {min:  100, max:  200, color: "#22c55e"} # Standard module size
+        - {min:  200, max:  300, color: "#84cc16"} # Larger modules
+        - {min:  300, max:  500, color: "#eab308"} # Big but manageable
+        - {min:  500, max:  750, color: "#f97316"} # Getting large
+        - {min:  750, max: 1000, color: "#ef4444"} # Very large
+        - {min: 1000, max: 1500, color: "#dc2626"} # Needs splitting
+        - {min: 1500,            color: "#dc2626"} # Definitely too large
+
+  fxtd:
+    by_type_per_kloc:
+      thresholds:
+        - {min:  0, max:    2, grade: "A", color: "#22c55e"}
+        - {min:  2, max:    5, grade: "B", color: "#84cc16"}
+        - {min:  5, max:   10, grade: "C", color: "#eab308"}
+        - {min: 10, max:   20, grade: "D", color: "#f97316"}
+        - {min: 20, max: .inf, grade: "F", color: "#ef4444"}
+    composite_weighted_per_kloc:
+      weights:
+        FIXME: 3.0      # Critical - broken or needs immediate fix
+        XXX: 3.0        # Critical - danger/warning marker
+        HACK: 3.0       # Critical - temporary workaround
+        BUG: 3.0        # Critical - known bug
+        TODO: 2.0       # Normal - planned work
+        REFACTOR: 1.0   # Normal - planned improvement
+        NOTE: 0.5       # Low Priority - informational
+        OPTIMIZE: 0.5   # Low Priority - performance opportunity
+        IDEA: 0.5       # Low Priority - future consideration
+      thresholds:
+        - {min:  0, max:    2, grade: "A", color: "#22c55e"}
+        - {min:  2, max:    5, grade: "B", color: "#84cc16"}
+        - {min:  5, max:   10, grade: "C", color: "#eab308"}
+        - {min: 10, max:   20, grade: "D", color: "#f97316"}
+        - {min: 20, max: .inf, grade: "F", color: "#ef4444"}
+
+  radon:
+    cc:
+      classes:
+        thresholds:
+          - {min:   0, max:   20, grade: "A", color: "#22c55e"}
+          - {min:  20, max:   40, grade: "B", color: "#84cc16"}
+          - {min:  40, max:   80, grade: "C", color: "#eab308"}
+          - {min:  80, max:  150, grade: "D", color: "#f97316"}
+          - {min: 150, max: .inf, grade: "F", color: "#ef4444"}
+      callables:
+        thresholds:
+          - {min:   0, max:   20, grade: "A", color: "#22c55e"}
+          - {min:  20, max:   40, grade: "B", color: "#84cc16"}
+          - {min:  40, max:   80, grade: "C", color: "#eab308"}
+          - {min:  80, max:  150, grade: "D", color: "#f97316"}
+          - {min: 150, max: .inf, grade: "F", color: "#ef4444"}
+    mi:
+      mean:
+        thresholds:
+          - {min:    85, max: .inf, grade: "A", color: "#22c55e"}
+          - {min:    75, max:   85, grade: "B", color: "#84cc16"}
+          - {min:    65, max:   75, grade: "C", color: "#eab308"}
+          - {min:    50, max:   65, grade: "D", color: "#f97316"}
+          - {min: -.inf, max:   50, grade: "F", color: "#ef4444"}
+    hal:
+      composite:
+        thresholds:
+          - {min:    80, max: .inf, grade: "A", color: "#22c55e"}
+          - {min:    70, max:   80, grade: "B", color: "#84cc16"}
+          - {min:    60, max:   70, grade: "C", color: "#eab308"}
+          - {min:    50, max:   60, grade: "D", color: "#f97316"}
+          - {min: -.inf, max:   50, grade: "F", color: "#ef4444"}
+
+      bugs:
+        thresholds:
+          - {min: 0.0, max:  0.1, grade: "A", color: "#22c55e"}
+          - {min: 0.1, max:  0.3, grade: "B", color: "#84cc16"}
+          - {min: 0.3, max:  0.6, grade: "C", color: "#eab308"}
+          - {min: 0.6, max:  1.0, grade: "D", color: "#f97316"}
+          - {min: 1.0, max: .inf, grade: "F", color: "#ef4444"}
+
+      effort:
+        thresholds:
+          - {min:    0, max:  100, grade: "A", color: "#22c55e"}
+          - {min:  100, max:  300, grade: "B", color: "#84cc16"}
+          - {min:  300, max:  600, grade: "C", color: "#eab308"}
+          - {min:  600, max: 1000, grade: "D", color: "#f97316"}
+          - {min: 1000, max: .inf, grade: "F", color: "#ef4444"}
+
+      difficulty:
+        thresholds:
+          - {min:  0, max:    5, grade: "A", color: "#22c55e"}
+          - {min:  5, max:   10, grade: "B", color: "#84cc16"}
+          - {min: 10, max:   20, grade: "C", color: "#eab308"}
+          - {min: 20, max:   40, grade: "D", color: "#f97316"}
+          - {min: 40, max: .inf, grade: "F", color: "#ef4444"}
+
+  ruff:
+    violations_per_kloc:
+      thresholds:
+        - {min:  0, max:    5, grade: "A", color: "#22c55e"}
+        - {min:  5, max:   10, grade: "B", color: "#84cc16"}
+        - {min: 10, max:   20, grade: "C", color: "#eab308"}
+        - {min: 20, max:   40, grade: "D", color: "#f97316"}
+        - {min: 40, max: .inf, grade: "F", color: "#ef4444"}
+
+    weighted_violations_per_kloc:
+      weights:
+        F: 5.0  # Pyflakes                (likely bugs, runtime errors)
+
+        B: 4.0  # Flake8                  (bugbear - likely bugs, design issues)
+        S: 4.0  # Security issues         (potential vulnerabilities)
+
+        E: 3.0  # Errors                  (PEP8 violations, code correctness)
+
+        A: 2.0  # Flake8                  (builtins - shadowing built-ins)
+        C: 2.0  # Complexity (mccabe)     (maintainability)
+        R: 2.0  # Refactoring suggestions (maintainability)
+        U: 2.0  # Unused code             (dead code)
+        W: 2.0  # Warnings                (various issues)
+
+        D: 1.0  # Docstring conventions   (documentation quality)
+        I: 1.0  # Import sorting          (organization)
+        N: 1.0  # Naming conventions      (readability)
+        P: 1.0  # Pylint conventions      (style preferences)
+        Q: 1.0  # Quote consistency       (minor style)
+        T: 1.0  # Print statements        (debugging leftovers)
+      thresholds:
+        - {min:   0, max:   10, grade: "A", color: "#22c55e"}
+        - {min:  10, max:   25, grade: "B", color: "#84cc16"}
+        - {min:  25, max:   50, grade: "C", color: "#eab308"}
+        - {min:  50, max:  100, grade: "D", color: "#f97316"}
+        - {min: 100, max: .inf, grade: "F", color: "#ef4444"}
+
+
+database:
+  # Database configuration (if applicable)
+  # path = "~/.local/share/mq/mq.db"

@@ -7,6 +7,7 @@ from mq.tools.base import Project, Scan
 from mq.tools.ruff.report.cli.ruff_0 import ruff_0
 from mq.tools.ruff.report.cli.ruff_1 import ruff_1
 from mq.tools.ruff.report.cli.ruff_2 import ruff_2
+from mq.tools.ruff.report.cli.ruff_d import ruff_d
 from mq.tools.ruff.report.cli.ruff_h import ruff_h
 
 log = logging.getLogger(__name__)
@@ -28,12 +29,14 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
     log.debug(f"{scan=}")
     match args.level.lower():
         case "0":
-            ruff_0(scan)
+            ruff_0(args, scan)
         case "1":
-            ruff_1(scan)
+            ruff_1(args, scan)
         case "2":
-            ruff_2(scan)
+            ruff_2(args, scan)
+        case "d":
+            ruff_d(args, project, scan)
         case "h":
-            ruff_h(project)
+            ruff_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'mq report --help' for valid options.")

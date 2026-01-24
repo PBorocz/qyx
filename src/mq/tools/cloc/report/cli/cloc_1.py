@@ -1,6 +1,7 @@
 """CLI report rendering obo 'cloc' tool for level 1."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_table, cli_console
 from mq.tools import format_int_or_percentage as fmt
@@ -10,9 +11,9 @@ from mq.tools.cloc.models import query
 log = logging.getLogger(__name__)
 
 
-def cloc_1(scan: Scan, percentage: bool = False) -> None:
-    grand_total = query("0", scan=scan)
-    detail_rows = query("1", scan=scan)
+def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
+    grand_total = query(args, "0", scan=scan)
+    detail_rows = query(args, "1", scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
 

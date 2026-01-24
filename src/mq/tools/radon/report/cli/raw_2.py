@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 from collections import defaultdict
 
 from mq.cli import cli_console, cli_table
@@ -12,8 +13,8 @@ log = logging.getLogger(__name__)
 RADON_SUB_TOOLS = ("raw", "mi", "hal", "cc")
 
 
-def raw_2(project: Project = None, scan: Scan = None) -> None:
-    rows = query_raw("2", scan)
+def raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
+    rows = query_raw(args, "2", scan)
     # Calculate grand totals
     totals = defaultdict(int)
     for row in rows:

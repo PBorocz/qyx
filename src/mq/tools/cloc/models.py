@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
@@ -9,7 +10,7 @@ from peewee import IntegerField, fn
 
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.utils import bucket, rate_of_change_percentage
-from mq.utils.scoring import score_metric
+from mq.utils.scoring import get_nested_config, score_metric
 
 
 log = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class Cloc(BaseResultsModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-def query(level: str = "0", project: Project = None, scan: Scan = None, last: int = None) -> Any:
+def query(args: Namespace, level: str = "0", project: Project = None, scan: Scan = None, last: int = None) -> Any:
     match level.lower():
         case "0":
             return _query_0(scan)
@@ -41,9 +42,9 @@ def query(level: str = "0", project: Project = None, scan: Scan = None, last: in
         case "2":
             return _query_2(scan)
         case "d":
-            return _query_d(scan)
+            return _query_d(args, scan)
         case "f":
-            return _query_f(scan)
+            return _query_f(args, scan)
         case "h":
             return _query_h(project, last)
 
@@ -197,33 +198,28 @@ def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict
     return timestamps, query, transposed, grand_totals, roc, adgs
 
 
-def _query_d(scan: Scan) -> Any:
+def _query_d(args: Namespace, scan: Scan) -> Any:
     """Calculate all 'derived' report values."""
-    from mq.tools.cloc import DEFAULT_SCORING
-
     row = _query_0(scan)
 
     # Calculate the "Code Density"
     metric_value = (row.lines_code / (row.lines_code + row.lines_blank)) * 100.0
-    row.code_density = score_metric("cloc.code_density", metric_value, DEFAULT_SCORING)
+    row.code_density = score_metric(args, "tools.cloc.code_density", metric_value)
 
     # Calculate the "Comment Ratio"
     metric_value = row.lines_comment / (row.lines_code + row.lines_comment) * 100.0
-    row.comment_ratio = score_metric("cloc.comment_ratio", metric_value, DEFAULT_SCORING)
+    row.comment_ratio = score_metric(args, "tools.cloc.comment_ratio", metric_value)
 
     # Calculate average lines per file
     metric_value = int(row.lines_code / row.files_total)
-    row.avg_lines_per_file = score_metric("cloc.avg_lines_per_file", metric_value, DEFAULT_SCORING)
+    row.avg_lines_per_file = score_metric(args, "tools.cloc.avg_lines_per_file", metric_value)
 
     return row
 
 
-def _query_f(scan: Scan) -> list[tuple[str, int]]:
+def _query_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
     """Calculate histogram buckets over filesize."""
-    from mq.tools.cloc import DEFAULT_SCORING
-
-    # Get bucket break values from configuration ..
-    buckets = DEFAULT_SCORING.get("cloc.histogram_file_size")["buckets"]
+    buckets = get_nested_config(args.config, "tools.cloc.histogram_file_size.buckets")
     bucket_breaks = [level["min"] for level in buckets]
 
     # Calculate file density histogram

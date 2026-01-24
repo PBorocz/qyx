@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Project, Scan
@@ -9,8 +10,8 @@ from mq.tools.radon.models import RadonHal, query_hal
 log = logging.getLogger(__name__)
 
 
-def hal_2(project: Project = None, scan: Scan = None) -> None:
-    rows, means = query_hal("2", scan)
+def hal_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
+    rows, means = query_hal(args, "2", scan)
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")

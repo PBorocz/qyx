@@ -10,7 +10,7 @@ from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.tools.cloc.models import query as query_cloc
 from mq.tools.radon.models import query_raw
 from mq.utils import rate_of_change_percentage
-from mq.utils.scoring import score_metric
+from mq.utils.scoring import get_nested_config, score_metric
 
 
 log = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ class Fxtd(BaseResultsModel):
 
 
 def query(
+    args: Namespace,
     level: str,
     project: Project = None,
     scan: Scan = None,
@@ -41,18 +42,18 @@ def query(
 ) -> Fxtd:
     match level.lower():
         case "0":
-            return _query_0(scan)
+            return _query_0(args, scan)
         case "1":
-            return _query_1(scan)
+            return _query_1(args, scan)
         case "2":
-            return _query_2(scan)
+            return _query_2(args, scan)
         case "d":
-            return _query_d(project, scan)
+            return _query_d(args, project, scan)
         case "h":
-            return _query_h(project, last)
+            return _query_h(args, project, last)
 
 
-def _query_0(scan: Scan):
+def _query_0(args: Namespace, scan: Scan):
     return (
         Fxtd.select(
             Fxtd.type,
@@ -64,7 +65,7 @@ def _query_0(scan: Scan):
     )
 
 
-def _query_1(scan: Scan):
+def _query_1(args: Namespace, scan: Scan):
     return (
         Fxtd.select(
             Fxtd.directory,
@@ -77,7 +78,7 @@ def _query_1(scan: Scan):
     )
 
 
-def _query_2(scan: Scan):
+def _query_2(args: Namespace, scan: Scan):
     return (
         Fxtd.select()
         .where(Fxtd.scan == scan)
@@ -89,7 +90,7 @@ def _query_2(scan: Scan):
     )
 
 
-def _query_h(project: Project, last: int = None):
+def _query_h(args: Namespace, project: Project, last: int = None):
     # FIXME: This query is COMMON across a bunch of stuff...
     scans = (
         Scan.select()
@@ -143,56 +144,39 @@ def _query_h(project: Project, last: int = None):
     return timestamps, transposed, rocs
 
 
-def _query_d(project: Project, fxtd_scan: Scan):
+def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):
     """Calculate derived fxtd metrics."""
     # FIXME: We lookup the respective SLOC in multiple _d methods, can we centralise it?
     cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
     if cloc_scan:
-        result = query_cloc("0", scan=cloc_scan)
+        result = query_cloc(args, "0", scan=cloc_scan)
         lines_of_code = result.lines_code
     else:
         radon_scan = Scan.get_most_recent(project, "radon", "raw")
         if radon_scan:
-            result = query_raw("0", scan=radon_scan)
+            result = query_raw(args, "0", scan=radon_scan)
             lines_of_code = result.sloc
         else:
             log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have any LOC metrics yet!")
             return None
 
-    score_by_type = _query_0(fxtd_scan)
-    score_by_type = _by_type_per_kloc(lines_of_code, score_by_type)
-    composite_weighted_score = _composite_per_kloc(lines_of_code, score_by_type)
+    score_by_type = _query_0(args, fxtd_scan)
+    score_by_type = _by_type_per_kloc(args, lines_of_code, score_by_type)
+    composite_weighted_score = _composite_per_kloc(args, lines_of_code, score_by_type)
     return score_by_type, composite_weighted_score
 
 
-def _by_type_per_kloc(lines_of_code: int, rows):
+def _by_type_per_kloc(args: Namespace, lines_of_code: int, rows):
     """Calculate score of FixMe issues for a particular "type" per thousand sloc."""
-    from mq.tools.fxtd import DEFAULT_SCORING
-
     for row in rows:
         metric_value = (row.count / lines_of_code) * 1000
-        row.fxtd_d = score_metric("fxtd.by_type_per_kloc", metric_value, DEFAULT_SCORING)
+        row.fxtd_d = score_metric(args, "tools.fxtd.by_type_per_kloc", metric_value)
     return rows
 
 
-def _composite_per_kloc(lines_of_code: int, rows) -> Namespace:
+def _composite_per_kloc(args: Namespace, lines_of_code: int, rows) -> Namespace:
     """Calculate composite_weighted score of FixMe issues per thousand loc (not including comments and blank lines)."""
-    from mq.tools.fxtd import DEFAULT_SCORING
-
-    # fmt: off
-    weights = {
-        "FIXME"    : 3   ,  # Critical     - broken or needs immediate fix
-        "XXX"      : 3   ,  # Critical     - danger/warning marker
-        "HACK"     : 3   ,  # Critical     - temporary workaround
-        "BUG"      : 3   ,  # Critical     - known bug
-        "TODO"     : 2   ,  # Normal       - planned work
-        "REFACTOR" : 1   ,  # Normal       - planned improvement
-        "NOTE"     : 0.5 ,  # Low Priority - informational
-        "OPTIMIZE" : 0.5 ,  # Low Priority - performance opportunity
-        "IDEA"     : 0.5 ,  # Low Priority - future consideration
-    }
-    # fmt: on
-
-    composite_weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows])
-    metric_value = (composite_weighted_score / lines_of_code) * 1000
-    return score_metric("fxtd.composite_weighted_per_kloc", metric_value, DEFAULT_SCORING)
+    weights = get_nested_config(args.config, "tools.fxtd.composite_weighted_per_kloc.weights")
+    weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows])
+    metric_value = (weighted_score / lines_of_code) * 1000
+    return score_metric(args, "tools.fxtd.composite_weighted_per_kloc", metric_value)

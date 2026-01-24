@@ -1,14 +1,16 @@
 """Report data obo running 'ruff' tool for level d or derived data."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 from mq.tools.ruff.models import query
 
 
-def ruff_d(project: Project, scan: Scan):
+def ruff_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ruff metrics."""
-    row = query("d", project=project, scan=scan)
+    row = query(args, "d", project=project, scan=scan)
     return (
         fh.Table(
             fh.Thead(

@@ -1,20 +1,21 @@
 """Render a histogram of file sizes."""
 
+from argparse import Namespace
+
 from pygal import Bar
 from pygal.style import Style
 
 from mq.tools.base import Scan
-from mq.tools.cloc import DEFAULT_SCORING
 from mq.tools.cloc.models import query
-from mq.utils.scoring import find_grade
+from mq.utils.scoring import find_grade, get_nested_config
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def cloc_f(scan: Scan):
+def cloc_f(args: Namespace, scan: Scan):
     # Get bucket definitions from configuration for coloring
-    buckets = DEFAULT_SCORING.get("cloc.histogram_file_size")["buckets"]
+    buckets = get_nested_config(args.config, "tools.cloc.histogram_file_size.buckets")
 
-    histogram = query("f", scan=scan)
+    histogram = query(args, "f", scan=scan)
 
     # Values to chart are a combination of the respective value AND the color
     # (which is based on the configurable bucket definitions)

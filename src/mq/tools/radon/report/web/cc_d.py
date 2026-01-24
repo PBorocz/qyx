@@ -1,13 +1,15 @@
 """Report data obo running 'Radon-CC' tool for level d or derived data."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_cc
 
 
-def cc_d(project: Project, scan: Scan):
-    rows = query_cc("d", project=project, scan=scan)
+def cc_d(args: Namespace, project: Project, scan: Scan):
+    rows = query_cc(args, "d", project=project, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Entity Type", scope="col", style="text-align: left"),

@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from peewee import fn, CharField, IntegerField, JOIN
 
@@ -8,7 +9,7 @@ from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.tools.cloc.models import query as query_cloc
 from mq.tools.radon.models import query_raw as query_radon_raw
 from mq.utils import rate_of_change_percentage
-from mq.utils.scoring import score_metric
+from mq.utils.scoring import get_nested_config, score_metric
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class Ruff(BaseResultsModel):
 
 
 def query(
+    args: Namespace,
     level: str,
     project: Project = None,
     scan: Scan = None,
@@ -39,18 +41,18 @@ def query(
 ) -> Ruff:
     match level.lower():
         case "0":
-            return _query_0(scan)
+            return _query_0(args, scan)
         case "1":
-            return _query_1(scan)
+            return _query_1(args, scan)
         case "2":
-            return _query_2(scan)
+            return _query_2(args, scan)
         case "d":
-            return _query_d(project, scan)
+            return _query_d(args, project, scan)
         case "h":
-            return _query_h(project, last)
+            return _query_h(args, project, last)
 
 
-def _query_0(scan: Scan):
+def _query_0(args: Namespace, scan: Scan):
     return (
         Ruff.select(
             fn.COUNT(Ruff.id).alias("count"),
@@ -62,7 +64,7 @@ def _query_0(scan: Scan):
     )
 
 
-def _query_1(scan: Scan):
+def _query_1(args: Namespace, scan: Scan):
     return (
         Ruff.select(
             Ruff.rule_code,
@@ -80,7 +82,7 @@ def _query_1(scan: Scan):
     )
 
 
-def _query_2(scan: Scan):
+def _query_2(args: Namespace, scan: Scan):
     return (
         Ruff.select()
         .where(
@@ -94,7 +96,7 @@ def _query_2(scan: Scan):
     )
 
 
-def _query_h(project: Project, last: int = None):
+def _query_h(args: Namespace, project: Project, last: int = None):
     scans = (
         Scan.select()
         .where(
@@ -147,40 +149,40 @@ def _query_h(project: Project, last: int = None):
     return timestamps, transposed, roc
 
 
-def _query_d(project: Project, scan: Scan):
+def _query_d(args: Namespace, project: Project, scan: Scan):
     """Calculate derived ruff metrics."""
     cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
     if cloc_scan:
-        result = query_cloc("0", scan=cloc_scan)
+        result = query_cloc(args, "0", scan=cloc_scan)
         lines_of_code = result.lines_code
     else:
         radon_scan = Scan.get_most_recent(project, "radon", "raw")
         if radon_scan:
-            result = query_radon_raw("0", project=project, scan=radon_scan)
+            result = query_radon_raw(args, "0", project=project, scan=radon_scan)
             lines_of_code = result.loc
         else:
             log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have an LOC metrics yet!")
             return None
 
-    result = _query_0(scan)
-    result = _derived_violations_per_kloc(lines_of_code, result)
-    result = _derived_weighted_violations_per_kloc(lines_of_code, result, scan)
+    result = _query_0(args, scan)
+    result = _derived_violations_per_kloc(args, lines_of_code, result)
+    result = _derived_weighted_violations_per_kloc(args, lines_of_code, result, scan)
     return result
 
 
-def _derived_violations_per_kloc(lines_of_code: int, result):
+def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result):
     """Calculate simple violations per thousand loc (not including comments and blank lines)."""
-    from mq.tools.ruff import DEFAULT_SCORING
-
     metric_value = (result.count / lines_of_code) * 1000
-    result.violations_per_kloc = score_metric("ruff.violations_per_kloc", metric_value, DEFAULT_SCORING)
+    result.violations_per_kloc = score_metric(
+        args,
+        "tools.ruff.violations_per_kloc",
+        metric_value,
+    )
     return result
 
 
-def _derived_weighted_violations_per_kloc(lines_of_code: int, result, scan: Scan):
+def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, result, scan: Scan):
     """Calculate *weighted* violations per thousand loc (not including comments and blank lines)."""
-    from mq.tools.ruff import DEFAULT_SCORING
-
     # fmt: off
     weights = {
         "F": 5,  # Pyflakes                (likely bugs, runtime errors)
@@ -205,12 +207,12 @@ def _derived_weighted_violations_per_kloc(lines_of_code: int, result, scan: Scan
     }
     # fmt: off
     violations_by_severity = __query_counts_by_rule_code_prefix(scan)
+    weights = get_nested_config(args.config, "tools.ruff.weighted_violations_per_kloc.weights")
     weighted_score = sum(violations_by_severity.get(code, 0) * weight for code, weight in weights.items())
     metric_value = (weighted_score / lines_of_code) * 1000
-    result.weighted_violations_per_kloc = score_metric(
-        "ruff.weighted_violations_per_kloc",
+    result.weighted_violations_per_kloc = score_metric(args,
+        "tools.ruff.weighted_violations_per_kloc",
         metric_value,
-        DEFAULT_SCORING,
     )
     return result
 

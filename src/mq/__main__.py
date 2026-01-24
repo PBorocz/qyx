@@ -210,6 +210,7 @@ def get_args():
 
     # Before we go, send the "configuration" file values through the rest of our codebase in args!
     args.config = configuration
+
     return args
 
 

@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Project, Scan
@@ -11,8 +12,8 @@ from mq.utils import format_timestamp_headers
 log = logging.getLogger(__name__)
 
 
-def mi_h(project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_mi("h", project=project, last=5)
+def mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
+    timestamps, transposed, roc = query_mi(args, "h", project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-MI Results Over Time")
     table.add_column("Metric")

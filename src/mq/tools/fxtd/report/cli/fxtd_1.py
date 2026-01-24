@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.tools.base import Scan
@@ -9,8 +10,8 @@ from mq.tools.fxtd.models import query
 log = logging.getLogger(__name__)
 
 
-def fxtd_1(scan: Scan) -> None:
-    results = query("1", scan=scan)
+def fxtd_1(args: Namespace, scan: Scan) -> None:
+    results = query(args, "1", scan=scan)
     grand_total = sum([result.count for result in results])
     show_footer = True if results else False
 

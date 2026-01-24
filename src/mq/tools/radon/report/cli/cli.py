@@ -26,7 +26,13 @@ def report(args: Namespace, o_tool, analysis: str) -> None:
 
 def _dispatch_level_submodule(args: Namespace, o_tool, project: Project, scan: Scan, analysis: str) -> None:
     """Dispatch to the report method using the report level and sub_module requested."""
-    report_module = import_module(f"mq.tools.{o_tool.module_name}.report.cli.{analysis}_{args.level.lower()}")
+    try:
+        module_name = f"mq.tools.{o_tool.module_name}.report.cli.{analysis}_{args.level.lower()}"
+        report_module = import_module(module_name)
+    except ModuleNotFoundError:
+        log.debug(f"Skipping missing {module_name=}")
+        return
+
     method_name: str = f"{analysis}_{args.level.lower()}"
     log.debug(f"{report_module=} {method_name=}")
     try:
@@ -36,4 +42,4 @@ def _dispatch_level_submodule(args: Namespace, o_tool, project: Project, scan: S
         log.error(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")
         return
 
-    method(project=project, scan=scan)
+    method(args, project=project, scan=scan)

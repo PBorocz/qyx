@@ -1,6 +1,7 @@
 """CLI report rendering obo 'cloc' tool for level "h"."""
 
 import logging
+from argparse import Namespace
 
 from mq.cli import cli_table, cli_console
 from mq.tools.base import Project, Scan
@@ -10,8 +11,8 @@ from mq.utils import format_timestamp_headers
 log = logging.getLogger(__name__)
 
 
-def cloc_h(project: Project, scan: Scan) -> None:
-    timestamps, rows, transposed, grand_totals, roc, adgs = query("h", project=project, scan=scan, last=5)
+def cloc_h(args: Namespace, project: Project, scan: Scan) -> None:
+    timestamps, rows, transposed, grand_totals, roc, adgs = query(args, "h", project=project, scan=scan, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)

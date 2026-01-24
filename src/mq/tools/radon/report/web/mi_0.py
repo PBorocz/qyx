@@ -1,13 +1,15 @@
 """MI - Level 0."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Scan
 from mq.tools.radon.models import query_mi
 
 
-def mi_0(scan: Scan, **kwargs):
-    row = query_mi("0", scan=scan)
+def mi_0(args: Namespace, scan: Scan, **kwargs):
+    row = query_mi(args, "0", scan=scan)
 
     # fmt: off
     t_head = (

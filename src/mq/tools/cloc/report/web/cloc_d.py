@@ -1,13 +1,15 @@
 """Report data obo running 'cloc' tool for level d or derived data."""
 
+from argparse import Namespace
+
 from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 from mq.tools.cloc.models import query
 
 
-def cloc_d(project: Project, scan: Scan):
-    row = query("d", scan=scan)
+def cloc_d(args: Namespace, project: Project, scan: Scan):
+    row = query(args, "d", scan=scan)
     return (
         fh.Table(
             fh.Thead(
