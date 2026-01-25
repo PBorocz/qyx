@@ -2,13 +2,13 @@
 
 from pathlib import Path
 
-from mq.tools.base import AbstractToolConfiguration
+from mq.tools.base import ToolConfig
 from mq.tools.fxtd.models import Fxtd
 
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(AbstractToolConfiguration):
+class Configuration(ToolConfig):
     """Configure semantics associated with using the tool."""
 
     def __init__(self):

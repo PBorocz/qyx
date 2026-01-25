@@ -3,13 +3,13 @@
 import types
 from typing import Callable
 
-from mq.tools.base import AbstractToolConfiguration
+from mq.tools.base import ToolConfig
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(AbstractToolConfiguration):
+class Configuration(ToolConfig):
     """Configure semantics associated with using the various Radon tools."""
 
     def __init__(self):

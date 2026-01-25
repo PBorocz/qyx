@@ -3,7 +3,7 @@
 import logging
 from argparse import Namespace
 
-from mq.tools.base import AbstractToolConfiguration, Project, Request, Scan
+from mq.tools.base import ToolConfig, Project, Request, Scan
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def clean(args: Namespace) -> None:
 def _delete_extraneous_scans(args: Namespace) -> None:
     """Delete orphaned Scan, ie. that don't have results associated with 'em."""
 
-    def __clean_scans(tool_name: str, tool_config: AbstractToolConfiguration) -> None:
+    def __clean_scans(tool_name: str, tool_config: ToolConfig) -> None:
         # log.debug(f"Cleanup {tool_name=}")
         # First, get all the scan's id's used by models in this module:
         model_scan_ids = set()

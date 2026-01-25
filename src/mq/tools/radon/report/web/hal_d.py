@@ -10,7 +10,7 @@ from mq.tools.radon.models import query_hal
 
 def hal_d(args: Namespace, project: Project, scan: Scan):
     row = query_hal(args, "d", project=project, scan=scan)
-    print("here in hal_d")
+
     t_head = fh.Tr(
         fh.Th("Metric", scope="col", style="text-align: left"),
         fh.Th("Value", scope="col", style="text-align: right"),

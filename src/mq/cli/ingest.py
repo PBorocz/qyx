@@ -4,14 +4,15 @@ import logging
 import subprocess
 import sys
 from argparse import Namespace
+from collections import defaultdict
 from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
-from rich.console import Console
+from rich import print as rprint
 
 from mq.tools import generate_ta_pairs
-from mq.tools.base import AbstractToolConfiguration, Project, Request, Scan
+from mq.tools.base import ToolConfig, Project, Request, Scan
 from mq.utils.git import get_git_commit_hash, git_checkout, get_git_commits
 
 log = logging.getLogger(__name__)
@@ -25,132 +26,94 @@ def ingest(args: Namespace) -> None:
     # "as-of" date associated with the state of the code when the tool
     # runs.
     #
-    console = Console()
-
     # Lookup (or create) our Project and associated Request
     project: Project = Project.create_from_args(args)
     request: Request = Request.get_or_create(args, project)
 
-    tools_analyses: list[tuple[AbstractToolConfiguration, str]] = generate_ta_pairs(args)
+    # Gather all the git hash keys we've already processed for this request (if any)
+    git_hashes: dict[tuple[str, str]] = _get_git_hashes(request)  # Key: (tool, analysis)
 
+    # Generate the combination of tools and respective analyses we should evaluate.
+    tools_analyses: list[tuple[ToolConfig, str]] = generate_ta_pairs(args)
+
+    ingestion_count = 0
     for scan_request in iter_scan_requests(args, request):
+        s_as_of = f"{scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}"
+
         for o_tool, analysis in tools_analyses:
-            s_as_of = f"{scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}"
-            s_analysis = analysis if o_tool.module_name != analysis else ""
-            console.print(f"{s_as_of} → {o_tool.module_name} {s_analysis}", end="\r")
+            s_tool_analysis: str = o_tool.module_name
+            if o_tool.module_name != analysis:
+                s_tool_analysis += f":{analysis}"
 
             if scan_request.as_git:
-                if is_git_commit_already_ingested(o_tool, analysis, request, scan_request.hash):
+                # If we're scanning a git repo, check to make sure we haven't already ingested this hash!
+                if _is_git_commit_already_ingested(git_hashes, o_tool, analysis, scan_request.hash):
                     log.debug(f"{o_tool.module_name}:{analysis} - {scan_request.hash[:8]=} already done!")
                     continue
 
-                # Put the repo into the right git state for the ingestion
+                # We haven't! put the repo into the right git state for ingestion
                 git_checkout(scan_request)
 
-            # And then do the respective tool's ingestion
-            _ingest_analysis(args, request, o_tool, analysis, scan_request)
+            ################################################################################
+            # Do the respective tool's ingestion
+            ################################################################################
+            s_as_of = f"{scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}"
+            s_analysis = analysis if o_tool.module_name != analysis else ""
+            rprint(f"{s_as_of} → {o_tool.module_name} {s_analysis}...", end="\r")
+
+            num = _ingest_analysis(args, request, o_tool, analysis, scan_request)
+            rprint(f"[green]✔ Ingested [bold]{num:3d}[/bold] results on behalf of {s_tool_analysis}[/green]")
+            ingestion_count += 1
+
+    if not ingestion_count:
+        rprint("[cyan]Nothing done![/cyan]")
 
 
 def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:
+    """Iterate over ingest request(s) to perform, abstracting out git vs. direct file sources."""
     if request.is_git:
         repo_path, commits = get_git_commits(request.arg_normalised)
         for commit_hash, commit_date in commits:
-            yield Namespace(
-                as_git=True,
-                cwd=repo_path,
-                as_of=commit_date,
-                hash=commit_hash,
-            )
+            yield Namespace(as_git=True, cwd=repo_path, as_of=commit_date, hash=commit_hash)
     else:
-        yield Namespace(
-            as_git=False,
-            cwd=Path(request.arg_normalised),
-            as_of=datetime.now(UTC).replace(microsecond=0),
-            hash=get_git_commit_hash(),
-        )
+        as_of = datetime.now(UTC).replace(microsecond=0)
+        yield Namespace(as_git=False, cwd=Path(request.arg_normalised), as_of=as_of, hash=get_git_commit_hash())
 
 
 def _ingest_analysis(
     args: Namespace,
     request: Request,
-    tool_configuration: AbstractToolConfiguration,
+    tool_config: ToolConfig,
     analysis: str,
     scan_request: Namespace,
-) -> None:
+) -> int:
     """Do the specified analysis for respective tool, running the respective command, parsing and saving results!."""
     # Get the scan (if necessary) on whose behalf the results will be stored.
-    if not (scan := _get_ingest_scan(args, request, tool_configuration, analysis, scan_request)):
-        return
-
-    ################################################################################################
-    # Get the results of running the tool/analysis against the respective state of code!
-    ################################################################################################
-    datum = _get_ta_results(args, request, tool_configuration, analysis, scan_request)
-
-    ################################################################################################
-    # Parse & save the results received...
-    ################################################################################################
-    ingest_method: Callable = tool_configuration.get_ingest_method(analysis)
-    num: int = ingest_method(scan, datum)
-
-    ################################################################################################
-    # Report status
-    ################################################################################################
-    s_from: str = tool_configuration.module_name
-    if tool_configuration.module_name != analysis:
-        s_from += f":{analysis}"
-    # from rich import print
-    # print(f"[green]✓ Ingested [bold]{num:3d}[/bold] results from {s_from}[/green] as of {scan.as_of_display()}")
-    log.info(f"{scan.as_of_display()} {s_from:10s}: {num:>5,d} results.")
-
-
-def _get_ingest_scan(
-    args: Namespace,
-    request: Request,
-    tool_configuration: AbstractToolConfiguration,
-    analysis: str,
-    scan_request: Namespace,
-) -> Scan | None:
-    """Return the appropriate (usually an new) scan instance."""
-    if request.is_git:
-        # For git projects, since we REUSE the same request over time,
-        # we don't want/need duplicate scans for the same request,
-        # tool, analysis and revision:
-        try:
-            scan = (
-                Scan.select()
-                .where(
-                    Scan.request == request,
-                    Scan.tool == tool_configuration.module_name,
-                    Scan.analysis == analysis,
-                    Scan.git_commit_hash == scan_request.hash,
-                )
-                .get()
-            )
-            log.debug(
-                f"Skipping...we've already scanned {scan.tool}:{scan.analysis} "
-                f"as of: {scan.as_of} obo {scan.git_commit_hash[:8]}",
-            )
-            return None
-        except Scan.DoesNotExist:
-            ...
-
-    scan: Scan = Scan.create(
+    scan = Scan.create(
         request=request,
-        tool=tool_configuration.module_name,
+        tool=tool_config.module_name,
         analysis=analysis,
         cwd=scan_request.cwd,
         git_commit_hash=scan_request.hash,
-        as_of=scan_request.as_of,  # NOTE: Could be git_revision *OR* "now"
+        as_of=scan_request.as_of,
     )
 
-    return scan
+    ################################################################################################
+    # Run the respective tool's data collection method...
+    ################################################################################################
+    datum = _get_ta_results(args, request, tool_config, analysis, scan_request)
+
+    ################################################################################################
+    # Parse & save the results received this time using the respective tool's ingest method
+    ################################################################################################
+    ingest_method: Callable = tool_config.get_ingest_method(analysis)
+    return ingest_method(scan, datum)
 
 
 def _get_ta_results(
     args: Namespace,
     request: Request,
-    tool_configuration: AbstractToolConfiguration,
+    tool_config: ToolConfig,
     analysis: str,
     scan_request: Namespace,
 ) -> Any:
@@ -164,7 +127,7 @@ def _get_ta_results(
         ################################################################################################
         # DIRECT mode - run the tool's command ourselves
         ################################################################################################
-        command: list[str] = tool_configuration.get_ingest_command(
+        command: list[str] = tool_config.get_ingest_command(
             relative=str(request.arg_raw),  # eg. "." usually
             absolute=str(scan_request.cwd),  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
             analysis=analysis,
@@ -196,26 +159,23 @@ def _get_ta_results(
     return datum
 
 
-def is_git_commit_already_ingested(
-    o_tool: AbstractToolConfiguration,
+def _get_git_hashes(request: Request) -> dict:
+    """Return the git hashes already performed for each tool/analysis combination."""
+    return_ = defaultdict(list)
+    for row in Scan.select().where(Scan.request == request):
+        return_[(row.tool, row.analysis)].append(row.git_commit_hash)
+    count = sum(len(hashes) for hashes in return_.values())
+    log.debug(f"Read {count:,d} git hashes for request '{request.arg_normalised}' [{request.id}]")
+    return dict(return_)
+
+
+def _is_git_commit_already_ingested(
+    git_hashes: dict,
+    o_tool: ToolConfig,
     analysis: str,
-    request: Request,
     git_hash: str,
 ) -> bool:
     """Have we already processed a scan for this tool/analysis based on the git commit hash provided?"""
-    try:
-        _ = (
-            Scan.select()
-            .where(
-                Scan.request == request,
-                Scan.tool == o_tool.module_name,
-                Scan.analysis == analysis,
-                Scan.git_commit_hash == git_hash,
-            )
-            .get()
-        )
-        # Yes, we've already done it!
-        return True
-    except Scan.DoesNotExist:
-        # No, we haven't done it!
-        return False
+    if hashes_for_ta := git_hashes.get((o_tool.module_name, analysis), None):
+        return git_hash in hashes_for_ta
+    return False

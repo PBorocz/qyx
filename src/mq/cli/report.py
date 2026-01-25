@@ -7,13 +7,13 @@ from argparse import Namespace
 from typing import Callable
 
 from mq.tools import generate_ta_pairs
-from mq.tools.base import AbstractToolConfiguration
+from mq.tools.base import ToolConfig
 
 log = logging.getLogger(__name__)
 
 
 def report(args: Namespace) -> None:
-    tools_analyses: list[tuple[AbstractToolConfiguration, str]] = generate_ta_pairs(args)
+    tools_analyses: list[tuple[ToolConfig, str]] = generate_ta_pairs(args)
 
     for o_tool, analysis in tools_analyses:
         try:

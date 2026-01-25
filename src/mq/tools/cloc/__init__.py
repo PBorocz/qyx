@@ -1,10 +1,10 @@
 """Cloc Module Configuration."""
 
-from mq.tools.base import AbstractToolConfiguration
+from mq.tools.base import ToolConfig
 from mq.tools.cloc.models import Cloc
 
 
-class Configuration(AbstractToolConfiguration):
+class Configuration(ToolConfig):
     """Configure semantics associated with using the cloc tool."""
 
     def __init__(self):

@@ -8,7 +8,7 @@ from abc import ABC
 from argparse import Namespace
 from datetime import datetime, UTC
 from importlib import import_module
-from typing import Callable
+from typing import Callable, TypeAlias
 
 import peewee as pw
 
@@ -64,6 +64,9 @@ class AbstractToolConfiguration(ABC):
             if analysis.startswith("_"):
                 continue
             yield self.module_name, analysis
+
+
+ToolConfig: TypeAlias = AbstractToolConfiguration
 
 
 ################################################################################################

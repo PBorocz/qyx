@@ -4,14 +4,14 @@ import gzip
 import json
 from pathlib import Path
 
-from mq.tools.base import AbstractToolConfiguration
+from mq.tools.base import ToolConfig
 from mq.tools.ruff.models import Ruff
 
 RUFF_RULES = None  # Hold as a cache after first read
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(AbstractToolConfiguration):
+class Configuration(ToolConfig):
     """Configure semantics associated with using the ruff tool."""
 
     def __init__(self):
