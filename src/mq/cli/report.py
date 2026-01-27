@@ -17,14 +17,14 @@ def report(args: Namespace) -> None:
 
     for o_tool, analysis in tools_analyses:
         try:
-            report_cli_module: types.ModuleType = o_tool.import_component("report.cli.cli")
+            render_cli_module: types.ModuleType = o_tool.import_component("cli")
         except AttributeError as exc:
             logging.error(str(exc))
             return sys.exit(1)
 
-        report_method: Callable = report_cli_module.report
-        if not report_method:
-            logging.error("Unable to find 'report' method in {o_tool.module_name}'s report/cli directory!")
+        render_method: Callable = render_cli_module.render
+        if not render_method:
+            logging.error("Unable to find 'render' method in {o_tool.module_name}'s cli.py file!")
             return sys.exit(1)
 
-        report_method(args, o_tool, analysis)
+        render_method(args, o_tool, analysis)

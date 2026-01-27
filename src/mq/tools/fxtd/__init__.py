@@ -22,6 +22,10 @@ class Configuration(ToolConfig):
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
         """Return the command sent to subprocess to directly perform the scan operation."""
         script_dir = Path(__file__).parent
-        fxtd_script = script_dir / "fxtd.sh"
+        fxtd_script = script_dir / "fxtd_ingest.py"
         assert fxtd_script.exists(), f"Sorry, we expected to find 'fxtd.sh' at {script_dir}!"
-        return [str(fxtd_script), str(absolute)]
+        return [
+            "python3",
+            str(fxtd_script),
+            str(absolute),
+        ]

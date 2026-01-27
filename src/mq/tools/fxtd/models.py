@@ -161,9 +161,12 @@ def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):
             return None
 
     score_by_type = _query_0(args, fxtd_scan)
-    score_by_type = _by_type_per_kloc(args, lines_of_code, score_by_type)
-    composite_weighted_score = _composite_per_kloc(args, lines_of_code, score_by_type)
-    return score_by_type, composite_weighted_score
+    if score_by_type:  # Perfectly valid to not have any!
+        score_by_type = _by_type_per_kloc(args, lines_of_code, score_by_type)
+        composite_weighted_score = _composite_per_kloc(args, lines_of_code, score_by_type)
+        return score_by_type, composite_weighted_score
+    else:
+        return None, None
 
 
 def _by_type_per_kloc(args: Namespace, lines_of_code: int, rows):

@@ -7,6 +7,7 @@ from typing import Callable, Iterator
 
 from fasthtml import common as fh
 
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.web import render_project_selector
 from mq.web.page import render_page
@@ -31,13 +32,14 @@ def render_page_home(request):
 
 def render_partial_project_summary(request, s_project_id: str):
     """Render the home/summary page."""
+    log.info(f"{s_project_id=}")
     if not s_project_id:
         return fh.Section()
 
     # Find the respective project to display results for
     project = Project.get(Project.id == int(s_project_id))
 
-    # Query all level 0 summaries of raw results as well as derived metrics:
+    # Query all level 0 summaries of raw results *and* derived metrics:
     content = get_project_content(request.app.state.args, project)
 
     # Render our grid of results.
@@ -48,38 +50,38 @@ def render_partial_project_summary(request, s_project_id: str):
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*content.get(("0", "cloc", "cloc"), [])),
-            fh.Div(*content.get(("d", "cloc", "cloc"), [])),
+            fh.Div(*content.get((ReportLevel.SUMMARY, "cloc", "cloc"), [])),
+            fh.Div(*content.get((ReportLevel.DERIVED, "cloc", "cloc"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*content.get(("0", "ruff", "ruff"), [])),
-            fh.Div(*content.get(("d", "ruff", "ruff"), [])),
+            fh.Div(*content.get((ReportLevel.SUMMARY, "ruff", "ruff"), [])),
+            fh.Div(*content.get((ReportLevel.DERIVED, "ruff", "ruff"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*content.get(("0", "fxtd", "fxtd"), [])),
-            fh.Div(*content.get(("d", "fxtd", "fxtd"), [])),
+            fh.Div(*content.get((ReportLevel.SUMMARY, "fxtd", "fxtd"), [])),
+            fh.Div(*content.get((ReportLevel.DERIVED, "fxtd", "fxtd"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*content.get(("0", "radon", "mi"), [])),
-            fh.Div(*content.get(("d", "radon", "mi"), [])),
+            fh.Div(*content.get((ReportLevel.SUMMARY, "radon", "mi"), [])),
+            fh.Div(*content.get((ReportLevel.DERIVED, "radon", "mi"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*content.get(("0", "radon", "cc"), [])),
-            fh.Div(*content.get(("d", "radon", "cc"), [])),
+            fh.Div(*content.get((ReportLevel.SUMMARY, "radon", "cc"), [])),
+            fh.Div(*content.get((ReportLevel.DERIVED, "radon", "cc"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*content.get(("0", "radon", "hal"), [])),
-            fh.Div(*content.get(("d", "radon", "hal"), [])),
+            fh.Div(*content.get((ReportLevel.SUMMARY, "radon", "hal"), [])),
+            fh.Div(*content.get((ReportLevel.DERIVED, "radon", "hal"), [])),
             cls="grid",
         ),
         fh.Div(
-            fh.Div(*content.get(("0", "radon", "raw"), [])),
-            fh.Div(*content.get(("d", "radon", "raw"), [])),
+            fh.Div(*content.get((ReportLevel.SUMMARY, "radon", "raw"), [])),
+            fh.Div(*content.get((ReportLevel.DERIVED, "radon", "raw"), [])),
             cls="grid",
         ),
     )
@@ -88,35 +90,62 @@ def render_partial_project_summary(request, s_project_id: str):
 
 def get_project_content(args: Namespace, project: Project) -> dict:
     web_render_methods = []
-    for tool, analysis, render_method in iter_report_web_render_methods(args, level="0", required=True):
-        web_render_methods.append(("0", tool, analysis, render_method))
 
-    for tool, analysis, render_method in iter_report_web_render_methods(args, level="d", required=False):
-        web_render_methods.append(("d", tool, analysis, render_method))
+    # "SUMMARY level results...
+    for tool, analysis, render_method in iter_report_web_render_methods(
+        args,
+        level=ReportLevel.SUMMARY,
+        required=True,
+    ):
+        web_render_methods.append((ReportLevel.SUMMARY, tool, analysis, render_method))
+
+    # "Derived" results...
+    for tool, analysis, render_method in iter_report_web_render_methods(
+        args,
+        level=ReportLevel.DERIVED,
+        required=False,
+    ):
+        web_render_methods.append((ReportLevel.DERIVED, tool, analysis, render_method))
 
     content = dict()
     for level, tool, analysis, render_method in web_render_methods:
+        # log.info(f"Considering: {project.id=} {level=} {tool=} {analysis=} {render_method=}")
         if scan := Scan.get_most_recent(project, tool, analysis):
+            # log.info(f"Matching scan: {scan.id=}")
             if level_contents := render_method(args, project=project, scan=scan):
                 content[(level, tool, analysis)] = level_contents
+            else:
+                log.warning("Sorry, no content found?")
     return content
 
 
 def iter_report_web_render_methods(args: Namespace, level: str, required: bool) -> Iterator:
     for tool_config in args.tools.values():
         for tool, analysis in tool_config.iter_tool_analysis():
-            method_name: str = f"{analysis}_{level}"  # e.g. ruff_0, cloc_d or hal_d
-            method_module_name: str = f"report.web.{method_name}"
+            # log.info(f"{tool=} {analysis=}")
+            method_module = None
+            for method_module_name in (f"web_{analysis.lower()}", "web"):
+                try:
+                    method_module: ModuleType = tool_config.import_component(method_module_name)
+                    # log.info(f"Found! {method_module=}")
+                    break
+                except ModuleNotFoundError:
+                    continue
+            if not method_module:
+                log.warning(
+                    f"Sorry, We couldn't find a {method_module_name=} in {tool_config.module_name}.web",
+                )
+                break
+
             try:
-                method_module: ModuleType = tool_config.import_component(method_module_name)
-            except ModuleNotFoundError:
+                method_name: str = f"{analysis}_{level.value}"  # e.g. ruff_0, cloc_d or hal_d
+                method: Callable = getattr(method_module, method_name)
+                # log.info(f"Found! {method_name=} {method=}")
+            except AttributeError:
                 if required:
                     log.warning(
-                        f"Sorry, We couldn't find a {method_module_name=} in {tool_config.module_name}.report.web",
+                        f"Sorry, have a valid {method_module_name=} {method_module=} but can't find {method_name=}?"
                     )
                 continue
-            try:
-                method: Callable = getattr(method_module, method_name)
-            except AttributeError:
-                log.warning(f"Sorry, have a valid {method_module=} but can't find {method_name=}?")
+
             yield tool, analysis, method

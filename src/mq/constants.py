@@ -39,7 +39,7 @@ class ReportLevel(str, Enum):
     DIRECTORY = "1"
     FILE      = "2"
     DETAIL    = "3"
-    DIFF      = "d"
+    DERIVED   = "d"
     HISTORY   = "h"
     # fmt: on
 

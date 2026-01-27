@@ -40,8 +40,8 @@ shell = """
   jj bookmark set trunk --revision 'coalesce(@-, @)'
   jj git push --bookmark trunk
 
-  # uv run mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git
-  # uv run mq status --name python-code-quality
+  uv run mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git
+  uv run mq status --name python-code-quality
   """
 
 [tool.poe.tasks.mq]

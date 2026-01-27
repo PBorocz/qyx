@@ -50,6 +50,7 @@ def find_grade(value: float, thresholds: list[dict]) -> tuple[str, str]:
 
     Value is checked against each threshold range [min, max).
     """
+    assert value
     for threshold in thresholds:
         min_val = threshold.get("min", 0)
         max_val = threshold.get("max", float("inf"))

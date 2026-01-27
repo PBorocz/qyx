@@ -624,6 +624,9 @@ def _query_mi_d(args: Namespace, scan: Scan):
     return result
 
 
+################################################################################################
+# CC
+################################################################################################
 def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
     match level.lower():
         case "0":
@@ -642,9 +645,6 @@ def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Proj
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-################################################################################################
-# CC
-################################################################################################
 def _query_cc_0(args: Namespace, scan: Scan) -> Any:
     return (
         RadonCc.select(

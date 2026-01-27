@@ -53,12 +53,12 @@ def register(args, rt):  # noqa: C901
     ################################################################################
     for tool_name, tool_config in args.tools.items():
         # Create a closure to capture tool_name and tool_configuration
-        def make_tool_route(name, config):
+        def make_tool_route(name, tool_config):
             @rt(f"/{name}")
             def render_tool_page_method(request):
-                web_file: ModuleType = config.import_component("report.web.web")
+                web_file: ModuleType = tool_config.import_component("web")
                 render_method: Callable = getattr(web_file, "render")
-                return render_method(request, name, config)
+                return render_method(request, name, tool_config)
 
             return render_tool_page_method
 
@@ -78,9 +78,9 @@ def register(args, rt):  # noqa: C901
             return ft.Div(f"Unknown tool: {tool}", cls="error")
 
         try:
-            web_file_module = tool_config.import_component("report.web.web")
+            web_file_module = tool_config.import_component("web")
         except ImportError:
-            return ft.Div(f"Couldn't find '{tool}/report/web/web.py' file!", cls="error")
+            return ft.Div(f"Couldn't find '{tool}/web.py' file!", cls="error")
 
         if project:
             update_state(last_project_id=project, last_tool=tool)
