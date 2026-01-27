@@ -3,6 +3,34 @@
 from enum import Enum
 
 
+class BaseModel(str, Enum):
+    """Base data models."""
+
+    # fmt: off
+    SCAN    = "scan"
+    REQUEST = "request"
+    PROJECT = "project"
+    # fmt: on
+
+
+class StatusLevel(str, Enum):
+    """Levels available for status command."""
+
+    # fmt: off
+    GROUPED    = "g"
+    INDIVIDUAL = "i"
+    # fmt: on
+
+    @property
+    def description(self):
+        """More granular definitions."""
+        descriptions = {
+            "g": "Grouped Scans",
+            "i": "Individual Scans (might be a lot!)",
+        }
+        return descriptions[self.value]
+
+
 class ReportLevel(str, Enum):
     """Levels available for report command."""
 

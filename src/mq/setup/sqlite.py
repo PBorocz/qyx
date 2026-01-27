@@ -1,0 +1,32 @@
+"""Setup our database and register both our base and all our tool models."""
+
+import logging
+from argparse import Namespace
+from pathlib import Path
+
+from peewee import SqliteDatabase
+from platformdirs import user_data_dir
+
+from mq.tools.base import Project, Request, Scan
+
+
+def setup_sqlite(args: Namespace) -> None:
+    if "tools" not in args:
+        raise RuntimeError("Sorry, setup/tools.py must have already been run before we can setup the database!")
+
+    db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
+
+    # Make sure our models have tables defined for 'em!
+    models = [Project, Request, Scan]
+    for configuration in args.tools.values():
+        for tool_peewee_class in configuration.models.values():
+            models.append(tool_peewee_class)
+
+    for model_class in models:
+        model_class._meta.database = db
+        model_class.create_table(safe=True)
+
+    log = logging.getLogger(__name__)
+    log.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")

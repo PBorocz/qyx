@@ -8,9 +8,9 @@ authors = [{name = "Peter Borocz", email = "peter.borocz+mq@gmail.com"}]
 dependencies = [
     "peewee>=3.18.3",
     "platformdirs>=4.5.1",
-    "prompt-toolkit>=3.0.52",
     "pygal>=3.1.0",
     "python-fasthtml>=0.12.36",
+    "questionary>=2.1.1",
     "rich>=14.2.0",
     "rich-argparse>=1.7.2",
 ]
@@ -37,11 +37,11 @@ shell = """
   if not jj diff --quiet
     jj describe -m "chore: update ruff rules database [automated]"
   end
-  # jj bookmark set trunk --revision @-
   jj bookmark set trunk --revision 'coalesce(@-, @)'
   jj git push --bookmark trunk
-  uv run mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git
-  uv run mq status --name python-code-quality
+
+  # uv run mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git
+  # uv run mq status --name python-code-quality
   """
 
 [tool.poe.tasks.mq]

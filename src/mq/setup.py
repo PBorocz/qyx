@@ -7,35 +7,33 @@ import yaml
 from argparse import Namespace
 from pathlib import Path
 from platformdirs import user_config_dir
-from typing import Final
+
+from questionary import Style, Choice, confirm, select, text
+from questionary import print as qprint
 
 from peewee import SqliteDatabase
 from platformdirs import user_data_dir
-from prompt_toolkit import HTML, prompt
-from prompt_toolkit import print_formatted_text as ptprint
-from prompt_toolkit.shortcuts import choice
-from prompt_toolkit.styles import Style
 from rich import print as rprint
 from rich.console import Console
 from rich_argparse import RichHelpFormatter
 from rich.logging import RichHandler
 
-from mq.constants import LogLevel, ReportLevel
+from mq.constants import BaseModel, ReportLevel, StatusLevel
 from mq.tools import split_arg_tool_analysis
 from mq.tools.base import Project, Request, Scan
+from mq.utils.state import load_state
 
-
-COLOR_TABLE_COLUMN_1 = "#00ffff"
-COLOR_TABLE_COLUMN_2 = "#00ff00"
-WARNING = "#fffc00"
-
-PROMPT_STYLE: Final = Style.from_dict(
-    {
-        # We use our table color scheme to match
-        "prompt": COLOR_TABLE_COLUMN_1,  # Prompt is cyan
-        "": COLOR_TABLE_COLUMN_2,  # User input is green
-    },
-)
+# fmt: off
+PROMPT_STYLE = Style([
+    # ('qmark'       , 'fg:#00d7ff bold' ), # Question mark
+    # ('question'    , 'fg:#ffffff bold' ), # Question text
+    # ('answer'      , 'fg:#00ff87 bold' ), # Selected answer
+    # ('selected'    , 'fg:#00ff87'      ), # Selected (in checkbox)
+    # ('pointer'     , 'fg:#00ff87 bold' ), # Selection pointer
+    # ('highlighted' , 'fg:#00ff87'      ), # Highlighted choice
+    # ('instruction' , 'fg:#888888'      ), # Instructions
+])
+# fmt: on
 
 
 ################################################################################################
@@ -146,7 +144,7 @@ def setup_args():
     parser_report.add_argument(
         "-l",
         "--level",
-        help="Level to report on, e.g. 0 (summary & default), 1 (detail), 2 (full) or h (history).",
+        help="Level to report on, e.g. 0 (summary), 1 (directory), 2 (file), d (derived) or h (history).",
         default=defaults.get("level", "0"),
     )
 
@@ -223,8 +221,13 @@ def setup_args():
         help="Delete a particular Project, Request or Scan.",
         formatter_class=RichHelpFormatter,
     )
-    parser_delete.add_argument("--no_confirm", action="store_true", help="Run delete *without* confirmation(!)")
-    parser_delete.add_argument("--arg", dest="delete_target", help="delete p:<id>, r:<id> or s:<id>")
+    parser_delete.add_argument(
+        "--no_confirm",
+        action="store_true",
+        help="Run delete *without* confirmation(!)",
+        default=False,
+    )
+    parser_delete.add_argument("--target", dest="delete_target", help="delete project:<id>, request:<id> or scan:<id>")
 
     ################################################################################################
     # PARSE!!!
@@ -247,214 +250,234 @@ def setup_args():
 
 
 def get_args(args: Namespace, parser) -> Namespace:
-    ptprint(HTML("<green><b>Code Quality Analysis Tool</b></green>"))
+    def _goodbye():
+        qprint(
+            "\nThanks, gracias, merci, danka, ありがとう, cпacи6o, köszönöm...!",
+            style="bold italic fg:green",
+        )
+        sys.exit(0)
+
+    qprint("Code Quality Analysis Tool\n", style="bold italic fg:cyan")
 
     # Select command
     args.command = _select_main_command()
-    match args.command:
+    match args.command.lower():
         case "status":
             args = _prompt_command_status(args)
         case "report":
             args = _prompt_command_report(args)
-        # case "ingest":
-        #     args = _prompt_ingest(args)
-        # case "serve":
-        #     args = _prompt_serve(args)
-        # case "admin":
-        #     args = _prompt_admin(args)
+        case "ingest":
+            args = _prompt_command_ingest(args)
+        case "serve":
+            args = _prompt_command_serve(args)
+        case "admin":
+            args = _prompt_command_admin(args)
+            if not args:
+                _goodbye()
         case "exit":
-            print(
-                "\n[italic]Thanks, Gracias, Merci, Danka, ありがとう, cпacи6o, Köszönöm...![/]\n",
-            )
-            sys.exit(0)
+            _goodbye()
 
-    ptprint()
     return args
 
 
 def _select_main_command():
     """Prompt user for primary command to run."""
-    options = (
-        ("status", "Status - Report on current status."),
-        ("report", "Report - Report on results of existing scans."),
-        ("ingest", "Ingest - Ingest new scan(s) for a project."),
-        ("exit", "Exit"),
-    )
-    return choice(message="What do you want to do?", options=options, default="status")
+    # fmt: off
+    choices = [
+        Choice(title="Status - Display current status"                     , value="status" , shortcut_key="s"),
+        Choice(title="Report - Report on results of existing scans"        , value="report" , shortcut_key="r"),
+        Choice(title="Ingest - Ingest new scan(s) for a project"           , value="ingest" , shortcut_key="i"),
+        Choice(title="Serve  - Run built-in web server to display reports" , value="serve"  , shortcut_key="v"),
+        Choice(title="Admin  - Access administrative functions"            , value="admin"  , shortcut_key="a"),
+        Choice(title="Exit"                                                , value="exit"   , shortcut_key="x"),
+    ]
+    # fmt: on
+
+    return select(
+        "Select command:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+        use_emacs_keys=True,
+    ).ask()
 
 
+################################################################################################
 def _prompt_command_status(args: Namespace) -> Namespace:
-    ptprint()
-    args.name = _prompt_project()
-    ptprint()
+    args.name = _prompt_name()
     args.level = _prompt_status_level()
-    ptprint()
-    args.log_level = _prompt_log_level()
     return args
 
 
 def _prompt_command_report(args: Namespace) -> Namespace:
-    ptprint()
-    args.name = _prompt_project()
-    ptprint()
+    args.name = _prompt_name()
     args.level = _prompt_report_level()
-    ptprint()
     args.tool_analysis = _prompt_tool_analysis()
-    ptprint()
-    args.log_level = _prompt_log_level()
     return args
 
 
-def _prompt_project():
-    return prompt("Project name (leave blank for all) ", default="", style=PROMPT_STYLE)
+def _prompt_command_ingest(args: Namespace) -> Namespace:
+    args.name = _prompt_name()
+    args.path = _prompt_path()
+    args.tool_analysis = _prompt_tool_analysis()
+    args.stdin = False  # Obviously since we're not able to read from stdin interactively!
+    return args
 
 
-def _prompt_status_level():
-    options = (
-        ("0", "0 - Grouped Scans (default)"),
-        ("1", "1 - Individual Scans (might be a lot!)"),
-    )
-    return choice(message="Status Level?", options=options, default="0", style=PROMPT_STYLE)
+def _prompt_command_serve(args: Namespace) -> Namespace:
+    args.port = _prompt_port()
+    args.browser = _prompt_browser()
+    return args
 
 
-def _prompt_report_level():
-    options = [(level.value, f"{level.description}") for level in ReportLevel]
-    return choice(message="Report Level of Detail?", options=options, default="0")
+def _prompt_command_admin(args: Namespace) -> Namespace:
+    """Prompt user for primary command to run."""
+    choices = [
+        Choice(
+            title="Delete a particular Scan, Request or entire Project",
+            value="delete",
+            shortcut_key="d",
+        ),
+        # Choice(
+        #     title="Clean extraneous fluff from data store",
+        #     value="clean",
+        #     shortcut_key="c",
+        #     disabled=True,
+        # ),
+        # Choice(
+        #     title="Trim old data, leaving most recent run for each analysis",
+        #     value="trim",
+        #     shortcut_key="t",
+        #     disabled=True,
+        # ),
+        # Choice(
+        #     title="Clear the database, either for all analyses or a specific one",
+        #     value="clear",
+        #     shortcut_key="l",
+        #     disabled=True,
+        # ),
+    ]
+
+    args.admin_command = select(
+        "Select administration command:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+        use_emacs_keys=True,
+    ).ask()
+
+    match args.admin_command:
+        case "delete":
+            args = _prompt_admin_command_delete(args)
+        # case "clean":
+        #     args = _prompt_admin_command_clean(args)
+        # case "trim":
+        #     args = _prompt_admin_command_trim(args)
+        # case "clear":
+        #     args = _prompt_admin_command_clear(args)
+    return args
 
 
-def _prompt_log_level():
-    options = [(level.value, level.value.title()) for level in LogLevel]
-    return choice(message="Log Level?", options=options, default="info")
+def _prompt_admin_command_delete(args: Namespace) -> Namespace:
+    delete_entity: BaseModel = _prompt_delete_entity()
+    delete_id: int = _prompt_delete_id(delete_entity)
+    args.delete_target: str = f"{delete_entity.value}:{delete_id}"
+    args.no_confirm: bool = False  # Let the delete commmand itself do the confirmation.
+    return args
+
+
+################################################################################################
+def _prompt_name():
+    state = load_state()
+    kwargs = dict()
+    if last_name := state.get("last_name"):
+        kwargs["default"] = last_name
+
+    return text("Project name (leave blank for all)?", style=PROMPT_STYLE, **kwargs).ask()
+
+
+def _prompt_path():
+    return text("Project path (either <dir> or <gitRepo>?", default="", style=PROMPT_STYLE).ask()
+
+
+def _prompt_port() -> int:
+    port = text(
+        "Port to run on?",
+        default="5011",
+        style=PROMPT_STYLE,
+        validate=lambda port: port.isdigit()
+        and (1024 <= int(port) <= 65535)
+        or "Please enter a port number between 1024 and 65535",
+    ).ask()
+    return int(port)
+
+
+def _prompt_browser() -> str:
+    return confirm("Auto-open browser?", default=False, style=PROMPT_STYLE).ask()
+
+
+def _prompt_delete_entity() -> BaseModel:
+    choices = [Choice(title=model.value.title(), value=model.value) for model in BaseModel]
+    value = select(
+        "What entity do you want to delete?",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+        use_emacs_keys=True,
+    ).ask()
+    return BaseModel(value)
+
+
+def _prompt_delete_id(delete_entity: BaseModel) -> int:
+    value = text(
+        f"Enter database id of the {delete_entity.title()} you want to delete:",
+        style=PROMPT_STYLE,
+        validate=lambda text: text.isdigit() or "Please enter a valid integer database id",
+    ).ask()
+    return int(value)
+
+
+def _prompt_status_level() -> StatusLevel:
+    choices = [Choice(title=level.description, value=level.value) for level in StatusLevel]
+    value = select(
+        "Status Level?",
+        choices=choices,
+        default=choices[0],
+        style=PROMPT_STYLE,
+        use_indicator=True,
+        use_emacs_keys=True,
+    ).ask()
+    return StatusLevel(value)
+
+
+def _prompt_report_level() -> ReportLevel:
+    choices = [Choice(title=level.description, value=level.value) for level in ReportLevel]
+    value = select(
+        message="Report Level of Detail?",
+        choices=choices,
+        default=ReportLevel.SUMMARY,
+        style=PROMPT_STYLE,
+    ).ask()
+    return ReportLevel(value)
 
 
 def _prompt_tool_analysis():
     # fmt: off
-    options = [
-        ("cloc"      , "Count lines of code ('cloc')"),
-        ("fxtd"      , "FixMe, ToDo's etc."),
-        ("ruff"      , "Python linter ('ruff check')"),
-        ("radon:cc"  , "Radon - Cyclomatic complexity"),
-        ("radon:hal" , "Radon - Halstead metrics"),
-        ("radon:mi"  , "Radon - Maintainability index"),
-        ("radon:raw" , "Radon - Raw lines of code"),
+    state = load_state()
+    kwargs = dict()
+    if last_tool_analysis := state.get("last_tool_analysis"):
+        kwargs["default"] = last_tool_analysis
+    choices = [
+        Choice(title="Count lines of code ('cloc')"  , value="cloc"      ),
+        Choice(title="FixMe, ToDo's etc."            , value="fxtd"      ),
+        Choice(title="Python linter ('ruff check')"  , value="ruff"      ),
+        Choice(title="Radon - Cyclomatic complexity" , value="radon:cc"  ),
+        Choice(title="Radon - Halstead metrics"      , value="radon:hal" ),
+        Choice(title="Radon - Maintainability index" , value="radon:mi"  ),
+        Choice(title="Radon - Raw lines of code"     , value="radon:raw" ),
     ]
     # fmt: on
-    return choice(message="Analysis to report on?", options=options, default="cloc")
-
-
-# def _show_form(commands, command_key: str) -> dict[str, Any] | None:
-#     """Display interactive form for command options."""
-#     command_config = commands[command_key]
-
-#     # Create form panel
-#     form_content = f"[bold cyan]{command_config['name']}[/bold cyan]\n"
-#     if command_config.get("help"):
-#         form_content += f"[dim]{command_config['help']}[/dim]\n"
-
-#     form_panel = Panel(form_content, border_style="cyan", padding=(1, 2))
-#     console.print(form_panel)
-#     console.print()
-
-#     # Create table showing all options
-#     options_table = Table(
-#         title="Options",
-#         show_header=True,
-#         header_style="bold magenta",
-#         border_style="dim",
-#     )
-#     options_table.add_column("Option", style="cyan")
-#     options_table.add_column("Type", style="yellow")
-#     options_table.add_column("Default", style="green")
-#     options_table.add_column("Description", style="white")
-
-#     for opt_name, opt_config in command_config["options"].items():
-#         default_val = str(opt_config.get("default", ""))
-#         if opt_config.get("type") == "bool" and not opt_config.get("default"):
-#             default_val = "False"
-#         options_table.add_row(opt_name, opt_config["type"], default_val, opt_config.get("help", ""))
-
-#     console.print(options_table)
-#     console.print()
-
-#     # Gather option values
-#     options = {}
-#     console.print("[bold]Enter values:[/bold]\n")
-
-#     for opt_name, opt_config in command_config["options"].items():
-#         value = _prompt_for_option(console, opt_name, opt_config)
-
-#         # Allow user to cancel
-#         if value is None and opt_config["type"] != "bool":
-#             if not Confirm.ask("\nCancel command?", default=False):
-#                 continue
-#             else:
-#                 return None
-
-#         options[opt_name] = value
-
-#     # Show summary
-#     _show_summary(console, command_key, options)
-
-#     if not Confirm.ask("\nExecute with these options?", default=True):
-#         return None
-
-#     return options
-
-
-# def _prompt_for_option(console, opt_name: str, opt_config: dict) -> Any:
-#     """Prompt user for a single option value based on the "type"."""
-#     opt_type = opt_config["type"]
-#     default = opt_config.get("default")
-#     help_text = opt_config.get("help", "")
-
-#     prompt_text = f"[cyan]{opt_name}[/cyan]"
-#     if help_text:
-#         prompt_text += f" [dim]({help_text})[/dim]"
-
-#     if opt_type == "string":
-#         return Prompt.ask(prompt_text, default=default or "")
-
-#     elif opt_type == "bool":
-#         return Confirm.ask(prompt_text, default=default or False)
-
-#     elif opt_type == "choice":
-#         console.print(prompt_text)
-#         choices = list(opt_config["choices"])
-#         return select(choices, cursor="→", cursor_style="cyan")
-
-#     elif opt_type == "multichoice":
-#         console.print(prompt_text)
-#         choices = list(opt_config["choices"])
-#         selected = select_multiple(choices, cursor="→", cursor_style="cyan", tick_character="✓", tick_style="green")
-#         return selected if selected else default
-
-#     elif opt_type == "list":
-#         value = Prompt.ask(f"{prompt_text} [dim](space-separated)[/dim]", default="")
-#         return value.split() if value else default
-
-#     return default
-
-
-# def _show_summary(console, command_key: str, options: dict[str, Any]):
-#     """Display summary of selected options."""
-#     summary_table = Table(
-#         title="Summary",
-#         show_header=True,
-#         header_style="bold green",
-#         border_style="green",
-#     )
-#     summary_table.add_column("Option", style="cyan")
-#     summary_table.add_column("Value", style="yellow")
-
-#     for key, value in options.items():
-#         if isinstance(value, list):
-#             value_str = ", ".join(str(v) for v in value)
-#         else:
-#             value_str = str(value)
-#         summary_table.add_row(key, value_str)
-
-#     console.print()
-#     console.print(summary_table)
+    return select(message="Analysis to report on?", choices=choices, style=PROMPT_STYLE, **kwargs).ask()
 
 
 def validate_args(args: Namespace) -> bool:

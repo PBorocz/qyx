@@ -6,6 +6,7 @@ from typing import Callable
 
 from mq.cli import cli_console
 from mq.cli.admin import do_it
+from mq.constants import BaseModel
 from mq.tools.base import Project, Request, Scan
 
 log = logging.getLogger(__name__)
@@ -19,32 +20,34 @@ def delete(args: Namespace) -> None:
 
     # Is it in the right format?
     if ":" not in args.delete_target:
-        raise RuntimeError("Sorry, format needs to either 'p:<id>', 'r:<id>' or 's:<id>'!")
+        raise RuntimeError("Sorry, format needs to either 'project:<id>', 'request:<id>' or 'scan:<id>'!")
 
-    entity, id_ = args.delete_target.lower().split(":")
-    if entity not in ("p", "r", "s"):
-        raise RuntimeError("Sorry, format needs to either 'p:<id>', 'r:<id>' or 's:<id>'!")
+    raw_entity, id_ = args.delete_target.lower().split(":")
+    try:
+        entity = BaseModel(raw_entity)
+    except ValueError:
+        raise RuntimeError("Sorry, invalid format, needs to be any of 'project:<id>', 'request:<id>' or 'scan:<id>'!")
 
     try:
         _ = int(id_)
     except TypeError:
-        raise RuntimeError("Sorry, 'id' needs to be numeric in 'p:<id>', 'r:<id>' or 's:<id>'!")
+        raise RuntimeError("Sorry, 'id' needs to be numeric!")
 
     # Do it after potential confirmation
     match entity:
-        case "p":
+        case BaseModel.PROJECT:
             _confirm_and_execute(
                 args,
                 f"Delete [red]all[/red] data for Project id {id_}?",
                 lambda: Project.delete().where(Project.id == int(id_)).execute(),
             )
-        case "r":
+        case BaseModel.REQUEST:
             _confirm_and_execute(
                 args,
                 f"Delete [red]all[/red] data for Request id {id_}?",
                 lambda: Request.delete().where(Request.id == int(id_)).execute(),
             )
-        case "s":
+        case BaseModel.SCAN:
             _confirm_and_execute(
                 args,
                 f"Delete [red]all[/red] data for Scan id {id_}?",

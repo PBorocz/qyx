@@ -33,7 +33,7 @@ def render_page(request, title, active_page, *main_page_content):
     """Render the content provided into this base page template."""
     global CSS
     if not CSS:
-        CSS = Path("src/mq/web/css/app.css").read_text(encoding="utf-8")
+        CSS = Path("src/mq/web/static/css/app.css").read_text(encoding="utf-8")
 
     s_title = "MQ"
     if title:

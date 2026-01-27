@@ -6,6 +6,7 @@ from collections import defaultdict
 from rich.tree import Tree
 from rich import print
 
+from mq.constants import StatusLevel
 from mq.tools.base import Project, Request, Scan
 from mq.utils import dt_to_display
 
@@ -33,7 +34,7 @@ def status(args: Namespace) -> None:
             scan_tree = project_tree.add(s_request)
 
             scans_for_request = Scan.select().order_by(Scan.as_of).where(Scan.request == request)
-            if request.is_git and int(args.level) == 0:
+            if request.is_git and args.level == StatusLevel.GROUPED:
                 scan_tree = scan_tree_summary(args, request, scans_for_request, scan_tree)
             else:
                 scan_tree = scan_tree_detailed(args, request, scans_for_request, scan_tree)
