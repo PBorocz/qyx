@@ -32,7 +32,6 @@ def render_page_home(request):
 
 def render_partial_project_summary(request, s_project_id: str):
     """Render the home/summary page."""
-    log.info(f"{s_project_id=}")
     if not s_project_id:
         return fh.Section()
 
@@ -114,8 +113,6 @@ def get_project_content(args: Namespace, project: Project) -> dict:
             # log.info(f"Matching scan: {scan.id=}")
             if level_contents := render_method(args, project=project, scan=scan):
                 content[(level, tool, analysis)] = level_contents
-            else:
-                log.warning("Sorry, no content found?")
     return content
 
 
