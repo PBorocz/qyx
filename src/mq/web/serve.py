@@ -50,7 +50,7 @@ def serve(args: Namespace) -> None:
 
     log.info(f"Starting server at https://localhost/{int(args.port)}")
     uvicorn.run(
-        "mq.web.serve:app",
+        app,
         host="0.0.0.0",
         port=int(args.port),
         log_level="debug",

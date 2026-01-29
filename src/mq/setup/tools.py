@@ -5,6 +5,8 @@ from argparse import Namespace
 from importlib import import_module
 from pathlib import Path
 
+from mq.constants import ConfigurationError
+
 log = logging.getLogger(__name__)
 
 
@@ -29,7 +31,7 @@ def setup_tools(args: Namespace) -> dict:
                 s_import_path = f"mq.tools.{tool_name}"
                 tool_module = import_module(s_import_path)
             except ImportError as exc:
-                raise RuntimeError(f"Sorry, can't import: '{s_import_path}': {exc}!")
+                raise ConfigurationError(f"Sorry, can't import: '{s_import_path}': {exc}!")
 
             ################################################################################
             # Now, find the configuration class
@@ -38,7 +40,7 @@ def setup_tools(args: Namespace) -> dict:
                 tool_configuration_class = getattr(tool_module, "Configuration")
                 log.debug(f"{tool_configuration_class=}")
             except AttributeError as exc:
-                raise RuntimeError(f"Sorry, can't instantiate {tool_name}'s configuration class?: {exc}!")
+                raise ConfigurationError(f"Sorry, can't instantiate {tool_name}'s configuration class?: {exc}!")
 
             ################################################################################
             # ...instantiate it and store it!

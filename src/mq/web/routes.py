@@ -1,8 +1,8 @@
 """Primary routes for MQ app, static, partial and dynamically created."""
 
 import logging
+from datetime import datetime
 from typing import Callable
-from types import ModuleType
 
 from fasthtml import common as ft
 
@@ -19,8 +19,12 @@ def register(args, rt):  # noqa: C901
     # Static routes...
     ################################################################################
     @rt("/")
-    def get(request):
+    def get_index(request):
         return render_page_home(request)
+
+    @rt("/health")
+    def get_health(request):
+        return datetime.now().isoformat()
 
     # @rt("/about")
     # def about(request):
@@ -56,8 +60,7 @@ def register(args, rt):  # noqa: C901
         def make_tool_route(name, tool_config):
             @rt(f"/{name}")
             def render_tool_page_method(request):
-                web_file: ModuleType = tool_config.import_component("web")
-                render_method: Callable = getattr(web_file, "render")
+                render_method: Callable = tool_config.render_web_method
                 return render_method(request, name, tool_config)
 
             return render_tool_page_method

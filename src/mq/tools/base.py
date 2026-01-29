@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import types
-from abc import ABC
+from abc import ABC, abstractmethod
 from argparse import Namespace
 from datetime import datetime, UTC
 from importlib import import_module
@@ -12,6 +12,7 @@ from typing import Callable, TypeAlias
 
 import peewee as pw
 
+from mq.constants import ConfigurationError
 from mq.utils import dt_to_display, parse_path_arg
 
 
@@ -35,24 +36,38 @@ class AbstractToolConfiguration(ABC):
         # Peewee storage models used by this tool.
         self.models: dict[str, BaseModel] = models
 
-        # Are Results "required" for a Scan to be valid? (usually yes)
+        # Are results "required" for a Scan to be valid? (usually yes)
         self.results_required = True
 
         # Save any other values sent in...
         for attr, value in kwargs.items():
             setattr(self, attr, value)
 
+        # Lookup a set of methods that "drive" the tool.
+        # (we do this up front to help validate tool configuration)
+        # FIXME: Make these possibly NONE to indicate that the respective capabilities aren't available yet!
+        self.render_cli_method = self._get_render_method("cli")
+        self.render_web_method = self._get_render_method("web")
+
+    @abstractmethod
     def get_ingest_command(self, *args, **kwargs):
         """Return the command sent to subprocess to directly perform a CLOC operation."""
-        raise NotImplementedError("Sorry, this method needs to be implemented by an inherited class!")
+        raise ConfigurationError("Sorry, this method needs to be implemented by an inherited class!")
 
     def import_component(self, component: str) -> types.ModuleType:
         """Dynamically import a component from this module."""
         return import_module(f"mq.tools.{self.module_name}.{component}")
 
+    def _get_render_method(self, interface: str) -> Callable:
+        """Return the root render method for this tool and the specified interace, e.g. "web" or "cli"."""
+        render_module: types.ModuleType = self.import_component(interface)
+        if not (render_method := getattr(render_module, "render")):
+            raise ConfigurationError("Unable to find 'render' method in {self.module_name}'s {interface}.py file!")
+        return render_method
+
     def get_ingest_method(self, *args, **kwargs) -> Callable:
-        """Return the parse method to parse this tool's JSON output."""
-        # NOTE: This implementation is the "single"-analysis tools
+        """Return the parse method to parse/ingest this tool's output (usually JSON)."""
+        # NOTE: This implementation is for "single"-analysis tools
         # (ruff, cloc etc.). For multi-analysis tools (like radon),
         # this method is *OVERRIDDEN* in their respective __init__.py.
         py_ingest: types.ModuleType = self.import_component("ingest")

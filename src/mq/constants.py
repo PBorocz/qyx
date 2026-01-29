@@ -3,6 +3,12 @@
 from enum import Enum
 
 
+class ConfigurationError(ValueError):
+    """Raised when there's an error in configuration, specifically tool setup."""
+
+    pass
+
+
 class BaseModel(str, Enum):
     """Base data models."""
 

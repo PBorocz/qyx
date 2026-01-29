@@ -19,7 +19,7 @@ class Configuration(ToolConfig):
             models=dict(
                 cc=RadonCc,
                 hal=RadonHal,
-                _hal=RadonHalFunction,
+                _hal=RadonHalFunction,  # Subsidiary so we "hide" it a bit..
                 mi=RadonMi,
                 raw=RadonRaw,
             ),
@@ -27,7 +27,8 @@ class Configuration(ToolConfig):
 
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
         """Return the command sent to subprocess to directly perform an ingest operation."""
-        assert analysis, "Sorry, we need a sub_module here!"
+        if not analysis:
+            raise RuntimeError("Sorry, we need a sub_module here!")
         return [
             "uvx",
             "radon",
