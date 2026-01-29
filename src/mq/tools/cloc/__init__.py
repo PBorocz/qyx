@@ -18,9 +18,9 @@ class Configuration(ToolConfig):
         """Return the command sent to subprocess to directly perform a CLOC operation."""
         return [
             "cloc",
-            "--include-lang=Python",
             "--by-file",
+            "--include-lang=Python",
             "--json",
-            "--exclude-dir=.venv",
+            "--vcs=git",
             absolute,
         ]

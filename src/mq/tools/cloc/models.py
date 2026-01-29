@@ -64,9 +64,14 @@ def _query_0(scan: Scan) -> Any:
     )
 
     # Convert to percentage of total:
-    row.lines_blank_p = (row.lines_blank / row.lines_total) * 100.0
-    row.lines_code_p = (row.lines_code / row.lines_total) * 100.0
-    row.lines_comment_p = (row.lines_comment / row.lines_total) * 100.0
+    if row.lines_total:
+        row.lines_blank_p = (row.lines_blank / row.lines_total) * 100.0
+        row.lines_code_p = (row.lines_code / row.lines_total) * 100.0
+        row.lines_comment_p = (row.lines_comment / row.lines_total) * 100.0
+    else:
+        row.lines_blank_p = None
+        row.lines_code_p = None
+        row.lines_comment_p = None
 
     # Find the number of files
     row.files_total = Cloc.select(fn.COUNT(Cloc.id).alias("files_total")).where(Cloc.scan == scan).get().files_total
@@ -201,6 +206,8 @@ def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict
 def _query_d(args: Namespace, scan: Scan) -> Any:
     """Calculate all 'derived' report values."""
     row = _query_0(scan)
+    if not row or not row.lines_code:
+        return None
 
     # Calculate the "Code Density"
     metric_value = (row.lines_code / (row.lines_code + row.lines_blank)) * 100.0

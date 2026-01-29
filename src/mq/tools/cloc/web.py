@@ -76,6 +76,8 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
 
 def cloc_0(args: Namespace, scan: Scan, **kwargs):
     results = query(args, "0", scan=scan)
+    if not results.lines_total:
+        return ""
     return (
         fh.Table(
             fh.Thead(

@@ -172,6 +172,10 @@ def _query_d(args: Namespace, project: Project, scan: Scan):
 
 def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result):
     """Calculate simple violations per thousand loc (not including comments and blank lines)."""
+    if not lines_of_code or not result.count:
+        result.violations_per_kloc = None
+        return result
+
     metric_value = (result.count / lines_of_code) * 1000
     result.violations_per_kloc = score_metric(
         args,
@@ -207,6 +211,9 @@ def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, r
     }
     # fmt: off
     violations_by_severity = __query_counts_by_rule_code_prefix(scan)
+    if not lines_of_code or not violations_by_severity:
+        result.weighted_violations_per_kloc = None
+        return result
     weights = get_nested_config(args.config, "tools.ruff.weighted_violations_per_kloc.weights")
     weighted_score = sum(violations_by_severity.get(code, 0) * weight for code, weight in weights.items())
     metric_value = (weighted_score / lines_of_code) * 1000

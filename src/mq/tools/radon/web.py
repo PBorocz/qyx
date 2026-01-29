@@ -7,10 +7,10 @@ from fasthtml import common as fh
 
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import RadonHal
-from mq.tools.radon.report.web.cc_0 import cc_0, cc_1, cc_2, cc_3, cc_h
-from mq.tools.radon.report.web.hal_0 import hal_0, hal_1, hal_2, hal_3, hal_h
-from mq.tools.radon.report.web.mi_0 import mi_0, mi_1, mi_2, mi_h
-from mq.tools.radon.report.web.raw_0 import raw_0, raw_1, raw_2, raw_h
+from mq.tools.radon.web_cc import cc_0, cc_1, cc_2, cc_3, cc_h
+from mq.tools.radon.web_hal import hal_0, hal_1, hal_2, hal_3, hal_h
+from mq.tools.radon.web_mi import mi_0, mi_1, mi_2, mi_h
+from mq.tools.radon.web_raw import raw_0, raw_1, raw_2, raw_h
 from mq.web import get_project_select
 from mq.web.page import render_page
 
