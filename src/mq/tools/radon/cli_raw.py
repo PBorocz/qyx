@@ -104,11 +104,14 @@ def raw_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         for timestamp in sorted(timestamps):
             row.append(f"{dt_rows[timestamp]:,d}")
 
-        roc = rocs[metric]
-        if -0.01 < roc < 0.01:
             t_value = ""
-        else:
-            t_value = f"{roc:+.2f}%"
+        if metric in rocs:
+            roc = rocs[metric]
+            if roc:
+                if -0.01 < roc < 0.01:
+                    t_value = ""
+                else:
+                    t_value = f"{roc:+.2f}%"
 
         row.append(t_value)
         table.add_row(*row)

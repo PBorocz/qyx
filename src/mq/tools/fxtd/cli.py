@@ -81,9 +81,16 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan) -> None:
     rows, composite = query(args, "d", project=project, scan=scan)
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
+
+    if not rows:
+        table.add_row("Congratulations..No issues found!")
+        cli_console.print(table)
+        return
+
     table.add_column("Metric", justify="left")
     table.add_column("Value", justify="right")
     table.add_column("Grade", justify="center")
+
     for row in rows:
         table.add_row(
             f"{row.type}'s per kLOC",
@@ -101,6 +108,7 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan) -> None:
 def fxtd_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
     timestamps, transposed, rocs = query(args, "h", project=project, last=5)
+
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -115,7 +123,10 @@ def fxtd_h(args: Namespace, project: Project) -> None:
     for entity_type, values in transposed.items():
         t_row = [entity_type]
         for timestamp in sorted(timestamps):
-            t_row.append(f"{values[timestamp]:,d}")
+            if timestamp in values:
+                t_row.append(f"{values[timestamp]:,d}")
+            else:
+                t_row.append("")
 
         roc = rocs.get(entity_type, 0)
         if roc > 0.01:

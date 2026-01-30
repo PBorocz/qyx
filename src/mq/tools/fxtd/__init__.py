@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from mq.constants import ReportLevel as Rl
 from mq.tools.base import ToolConfig
 from mq.tools.fxtd.models import Fxtd
 
@@ -13,10 +14,19 @@ class Configuration(ToolConfig):
 
     def __init__(self):
         """..."""
+        # fmt: off
+        cli = dict(
+            fxtd = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        )
+        web = dict(
+            fxtd = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        )
+        # fmt: on
         super(Configuration, self).__init__(
             module_name="fxtd",
             models=dict(fxtd=Fxtd),
             results_required=False,  # In this case,  Scans without data ARE valid!
+            reports=dict(cli=cli, web=web),
         )
 
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:

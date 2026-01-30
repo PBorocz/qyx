@@ -82,16 +82,18 @@ def ruff_d(args: Namespace, project: Project, scan: Scan) -> None:
     table.add_column("Metric", justify="left")
     table.add_column("Value", justify="right")
     table.add_column("Grade", justify="center")
-    table.add_row(
-        "Raw Ruff Issues per kLOC",
-        f"{row.violations_per_kloc.score:.0f}",
-        f"{row.violations_per_kloc.grade}",
-    )
-    table.add_row(
-        "Weighted Ruff Issues per kLOC",
-        f"{row.weighted_violations_per_kloc.score:.0f}",
-        f"{row.weighted_violations_per_kloc.grade}",
-    )
+    if row.violations_per_kloc:
+        table.add_row(
+            "Raw Ruff Issues per kLOC",
+            f"{row.violations_per_kloc.score:.0f}",
+            f"{row.violations_per_kloc.grade}",
+        )
+    if row.weighted_violations_per_kloc:
+        table.add_row(
+            "Weighted Ruff Issues per kLOC",
+            f"{row.weighted_violations_per_kloc.score:.0f}",
+            f"{row.weighted_violations_per_kloc.grade}",
+        )
     cli_console.print(table)
 
 

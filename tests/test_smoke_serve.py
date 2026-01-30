@@ -4,7 +4,6 @@ import socket
 import threading
 import time
 from argparse import Namespace
-from typing import List
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
@@ -104,7 +103,7 @@ def test_server():
     server.should_exit = True
 
 
-def get_test_urls() -> List[str]:
+def get_test_urls() -> list[str]:
     """Generate list of URLs to test.
 
     For now, returns static URLs. Later, you can add database queries here.

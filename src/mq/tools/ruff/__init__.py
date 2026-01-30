@@ -4,6 +4,7 @@ import gzip
 import json
 from pathlib import Path
 
+from mq.constants import ReportLevel as Rl
 from mq.tools.base import ToolConfig
 from mq.tools.ruff.models import Ruff
 
@@ -16,10 +17,19 @@ class Configuration(ToolConfig):
 
     def __init__(self):
         """..."""
+        # fmt: off
+        cli = dict(
+            ruff = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        )
+        web = dict(
+            ruff = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        )
+        # fmt: on
         super(Configuration, self).__init__(
             module_name="ruff",
             models=dict(ruff=Ruff),
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
+            reports=dict(cli=cli, web=web),
         )
 
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:

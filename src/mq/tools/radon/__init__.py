@@ -3,6 +3,7 @@
 import types
 from typing import Callable
 
+from mq.constants import ReportLevel as Rl
 from mq.tools.base import ToolConfig
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
@@ -14,6 +15,21 @@ class Configuration(ToolConfig):
 
     def __init__(self):
         """..."""
+        # fmt: off
+        cli = dict(
+            cc  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+            hal = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+            mi  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
+            raw = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
+        )
+        web = dict(
+            cc  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+            hal = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+            mi  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
+            raw = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
+        )
+        # fmt: on
+
         super(Configuration, self).__init__(
             module_name="radon",
             models=dict(
@@ -23,6 +39,7 @@ class Configuration(ToolConfig):
                 mi=RadonMi,
                 raw=RadonRaw,
             ),
+            reports=dict(cli=cli, web=web),
         )
 
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:

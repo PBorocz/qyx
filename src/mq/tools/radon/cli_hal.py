@@ -104,15 +104,18 @@ def hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         for timestamp in sorted(timestamps):
             t_row.append(f"{dt_rows[timestamp]:.2f}")
 
-        roc = rocs[attr]
-        t_value = ""
-        if roc > 0.01:
-            color = COLORS["positive"]
-            t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
+        if attr in rocs:
+            roc = rocs[attr]
+            t_value = ""
+            if roc > 0.01:
+                color = COLORS["positive"]
+                t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
 
-        elif roc < -0.01:
-            color = COLORS["negative"]
-            t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
+            elif roc < -0.01:
+                color = COLORS["negative"]
+                t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
+        else:
+            t_value = ""
 
         t_row.append(t_value)
         table.add_row(*t_row)

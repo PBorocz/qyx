@@ -8,11 +8,11 @@ from abc import ABC, abstractmethod
 from argparse import Namespace
 from datetime import datetime, UTC
 from importlib import import_module
-from typing import Callable, TypeAlias
+from typing import Callable, Iterator, TypeAlias
 
 import peewee as pw
 
-from mq.constants import ConfigurationError
+from mq.constants import ConfigurationError, ReportLevel
 from mq.utils import dt_to_display, parse_path_arg
 
 
@@ -27,6 +27,7 @@ class AbstractToolConfiguration(ABC):
         self,
         module_name: str,
         models: dict[str, BaseModel],
+        reports: dict,
         **kwargs,
     ) -> "AbstractToolConfiguration":
         """..."""
@@ -35,6 +36,9 @@ class AbstractToolConfiguration(ABC):
 
         # Peewee storage models used by this tool.
         self.models: dict[str, BaseModel] = models
+
+        # Reports available by interface and report-level
+        self.reports: dict = reports
 
         # Are results "required" for a Scan to be valid? (usually yes)
         self.results_required = True
@@ -73,12 +77,20 @@ class AbstractToolConfiguration(ABC):
         py_ingest: types.ModuleType = self.import_component("ingest")
         return getattr(py_ingest, "ingest")
 
-    def iter_tool_analysis(self):
+    def iter_tool_analysis(self) -> Iterator[str, str]:
         """Iterator over tools and analysis returning the respective pymodule."""
         for analysis in self.models:
             if analysis.startswith("_"):
                 continue
             yield self.module_name, analysis
+
+    def iter_reports(self, interface: str) -> Iterator[str, ReportLevel]:
+        """Iterator over analysis available for the specified interface."""
+        if interface not in self.reports:
+            log.warning(f"Sorry, requesting reports for {interface=} that isn't defined for {self.module_name}!")
+        for analysis, report_levels in self.reports.get(interface, ()).items():
+            for report_level in report_levels:
+                yield analysis, report_level
 
 
 ToolConfig: TypeAlias = AbstractToolConfiguration
