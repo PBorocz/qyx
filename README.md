@@ -190,46 +190,46 @@ database:
 # Tool-specific configurations
 tools:
   cloc:
-    code_density:
-      thresholds:
-        - {min: 10, max: 60, grade: "A", color: "#22c55e"}
-        - {min: 60, max: 70, grade: "B", color: "#84cc16"}
-        # ... more thresholds
+	code_density:
+	  thresholds:
+		- {min: 10, max: 60, grade: "A", color: "#22c55e"}
+		- {min: 60, max: 70, grade: "B", color: "#84cc16"}
+		# ... more thresholds
 
   ruff:
-    violation_weights:
-      F: 5.0  # Bugs
-      B: 4.0  # Design
-      S: 4.0  # Security
-      E: 3.0  # Errors
-      # ... more weights
+	violation_weights:
+	  F: 5.0  # Bugs
+	  B: 4.0  # Design
+	  S: 4.0  # Security
+	  E: 3.0  # Errors
+	  # ... more weights
 
   radon:
-    cc:  # Cyclomatic Complexity
-      class_complexity:
-        thresholds:
-          - {min: 0, max: 10, grade: "A", color: "#22c55e"}
-          # ... more thresholds
+	cc:  # Cyclomatic Complexity
+	  class_complexity:
+		thresholds:
+		  - {min: 0, max: 10, grade: "A", color: "#22c55e"}
+		  # ... more thresholds
 
-    mi:  # Maintainability Index
-      maintainability_index:
-        thresholds:
-          - {min: 85, max: 100, grade: "A", color: "#22c55e"}
-          # ... more thresholds
+	mi:  # Maintainability Index
+	  maintainability_index:
+		thresholds:
+		  - {min: 85, max: 100, grade: "A", color: "#22c55e"}
+		  # ... more thresholds
 
-    hal:  # Halstead Metrics
-      composite:
-        thresholds:
-          - {min: 0, max: 50, grade: "A", color: "#22c55e"}
-          # ... more thresholds
+	hal:  # Halstead Metrics
+	  composite:
+		thresholds:
+		  - {min: 0, max: 50, grade: "A", color: "#22c55e"}
+		  # ... more thresholds
 
   fxtd:
-    weights:
-      BUG: 3.0
-      FIXME: 3.0
-      HACK: 3.0
-      TODO: 2.0
-      NOTE: 1.0
+	weights:
+	  BUG: 3.0
+	  FIXME: 3.0
+	  HACK: 3.0
+	  TODO: 2.0
+	  NOTE: 1.0
 ```
 
 ### Overriding Configuration
@@ -416,11 +416,9 @@ pytest --cov=mq
    - `__init__.py` - Tool configuration
    - `models.py` - Database models
    - `ingest.py` - Data ingestion logic
-   - `cli.py` - CLI rendering
-   - `web.py` - Web rendering
-3. Register tool in `src/mq/setup/tools.py`
-4. Add configuration to `config.yaml`
-5. Add tests in `tests/`
+   - `cli.py` - CLI rendering (if desired)
+   - `web.py` - Web rendering (if desired but at least one rendering is suggested)
+3. Add requisite/desired configuration to `config.yaml`
 
 ### Tool Implementation Pattern
 
@@ -429,29 +427,29 @@ Each tool follows a standard pattern:
 ```python
 # __init__.py - Tool configuration
 class MyToolConfiguration(AbstractToolConfiguration):
-    tool_name = "mytool"
-    command = "mytool --json {path}"
-    report_levels = [0, 1, 2]  # Supported report levels
+	tool_name = "mytool"
+	command = "mytool --json {path}"
+	report_levels = [0, 1, 2]  # Supported report levels
 
 # models.py - Data models
 class MyToolResult(BaseResultsModel):
-    # Define fields
-    pass
+	# Define fields
+	pass
 
 # ingest.py - Data ingestion
 def ingest(scan: Scan, data: dict) -> None:
-    # Parse and store data
-    pass
+	# Parse and store data
+	pass
 
 # cli.py - CLI rendering
 def render_cli(scan: Scan, level: int) -> None:
-    # Render to terminal
-    pass
+	# Render to terminal
+	pass
 
 # web.py - Web rendering
 def render_web(scan: Scan, level: int) -> FT:
-    # Render to FastHTML
-    pass
+	# Render to FastHTML
+	pass
 ```
 
 ### Database Schema

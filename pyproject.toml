@@ -49,7 +49,7 @@ shell = """
   jj git push --bookmark trunk
 
   uv run mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git
-  uv run mq status --name python-code-quality
+  uv run mq status --name python-code-quality --level 0
   """
 
 [tool.poe.tasks.mq]
