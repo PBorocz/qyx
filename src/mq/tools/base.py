@@ -55,7 +55,7 @@ class AbstractToolConfiguration(ABC):
 
     @abstractmethod
     def get_ingest_command(self, *args, **kwargs):
-        """Return the command sent to subprocess to directly perform a CLOC operation."""
+        """Return the command sent to subprocess to directly perform a "tool" ingest operation."""
         raise ConfigurationError("Sorry, this method needs to be implemented by an inherited class!")
 
     def import_component(self, component: str) -> types.ModuleType:
@@ -71,9 +71,9 @@ class AbstractToolConfiguration(ABC):
 
     def get_ingest_method(self, *args, **kwargs) -> Callable:
         """Return the parse method to parse/ingest this tool's output (usually JSON)."""
-        # NOTE: This implementation is for "single"-analysis tools
-        # (ruff, cloc etc.). For multi-analysis tools (like radon),
-        # this method is *OVERRIDDEN* in their respective __init__.py.
+        # NOTE:
+        # - This implementation is for "single"-analysis tools (ruff, cloc etc.).
+        # - For multi-analysis tools (like radon), this method is *OVERRIDDEN* in their respective __init__.py.
         py_ingest: types.ModuleType = self.import_component("ingest")
         return getattr(py_ingest, "ingest")
 

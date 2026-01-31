@@ -1,9 +1,6 @@
 """..."""
 
-import time
 from argparse import Namespace
-from urllib.error import HTTPError, URLError
-from urllib.request import urlopen
 
 import pytest
 

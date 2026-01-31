@@ -1,1 +1,666 @@
-This is my README.md, I'll get to it at some point.
+# MQ - Python Code Quality Data Warehouse
+
+> A comprehensive code quality analysis and visualization platform for Python projects
+
+**MQ** is a proof-of-concept data warehouse that aggregates, analyzes, and reports on multiple code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
+
+## Features
+
+- **Multi-Tool Integration**: Aggregate metrics from CLOC, Ruff, Radon, and custom analyzers
+- **Persistent Storage**: SQLite database for historical tracking and trend analysis
+- **Rich CLI Interface**: Beautiful terminal output with detailed reports at multiple levels
+- **Web Dashboard**: FastHTML-based interactive dashboard with HTMX for dynamic updates
+- **Git Integration**: Analyze code across commit history
+- **Configurable Grading**: Define custom thresholds and scoring for all metrics
+- **Multi-Level Reporting**: Summary, directory, file, detailed, derived, and historical views
+
+## Tools & Metrics
+
+### CLOC (Count Lines of Code)
+- Lines of code, blank lines, comment lines
+- Code density percentage
+- Comment ratio
+- File size distribution
+
+### Ruff (Python Linting)
+- Violation counts per rule and severity
+- Violations per KLOC
+- Weighted scoring by severity
+- Per-file and directory aggregation
+
+### Radon (Complexity Analysis)
+Four sub-analyses providing comprehensive complexity metrics:
+- **CC** (Cyclomatic Complexity): Function and class complexity
+- **MI** (Maintainability Index): Overall maintainability score (0-100)
+- **HAL** (Halstead Metrics): Effort, difficulty, bugs prediction
+- **RAW** (Raw Metrics): Operators, operands, basic counts
+
+### FXTD (Custom Annotation Tracker)
+Track code annotations and technical debt markers:
+- FIXME, TODO, HACK, BUG, XXX, NOTE markers
+- Weighted scoring by severity
+- Per-KLOC metrics
+
+## Installation
+
+### Prerequisites
+
+- Python >= 3.11.9
+- External tools (installed separately):
+  - `cloc` - Count Lines of Code
+  - `ruff` - Python linter
+  - `radon` - Complexity analyzer
+  - `git` - Version control (for history analysis)
+
+### Install MQ
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd python-code-quality
+
+# Install with uv (recommended)
+uv sync
+
+# The mq command will be available
+mq --help
+```
+
+### Alternative Installation Methods
+
+```bash
+# Direct Python invocation
+python -m mq --help
+
+# Using uv run
+uv run mq --help
+```
+
+## Quick Start
+
+### Ingest Code Quality Metrics
+
+```bash
+# Analyze current project
+mq ingest --name myproject --path /path/to/project
+
+# Analyze with specific tool
+mq ingest --name myproject --path /path/to/project --analysis ruff
+
+# Analyze git history (all commits)
+mq ingest --name myproject --path /path/to/repo
+
+# Read from stdin (pipe tool output)
+ruff check --output-format=json . | mq ingest --name myproject --stdin ruff
+```
+
+### View Status
+
+```bash
+# Summary status
+mq status
+
+# Grouped by scan
+mq status --level g
+
+# Individual scans
+mq status --level i
+```
+
+### Generate Reports
+
+```bash
+# Summary report
+mq report --name myproject
+
+# Directory-level report
+mq report --name myproject --level 1
+
+# File-level report
+mq report --name myproject --level 2
+
+# Detailed metrics
+mq report --name myproject --level 3
+
+# Derived metrics (composite scores, rates)
+mq report --name myproject --level d
+
+# Historical trends with charts
+mq report --name myproject --level h
+```
+
+### Web Interface
+
+```bash
+# Start web server on default port (5011)
+mq serve
+
+# Custom port and auto-launch browser
+mq serve --port 8080 --browser
+
+# Access at http://localhost:5011
+```
+
+### Database Administration
+
+```bash
+# Safe housekeeping (remove orphaned records)
+mq admin clean
+
+# Remove old scan data
+mq admin trim
+
+# Delete specific project
+mq admin delete
+
+# Complete database wipe (destructive!)
+mq admin clear
+```
+
+## Interactive Mode
+
+If you run `mq` without arguments, it enters interactive mode with guided prompts:
+
+```bash
+mq
+# Follow the prompts to select command and options
+```
+
+## Configuration
+
+MQ uses `config.yaml` for default settings and metric thresholds.
+
+### Configuration File Location
+
+Default: `./config.yaml` in the project root
+
+### Configuration Structure
+
+```yaml
+# Command-line defaults
+defaults:
+  name: "my-project"
+  path: "/path/to/project"
+  log_level: "INFO"
+
+# Database configuration
+database:
+  path: "~/.config/mq/mq.sqlite3"
+
+# Tool-specific configurations
+tools:
+  cloc:
+    code_density:
+      thresholds:
+        - {min: 10, max: 60, grade: "A", color: "#22c55e"}
+        - {min: 60, max: 70, grade: "B", color: "#84cc16"}
+        # ... more thresholds
+
+  ruff:
+    violation_weights:
+      F: 5.0  # Bugs
+      B: 4.0  # Design
+      S: 4.0  # Security
+      E: 3.0  # Errors
+      # ... more weights
+
+  radon:
+    cc:  # Cyclomatic Complexity
+      class_complexity:
+        thresholds:
+          - {min: 0, max: 10, grade: "A", color: "#22c55e"}
+          # ... more thresholds
+
+    mi:  # Maintainability Index
+      maintainability_index:
+        thresholds:
+          - {min: 85, max: 100, grade: "A", color: "#22c55e"}
+          # ... more thresholds
+
+    hal:  # Halstead Metrics
+      composite:
+        thresholds:
+          - {min: 0, max: 50, grade: "A", color: "#22c55e"}
+          # ... more thresholds
+
+  fxtd:
+    weights:
+      BUG: 3.0
+      FIXME: 3.0
+      HACK: 3.0
+      TODO: 2.0
+      NOTE: 1.0
+```
+
+### Overriding Configuration
+
+CLI arguments override config file settings:
+
+```bash
+# Override log level
+mq report --name myproject --log-level DEBUG
+
+# Override project path
+mq ingest --name myproject --path /custom/path
+```
+
+## CLI Reference
+
+### Commands
+
+#### `mq ingest`
+
+Analyze code with quality tools and store results.
+
+```bash
+mq ingest [OPTIONS]
+```
+
+**Options:**
+- `--name TEXT`: Project name (required)
+- `--path PATH`: Project path (required for non-stdin)
+- `--analysis TEXT`: Specific analysis to run (cloc, ruff, radon_cc, radon_mi, radon_hal, radon_raw, fxtd)
+- `--stdin TEXT`: Read from stdin for specified tool
+- `--log-level LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR)
+
+#### `mq report`
+
+Generate code quality reports.
+
+```bash
+mq report [OPTIONS]
+```
+
+**Options:**
+- `--name TEXT`: Project name (required)
+- `--level LEVEL`: Report level (0=summary, 1=directory, 2=file, 3=detail, d=derived, h=history)
+- `--log-level LEVEL`: Logging level
+
+#### `mq status`
+
+Display project analysis status.
+
+```bash
+mq status [OPTIONS]
+```
+
+**Options:**
+- `--name TEXT`: Project name (optional, shows all if not specified)
+- `--level LEVEL`: Status level (g=grouped, i=individual)
+- `--log-level LEVEL`: Logging level
+
+#### `mq serve`
+
+Start web dashboard server.
+
+```bash
+mq serve [OPTIONS]
+```
+
+**Options:**
+- `--port INT`: Server port (default: 5011)
+- `--browser`: Auto-launch browser
+- `--log-level LEVEL`: Logging level
+
+#### `mq admin clean`
+
+Safe database housekeeping (removes orphaned records).
+
+#### `mq admin clear`
+
+**DESTRUCTIVE**: Completely wipe database.
+
+#### `mq admin delete`
+
+Delete specific project from database.
+
+#### `mq admin trim`
+
+Remove old scan data based on retention policy.
+
+## Web Interface
+
+The web dashboard provides an interactive view of all metrics.
+
+### Features
+
+- **Project Selection**: Dropdown to switch between analyzed projects
+- **Tool Panels**: Dedicated panels for each analysis tool (CLOC, Ruff, Radon, FXTD)
+- **Dynamic Updates**: HTMX-powered updates without page reloads
+- **Charts**: Historical trend visualization using Pygal
+- **Multi-Level Views**: Summary, directory, file, and detail levels
+- **Health Monitoring**: `/health` endpoint for status checks
+
+### Routes
+
+- `/` - Home dashboard with all tool panels
+- `/<tool>` - Detailed view for specific tool
+- `/partials/project-selector` - Dynamic project selection
+- `/partials/analysis-selector` - Dynamic analysis selection
+- `/static/*` - CSS and static assets
+- `/health` - Server health check
+
+## Project Structure
+
+```
+python-code-quality/
+├── src/mq/                     # Main package
+│   ├── __main__.py             # Entry point
+│   ├── constants.py            # Enums and constants
+│   ├── cli/                    # CLI interface
+│   │   ├── ingest.py
+│   │   ├── report.py
+│   │   ├── status.py
+│   │   └── admin/              # Admin commands
+│   ├── setup/                  # Configuration & initialization
+│   │   ├── args_cli.py
+│   │   ├── args_configuration.py
+│   │   ├── args_interactive.py
+│   │   ├── sqlite.py
+│   │   └── tools.py
+│   ├── tools/                  # Analysis tool integrations
+│   │   ├── base.py             # Base classes
+│   │   ├── cloc/
+│   │   ├── ruff/
+│   │   ├── radon/
+│   │   └── fxtd/
+│   ├── web/                    # Web interface
+│   │   ├── serve.py
+│   │   ├── routes.py
+│   │   ├── home.py
+│   │   └── static/
+│   └── utils/                  # Shared utilities
+│       ├── git.py
+│       ├── scoring.py
+│       └── state.py
+├── tests/                      # Test suite
+├── config.yaml                 # Configuration
+├── pyproject.toml              # Project metadata
+└── README.md                   # This file
+```
+
+## Development
+
+### Dependencies
+
+**Core:**
+- peewee >= 3.18.3 (ORM)
+- python-fasthtml >= 0.12.36 (Web framework)
+- pygal >= 3.1.0 (Charts)
+- questionary >= 2.1.1 (Interactive prompts)
+- rich >= 14.2.0 (Terminal formatting)
+
+**Development:**
+- pytest >= 9.0.2 (Testing)
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test file
+pytest tests/test_smoke_cli.py
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage
+pytest --cov=mq
+```
+
+### Adding a New Tool
+
+1. Create tool directory in `src/mq/tools/<tool_name>/`
+2. Implement required modules:
+   - `__init__.py` - Tool configuration
+   - `models.py` - Database models
+   - `ingest.py` - Data ingestion logic
+   - `cli.py` - CLI rendering
+   - `web.py` - Web rendering
+3. Register tool in `src/mq/setup/tools.py`
+4. Add configuration to `config.yaml`
+5. Add tests in `tests/`
+
+### Tool Implementation Pattern
+
+Each tool follows a standard pattern:
+
+```python
+# __init__.py - Tool configuration
+class MyToolConfiguration(AbstractToolConfiguration):
+    tool_name = "mytool"
+    command = "mytool --json {path}"
+    report_levels = [0, 1, 2]  # Supported report levels
+
+# models.py - Data models
+class MyToolResult(BaseResultsModel):
+    # Define fields
+    pass
+
+# ingest.py - Data ingestion
+def ingest(scan: Scan, data: dict) -> None:
+    # Parse and store data
+    pass
+
+# cli.py - CLI rendering
+def render_cli(scan: Scan, level: int) -> None:
+    # Render to terminal
+    pass
+
+# web.py - Web rendering
+def render_web(scan: Scan, level: int) -> FT:
+    # Render to FastHTML
+    pass
+```
+
+### Database Schema
+
+MQ uses Peewee ORM with SQLite3.
+
+**Core Tables:**
+- `project` - Project records
+- `request` - Analysis requests
+- `scan` - Individual tool runs
+
+**Tool-Specific Tables:**
+- `cloc` - Line counting
+- `ruff` - Linting violations
+- `radon_cc` - Cyclomatic complexity
+- `radon_mi` - Maintainability index
+- `radon_hal` - Halstead metrics
+- `radon_hal_function` - Per-function Halstead
+- `radon_raw` - Raw metrics
+- `fxtd` - Annotation tracking
+
+### Poe Tasks
+
+Quick automation tasks defined in `pyproject.toml`:
+
+```bash
+# Deploy (clean, update, push)
+poe deploy
+
+# Run MQ
+poe mq
+
+# Start server
+poe serve
+
+# Report status
+poe status
+
+# Generate report
+poe report
+
+# Database operations
+poe clean
+poe clear
+
+# Open database in litecli
+poe sql
+```
+
+## Grading System
+
+MQ uses a configurable grading system (A-F) with color coding:
+
+- **A** (Green): Excellent
+- **B** (Light Green): Good
+- **C** (Yellow): Acceptable
+- **D** (Orange): Needs Improvement
+- **F** (Red): Poor
+
+Each metric has customizable thresholds in `config.yaml`:
+
+```yaml
+thresholds:
+  - {min: 85, max: 100, grade: "A", color: "#22c55e"}
+  - {min: 70, max: 85, grade: "B", color: "#84cc16"}
+  - {min: 60, max: 70, grade: "C", color: "#eab308"}
+  - {min: 50, max: 60, grade: "D", color: "#f97316"}
+  - {min: 0, max: 50, grade: "F", color: "#ef4444"}
+```
+
+## Report Levels
+
+MQ provides multiple reporting levels for different perspectives:
+
+| Level | Name | Description |
+|-------|------|-------------|
+| 0 | Summary | Project-level overview with overall metrics |
+| 1 | Directory | Directory-level aggregation |
+| 2 | File | File-level detail |
+| 3 | Detail | Deep detailed metrics (function-level where available) |
+| d | Derived | Composite scores, rates of change, trends |
+| h | History | Historical trends with charts |
+
+## Examples
+
+### Typical Workflow
+
+```bash
+# 1. Initial analysis
+mq ingest --name myproject --path ~/projects/myapp
+
+# 2. Check status
+mq status --name myproject
+
+# 3. View summary report
+mq report --name myproject --level 0
+
+# 4. Drill into files with issues
+mq report --name myproject --level 2
+
+# 5. Start web dashboard for exploration
+mq serve --browser
+
+# 6. After code changes, re-analyze
+mq ingest --name myproject --path ~/projects/myapp
+
+# 7. View historical trends
+mq report --name myproject --level h
+```
+
+### Analyzing Git History
+
+```bash
+# Analyze all commits in repository
+mq ingest --name myproject --path ~/projects/myapp
+
+# This will:
+# 1. Detect git repository
+# 2. Get commit history
+# 3. Checkout each commit
+# 4. Run analysis tools
+# 5. Store results with commit metadata
+# 6. Return to original HEAD
+
+# View historical trends
+mq report --name myproject --level h
+```
+
+### Custom Analysis Pipeline
+
+```bash
+# Run only specific tools
+mq ingest --name myproject --path . --analysis ruff
+mq ingest --name myproject --path . --analysis radon_cc
+
+# Pipe custom tool output
+my-custom-tool --json | mq ingest --name myproject --stdin ruff
+```
+
+## Troubleshooting
+
+### Database Issues
+
+```bash
+# Clean up orphaned records
+mq admin clean
+
+# Reset database completely
+mq admin clear
+```
+
+### Tool Not Found
+
+Ensure external tools are installed:
+
+```bash
+# Check if tools are available
+which cloc
+which ruff
+which radon
+
+# Install missing tools
+pip install ruff radon
+# Install cloc via package manager (brew, apt, etc.)
+```
+
+### Permission Issues
+
+Database location: `~/.config/mq/mq.sqlite3`
+
+Ensure write permissions:
+
+```bash
+mkdir -p ~/.config/mq
+chmod 755 ~/.config/mq
+```
+
+## Contributing
+
+This is a proof-of-concept project. Contributions are welcome!
+
+### Areas for Enhancement
+
+- Additional tool integrations (pylint, mypy, bandit, etc.)
+- Export functionality (PDF reports, CSV data)
+- Comparison views (branch comparison, before/after)
+- Alerting and thresholds
+- CI/CD integration
+- Docker containerization
+- Multi-language support
+
+## License
+
+[Add your license here]
+
+## Author
+
+Peter Borocz
+
+## Acknowledgments
+
+Built with:
+- [Peewee](http://docs.peewee-orm.com/) - Simple and expressive ORM
+- [FastHTML](https://fastht.ml/) - Modern Python web framework
+- [Rich](https://rich.readthedocs.io/) - Beautiful terminal output
+- [HTMX](https://htmx.org/) - Dynamic web interactions
+- [Pygal](http://www.pygal.org/) - Elegant SVG charts
+- External tools: CLOC, Ruff, Radon
+
+## Version
+
+0.1.0 (POC)

@@ -1,4 +1,4 @@
-"""CLI report rendering obo 'cloc' tool."""
+"""Report on status of projects, request and scans in db."""
 
 from argparse import Namespace
 from collections import defaultdict

@@ -42,6 +42,7 @@ def render_partial_project_summary(request, s_project_id: str):
     content = get_project_content(request.app.state.args, project)
 
     # Render our grid of results.
+    # TODO: Ultimately would be great to have this dynamically created!
     fh_section = fh.Section(
         fh.Div(
             fh.Div(fh.H3("Raw Metrics")),

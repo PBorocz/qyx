@@ -263,6 +263,8 @@ def _prompt_tool_analysis(message: str) -> str:
     kwargs = dict()
     if last_tool_analysis := state.get("last_tool_analysis"):
         kwargs["default"] = last_tool_analysis
+
+    # TODO: Oooh, would be nice to make this list dynamic!
     choices = [
         Choice(title="-ALL-"                         , value="" ),
         Choice(title="Count lines of code ('cloc')"  , value="cloc"      ),

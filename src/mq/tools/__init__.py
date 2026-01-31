@@ -51,12 +51,11 @@ def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
 
 ################################################################################################
 def split_arg_tool_analysis(arg: str = None) -> tuple[str, str]:
-    """Split the input argument that embeds tool & analysis together.
-
-    ""          -> [None, None]
-    "cloc"      -> ["cloc", None]
-    "radon:raw" -> ["radon", "raw"]
-    """
+    """Split the input argument that embeds tool & analysis together."""
+    # - ""          returns [None, None]
+    # - "cloc"      returns ["cloc", None]
+    # - "radon:raw" returns ["radon", "raw"]
+    # etc.
     if not arg:
         return [None, None]
     if ":" in arg:
