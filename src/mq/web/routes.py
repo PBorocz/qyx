@@ -81,6 +81,7 @@ def register(args, rt):  # noqa: C901
             return ft.Div(f"Unknown tool: {tool}", cls="error")
 
         try:
+            # FIXME: Use what's already in tool_config instead of doing another import_component on every request.
             web_file_module = tool_config.import_component("web")
         except ImportError:
             return ft.Div(f"Couldn't find '{tool}/web.py' file!", cls="error")

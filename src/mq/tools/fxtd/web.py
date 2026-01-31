@@ -59,16 +59,18 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
         return fh.Section()
     project = Project.get(Project.id == int(s_project_id))
     chart = fxtd_h(args, project)
-    return fh.Section(
-        fh.H1("History", style="margin-top: 1rem;"),
-        fh.Div(fh.NotStr(chart.decode("utf-8")), cls="bordered"),
-    )
+    if chart:
+        return fh.Section(
+            fh.H1("History", style="margin-top: 1rem;"),
+            fh.Div(fh.NotStr(chart.decode("utf-8")), cls="bordered"),
+        )
+    return fh.Section()
 
 
 def fxtd_0(args: Namespace, scan: Scan, project: Project = None):
     results = query(args, "0", scan=scan)
     if not results:
-        return None
+        return ()
 
     grand_total = sum([result.count for result in results])
 
@@ -168,7 +170,7 @@ def fxtd_2(args: Namespace, scan: Scan, project: Project = None):
 def fxtd_d(args: Namespace, project: Project, scan: Scan):
     rows, composite = query(args, "d", project=project, scan=scan)
     if not rows or not composite:
-        return None
+        return ()
     t_head = fh.Tr(
         fh.Th("Metric", scope="col", style="text-align: left"),
         fh.Th("Value", scope="col", style="text-align: right"),
@@ -205,9 +207,11 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def fxtd_h(args: Namespace, project: Project, scan: Scan = None):
+def fxtd_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
     # Create Pygal chart
     timestamps, transposed, rocs = query(args, "h", project=project)
+    if not transposed:
+        return None
 
     style = Style(**DEFAULT_CHART_STYLE)
 

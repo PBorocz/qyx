@@ -18,17 +18,6 @@ from mq.setup.tools import setup_tools
 from mq.web.serve import create_app, register
 
 
-# Define your static URLs to test
-STATIC_URLS = [
-    "/",
-    # "/api/health",
-    # "/api/users",
-    # "/api/products",
-    # "/about",
-    # "/contact",
-]
-
-
 def is_port_in_use(port: int) -> bool:
     """Check if a port is already in use."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -51,7 +40,7 @@ def wait_for_server(url: str, timeout: int = 10) -> bool:
 
 
 @pytest.fixture(scope="session")
-def tst_server_args():
+def test_server_args():
     # Base URL for your local web service
     port = 5012
     base_url = f"http://localhost:{port}"
@@ -64,7 +53,7 @@ def tst_server_args():
         return
 
     # Create args for your server
-    args = Namespace(port=port, browser=False, log_level="warning")
+    args = Namespace(port=port, browser=False, log_level="info")
     _, _, configuration = setup_configuration()
     setup_logging(args.log_level)
     setup_tools(args)
@@ -97,6 +86,7 @@ def tst_server_args():
         pytest.fail("Server failed to start within timeout")
     print(f"\n↑ Test server successfully started ({port=})")
 
+    time.sleep(1)
     yield (server, args)
 
     # Cleanup: shutdown server
@@ -104,70 +94,39 @@ def tst_server_args():
     server.should_exit = True
 
 
-def get_test_urls() -> list[str]:
-    """Generate list of URLs to test.
+def test_server(test_server_args, subtests, capsys, base_url="http://localhost:5012"):
+    """Test that each URL returns a valid HTTP status code.
 
-    For now, returns static URLs. Later, you can add database queries here.
+    Since we already have test_smoke_web to test the underlying web renderers, here
+    we only want/need to make sure that routing is working.
     """
-    urls = STATIC_URLS.copy()
-
-    # TODO: Add database-generated URLs here
-    # For example:
-    # user_ids = query_database("SELECT id FROM users LIMIT 10")
-    # urls.extend([f"/api/users/{uid}" for uid in user_ids])
-
-    return urls
-
-
-def tst_server(test_server_args, subtests, capsys, base_url="http://localhost:5012"):
-    """Test that each URL returns a valid HTTP status code."""
-    # FIXME: Refactor this and the one in cli to a single method.
     server, test_args = test_server_args
-    # cases = []
-    # for o_tool in test_args.tools.values():
-    #     render_method = o_tool.render_cli_method
-    #     for analysis, report_level in o_tool.iter_reports("web"):
-    #         for project in Project.select():
-    #             message = f"{o_tool.module_name}:{analysis}:{report_level.value} - ID:{project.id}"
-    #             case = Namespace(
-    #                 message=message,
-    #                 o_tool=o_tool,
-    #                 render_method=render_method,
-    #                 analysis=analysis,
-    #                 level=report_level,
-    #                 project=project,
-    #             )
-    #             cases.append(case)
-    # print(f"{len(cases)=}")
+    # urls = []
+    # for project in Project.select():
+    #     urls.append(f"{base_url}/{project.id}")
+    # urls.append(base_url)
 
-    for project in Project.select():
-        with subtests.test(message=case.message, case=case):
-            full_url = f"{base_url}{url}"
+    urls = []
+    for o_tool in test_args.tools.values():
+        tool = o_tool.module_name
 
-            test_args.name, test_args.level = case.project.name, case.level
+        # Make sure we can get to the "base" display.
+        urls.append(f"{base_url}/{tool}")
 
-            # Run the test...
-            case.render_method(test_args, case.o_tool, case.analysis)
+        # Now, make sure we can display each project as well
+        for project in Project.select():
+            partial = f"partials/set_project/{tool}?project={project.id}"
+            urls.append(f"{base_url}/{partial}")
 
-            # If we got here, no exceptions where raised.
-            # Did the output at least have the project information?
-            captured = capsys.readouterr()
-            assert case.o_tool.module_name.upper() in captured.out
-    return
+    for url in urls:
+        with subtests.test(url):
+            try:
+                with urlopen(url, timeout=30) as response:
+                    status_code = response.getcode()
+                    assert 200 <= status_code < 400, f"Unexpected status from {url}: {status_code}"
 
-    full_url = f"{base_url}{url}"
-    if url == "/":
-        time.sleep(1)
-    try:
-        with urlopen(full_url, timeout=30) as response:
-            status_code = response.getcode()
-            assert status_code < 500, f"Server error at {full_url}: {status_code}"
+            except HTTPError as exc:
+                assert exc.code < 500, f"Server error at {url}: {exc.code}"
 
-    except HTTPError as e:
-        # HTTPError is raised for 4xx and 5xx errors
-        assert e.code < 500, f"Server error at {full_url}: {e.code}"
-        # 4xx errors are generally acceptable for smoke tests
-        # (e.g., 404 for missing resources, 401 for auth required)
-
-    except URLError as e:
-        pytest.fail(f"Connection failed for {full_url}: {str(e.reason)}")
+            except URLError as exc:
+                pytest.fail(f"Connection failed for {url}: {str(exc.reason)}")

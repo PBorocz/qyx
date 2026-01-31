@@ -28,14 +28,12 @@ def test_args():
 def _get_test_cases(test_args):
     cases = []
     for o_tool in test_args.tools.values():
-        # print(f"{o_tool.module_name=}")
         for analysis, report_level in o_tool.iter_reports("web"):
-            # print(f"  {analysis=} {report_level=}")
             for project in Project.select():
-                # print(f"    {project.id=}")
-                name = f"{o_tool.module_name}:{analysis}:{report_level.value} - ID:{project.id}"
+                tool = o_tool.module_name
+                description = f"T:{tool} A:{analysis} L:{report_level.value} P:{project.name} [{project.id}]"
 
-                scan = Scan.get_most_recent(project, o_tool.module_name, analysis)
+                scan = Scan.get_most_recent(project, tool, analysis)
 
                 # Lookup the correct web rendering method. Note, this could from either:
                 # - <tool>/web.py            (e.g. ruff, cloc etc.)
@@ -50,10 +48,10 @@ def _get_test_cases(test_args):
                         web_render_method = getattr(web_render_module, render_method_name)
                     except AttributeError:
                         raise RuntimeError(
-                            f"Sorry, unable to setup test case: {o_tool.module_name} {render_method_name}",
+                            f"Sorry, unable to setup test case: {tool} {render_method_name}",
                         )
                 case = Namespace(
-                    name=name,
+                    description=description,
                     project=project,
                     scan=scan,
                     web_render_method=web_render_method,
@@ -65,7 +63,7 @@ def _get_test_cases(test_args):
 def test_web_rendering_methods(test_args, subtests):
     """Test that each URL returns a valid HTTP status code."""
     for case in _get_test_cases(test_args):
-        with subtests.test(name=case.name):
+        with subtests.test(case.description):
             # Run the test (running without error is our primary test!!)
             result = case.web_render_method(test_args, project=case.project, scan=case.scan)
 
@@ -87,8 +85,7 @@ def test_web_rendering_methods(test_args, subtests):
                     for component in components:
                         assert hasattr(component, "__ft__") or hasattr(component, "to_xml")
                 case tuple():  # Empty tuple
-                    pytest.fail("Empty tuple returned")
+                    pass
                 case _:
                     breakpoint()
-
                     pytest.fail(f"Unexpected return type: {type(result)}")

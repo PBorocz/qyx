@@ -22,9 +22,9 @@ mq = "mq.__main__:main"
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-#-----------------------------------------------------------------------------------------------
-# Tool configurations
-#-----------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+# Test support
+#-------------------------------------------------------------------------------
 [tool.pytest.ini_options]
 filterwarnings = [
     "ignore::DeprecationWarning:pygal.graph.time",
@@ -71,7 +71,6 @@ help = "Report current status"
 # poe mq ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
 #-------------------------------------------------------------------------------
 
-
 [tool.poe.tasks.report]
 cmd = """uv run mq report"""
 help = "Display summary report across all modules."
@@ -108,74 +107,6 @@ help = "Clear the database entirely(!) 🔥 HIGH RISK 🔥"
 [tool.poe.tasks.sql]
 cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""
 help = "Run the litecli command against our persistent store."
-
-#-------------------------------------------------------------------------------
-# Tests
-#-------------------------------------------------------------------------------
-[tool.poe.tasks.test_suite_reports]
-shell = """
-  set -e
-  uv run mq status --name python-code-quality
-  uv run mq status --name python-code-quality --level 1
-
-  uv run mq report --name python-code-quality --analysis cloc
-  uv run mq report --name python-code-quality --analysis cloc --level 0
-  uv run mq report --name python-code-quality --analysis cloc --level 1
-  uv run mq report --name python-code-quality --analysis cloc --level 2
-  uv run mq report --name python-code-quality --analysis cloc --level d
-  uv run mq report --name python-code-quality --analysis cloc --level h
-
-  uv run mq report --name python-code-quality --analysis fxtd
-  uv run mq report --name python-code-quality --analysis fxtd --level 0
-  uv run mq report --name python-code-quality --analysis fxtd --level 1
-  uv run mq report --name python-code-quality --analysis fxtd --level 2
-  uv run mq report --name python-code-quality --analysis fxtd --level d
-  uv run mq report --name python-code-quality --analysis fxtd --level h
-
-  uv run mq report --name python-code-quality --analysis ruff
-  uv run mq report --name python-code-quality --analysis ruff --level 0
-  uv run mq report --name python-code-quality --analysis ruff --level 1
-  uv run mq report --name python-code-quality --analysis ruff --level 2
-  uv run mq report --name python-code-quality --analysis ruff --level d
-  uv run mq report --name python-code-quality --analysis ruff --level h
-
-  uv run mq report --name python-code-quality --analysis radon
-  uv run mq report --name python-code-quality --analysis radon --level 0
-  uv run mq report --name python-code-quality --analysis radon --level 1
-  uv run mq report --name python-code-quality --analysis radon --level 2
-  uv run mq report --name python-code-quality --analysis radon --level d
-  uv run mq report --name python-code-quality --analysis radon --level h
-
-  uv run mq report --name python-code-quality --analysis radon:mi
-  uv run mq report --name python-code-quality --analysis radon:mi --level 0
-  uv run mq report --name python-code-quality --analysis radon:mi --level 1
-  uv run mq report --name python-code-quality --analysis radon:mi --level 2
-  uv run mq report --name python-code-quality --analysis radon:mi --level d
-  uv run mq report --name python-code-quality --analysis radon:mi --level h
-
-  uv run mq report --name python-code-quality --analysis radon:raw
-  uv run mq report --name python-code-quality --analysis radon:raw --level 0
-  uv run mq report --name python-code-quality --analysis radon:raw --level 1
-  uv run mq report --name python-code-quality --analysis radon:raw --level 2
-  uv run mq report --name python-code-quality --analysis radon:raw --level h
-
-  uv run mq report --name python-code-quality --analysis radon:cc
-  uv run mq report --name python-code-quality --analysis radon:cc --level 0
-  uv run mq report --name python-code-quality --analysis radon:cc --level 1
-  uv run mq report --name python-code-quality --analysis radon:cc --level 2
-  uv run mq report --name python-code-quality --analysis radon:cc --level 3
-  uv run mq report --name python-code-quality --analysis radon:cc --level d
-  uv run mq report --name python-code-quality --analysis radon:cc --level h
-
-  uv run mq report --name python-code-quality --analysis radon:hal
-  uv run mq report --name python-code-quality --analysis radon:hal --level 0
-  uv run mq report --name python-code-quality --analysis radon:hal --level 1
-  uv run mq report --name python-code-quality --analysis radon:hal --level 2
-  uv run mq report --name python-code-quality --analysis radon:hal --level 3
-  uv run mq report --name python-code-quality --analysis radon:hal --level d
-  uv run mq report --name python-code-quality --analysis radon:hal --level h
-"""
-help = "Run reporting smoke test suite"
 
 [dependency-groups]
 dev = [

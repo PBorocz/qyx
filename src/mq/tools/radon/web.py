@@ -122,6 +122,8 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
     """Render History portion of the page."""
     if not s_project_id:
         return fh.Section()
+    if not analysis:
+        return fh.Section(fh.P("Sorry, no analysis selected yet"))
 
     project = Project.get(Project.id == int(s_project_id))
 
@@ -145,7 +147,7 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
         return fh.Section(
             fh.H1("History", style="margin-top: 1rem;"),
             fh.Div(
-                fh.NotStr(chart.render().decode("utf-8")),
+                fh.NotStr(chart.decode("utf-8")),
                 cls="bordered",
             ),
         )
@@ -186,7 +188,7 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
     for metric, chart in charts.items():
         fh_sections.append(
             fh.Div(
-                fh.NotStr(chart.render().decode("utf-8")),
+                fh.NotStr(chart.decode("utf-8")),
                 id=f"metric-{metric}",
                 style=f"display: {'block' if metric == 'bugs' else 'none'};",
             ),

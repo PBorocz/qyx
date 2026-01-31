@@ -13,9 +13,9 @@ def test_parse_path_arg():
     ]
 
     for test in test_cases:
+        # print()
+        # print(f"Input: {test}")
+        # print(f"  Normalised : {normalised}")
+        # print(f"  Name       : {name}")
+        # print(f"  Is Git?    : {is_git}")
         normalised, name, is_git = parse_path_arg(test)
-        print()
-        print(f"Input: {test}")
-        print(f"  Normalised : {normalised}")
-        print(f"  Name       : {name}")
-        print(f"  Is Git?    : {is_git}")

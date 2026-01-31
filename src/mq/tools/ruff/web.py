@@ -154,7 +154,7 @@ def ruff_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ruff metrics."""
     row = query(args, "d", project=project, scan=scan)
     if not row.violations_per_kloc:
-        return None
+        return ()
     return (
         fh.Table(
             fh.Thead(

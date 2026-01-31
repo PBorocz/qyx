@@ -5,7 +5,7 @@ from argparse import Namespace
 import pytest
 
 from mq.cli.status import status
-from mq.constants import ReportLevel, StatusLevel
+from mq.constants import StatusLevel
 from mq.setup.args_configuration import setup_configuration
 from mq.setup.logging import setup_logging
 from mq.setup.sqlite import setup_sqlite
