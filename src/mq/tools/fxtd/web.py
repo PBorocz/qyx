@@ -65,10 +65,10 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
     )
 
 
-def fxtd_0(args: Namespace, scan: Scan, **kwargs):
+def fxtd_0(args: Namespace, scan: Scan, project: Project = None):
     results = query(args, "0", scan=scan)
     if not results:
-        return ""
+        return None
 
     grand_total = sum([result.count for result in results])
 
@@ -101,7 +101,7 @@ def fxtd_0(args: Namespace, scan: Scan, **kwargs):
     )
 
 
-def fxtd_1(args: Namespace, scan: Scan):
+def fxtd_1(args: Namespace, scan: Scan, project: Project = None):
     results = query(args, "1", scan=scan)
     grand_total = sum([result.count for result in results])
 
@@ -137,7 +137,7 @@ def fxtd_1(args: Namespace, scan: Scan):
     )
 
 
-def fxtd_2(args: Namespace, scan: Scan):
+def fxtd_2(args: Namespace, scan: Scan, project: Project = None):
     rows = query(args, "2", scan=scan)
 
     t_head = fh.Tr(
@@ -168,7 +168,7 @@ def fxtd_2(args: Namespace, scan: Scan):
 def fxtd_d(args: Namespace, project: Project, scan: Scan):
     rows, composite = query(args, "d", project=project, scan=scan)
     if not rows or not composite:
-        return ""
+        return None
     t_head = fh.Tr(
         fh.Th("Metric", scope="col", style="text-align: left"),
         fh.Th("Value", scope="col", style="text-align: right"),
@@ -205,7 +205,7 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def fxtd_h(args: Namespace, project: Project):
+def fxtd_h(args: Namespace, project: Project, scan: Scan = None):
     # Create Pygal chart
     timestamps, transposed, rocs = query(args, "h", project=project)
 

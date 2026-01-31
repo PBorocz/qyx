@@ -12,7 +12,7 @@ from mq.tools.radon.models import RadonHal, query_hal
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def hal_0(args: Namespace, scan: Scan, **kwargs):
+def hal_0(args: Namespace, scan: Scan, project: Project = None):
     row = query_hal(args, "0", scan=scan)
 
     # fmt: off
@@ -40,7 +40,7 @@ def hal_0(args: Namespace, scan: Scan, **kwargs):
     )
 
 
-def hal_1(args: Namespace, scan: Scan):
+def hal_1(args: Namespace, scan: Scan, project: Project = None):
     rows, mean_means = query_hal(args, "1", scan)
 
     t_tr = [fh.Th("Metric", scope="col", style="text-align: left")]
@@ -65,7 +65,7 @@ def hal_1(args: Namespace, scan: Scan):
     )
 
 
-def hal_2(args: Namespace, scan: Scan):
+def hal_2(args: Namespace, scan: Scan, project: Project = None):
     rows, _ = query_hal(args, "2", scan)
 
     t_tr = [fh.Th("File", scope="col", style="text-align: left")]
@@ -94,7 +94,7 @@ def hal_2(args: Namespace, scan: Scan):
     )
 
 
-def hal_3(args: Namespace, scan: Scan):
+def hal_3(args: Namespace, scan: Scan, project: Project = None):
     rows, _ = query_hal(args, "3", scan)
 
     t_tr = [
@@ -181,7 +181,7 @@ def hal_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def hal_h(args: Namespace, project: Project):
+def hal_h(args: Namespace, project: Project, scan: Scan = None):
     timestamps, transposed, _ = query_hal(args, "h", project=project, last=None)
 
     style = Style(**DEFAULT_CHART_STYLE)
@@ -203,6 +203,6 @@ def hal_h(args: Namespace, project: Project):
             x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
         )
         chart.add(metric, dt_values)
-        charts[metric] = chart
+        charts[metric] = chart.render()
 
     return charts

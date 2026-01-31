@@ -10,6 +10,7 @@ from urllib.request import urlopen
 import pytest
 import uvicorn
 
+from mq.tools.base import Project
 from mq.setup.args_configuration import setup_configuration
 from mq.setup.logging import setup_logging
 from mq.setup.sqlite import setup_sqlite
@@ -50,10 +51,10 @@ def wait_for_server(url: str, timeout: int = 10) -> bool:
 
 
 @pytest.fixture(scope="session")
-def test_server():
+def tst_server_args():
     # Base URL for your local web service
     port = 5012
-    base_url = "http://localhost:5012"
+    base_url = f"http://localhost:{port}"
 
     """Start the web server before tests and stop it after."""
     # Check if server is already running
@@ -94,12 +95,12 @@ def test_server():
     health_url = f"{base_url}/health"
     if not wait_for_server(health_url, timeout=20):
         pytest.fail("Server failed to start within timeout")
-    print(f"\n↑ Test server successfully started on {port=}")
+    print(f"\n↑ Test server successfully started ({port=})")
 
-    yield server
+    yield (server, args)
 
     # Cleanup: shutdown server
-    print(f"\n↓ Test server shut down from {port=}")
+    print(f"\n↓ Test server shut down ({port=})")
     server.should_exit = True
 
 
@@ -118,9 +119,42 @@ def get_test_urls() -> list[str]:
     return urls
 
 
-@pytest.mark.parametrize("url", get_test_urls())
-def test_url(test_server, url, base_url="http://localhost:5012"):
+def tst_server(test_server_args, subtests, capsys, base_url="http://localhost:5012"):
     """Test that each URL returns a valid HTTP status code."""
+    # FIXME: Refactor this and the one in cli to a single method.
+    server, test_args = test_server_args
+    # cases = []
+    # for o_tool in test_args.tools.values():
+    #     render_method = o_tool.render_cli_method
+    #     for analysis, report_level in o_tool.iter_reports("web"):
+    #         for project in Project.select():
+    #             message = f"{o_tool.module_name}:{analysis}:{report_level.value} - ID:{project.id}"
+    #             case = Namespace(
+    #                 message=message,
+    #                 o_tool=o_tool,
+    #                 render_method=render_method,
+    #                 analysis=analysis,
+    #                 level=report_level,
+    #                 project=project,
+    #             )
+    #             cases.append(case)
+    # print(f"{len(cases)=}")
+
+    for project in Project.select():
+        with subtests.test(message=case.message, case=case):
+            full_url = f"{base_url}{url}"
+
+            test_args.name, test_args.level = case.project.name, case.level
+
+            # Run the test...
+            case.render_method(test_args, case.o_tool, case.analysis)
+
+            # If we got here, no exceptions where raised.
+            # Did the output at least have the project information?
+            captured = capsys.readouterr()
+            assert case.o_tool.module_name.upper() in captured.out
+    return
+
     full_url = f"{base_url}{url}"
     if url == "/":
         time.sleep(1)

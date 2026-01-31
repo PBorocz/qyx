@@ -12,7 +12,7 @@ from mq.tools.radon.models import query_cc
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def cc_0(args: Namespace, scan: Scan, **kwargs):
+def cc_0(args: Namespace, scan: Scan, project: Project = None):
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     rows = query_cc(args, "0", scan=scan)
 
@@ -42,7 +42,7 @@ def cc_0(args: Namespace, scan: Scan, **kwargs):
     )
 
 
-def cc_1(args: Namespace, scan: Scan):
+def cc_1(args: Namespace, scan: Scan, project: Project = None):
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     rows = query_cc(args, "1", scan=scan)
 
@@ -78,7 +78,7 @@ def cc_1(args: Namespace, scan: Scan):
     )
 
 
-def cc_2(args: Namespace, scan: Scan):
+def cc_2(args: Namespace, scan: Scan, project: Project = None):
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     rows = query_cc(args, "2", scan=scan)
 
@@ -116,7 +116,7 @@ def cc_2(args: Namespace, scan: Scan):
     )
 
 
-def cc_3(args: Namespace, scan: Scan):
+def cc_3(args: Namespace, scan: Scan, project: Project = None):
     rows = query_cc(args, "3", scan=scan)
 
     # fmt: off
@@ -184,7 +184,7 @@ def cc_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def cc_h(args: Namespace, project: Project):
+def cc_h(args: Namespace, project: Project, scan: Scan = None):
     """Create Pygal chart."""
     timestamps, transposed, roc = query_cc(args, "h", project=project, last=None)
 
@@ -212,4 +212,4 @@ def cc_h(args: Namespace, project: Project):
         datetime_values = [(datetime.fromisoformat(ts_), value) for ts_, value in values_by_timestamp.items()]
         chart.add(display, datetime_values)
 
-    return chart
+    return chart.render()

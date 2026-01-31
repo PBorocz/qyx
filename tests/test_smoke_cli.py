@@ -24,7 +24,7 @@ def test_args():
     yield args
 
 
-def tst_status(test_args, subtests, capsys):
+def test_status(test_args, subtests, capsys):
     cases = []
     for project in Project.select():
         for level in StatusLevel:
@@ -44,7 +44,7 @@ def tst_status(test_args, subtests, capsys):
             assert project_name in captured.out
 
 
-def test_cloc(test_args, subtests, capsys):
+def test_cli_rendering_methods(test_args, subtests, capsys):
     cases = []
     for o_tool in test_args.tools.values():
         render_method = o_tool.render_cli_method

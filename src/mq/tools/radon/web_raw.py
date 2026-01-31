@@ -12,7 +12,7 @@ from mq.tools.radon.models import query_raw
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def raw_0(args: Namespace, scan: Scan, **kwargs):
+def raw_0(args: Namespace, scan: Scan, project: Project = None):
     row = query_raw(args, "0", scan=scan)
 
     t_head = fh.Tr(
@@ -84,7 +84,7 @@ def raw_0(args: Namespace, scan: Scan, **kwargs):
     )
 
 
-def raw_1(args: Namespace, scan: Scan):
+def raw_1(args: Namespace, scan: Scan, project: Project = None):
     rows, totals = query_raw(args, "1", scan)
 
     # fmt: off
@@ -123,7 +123,7 @@ def raw_1(args: Namespace, scan: Scan):
     )
 
 
-def raw_2(args: Namespace, scan: Scan):
+def raw_2(args: Namespace, scan: Scan, project: Project = None):
     rows = query_raw(args, "2", scan)
 
     # fmt: off
@@ -164,7 +164,7 @@ def raw_2(args: Namespace, scan: Scan):
     )
 
 
-def raw_h(args: Namespace, project: Project):
+def raw_h(args: Namespace, project: Project, scan: Scan = None):
     """Create Pygal chart."""
     timestamps, transposed, rocs, roc_gt = query_raw(args, "h", project=project, last=None)
 
@@ -187,4 +187,4 @@ def raw_h(args: Namespace, project: Project):
         datetime_values = [(datetime.fromisoformat(timestamp), value) for timestamp, value in dt_rows.items()]
         chart.add(metric.upper(), datetime_values)
 
-    return chart
+    return chart.render()

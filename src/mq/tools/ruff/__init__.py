@@ -17,14 +17,13 @@ class Configuration(ToolConfig):
 
     def __init__(self):
         """..."""
-        # fmt: off
         cli = dict(
-            ruff = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            ruff=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
         )
         web = dict(
-            ruff = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            ruff=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
         )
-        # fmt: on
+
         super(Configuration, self).__init__(
             module_name="ruff",
             models=dict(ruff=Ruff),

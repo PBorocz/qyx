@@ -12,7 +12,7 @@ from mq.tools.radon.models import query_mi
 from mq.web import DEFAULT_CHART_STYLE
 
 
-def mi_0(args: Namespace, scan: Scan, **kwargs):
+def mi_0(args: Namespace, scan: Scan, project: Project = None):
     row = query_mi(args, "0", scan=scan)
 
     # fmt: off
@@ -31,7 +31,7 @@ def mi_0(args: Namespace, scan: Scan, **kwargs):
     )
 
 
-def mi_1(args: Namespace, scan: Scan):
+def mi_1(args: Namespace, scan: Scan, project: Project = None):
     rows, _, _, _ = query_mi(args, "1", scan)
 
     # fmt: off
@@ -59,7 +59,7 @@ def mi_1(args: Namespace, scan: Scan):
     )
 
 
-def mi_2(args: Namespace, scan: Scan):
+def mi_2(args: Namespace, scan: Scan, project: Project = None):
     rows, _, _ = query_mi(args, "2", scan)
 
     # fmt: off
@@ -116,7 +116,7 @@ def mi_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def mi_h(args: Namespace, project: Project):
+def mi_h(args: Namespace, project: Project, scan: Scan = None):
     """Create Pygal chart."""
     timestamps, transposed, roc = query_mi(args, "h", project=project, last=None)
 
@@ -138,4 +138,4 @@ def mi_h(args: Namespace, project: Project):
     datetime_values = [(datetime.fromisoformat(timestamp), value) for timestamp, value in dt_complexity.items()]
     chart.add("-", datetime_values)
 
-    return chart
+    return chart.render()

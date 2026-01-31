@@ -85,7 +85,7 @@ def ruff_0(args: Namespace, scan: Scan, **kwargs):
     )
 
 
-def ruff_1(args: Namespace, scan: Scan):
+def ruff_1(args: Namespace, scan: Scan, project: Project = None):
     summary = query(args, "0", scan=scan)
     results = query(args, "1", scan=scan)
 
@@ -122,7 +122,7 @@ def ruff_1(args: Namespace, scan: Scan):
     )
 
 
-def ruff_2(args: Namespace, scan: Scan):
+def ruff_2(args: Namespace, scan: Scan, project: Project = None):
     rows = query(args, "2", scan=scan)
 
     t_head = fh.Tr(
@@ -154,7 +154,7 @@ def ruff_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ruff metrics."""
     row = query(args, "d", project=project, scan=scan)
     if not row.violations_per_kloc:
-        return ""
+        return None
     return (
         fh.Table(
             fh.Thead(
@@ -190,7 +190,7 @@ def ruff_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def ruff_h(args: Namespace, project: Project):
+def ruff_h(args: Namespace, project: Project, scan: Scan = None):
     # Create Pygal chart
     _, rows, _ = query(args, "h", project=project)
 

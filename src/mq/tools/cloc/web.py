@@ -74,10 +74,10 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
     )
 
 
-def cloc_0(args: Namespace, scan: Scan, **kwargs):
+def cloc_0(args: Namespace, scan: Scan, project: Project = None):
     results = query(args, "0", scan=scan)
     if not results.lines_total:
-        return ""
+        return None
     return (
         fh.Table(
             fh.Thead(
@@ -134,7 +134,7 @@ def cloc_0(args: Namespace, scan: Scan, **kwargs):
     )
 
 
-def cloc_1(args: Namespace, scan: Scan):
+def cloc_1(args: Namespace, scan: Scan, project: Project = None):
     grand_total = query(args, "0", scan=scan)
     detail_rows = query(args, "1", scan=scan)
 
@@ -176,7 +176,7 @@ def cloc_1(args: Namespace, scan: Scan):
     )
 
 
-def cloc_2(args: Namespace, scan: Scan):
+def cloc_2(args: Namespace, scan: Scan, project: Project = None):
     results, column_totals, grand_total = query(args, "2", scan=scan)
 
     t_head = fh.Tr(
@@ -268,7 +268,7 @@ def cloc_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def cloc_f(args: Namespace, scan: Scan):
+def cloc_f(args: Namespace, scan: Scan, project: Project = None):
     # Get bucket definitions from configuration for coloring
     buckets = get_nested_config(args.config, "tools.cloc.histogram_file_size.buckets")
 
@@ -302,7 +302,7 @@ def cloc_f(args: Namespace, scan: Scan):
     return chart.render()
 
 
-def cloc_h(args: Namespace, project: Project):
+def cloc_h(args: Namespace, project: Project, scan: Scan = None):
     # Create Pygal chart
     _, rows, _, _, _, _ = query(args, "h", project=project)
 

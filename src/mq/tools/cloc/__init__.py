@@ -10,14 +10,12 @@ class Configuration(ToolConfig):
 
     def __init__(self):
         """..."""
-        # fmt: off
         cli = dict(
-            cloc = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            cloc=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
         )
         web = dict(
-            cloc = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            cloc=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
         )
-        # fmt: on
 
         super(Configuration, self).__init__(
             module_name="cloc",
