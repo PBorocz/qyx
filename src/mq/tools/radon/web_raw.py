@@ -7,13 +7,14 @@ from fasthtml import common as fh
 from pygal import DateTimeLine
 from pygal.style import Style
 
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_raw
 from mq.web import DEFAULT_CHART_STYLE
 
 
 def raw_0(args: Namespace, scan: Scan, project: Project = None):
-    row = query_raw(args, "0", scan=scan)
+    row = query_raw(args, ReportLevel.SUMMARY, scan=scan)
 
     t_head = fh.Tr(
         fh.Th(
@@ -85,7 +86,7 @@ def raw_0(args: Namespace, scan: Scan, project: Project = None):
 
 
 def raw_1(args: Namespace, scan: Scan, project: Project = None):
-    rows, totals = query_raw(args, "1", scan)
+    rows, totals = query_raw(args, ReportLevel.DIRECTORY, scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -124,7 +125,7 @@ def raw_1(args: Namespace, scan: Scan, project: Project = None):
 
 
 def raw_2(args: Namespace, scan: Scan, project: Project = None):
-    rows = query_raw(args, "2", scan)
+    rows = query_raw(args, ReportLevel.FILE, scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -166,7 +167,7 @@ def raw_2(args: Namespace, scan: Scan, project: Project = None):
 
 def raw_h(args: Namespace, project: Project, scan: Scan = None):
     """Create Pygal chart."""
-    timestamps, transposed, rocs, roc_gt = query_raw(args, "h", project=project, last=None)
+    timestamps, transposed, rocs, roc_gt = query_raw(args, ReportLevel.HISTORY, project=project, last=None)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

@@ -7,13 +7,14 @@ from fasthtml import common as fh
 from pygal import DateTimeLine
 from pygal.style import Style
 
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import RadonHal, query_hal
 from mq.web import DEFAULT_CHART_STYLE
 
 
 def hal_0(args: Namespace, scan: Scan, project: Project = None):
-    row = query_hal(args, "0", scan=scan)
+    row = query_hal(args, ReportLevel.SUMMARY, scan=scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -41,7 +42,7 @@ def hal_0(args: Namespace, scan: Scan, project: Project = None):
 
 
 def hal_1(args: Namespace, scan: Scan, project: Project = None):
-    rows, mean_means = query_hal(args, "1", scan)
+    rows, mean_means = query_hal(args, ReportLevel.DIRECTORY, scan)
 
     t_tr = [fh.Th("Metric", scope="col", style="text-align: left")]
     for attr in RadonHal.attrs():
@@ -66,7 +67,7 @@ def hal_1(args: Namespace, scan: Scan, project: Project = None):
 
 
 def hal_2(args: Namespace, scan: Scan, project: Project = None):
-    rows, _ = query_hal(args, "2", scan)
+    rows, _ = query_hal(args, ReportLevel.FILE, scan)
 
     t_tr = [fh.Th("File", scope="col", style="text-align: left")]
     for attr in RadonHal.attrs():
@@ -95,7 +96,7 @@ def hal_2(args: Namespace, scan: Scan, project: Project = None):
 
 
 def hal_3(args: Namespace, scan: Scan, project: Project = None):
-    rows, _ = query_hal(args, "3", scan)
+    rows, _ = query_hal(args, ReportLevel.DETAIL, scan)
 
     t_tr = [
         fh.Th("File", scope="col", style="text-align: left"),
@@ -130,7 +131,7 @@ def hal_3(args: Namespace, scan: Scan, project: Project = None):
 
 
 def hal_d(args: Namespace, project: Project, scan: Scan):
-    row = query_hal(args, "d", project=project, scan=scan)
+    row = query_hal(args, ReportLevel.DERIVED, project=project, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Metric", scope="col", style="text-align: left"),
@@ -182,7 +183,7 @@ def hal_d(args: Namespace, project: Project, scan: Scan):
 
 
 def hal_h(args: Namespace, project: Project, scan: Scan = None):
-    timestamps, transposed, _ = query_hal(args, "h", project=project, last=None)
+    timestamps, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

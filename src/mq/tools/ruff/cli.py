@@ -4,6 +4,7 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.ruff import COLORS, get_ruff_rule_name
 from mq.tools.ruff.models import query
@@ -27,22 +28,22 @@ def render(args: Namespace, o_tool, analysis: str) -> None:
 
     log.debug(f"{scan=}")
     match args.level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             ruff_0(args, scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             ruff_1(args, scan)
-        case "2":
+        case ReportLevel.FILE:
             ruff_2(args, scan)
-        case "d":
+        case ReportLevel.DERIVED:
             ruff_d(args, project, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             ruff_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'mq report --help' for valid options.")
 
 
 def ruff_0(args: Namespace, scan: Scan) -> None:
-    row = query(args, "0", scan=scan)
+    row = query(args, ReportLevel.SUMMARY, scan=scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -51,8 +52,8 @@ def ruff_0(args: Namespace, scan: Scan) -> None:
 
 
 def ruff_1(args: Namespace, scan: Scan) -> None:
-    summary = query(args, "0", scan=scan)
-    results = query(args, "1", scan=scan)
+    summary = query(args, ReportLevel.SUMMARY, scan=scan)
+    results = query(args, ReportLevel.DIRECTORY, scan=scan)
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
@@ -65,7 +66,7 @@ def ruff_1(args: Namespace, scan: Scan) -> None:
 
 
 def ruff_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, "2", scan=scan)
+    rows = query(args, ReportLevel.FILE, scan=scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule")
     table.add_column("File [line]")
@@ -76,7 +77,7 @@ def ruff_2(args: Namespace, scan: Scan) -> None:
 
 
 def ruff_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query(args, "d", project=project, scan=scan)
+    row = query(args, ReportLevel.DERIVED, project=project, scan=scan)
 
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")
@@ -97,10 +98,10 @@ def ruff_d(args: Namespace, project: Project, scan: Scan) -> None:
     cli_console.print(table)
 
 
-# History at the "0" level...
+# History at the ReportLevel.SUMMARY level...
 def ruff_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, rows, roc = query(args, "h", project=project, last=5)
+    timestamps, rows, roc = query(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -136,8 +137,8 @@ def ruff_h(args: Namespace, project: Project) -> None:
 # Still used??
 #
 # def _report_history(project: Project) -> None:
-#     """Report on the history of scans "across" at the "1" level."""
-#     rows, messages, transposed, grand_totals = query(args, "h", project=project, last=5)
+#     """Report on the history of scans "across" at the ReportLevel.DIRECTORY level."""
+#     rows, messages, transposed, grand_totals = query(args, ReportLevel.HISTORY, project=project, last=5)
 #     ################################################################################################
 #     # Render the table
 #     ################################################################################################

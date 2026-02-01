@@ -7,6 +7,7 @@ from fasthtml import common as fh
 from pygal import DateTimeLine
 from pygal.style import Style
 
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.ruff import get_ruff_rule_name
 from mq.tools.ruff.models import query
@@ -67,12 +68,12 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
 
 
 def ruff_0(args: Namespace, scan: Scan, **kwargs):
-    row = query(args, "0", scan=scan)
+    row = query(args, ReportLevel.SUMMARY, scan=scan)
     return (
         fh.Table(
             fh.Thead(
                 fh.Tr(
-                    fh.Th("Ruff", style="text-align: left", colspan="2"),
+                    fh.Th("Ruff", style="text-align: left", colspan=ReportLevel.FILE),
                 ),
             ),
             fh.Tbody(
@@ -86,8 +87,8 @@ def ruff_0(args: Namespace, scan: Scan, **kwargs):
 
 
 def ruff_1(args: Namespace, scan: Scan, project: Project = None):
-    summary = query(args, "0", scan=scan)
-    results = query(args, "1", scan=scan)
+    summary = query(args, ReportLevel.SUMMARY, scan=scan)
+    results = query(args, ReportLevel.DIRECTORY, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Rule", scope="col", style="text-align: left"),
@@ -123,7 +124,7 @@ def ruff_1(args: Namespace, scan: Scan, project: Project = None):
 
 
 def ruff_2(args: Namespace, scan: Scan, project: Project = None):
-    rows = query(args, "2", scan=scan)
+    rows = query(args, ReportLevel.FILE, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Rule", scope="col", style="text-align: left"),
@@ -152,7 +153,7 @@ def ruff_2(args: Namespace, scan: Scan, project: Project = None):
 
 def ruff_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ruff metrics."""
-    row = query(args, "d", project=project, scan=scan)
+    row = query(args, ReportLevel.DERIVED, project=project, scan=scan)
     if not row.violations_per_kloc:
         return ()
     return (
@@ -192,7 +193,7 @@ def ruff_d(args: Namespace, project: Project, scan: Scan):
 
 def ruff_h(args: Namespace, project: Project, scan: Scan = None):
     # Create Pygal chart
-    _, rows, _ = query(args, "h", project=project)
+    _, rows, _ = query(args, ReportLevel.HISTORY, project=project)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

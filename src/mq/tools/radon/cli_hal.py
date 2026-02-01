@@ -4,6 +4,7 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon import COLORS
 from mq.tools.radon.models import query_hal, RadonHal
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def hal_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    row = query_hal(args, "0", scan)
+    row = query_hal(args, ReportLevel.SUMMARY, scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     table.add_column("Metric")
     table.add_column("Value", justify="right")
@@ -23,7 +24,7 @@ def hal_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def hal_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, mean_means = query_hal(args, "1", scan)
+    rows, mean_means = query_hal(args, ReportLevel.DIRECTORY, scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="Mean")
     for attr in RadonHal.attrs():
@@ -37,7 +38,7 @@ def hal_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def hal_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, means = query_hal(args, "2", scan)
+    rows, means = query_hal(args, ReportLevel.FILE, scan)
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
@@ -56,7 +57,7 @@ def hal_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def hal_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, means = query_hal(args, "3", scan)
+    rows, means = query_hal(args, ReportLevel.DETAIL, scan)
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
@@ -76,7 +77,7 @@ def hal_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def hal_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    row = query_hal(args, "d", project=project, scan=scan)
+    row = query_hal(args, ReportLevel.DERIVED, project=project, scan=scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     # fmt: off
     table.add_column("Metric" , justify="left")
@@ -91,7 +92,7 @@ def hal_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, rocs = query_hal(args, "h", project=project, last=5)
+    timestamps, transposed, rocs = query_hal(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-HAL Results Over Time")
     table.add_column("Metric", justify="left")

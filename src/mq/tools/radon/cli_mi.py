@@ -4,6 +4,7 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon import COLORS
 from mq.tools.radon.models import query_mi
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def mi_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    row = query_mi(args, "0", scan)
+    row = query_mi(args, ReportLevel.SUMMARY, scan)
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -25,7 +26,7 @@ def mi_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def mi_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, mean_mi_mean, mean_mi_mean_footer, show_footer = query_mi(args, "1", scan)
+    rows, mean_mi_mean, mean_mi_mean_footer, show_footer = query_mi(args, ReportLevel.DIRECTORY, scan)
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
@@ -39,7 +40,7 @@ def mi_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def mi_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, avg_footer, show_footer = query_mi(args, "2", scan)
+    rows, avg_footer, show_footer = query_mi(args, ReportLevel.FILE, scan)
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Directory", justify="left", footer="Composite Maintainability")
@@ -57,7 +58,7 @@ def mi_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def mi_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    row = query_mi(args, "d", project=project, scan=scan)
+    row = query_mi(args, ReportLevel.DERIVED, project=project, scan=scan)
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")
     table.add_column("Value", justify="right")
@@ -71,7 +72,7 @@ def mi_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_mi(args, "h", project=project, last=5)
+    timestamps, transposed, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-MI Results Over Time")
     table.add_column("Metric")

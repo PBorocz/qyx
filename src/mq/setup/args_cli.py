@@ -4,6 +4,7 @@ import argparse
 
 from rich_argparse import RichHelpFormatter
 
+from mq.constants import ReportLevel
 from mq.setup.args_configuration import setup_configuration
 
 
@@ -49,7 +50,7 @@ def get_args_command_line():
         "-l",
         "--level",
         help="Level to report on, e.g. 0 (summary), 1 (usually directory) or 2 (usually file).",
-        default=defaults.get("level", "0"),
+        default=defaults.get("level", ReportLevel.SUMMARY),
     )
     parser_status.add_argument(
         "-n",
@@ -116,7 +117,7 @@ def get_args_command_line():
         "-l",
         "--level",
         help="Level to report on, e.g. 0 (summary), 1 (directory), 2 (file), d (derived) or h (history).",
-        default=defaults.get("level", "0"),
+        default=defaults.get("level", ReportLevel.SUMMARY),
     )
 
     ################################################################################

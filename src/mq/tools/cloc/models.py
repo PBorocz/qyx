@@ -8,6 +8,7 @@ from typing import Any
 
 from peewee import IntegerField, fn
 
+from mq.constants import ReportLevel
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.utils import bucket, rate_of_change_percentage
 from mq.utils.scoring import get_nested_config, score_metric
@@ -33,19 +34,21 @@ class Cloc(BaseResultsModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-def query(args: Namespace, level: str = "0", project: Project = None, scan: Scan = None, last: int = None) -> Any:
+def query(
+    args: Namespace, level: str = ReportLevel.SUMMARY, project: Project = None, scan: Scan = None, last: int = None,
+) -> Any:
     match level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             return _query_0(scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             return _query_1(scan)
-        case "2":
+        case ReportLevel.FILE:
             return _query_2(scan)
-        case "d":
+        case ReportLevel.DERIVED:
             return _query_d(args, scan)
         case "f":
             return _query_f(args, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             return _query_h(project, last)
 
 

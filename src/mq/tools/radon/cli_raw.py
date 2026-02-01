@@ -5,6 +5,7 @@ from argparse import Namespace
 from collections import defaultdict
 
 from mq.cli import cli_console, cli_table
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_raw
 
@@ -22,7 +23,7 @@ def raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Blank"           , justify="right")
     table.add_column("Total"           , justify="right")
     # fmt: on
-    row = query_raw(args, "0", scan)
+    row = query_raw(args, ReportLevel.SUMMARY, scan)
     table.add_row(
         f"{row.sloc:,} ({row.sloc_p:.1f}%)",
         f"{row.comments:,} ({row.comments_p:.1f}%)",
@@ -34,7 +35,7 @@ def raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, totals = query_raw(args, "1", scan)
+    rows, totals = query_raw(args, ReportLevel.DIRECTORY, scan)
 
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}", show_footer=True)
     # fmt: off
@@ -58,7 +59,7 @@ def raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_raw(args, "2", scan)
+    rows = query_raw(args, ReportLevel.FILE, scan)
     # Calculate grand totals
     totals = defaultdict(int)
     for row in rows:
@@ -89,7 +90,7 @@ def raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def raw_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, rocs, roc_gt = query_raw(args, "h", project=project, last=5)
+    timestamps, transposed, rocs, roc_gt = query_raw(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-RAW Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")

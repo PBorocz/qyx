@@ -5,6 +5,7 @@ from argparse import Namespace
 
 from peewee import fn, CharField, IntegerField, JOIN
 
+from mq.constants import ReportLevel
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.tools.cloc.models import query as query_cloc
 from mq.tools.radon.models import query_raw as query_radon_raw
@@ -40,15 +41,15 @@ def query(
     last: int = None,
 ) -> Ruff:
     match level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             return _query_0(args, scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             return _query_1(args, scan)
-        case "2":
+        case ReportLevel.FILE:
             return _query_2(args, scan)
-        case "d":
+        case ReportLevel.DERIVED:
             return _query_d(args, project, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             return _query_h(args, project, last)
 
 
@@ -153,12 +154,12 @@ def _query_d(args: Namespace, project: Project, scan: Scan):
     """Calculate derived ruff metrics."""
     cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
     if cloc_scan:
-        result = query_cloc(args, "0", scan=cloc_scan)
+        result = query_cloc(args, ReportLevel.SUMMARY, scan=cloc_scan)
         lines_of_code = result.lines_code
     else:
         radon_scan = Scan.get_most_recent(project, "radon", "raw")
         if radon_scan:
-            result = query_radon_raw(args, "0", project=project, scan=radon_scan)
+            result = query_radon_raw(args, ReportLevel.SUMMARY, project=project, scan=radon_scan)
             lines_of_code = result.loc
         else:
             log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have an LOC metrics yet!")
@@ -202,7 +203,7 @@ def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, r
         "U": 2,  # Unused code             (dead code)
         "W": 2,  # Warnings                (various issues)
 
-        "D": 1,  # Docstring conventions   (documentation quality)
+        ReportLevel.DERIVED: 1,  # Docstring conventions   (documentation quality)
         "I": 1,  # Import sorting          (organization)
         "N": 1,  # Naming conventions      (readability)
         "P": 1,  # Pylint conventions      (style preferences)

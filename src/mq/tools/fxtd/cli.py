@@ -4,6 +4,7 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.fxtd import COLORS
 from mq.tools.fxtd.models import query
@@ -26,22 +27,22 @@ def render(args: Namespace, o_tool, analysis: str) -> None:
         return None
 
     match args.level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             fxtd_0(args, scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             fxtd_1(args, scan)
-        case "2":
+        case ReportLevel.FILE:
             fxtd_2(args, scan)
-        case "d":
+        case ReportLevel.DERIVED:
             fxtd_d(args, project, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             fxtd_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'mq report --help' for valid options.")
 
 
 def fxtd_0(args: Namespace, scan: Scan) -> None:
-    results = query(args, "0", scan=scan)
+    results = query(args, ReportLevel.SUMMARY, scan=scan)
     grand_total = sum([result.count for result in results])
     show_footer = True if results else False
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=show_footer)
@@ -53,7 +54,7 @@ def fxtd_0(args: Namespace, scan: Scan) -> None:
 
 
 def fxtd_1(args: Namespace, scan: Scan) -> None:
-    results = query(args, "1", scan=scan)
+    results = query(args, ReportLevel.DIRECTORY, scan=scan)
     grand_total = sum([result.count for result in results])
     show_footer = True if results else False
 
@@ -67,7 +68,7 @@ def fxtd_1(args: Namespace, scan: Scan) -> None:
 
 
 def fxtd_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, "2", scan=scan)
+    rows = query(args, ReportLevel.FILE, scan=scan)
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
     table.add_column("Type")
     table.add_column("File [line]")
@@ -78,7 +79,7 @@ def fxtd_2(args: Namespace, scan: Scan) -> None:
 
 
 def fxtd_d(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, composite = query(args, "d", project=project, scan=scan)
+    rows, composite = query(args, ReportLevel.DERIVED, project=project, scan=scan)
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
 
@@ -107,7 +108,7 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan) -> None:
 
 def fxtd_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, transposed, rocs = query(args, "h", project=project, last=5)
+    timestamps, transposed, rocs = query(args, ReportLevel.HISTORY, project=project, last=5)
 
     timestamps_formatted = format_timestamp_headers(timestamps)
 

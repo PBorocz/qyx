@@ -7,6 +7,7 @@ from fasthtml import common as fh
 from pygal import Bar, DateTimeLine
 from pygal.style import Style
 
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.cloc.models import query
 from mq.utils.scoring import find_grade, get_nested_config
@@ -75,7 +76,7 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
 
 
 def cloc_0(args: Namespace, scan: Scan, project: Project = None):
-    results = query(args, "0", scan=scan)
+    results = query(args, ReportLevel.SUMMARY, scan=scan)
     if not results.lines_total:
         return ()
     return (
@@ -135,8 +136,8 @@ def cloc_0(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cloc_1(args: Namespace, scan: Scan, project: Project = None):
-    grand_total = query(args, "0", scan=scan)
-    detail_rows = query(args, "1", scan=scan)
+    grand_total = query(args, ReportLevel.SUMMARY, scan=scan)
+    detail_rows = query(args, ReportLevel.DIRECTORY, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Directory", scope="col", style="text-align: left"),
@@ -177,7 +178,7 @@ def cloc_1(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cloc_2(args: Namespace, scan: Scan, project: Project = None):
-    results, column_totals, grand_total = query(args, "2", scan=scan)
+    results, column_totals, grand_total = query(args, ReportLevel.FILE, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("File", scope="col", style="text-align: left"),
@@ -218,7 +219,7 @@ def cloc_2(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cloc_d(args: Namespace, project: Project, scan: Scan):
-    row = query(args, "d", scan=scan)
+    row = query(args, ReportLevel.DERIVED, scan=scan)
     return (
         fh.Table(
             fh.Thead(
@@ -304,7 +305,7 @@ def cloc_f(args: Namespace, scan: Scan, project: Project = None):
 
 def cloc_h(args: Namespace, project: Project, scan: Scan = None):
     # Create Pygal chart
-    _, rows, _, _, _, _ = query(args, "h", project=project)
+    _, rows, _, _, _, _ = query(args, ReportLevel.HISTORY, project=project)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

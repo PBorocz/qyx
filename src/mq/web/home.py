@@ -142,7 +142,7 @@ def iter_report_web_render_methods(args: Namespace, level: str, required: bool) 
             except AttributeError:
                 if required:
                     log.warning(
-                        f"Sorry, have a valid {method_module_name=} {method_module=} but can't find {method_name=}?"
+                        f"Sorry, have a valid {method_module_name=} {method_module=} but can't find {method_name=}?",
                     )
                 continue
 

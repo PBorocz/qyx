@@ -7,6 +7,7 @@ from fasthtml import common as fh
 from pygal import DateTimeLine
 from pygal.style import Style
 
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.fxtd.models import query
 from mq.web import DEFAULT_CHART_STYLE, render_project_selector
@@ -68,7 +69,7 @@ def _render_history(args: Namespace, request, s_project_id: str = None, analysis
 
 
 def fxtd_0(args: Namespace, scan: Scan, project: Project = None):
-    results = query(args, "0", scan=scan)
+    results = query(args, ReportLevel.SUMMARY, scan=scan)
     if not results:
         return ()
 
@@ -104,7 +105,7 @@ def fxtd_0(args: Namespace, scan: Scan, project: Project = None):
 
 
 def fxtd_1(args: Namespace, scan: Scan, project: Project = None):
-    results = query(args, "1", scan=scan)
+    results = query(args, ReportLevel.DIRECTORY, scan=scan)
     grand_total = sum([result.count for result in results])
 
     t_head = fh.Tr(
@@ -140,7 +141,7 @@ def fxtd_1(args: Namespace, scan: Scan, project: Project = None):
 
 
 def fxtd_2(args: Namespace, scan: Scan, project: Project = None):
-    rows = query(args, "2", scan=scan)
+    rows = query(args, ReportLevel.FILE, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Type", scope="col", style="text-align: center"),
@@ -168,7 +169,7 @@ def fxtd_2(args: Namespace, scan: Scan, project: Project = None):
 
 
 def fxtd_d(args: Namespace, project: Project, scan: Scan):
-    rows, composite = query(args, "d", project=project, scan=scan)
+    rows, composite = query(args, ReportLevel.DERIVED, project=project, scan=scan)
     if not rows or not composite:
         return ()
     t_head = fh.Tr(
@@ -209,7 +210,7 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan):
 
 def fxtd_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
     # Create Pygal chart
-    timestamps, transposed, rocs = query(args, "h", project=project)
+    timestamps, transposed, rocs = query(args, ReportLevel.HISTORY, project=project)
     if not transposed:
         return None
 

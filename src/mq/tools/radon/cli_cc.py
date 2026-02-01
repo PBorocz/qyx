@@ -4,6 +4,7 @@ import logging
 from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon import COLORS
 from mq.tools.radon.models import query_cc
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "0", scan)
+    rows = query_cc(args, ReportLevel.SUMMARY, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")
@@ -29,7 +30,7 @@ def cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "1", scan)
+    rows = query_cc(args, ReportLevel.DIRECTORY, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Directory", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -47,7 +48,7 @@ def cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "2", scan)
+    rows = query_cc(args, ReportLevel.FILE, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -65,7 +66,7 @@ def cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def cc_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "3", scan)
+    rows = query_cc(args, ReportLevel.DETAIL, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Name", justify="left")
@@ -84,7 +85,7 @@ def cc_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def cc_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, "d", project=project, scan=scan)
+    rows = query_cc(args, ReportLevel.DERIVED, project=project, scan=scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type", justify="left")
     table.add_column("Value", justify="right")
@@ -99,7 +100,7 @@ def cc_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_cc(args, "h", project=project, last=5)
+    timestamps, transposed, roc = query_cc(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-CC Results Over Time")
     table.add_column("Complexity", justify="left")

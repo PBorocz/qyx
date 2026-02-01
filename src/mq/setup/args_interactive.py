@@ -113,7 +113,7 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
         Choice(title="Delete a particular Scan, Request or entire Project", value="delete", shortcut_key="d"),
         # Choice(title="Clean extraneous fluff from data store", value="clean", shortcut_key="c"),
         # Choice(title="Trim old data, leaving most recent run for each analysis", value="trim", shortcut_key="t"),
-        # Choice(title="Clear the database, either for all analyses or a specific one", value="clear", shortcut_key="l"),
+        # Choice(title="Clear the database, for all analyses or a specific one", value="clear", shortcut_key="l"),
     ]
 
     args.admin_command = select(

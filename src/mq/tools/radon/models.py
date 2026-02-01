@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
+from mq.constants import ReportLevel
 from mq.tools.base import BaseModel, BaseResultsModel, Project, Request, Scan
 from mq.utils import rate_of_change_percentage
 from mq.utils.scoring import score_metric
@@ -79,7 +80,7 @@ class RadonCc(BaseResultsModel):
         elif 10.0 <= complexity < 20.0:
             return "C"  # moderate - slightly complex block
         elif 20.0 <= complexity < 30.0:
-            return "D"  # more than moderate - more complex block
+            return ReportLevel.DERIVED  # more than moderate - more complex block
         elif 30.0 <= complexity < 40.0:
             return "E"  # high - complex block, alarming
         else:
@@ -170,15 +171,17 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 # RAW
 ################################################################################################
-def query_raw(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_raw(
+    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+) -> Any:
     match level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             return _query_raw_0(args, scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             return _query_raw_1(args, scan)
-        case "2":
+        case ReportLevel.FILE:
             return _query_raw_2(args, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             return _query_raw_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
@@ -303,19 +306,21 @@ def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
 ################################################################################################
 # HAL
 ################################################################################################
-def query_hal(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_hal(
+    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+) -> Any:
     match level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             return _query_hal_0(args, scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             return _query_hal_1(args, scan)
-        case "2":
+        case ReportLevel.FILE:
             return _query_hal_2(args, scan)
-        case "3":
+        case ReportLevel.DETAIL:
             return _query_hal_3(args, scan)
-        case "d":
+        case ReportLevel.DERIVED:
             return _query_hal_d(args, project, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             return _query_hal_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level requested {level=}")
@@ -513,17 +518,19 @@ def _query_hal_d(args: Namespace, project: Project, scan: Scan):
 ################################################################################################
 # MI
 ################################################################################################
-def query_mi(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_mi(
+    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+) -> Any:
     match level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             return _query_mi_0(args, scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             return _query_mi_1(args, scan)
-        case "2":
+        case ReportLevel.FILE:
             return _query_mi_2(args, scan)
-        case "d":
+        case ReportLevel.DERIVED:
             return _query_mi_d(args, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             return _query_mi_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
@@ -627,19 +634,21 @@ def _query_mi_d(args: Namespace, scan: Scan):
 ################################################################################################
 # CC
 ################################################################################################
-def query_cc(args: Namespace, level: str = "0", scan: Scan = None, project: Project = None, last: int = None) -> Any:
+def query_cc(
+    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+) -> Any:
     match level.lower():
-        case "0":
+        case ReportLevel.SUMMARY:
             return _query_cc_0(args, scan)
-        case "1":
+        case ReportLevel.DIRECTORY:
             return _query_cc_1(args, scan)
-        case "2":
+        case ReportLevel.FILE:
             return _query_cc_2(args, scan)
-        case "3":
+        case ReportLevel.DETAIL:
             return _query_cc_3(args, scan)
-        case "d":
+        case ReportLevel.DERIVED:
             return _query_cc_d(args, scan)
-        case "h":
+        case ReportLevel.HISTORY:
             return _query_cc_h(args, project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")

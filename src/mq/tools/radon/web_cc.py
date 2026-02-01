@@ -7,6 +7,7 @@ from fasthtml import common as fh
 from pygal import DateTimeLine
 from pygal.style import Style
 
+from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_cc
 from mq.web import DEFAULT_CHART_STYLE
@@ -14,7 +15,7 @@ from mq.web import DEFAULT_CHART_STYLE
 
 def cc_0(args: Namespace, scan: Scan, project: Project = None):
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
-    rows = query_cc(args, "0", scan=scan)
+    rows = query_cc(args, ReportLevel.SUMMARY, scan=scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -44,7 +45,7 @@ def cc_0(args: Namespace, scan: Scan, project: Project = None):
 
 def cc_1(args: Namespace, scan: Scan, project: Project = None):
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
-    rows = query_cc(args, "1", scan=scan)
+    rows = query_cc(args, ReportLevel.DIRECTORY, scan=scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -80,7 +81,7 @@ def cc_1(args: Namespace, scan: Scan, project: Project = None):
 
 def cc_2(args: Namespace, scan: Scan, project: Project = None):
     plurals = dict(Function="Functions", Method="Methods", Class="Classes")
-    rows = query_cc(args, "2", scan=scan)
+    rows = query_cc(args, ReportLevel.FILE, scan=scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -117,7 +118,7 @@ def cc_2(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cc_3(args: Namespace, scan: Scan, project: Project = None):
-    rows = query_cc(args, "3", scan=scan)
+    rows = query_cc(args, ReportLevel.DETAIL, scan=scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -156,7 +157,7 @@ def cc_3(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cc_d(args: Namespace, project: Project, scan: Scan):
-    rows = query_cc(args, "d", project=project, scan=scan)
+    rows = query_cc(args, ReportLevel.DERIVED, project=project, scan=scan)
 
     t_head = fh.Tr(
         fh.Th("Entity Type", scope="col", style="text-align: left"),
@@ -186,7 +187,7 @@ def cc_d(args: Namespace, project: Project, scan: Scan):
 
 def cc_h(args: Namespace, project: Project, scan: Scan = None):
     """Create Pygal chart."""
-    timestamps, transposed, roc = query_cc(args, "h", project=project, last=None)
+    timestamps, transposed, roc = query_cc(args, ReportLevel.HISTORY, project=project, last=None)
 
     style = Style(**DEFAULT_CHART_STYLE)
 

@@ -42,7 +42,7 @@ def render(args: Namespace, o_tool, analysis: str) -> None:
 
 
 def cloc_0(args: Namespace, scan: Scan) -> None:
-    result = query(args, "0", scan=scan)
+    result = query(args, ReportLevel.SUMMARY, scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("LOC", justify="center")
     table.add_column("Comments", justify="center")
@@ -58,8 +58,8 @@ def cloc_0(args: Namespace, scan: Scan) -> None:
 
 
 def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
-    grand_total = query(args, "0", scan=scan)
-    detail_rows = query(args, "1", scan=scan)
+    grand_total = query(args, ReportLevel.SUMMARY, scan=scan)
+    detail_rows = query(args, ReportLevel.DIRECTORY, scan=scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
 
@@ -86,7 +86,7 @@ def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
 
 def cloc_2(args: Namespace, scan: Scan) -> None:
-    rows, column_totals, grand_total = query(args, "2", scan=scan)
+    rows, column_totals, grand_total = query(args, ReportLevel.FILE, scan=scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
@@ -106,7 +106,7 @@ def cloc_2(args: Namespace, scan: Scan) -> None:
 
 
 def cloc_d(args: Namespace, scan: Scan) -> None:
-    row = query(args, "d", scan=scan)
+    row = query(args, ReportLevel.DERIVED, scan=scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("Metric")
@@ -135,7 +135,9 @@ def cloc_d(args: Namespace, scan: Scan) -> None:
 
 
 def cloc_h(args: Namespace, project: Project, scan: Scan) -> None:
-    timestamps, rows, transposed, grand_totals, roc, adgs = query(args, "h", project=project, scan=scan, last=5)
+    timestamps, rows, transposed, grand_totals, roc, adgs = query(
+        args, ReportLevel.HISTORY, project=project, scan=scan, last=5,
+    )
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)
