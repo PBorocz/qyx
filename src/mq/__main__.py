@@ -14,6 +14,7 @@ from mq.cli.ingest import ingest
 from mq.cli.report import report
 from mq.cli.status import status
 from mq.setup.args_cli import get_args_command_line
+from mq.setup.args_configuration import validate_config
 from mq.setup.args_interactive import get_args_interactively
 from mq.setup.args_validate import validate_args
 from mq.setup.logging import setup_logging
@@ -59,6 +60,10 @@ def dispatch(args: argparse.Namespace) -> None:
 
     # Are our arguments valid? (irrespective of whether they came from arguments or interactively)
     if not validate_args(args):
+        sys.exit(1)
+
+    # Is our configuration valid?
+    if not validate_config(args):
         sys.exit(1)
 
     # Get our ultimate run command and run it!

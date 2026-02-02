@@ -1,13 +1,20 @@
 """."""
 
-import argparse
+import logging
 import yaml
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from platformdirs import user_config_dir
 
 
-def setup_configuration(app_name: str = "mq") -> tuple[argparse.ArgumentParser, list[str], dict]:
-    configuration_parser = argparse.ArgumentParser(add_help=False)
+from mq.utils.scoring import get_nested_config
+
+
+log = logging.getLogger(__name__)
+
+
+def setup_configuration(app_name: str = "mq") -> tuple[ArgumentParser, list[str], dict]:
+    configuration_parser = ArgumentParser(add_help=False)
     configuration_parser.add_argument("-c", "--config", type=Path)
     config_args, remaining_args = configuration_parser.parse_known_args()  # Note method used here!
 
@@ -45,3 +52,24 @@ def _find_and_load_config(app_name: str, filename: str = "config.yaml") -> dict:
         return _load_config(config_path)
 
     return {}
+
+
+def validate_config(args: Namespace) -> bool:
+    """Return true if configuration validates."""
+    # Primarily, we're checking that any tools mentioned are VALID against the tools we have defined."""
+    error_encountered = False
+    config = args.config
+
+    # Dashboard layout..
+    for tool_name in get_nested_config(config, "dashboard.tool_layout_order"):
+        if tool_name not in args.tools:
+            log.error(f"Sorry, encountered {tool_name=} in 'dashboard.tool.layout_order' section that isn't available!")
+            error_encountered = True
+
+    # Tool definitions
+    for tool_name in config.get("tools", ()):
+        if tool_name not in args.tools:
+            log.error(f"Sorry, encountered {tool_name=} in 'tools' section that isn't available!")
+            error_encountered = True
+
+    return not error_encountered

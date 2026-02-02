@@ -13,6 +13,9 @@ command_line_defaults:
   level: "0"
   log_level: "INFO"  # Default log level, ie. DEBUG, INFO, WARNING, ERROR, CRITICAL
 
+dashboard:
+  tool_layout_order: ["cloc", "ruff", "radon", "fxtd"]
+
 tools:
   cloc:
     code_density:
