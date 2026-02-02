@@ -45,7 +45,7 @@ def render_partial_project_summary(request, s_project_id: str):
 
     # Render our grid of results.
     sections = []
-    for tool_name in get_nested_config(args.config, "dashboard.tool_layout_order"):
+    for tool_name in get_nested_config(args.config, "dashboard.tool_order"):
         o_tool = args.tools[tool_name]
         for tool_name, analysis in o_tool.iter_tool_analysis():
             sections.append(
@@ -84,7 +84,7 @@ def render_all_summary_derived(args: Namespace, project: Project) -> dict:
 
 
 def get_web_render_methods(args: Namespace, level: str, required: bool) -> Iterator:
-    for tool_name in get_nested_config(args.config, "dashboard.tool_layout_order"):
+    for tool_name in get_nested_config(args.config, "dashboard.tool_order"):
         o_tool = args.tools[tool_name]
         for tool_name, analysis in o_tool.iter_tool_analysis():
             # Lookup the appropriate module that contains the web renderer for tool_name & analysis

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fasthtml import common as ft
 
-# from mq.web import render_project_selector
+from mq.utils.scoring import get_nested_config
 
 
 def render_navbar(request, active_page):
@@ -13,13 +13,13 @@ def render_navbar(request, active_page):
     kwargs = dict(aria_current="page") if not active_page else dict()
     l_nav = [ft.Li(ft.A("MQ", href="/", **kwargs))]
 
-    for tool_name in sorted(request.app.state.args.tools.keys()):
+    for tool_name in get_nested_config(request.app.state.args.config, "ui.tool_order"):
         name = tool_name.title()
         path = f"/{tool_name}"
         kwargs = dict(aria_current="page") if active_page == tool_name else dict()
         l_nav.append(ft.Li(ft.A(name, href=path, **kwargs)))
 
-    # Right nav is a listing of all the tools currently available.
+    # Right nav is ....
     # r_nav = [*render_project_selector(request, "/partials")]
     # r_nav = []
 
