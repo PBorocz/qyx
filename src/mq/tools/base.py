@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import logging
-import types
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from datetime import datetime, UTC
 from importlib import import_module
+from types import ModuleType
 from typing import Callable, Iterator, TypeAlias
 
 import peewee as pw
@@ -25,17 +25,28 @@ class AbstractToolConfiguration(ABC):
 
     def __init__(
         self,
-        module_name: str,
+        module: str,
+        name: str,
+        analyses: list[str],
         models: dict[str, BaseModel],
         reports: dict,
         **kwargs,
     ) -> "AbstractToolConfiguration":
         """..."""
-        # Name of directory implementing the tool, e.g. "ruff" obo ../src/mq/tools/ruff
-        self.module_name: str = module_name
+        # Name of python module directory implementing the tool, e.g. "ruff" obo ../src/mq/tools/ruff
+        self.module: str = module
 
-        # Peewee storage models used by this tool.
-        self.models: dict[str, BaseModel] = models
+        # Short name of the tool, e.g. e.g. "ruff", "cloc", etc. (by
+        # separating out the module from the name, we can have a tool
+        # called "foo" in a directory called "foobar")
+        self.name: str = name
+
+        # Analyses supported by the tool
+        self.analyses: list[str] = analyses
+
+        # Peewee storage model(s) used by analysis (usually a single
+        # one per analysis but could be multiple, see RadonHal for example)
+        self.models: dict[str, list[BaseModel]] = models
 
         # Reports available by interface and report-level
         self.reports: dict = reports
@@ -47,7 +58,7 @@ class AbstractToolConfiguration(ABC):
         for attr, value in kwargs.items():
             setattr(self, attr, value)
 
-        # Lookup a set of methods that "drive" the tool.
+        # Setup some methods that help use the tool later on.
         # (we do this up front to help validate tool configuration)
         # FIXME: Make these possibly NONE to indicate that the respective capabilities aren't available yet!
         self.render_cli_method = self._get_render_method("cli")
@@ -58,15 +69,15 @@ class AbstractToolConfiguration(ABC):
         """Return the command sent to subprocess to directly perform a "tool" ingest operation."""
         raise ConfigurationError("Sorry, this method needs to be implemented by an inherited class!")
 
-    def import_component(self, component: str) -> types.ModuleType:
+    def import_component(self, component: str) -> ModuleType:
         """Dynamically import a component from this module."""
-        return import_module(f"mq.tools.{self.module_name}.{component}")
+        return import_module(f"mq.tools.{self.module}.{component}")
 
     def _get_render_method(self, interface: str) -> Callable:
         """Return the root render method for this tool and the specified interace, e.g. "web" or "cli"."""
-        render_module: types.ModuleType = self.import_component(interface)
+        render_module: ModuleType = self.import_component(interface)
         if not (render_method := getattr(render_module, "render")):
-            raise ConfigurationError("Unable to find 'render' method in {self.module_name}'s {interface}.py file!")
+            raise ConfigurationError("Unable to find 'render' method in {self.module}'s {interface}.py file!")
         return render_method
 
     def get_ingest_method(self, *args, **kwargs) -> Callable:
@@ -74,26 +85,19 @@ class AbstractToolConfiguration(ABC):
         # NOTE:
         # - This implementation is for "single"-analysis tools (ruff, cloc etc.).
         # - For multi-analysis tools (like radon), this method is *OVERRIDDEN* in their respective __init__.py.
-        py_ingest: types.ModuleType = self.import_component("ingest")
+        py_ingest: ModuleType = self.import_component("ingest")
         return getattr(py_ingest, "ingest")
-
-    def iter_tool_analysis(self) -> Iterator[str, str]:
-        """Iterator over tools and analysis returning the respective pymodule."""
-        for analysis in self.models:
-            if analysis.startswith("_"):
-                continue
-            yield self.module_name, analysis
 
     def iter_reports(self, interface: str) -> Iterator[str, ReportLevel]:
         """Iterator over analysis available for the specified interface."""
         if interface not in self.reports:
-            log.warning(f"Sorry, requesting reports for {interface=} that isn't defined for {self.module_name}!")
+            log.warning(f"Sorry, requesting reports for {interface=} that isn't defined for tool: '{self.name}'!")
         for analysis, report_levels in self.reports.get(interface, ()).items():
             for report_level in report_levels:
                 yield analysis, report_level
 
 
-ToolConfig: TypeAlias = AbstractToolConfiguration
+ToolType: TypeAlias = AbstractToolConfiguration
 
 
 ################################################################################################

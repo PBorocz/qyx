@@ -9,12 +9,12 @@ from pygal.style import Style
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
+from mq.tools.radon import RadonCcEntityType
 from mq.tools.radon.models import query_cc
 from mq.web import DEFAULT_CHART_STYLE
 
 
 def cc_0(args: Namespace, scan: Scan, project: Project = None):
-    plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     rows = query_cc(args, ReportLevel.SUMMARY, scan=scan)
 
     # fmt: off
@@ -26,8 +26,8 @@ def cc_0(args: Namespace, scan: Scan, project: Project = None):
     t_body = []
     for row in rows:
         t_row = fh.Tr(
-            fh.Td(plurals[row.entity_type]    , style="text-align: left"),
-            fh.Td(f"{row.mean_complexity:.1f}", style="text-align: right"),
+            fh.Td(RadonCcEntityType(row.entity_type).plural, style="text-align: left"),
+            fh.Td(f"{row.mean_complexity:.1f}"             , style="text-align: right"),
         )
         t_body.append(t_row)
     # fmt: on
@@ -44,7 +44,6 @@ def cc_0(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cc_1(args: Namespace, scan: Scan, project: Project = None):
-    plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     rows = query_cc(args, ReportLevel.DIRECTORY, scan=scan)
 
     # fmt: off
@@ -60,10 +59,10 @@ def cc_1(args: Namespace, scan: Scan, project: Project = None):
     # fmt: off
     for row in rows:
         t_row = fh.Tr(
-            fh.Td(row.directory                    , style="text-align: left"),
-            fh.Td(plurals[row.entity_type]         , style="text-align: left"),
-            fh.Td(f"{row.mean_complexity:.2f}"     , style="text-align: right"),
-            fh.Td(row.get_rank(row.mean_complexity), style="text-align: center"),
+            fh.Td(row.directory                             , style="text-align: left"),
+            fh.Td(RadonCcEntityType(row.entity_type).plural , style="text-align: left"),
+            fh.Td(f"{row.mean_complexity:.2f}"              , style="text-align: right"),
+            fh.Td(row.get_rank(row.mean_complexity)         , style="text-align: center"),
         )
         t_body.append(t_row)
     # fmt: off
@@ -80,7 +79,6 @@ def cc_1(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cc_2(args: Namespace, scan: Scan, project: Project = None):
-    plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     rows = query_cc(args, ReportLevel.FILE, scan=scan)
 
     # fmt: off
@@ -97,11 +95,11 @@ def cc_2(args: Namespace, scan: Scan, project: Project = None):
     # fmt: off
     for row in rows:
         t_row = fh.Tr(
-            fh.Td(row.directory                    , style="text-align: left"),
-            fh.Td(row.filename                     , style="text-align: left"),
-            fh.Td(plurals[row.entity_type]         , style="text-align: left"),
-            fh.Td(f"{row.mean_complexity:.2f}"     , style="text-align: right"),
-            fh.Td(row.get_rank(row.mean_complexity), style="text-align: center"),
+            fh.Td(row.directory                             , style="text-align: left"),
+            fh.Td(row.filename                              , style="text-align: left"),
+            fh.Td(RadonCcEntityType(row.entity_type).plural , style="text-align: left"),
+            fh.Td(f"{row.mean_complexity:.2f}"              , style="text-align: right"),
+            fh.Td(row.get_rank(row.mean_complexity)         , style="text-align: center"),
         )
         t_body.append(t_row)
     # fmt: off
@@ -203,14 +201,9 @@ def cc_h(args: Namespace, project: Project, scan: Scan = None):
         x_labels_major_every=2,  # Show every 5th label
         x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
     )
-
-    for metric, display in (
-        ("Class", "Classes"),
-        ("Function", "Functions"),
-        ("Method", "Methods"),
-    ):
-        values_by_timestamp = transposed[metric]
+    for entity_type in RadonCcEntityType:
+        values_by_timestamp = transposed[entity_type.value]
         datetime_values = [(datetime.fromisoformat(ts_), value) for ts_, value in values_by_timestamp.items()]
-        chart.add(display, datetime_values)
+        chart.add(entity_type.plural, datetime_values)
 
     return chart.render()

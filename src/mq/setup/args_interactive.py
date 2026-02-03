@@ -55,6 +55,7 @@ def get_args_interactively(args: Namespace) -> Namespace:
         qprint("Ok...nothing done.")
         _goodbye()
 
+    qprint("")  # Add an extra line to demarcate whatever comes below...
     return args
 
 
@@ -89,14 +90,14 @@ def _prompt_command_status(args: Namespace) -> Namespace:
 
 def _prompt_command_report(args: Namespace) -> Namespace:
     args.name = _prompt_existing_name()
-    args.tool_analysis = _prompt_tool_analysis("Analysis to report on?")
+    args.tool_analysis = _prompt_tool_analysis(args, "Analysis to report on?")
     args.level = _prompt_report_level()
     return args
 
 
 def _prompt_command_ingest(args: Namespace) -> Namespace:
     args.name, args.path = _prompt_name_path()
-    args.tool_analysis = _prompt_tool_analysis("Analysis to ingest?")
+    args.tool_analysis = _prompt_tool_analysis(args, "Analysis to ingest?")
     args.stdin = False  # Obviously since we're not able to read from stdin interactively!
     return args
 
@@ -257,24 +258,30 @@ def _prompt_report_level() -> ReportLevel:
     return ReportLevel(value)
 
 
-def _prompt_tool_analysis(message: str) -> str:
+def _prompt_tool_analysis(args: Namespace, message: str) -> str:
     # fmt: off
     state = load_state()
     kwargs = dict()
-    if last_tool_analysis := state.get("last_tool_analysis"):
-        kwargs["default"] = last_tool_analysis
+    # if last_tool_analysis := state.get("last_tool_analysis"):
+    #     kwargs["default"] = last_tool_analysis
 
     # TODO: Oooh, would be nice to make this list dynamic!
     choices = [
-        Choice(title="-ALL-"                         , value="" ),
-        Choice(title="Count lines of code ('cloc')"  , value="cloc"      ),
-        Choice(title="FixMe, ToDo's etc."            , value="fxtd"      ),
-        Choice(title="Python linter ('ruff check')"  , value="ruff"      ),
-        Choice(title="Radon - ALL"                   , value="radon"     ),
-        Choice(title="Radon - Cyclomatic complexity" , value="radon:cc"  ),
-        Choice(title="Radon - Halstead metrics"      , value="radon:hal" ),
-        Choice(title="Radon - Maintainability index" , value="radon:mi"  ),
-        Choice(title="Radon - Raw lines of code"     , value="radon:raw" ),
+        Choice(title="-ALL-", value=""),
     ]
+    # Add the "raw" tools themselves..
+    for o_tool in args.tools.values():
+        choice = Choice(title=f"Name: {o_tool.name}", value=o_tool.name)
+        choices.append(choice)
+    # START HERE!!!!
+        # Choice(title="Count lines of code ('cloc')"  , value="cloc"      ),
+        # Choice(title="FixMe, ToDo's etc."            , value="fxtd"      ),
+        # Choice(title="Python linter ('ruff check')"  , value="ruff"      ),
+        # Choice(title="Radon - ALL"                   , value="radon"     ),
+        # Choice(title="Radon - Cyclomatic complexity" , value="radon:cc"  ),
+        # Choice(title="Radon - Halstead metrics"      , value="radon:hal" ),
+        # Choice(title="Radon - Maintainability index" , value="radon:mi"  ),
+        # Choice(title="Radon - Raw lines of code"     , value="radon:raw" ),
+
     # fmt: on
     return select(message=message, choices=choices, style=PROMPT_STYLE, **kwargs).unsafe_ask()

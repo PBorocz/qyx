@@ -1,25 +1,43 @@
 """Cloc Module Configuration."""
 
+from enum import Enum
+
 from mq.constants import ReportLevel as Rl
-from mq.tools.base import ToolConfig
+from mq.tools.base import ToolType
 from mq.tools.cloc.models import Cloc
 
 
-class Configuration(ToolConfig):
+class ClocAnalysisType(str, Enum):
+    """Cloc analysis types."""
+
+    CLOC = "cloc"
+
+    @property
+    def description(self) -> str:
+        """More granular definitions."""
+        descriptions = {
+            "cloc": "Count lines of code ('cloc')",
+        }
+        return descriptions.get(self.value, "-")
+
+
+class Configuration(ToolType):
     """Configure semantics associated with using the cloc tool."""
 
     def __init__(self):
         """..."""
-        cli = dict(
-            cloc=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
-        )
-        web = dict(
-            cloc=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
-        )
+        cli = {
+            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        }
+        web = {
+            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        }
 
         super(Configuration, self).__init__(
-            module_name="cloc",
-            models=dict(cloc=Cloc),
+            module="cloc",
+            name="cloc",
+            analyses=[enum.value for enum in ClocAnalysisType],
+            models=dict(cloc=(Cloc,)),
             reports=dict(cli=cli, web=web),
         )
 

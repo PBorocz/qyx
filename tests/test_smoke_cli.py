@@ -50,7 +50,7 @@ def test_cli_rendering_methods(test_args, subtests, capsys):
         render_method = o_tool.render_cli_method
         for analysis, report_level in o_tool.iter_reports("cli"):
             for project in Project.select():
-                message = f"{o_tool.module_name}:{analysis}:{report_level.value} - ID:{project.id}"
+                message = f"{o_tool.name}:{analysis}:{report_level.value} - ID:{project.id}"
                 case = Namespace(
                     message=message,
                     o_tool=o_tool,
@@ -71,4 +71,7 @@ def test_cli_rendering_methods(test_args, subtests, capsys):
             # If we got here, no exceptions where raised.
             # Did the output at least have the project information?
             captured = capsys.readouterr()
-            assert case.o_tool.module_name.upper() in captured.out
+            # if case.o_tool.name.upper() not in captured.out:
+            #     breakpoint()
+
+            assert case.o_tool.name.upper() in captured.out

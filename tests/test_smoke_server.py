@@ -108,7 +108,7 @@ def test_server(test_server_args, subtests, capsys, base_url="http://localhost:5
 
     urls = []
     for o_tool in test_args.tools.values():
-        tool = o_tool.module_name
+        tool = o_tool.name
 
         # Make sure we can get to the "base" display.
         urls.append(f"{base_url}/{tool}")

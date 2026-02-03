@@ -34,7 +34,7 @@ class StatusLevel(str, Enum):
             "g": "Grouped Scans",
             "i": "Individual Scans (might be a lot!)",
         }
-        return descriptions[self.value]
+        return descriptions.get(self.value, "-")
 
 
 class ReportLevel(str, Enum):

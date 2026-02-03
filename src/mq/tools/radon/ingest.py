@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from mq.tools.radon import RadonCcEntityType
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from mq.tools.base import Scan
 
@@ -74,7 +75,6 @@ def ingest_mi(scan: Scan, data: Any) -> int:
 
 
 def ingest_cc(scan: Scan, data: Any) -> int:
-    mapping = dict(F="Function", M="Method", C="Class")
     rows = []
     try:
         json_ = json.loads(data)
@@ -86,16 +86,16 @@ def ingest_cc(scan: Scan, data: Any) -> int:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         for entity in entities:
             try:
-                entity_type = mapping.get(entity["type"][0].upper())
-            except TypeError:
-                # Radon encountered an error parsing the file..
-                log.error(f"Unable to parse radon cc: {fn_}[{scan.git_commit_hash[:8]}] {entities=}")
+                entity_type = RadonCcEntityType(entity["type"][0].upper())
+            except ValueError:
+                bad = entity["type"][0].upper()
+                log.error(f"Invalid/unexpected EntityType encountered: '{bad}', expecting one of 'C', 'M', or 'F'")
                 continue
 
             row = RadonCc(
                 directory=fn_path.parent,
                 filename=fn_path.name,
-                entity_type=entity_type,
+                entity_type=entity_type.value,
                 entity_name=entity["name"],
                 line_start=entity["lineno"],
                 line_end=entity["endline"],

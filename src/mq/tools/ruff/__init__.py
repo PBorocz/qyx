@@ -2,33 +2,50 @@
 
 import gzip
 import json
+from enum import Enum
 from pathlib import Path
 
 from mq.constants import ReportLevel as Rl
-from mq.tools.base import ToolConfig
+from mq.tools.base import ToolType
 from mq.tools.ruff.models import Ruff
 
 RUFF_RULES = None  # Hold as a cache after first read
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(ToolConfig):
+class RuffAnalysisType(str, Enum):
+    """Ruff analysis types."""
+
+    RUFF = "ruff"
+
+    @property
+    def description(self) -> str:
+        """More granular definitions."""
+        descriptions = {
+            "ruff": "Python linter ('ruff check')",
+        }
+        return descriptions.get(self.value, "-")
+
+
+class Configuration(ToolType):
     """Configure semantics associated with using the ruff tool."""
 
     def __init__(self):
         """..."""
-        cli = dict(
-            ruff=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
-        )
-        web = dict(
-            ruff=(Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
-        )
+        cli = {
+            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        }
+        web = {
+            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+        }
 
         super(Configuration, self).__init__(
-            module_name="ruff",
-            models=dict(ruff=Ruff),
-            results_required=False,  # In this case,  Ruff Scans without data ARE valid!
+            module="ruff",
+            name="ruff",
+            analyses=[enum.value for enum in RuffAnalysisType],
+            models=dict(ruff=(Ruff,)),
             reports=dict(cli=cli, web=web),
+            results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
 
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:

@@ -3,16 +3,15 @@
 import logging
 from argparse import Namespace
 from importlib import import_module
+from types import ModuleType
 from typing import Callable
 
-from mq.tools.base import Project, Scan
+from mq.tools.base import Project, Scan, ToolType
 
 log = logging.getLogger(__name__)
 
-RADON_SUB_TOOLS = ("raw", "mi", "hal", "cc")
 
-
-def render(args: Namespace, o_tool, analysis: str) -> None:
+def render(args: Namespace, o_tool: ToolType, analysis: str) -> None:
     if not (project := Project.find_from_args(args)):
         log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
         return None
@@ -27,16 +26,16 @@ def render(args: Namespace, o_tool, analysis: str) -> None:
 def _dispatch_level_submodule(args: Namespace, o_tool, project: Project, scan: Scan, analysis: str) -> None:
     """Dispatch to the report method using the report level and sub_module requested."""
     try:
-        module_name = f"mq.tools.{o_tool.module_name}.cli_{analysis}"
-        report_module = import_module(module_name)
+        cli_render_module_name: str = f"mq.tools.{o_tool.module}.cli_{analysis}"
+        cli_render_module: ModuleType = import_module(cli_render_module_name)
     except ModuleNotFoundError:
-        log.debug(f"Skipping missing {module_name=}")
+        log.error(f"Skipping missing {cli_render_module_name=}")
         return
 
     method_name: str = f"{analysis}_{args.level.lower()}"
-    log.debug(f"{report_module=} {method_name=}")
+    log.debug(f"{cli_render_module=} {method_name=}")
     try:
-        method: Callable = getattr(report_module, method_name)
+        method: Callable = getattr(cli_render_module, method_name)
         log.debug(f"{method=}")
     except AttributeError:
         log.error(f"Sorry, invalid report level: '{args.level}', run mq report --help for valid options.")

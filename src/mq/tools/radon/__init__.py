@@ -1,45 +1,87 @@
 """Radon Module Configuration."""
 
 import types
+from enum import Enum
 from typing import Callable
 
 from mq.constants import ReportLevel as Rl
-from mq.tools.base import ToolConfig
+from mq.tools.base import ToolType
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(ToolConfig):
+class RadonAnalysisType(str, Enum):
+    """Radon analysis types."""
+
+    # fmt: off
+    CC  = "cc"
+    HAL = "hal"
+    MI  = "mi"
+    RAW = "raw"
+    # fmt: on
+
+    @property
+    def description(self) -> str:
+        """More granular definitions."""
+        descriptions = {
+            "cc": "Cyclomatic Complexity",
+            "hal": "Halstead Metrics",
+            "mi": "Maintainability Index",
+            "raw": "Raw Lines of Code",
+        }
+        return descriptions.get(self.value, "-")
+
+
+class RadonCcEntityType(str, Enum):
+    """Radon's Cyclomatic Complexity Entity Types."""
+
+    # fmt: off
+    CLASS    = "C"
+    FUNCTION = "F"
+    METHOD   = "M"
+    # fmt: on
+
+    @property
+    def plural(self) -> str:
+        """Return the plural."""
+        plurals = dict(C="Classes", F="Functions", M="Methods")
+        return plurals.get(self.value.upper(), "-")
+
+
+# Define the various report levels available for the CLI and Web-based report rendering.
+# fmt: off
+CLI_LEVELS_BY_ANALYSIS = {
+    RadonAnalysisType.CC.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    RadonAnalysisType.HAL.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    RadonAnalysisType.MI.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
+    RadonAnalysisType.RAW.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
+}
+WEB_LEVELS_BY_ANALYSIS = {
+    RadonAnalysisType.CC.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    RadonAnalysisType.HAL.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    RadonAnalysisType.MI.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
+    RadonAnalysisType.RAW.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
+}
+# fmt: on
+
+
+class Configuration(ToolType):
     """Configure semantics associated with using the various Radon tools."""
 
     def __init__(self):
-        """..."""
-        # fmt: off
-        cli = dict(
-            cc  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-            hal = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-            mi  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
-            raw = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
-        )
-        web = dict(
-            cc  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-            hal = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-            mi  = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
-            raw = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
-        )
-        # fmt: on
-
+        """Class meta-definition for the Radon tool."""
         super(Configuration, self).__init__(
-            module_name="radon",
-            models=dict(
-                cc=RadonCc,
-                hal=RadonHal,
-                _hal=RadonHalFunction,  # Subsidiary so we "hide" it a bit..
-                mi=RadonMi,
-                raw=RadonRaw,
-            ),
-            reports=dict(cli=cli, web=web),
+            module="radon",
+            name="radon",
+            analyses=[enum.value for enum in RadonAnalysisType],
+            models={
+                RadonAnalysisType.CC.value: (RadonCc,),
+                RadonAnalysisType.HAL.value: (RadonHal, RadonHalFunction),
+                RadonAnalysisType.MI.value: (RadonMi,),
+                RadonAnalysisType.RAW.value: (RadonRaw,),
+            },
+            reports=dict(cli=CLI_LEVELS_BY_ANALYSIS, web=WEB_LEVELS_BY_ANALYSIS),
         )
 
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:

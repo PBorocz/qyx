@@ -4,8 +4,10 @@ import logging
 from argparse import Namespace
 from importlib import import_module
 from pathlib import Path
+from types import ModuleType
 
 from mq.constants import ConfigurationError
+from mq.tools.base import ToolType
 
 log = logging.getLogger(__name__)
 
@@ -15,21 +17,21 @@ log = logging.getLogger(__name__)
 ################################################################################################
 def setup_tools(args: Namespace) -> dict:
     """Introspect our tools directory to dynamically discover modules defined at run-time."""
-    tools = {}
+    tools: dict = {}
 
     # Iterate over /app/tools and get handles to each module
-    tools_dir = Path("src/mq/tools")
+    tools_dir: Path = Path("src/mq/tools")
     for tool_path in tools_dir.iterdir():
         if tool_path.is_dir() and not tool_path.name.startswith("_"):
-            tool_name = tool_path.name
+            tool_name: str = tool_path.name
             log.debug(f"Setting up module: '{tool_name}'...")
 
             ################################################################################
             # Get a handle to the module itself.
             ################################################################################
             try:
-                s_import_path = f"mq.tools.{tool_name}"
-                tool_module = import_module(s_import_path)
+                s_import_path: str = f"mq.tools.{tool_name}"
+                tool_module: ModuleType = import_module(s_import_path)
             except ImportError as exc:
                 raise ConfigurationError(f"Sorry, can't import: '{s_import_path}': {exc}!")
 
@@ -37,7 +39,7 @@ def setup_tools(args: Namespace) -> dict:
             # Now, find the configuration class
             ################################################################################
             try:
-                tool_configuration_class = getattr(tool_module, "Configuration")
+                tool_configuration_class: ToolType = getattr(tool_module, "Configuration")
                 log.debug(f"{tool_configuration_class=}")
             except AttributeError as exc:
                 raise ConfigurationError(f"Sorry, can't instantiate {tool_name}'s configuration class?: {exc}!")

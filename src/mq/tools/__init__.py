@@ -3,6 +3,8 @@
 import logging
 from argparse import Namespace
 
+from mq.tools.base import ToolType
+
 log = logging.getLogger(__name__)
 
 
@@ -22,11 +24,11 @@ def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
     return_: list = list()
     if not args.tool_analysis:
         for tool_name in args.tools.keys():
-            tool_configuration = args.tools[tool_name]
-            for analysis_name in tool_configuration.models.keys():
+            o_tool: ToolType = args.tools[tool_name]
+            for analysis_name in o_tool.models:
                 if analysis_name.startswith("_"):
                     continue
-                return_.append((tool_configuration, analysis_name))
+                return_.append((o_tool, analysis_name))
         return return_
 
     s_tool, s_analysis = split_arg_tool_analysis(args.tool_analysis)
@@ -35,11 +37,11 @@ def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
     # Case 2: Tool only, give all the analyses the tool supports
     ################################################################################
     if not s_analysis:
-        tool_configuration = args.tools[s_tool]
-        for analysis_name in tool_configuration.models.keys():
+        o_tool = args.tools[s_tool]
+        for analysis_name in o_tool.models:
             if analysis_name.startswith("_"):
                 continue
-            return_.append((tool_configuration, analysis_name))
+            return_.append((o_tool, analysis_name))
         return return_
 
     ################################################################################

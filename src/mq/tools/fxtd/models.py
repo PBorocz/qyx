@@ -21,10 +21,9 @@ class Fxtd(BaseResultsModel):
     """..."""
 
     # fmt: off
-    # FIXME: Use an enum here?
-    line    = IntegerField()  # eg. 25
-    type    = CharField()     # eg. "FIXME" or "TODO"
-    message = CharField()     # eg FIXME: lorem ipsum...
+    type    = CharField()    # eg. "FIXME", "TODO", etc.
+    message = CharField()    # eg FIXME: lorem ipsum...
+    line    = IntegerField() # eg. 25
     # fmt: on
 
     class Meta:

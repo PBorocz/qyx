@@ -3,7 +3,7 @@
 import logging
 from argparse import Namespace
 
-from mq.tools.base import ToolConfig, Project, Request, Scan
+from mq.tools.base import ToolType, Project, Request, Scan
 
 log = logging.getLogger(__name__)
 
@@ -18,14 +18,15 @@ def clean(args: Namespace) -> None:
 def _delete_extraneous_scans(args: Namespace) -> None:
     """Delete orphaned Scan, ie. that don't have results associated with 'em."""
 
-    def __clean_scans(tool_name: str, tool_config: ToolConfig) -> None:
+    def __clean_scans(tool_name: str, o_tool: ToolType) -> None:
         # log.debug(f"Cleanup {tool_name=}")
         # First, get all the scan's id's used by models in this module:
         model_scan_ids = set()
-        for model in tool_config.models.values():
-            result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
-            model_scan_ids.update(result_scan_ids)
-            # log.debug(f"-- Results '{model.__name__:9s}' has {len(result_scan_ids):2d} scan(s) with data.")
+        for models in o_tool.models.values():
+            for model in models:
+                result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
+                model_scan_ids.update(result_scan_ids)
+                # log.debug(f"-- Results '{model.__name__:9s}' has {len(result_scan_ids):2d} scan(s) with data.")
 
         # log.debug(f"- {tool_name:6s} {len(model_scan_ids)=:2d} {sorted(model_scan_ids)}")
 
@@ -41,9 +42,9 @@ def _delete_extraneous_scans(args: Namespace) -> None:
         # else:
         #     log.debug(f"Nothing done, all {tool_name.upper()} Scans have Results associated with them.")
 
-    for tool_name, tool_config in args.tools.items():
-        if tool_config.results_required:
-            __clean_scans(tool_name, tool_config)
+    for tool_name, o_tool in args.tools.items():
+        if o_tool.results_required:
+            __clean_scans(tool_name, o_tool)
 
 
 def _delete_extraneous_requests(args: Namespace) -> None:

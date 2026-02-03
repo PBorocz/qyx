@@ -6,7 +6,7 @@ from argparse import Namespace
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
-from mq.tools.radon import COLORS
+from mq.tools.radon import COLORS, RadonCcEntityType
 from mq.tools.radon.models import query_cc
 from mq.utils import format_timestamp_headers
 
@@ -19,10 +19,9 @@ def cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")
     table.add_column("Rank", justify="center")
-    plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     for row in rows:
         table.add_row(
-            plurals[row.entity_type],
+            RadonCcEntityType(row.entity_type).plural,
             f"{row.mean_complexity:.2f}",
             row.get_rank(row.mean_complexity),
         )
@@ -36,11 +35,10 @@ def cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Entity Type", justify="left")
     table.add_column("Complexity", justify="right")
     table.add_column("Rank", justify="center")
-    plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     for row in rows:
         table.add_row(
             row.directory,
-            plurals[row.entity_type],
+            RadonCcEntityType(row.entity_type).plural,
             f"{row.mean_complexity:.2f}",
             row.get_rank(row.mean_complexity),
         )
@@ -54,11 +52,10 @@ def cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Entity Type", justify="left")
     table.add_column("Complexity", justify="right")
     table.add_column("Rank", justify="center")
-    plurals = dict(Function="Functions", Method="Methods", Class="Classes")
     for row in rows:
         table.add_row(
             f"{row.directory}/{row.filename}",
-            plurals[row.entity_type],
+            RadonCcEntityType(row.entity_type).plural,
             f"{row.mean_complexity:.2f}",
             row.get_rank(row.mean_complexity),
         )

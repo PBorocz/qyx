@@ -1,15 +1,30 @@
 """FixMe ToDo Module Configuration."""
 
+from enum import Enum
 from pathlib import Path
 
 from mq.constants import ReportLevel as Rl
-from mq.tools.base import ToolConfig
+from mq.tools.base import ToolType
 from mq.tools.fxtd.models import Fxtd
 
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class Configuration(ToolConfig):
+class FxtdAnalysisType(str, Enum):
+    """Fxtd analysis types."""
+
+    FXTD = "fxtd"
+
+    @property
+    def description(self) -> str:
+        """More granular definitions."""
+        descriptions = {
+            "fxtd": "FixMe, ToDo's etc.",
+        }
+        return descriptions.get(self.value, "-")
+
+
+class Configuration(ToolType):
     """Configure semantics associated with using the tool."""
 
     def __init__(self):
@@ -23,8 +38,10 @@ class Configuration(ToolConfig):
         )
         # fmt: on
         super(Configuration, self).__init__(
-            module_name="fxtd",
-            models=dict(fxtd=Fxtd),
+            module="fxtd",
+            name="fxtd",
+            analyses=[enum.value for enum in FxtdAnalysisType],
+            models=dict(fxtd=(Fxtd,)),
             results_required=False,  # In this case,  Scans without data ARE valid!
             reports=dict(cli=cli, web=web),
         )

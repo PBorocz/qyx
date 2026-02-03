@@ -62,7 +62,7 @@ class RadonCc(BaseResultsModel):
     """Radon "CC" metric storage."""
 
     # fmt: off
-    entity_type   = CharField(help_text="F, M or C (function, method or class)")
+    entity_type   = CharField(help_text="Function, Method or Class)")
     entity_name   = CharField(help_text="main, <class>.method, etc.")
     line_start    = IntegerField()
     line_end      = IntegerField()
@@ -172,7 +172,11 @@ class RadonHalFunction(BaseModel):
 # RAW
 ################################################################################################
 def query_raw(
-    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+    args: Namespace,
+    level: str = ReportLevel.SUMMARY,
+    scan: Scan = None,
+    project: Project = None,
+    last: int = None,
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
@@ -307,7 +311,11 @@ def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
 # HAL
 ################################################################################################
 def query_hal(
-    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+    args: Namespace,
+    level: str = ReportLevel.SUMMARY,
+    scan: Scan = None,
+    project: Project = None,
+    last: int = None,
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
@@ -519,7 +527,11 @@ def _query_hal_d(args: Namespace, project: Project, scan: Scan):
 # MI
 ################################################################################################
 def query_mi(
-    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+    args: Namespace,
+    level: str = ReportLevel.SUMMARY,
+    scan: Scan = None,
+    project: Project = None,
+    last: int = None,
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
@@ -635,7 +647,11 @@ def _query_mi_d(args: Namespace, scan: Scan):
 # CC
 ################################################################################################
 def query_cc(
-    args: Namespace, level: str = ReportLevel.SUMMARY, scan: Scan = None, project: Project = None, last: int = None,
+    args: Namespace,
+    level: str = ReportLevel.SUMMARY,
+    scan: Scan = None,
+    project: Project = None,
+    last: int = None,
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
@@ -751,10 +767,14 @@ def _query_cc_d(args: Namespace, scan: Scan):
     # Standards reference:
     # - McCabe (1976)*: CC > 10 indicates high risk
     # - NIST          : CC > 15 is concerning, > 20 is dangerous
+    from mq.tools.radon import RadonCcEntityType  # Circular import??
+
     results = _query_cc_0(args, scan)
     for result in results:
         threshold_type = (
-            "tools.radon.cc.classes" if result.entity_type.lower() == "class" else "tools.radon.cc.callables"
+            "tools.radon.cc.classes"
+            if result.entity_type.upper() == RadonCcEntityType.CLASS.value
+            else "tools.radon.cc.callables"  # ie. (F)unctions and (M)ethods
         )
         result.cc_d = score_metric(args, threshold_type, result.mean_complexity)
 

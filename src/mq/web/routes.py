@@ -55,17 +55,17 @@ def register(args, rt):  # noqa: C901
     ################################################################################
     # Dynamic routes (ie. for each tool)
     ################################################################################
-    for tool_name, tool_config in args.tools.items():
-        # Create a closure to capture tool_name and tool_configuration
-        def make_tool_route(name, tool_config):
+    for tool_name, o_tool in args.tools.items():
+        # Create a closure to capture tool_name and o_tooluration
+        def make_tool_route(name, o_tool):
             @rt(f"/{name}")
             def render_tool_page_method(request):
-                render_method: Callable = tool_config.render_web_method
-                return render_method(request, name, tool_config)
+                render_method: Callable = o_tool.render_web_method
+                return render_method(request, name, o_tool)
 
             return render_tool_page_method
 
-        make_tool_route(tool_name, tool_config)
+        make_tool_route(tool_name, o_tool)
 
     @rt("/partials/set_project/_main_")
     def set_project_main(request, project: str):
@@ -77,12 +77,10 @@ def register(args, rt):  # noqa: C901
     @rt("/partials/set_project/{tool}")
     def set_project_tool(request, tool: str, project: str, analysis: str = None):
         """HTMX endpoint to update content on a "tool" page based on an updated project selection."""
-        if not (tool_config := args.tools.get(tool)):
-            return ft.Div(f"Unknown tool: {tool}", cls="error")
-
+        o_tool = args.tools[tool]
         try:
-            # FIXME: Use what's already in tool_config instead of doing another import_component on every request.
-            web_file_module = tool_config.import_component("web")
+            # FIXME: Use what's already in o_tool instead of doing another import_component on every request.
+            web_file_module = o_tool.import_component("web")
         except ImportError:
             return ft.Div(f"Couldn't find '{tool}/web.py' file!", cls="error")
 

@@ -82,7 +82,7 @@ def scan_tree_detailed(args: Namespace, request, scans_for_request, scan_tree):
 
 def _get_scan_count(args: Namespace, scan: Scan) -> str:
     """Return the scan's result count as a str already formatted for status tree."""
-    tool_config = args.tools[scan.tool]
-    model_class = tool_config.models[scan.analysis]
+    o_tool = args.tools[scan.tool]
+    model_class = o_tool.models[scan.analysis][0]  # Only the first one is relevant
     count = model_class.filter(model_class.scan == scan).count()
     return f"{count:3d}"

@@ -9,7 +9,7 @@ from fasthtml import common as fh
 
 from mq.constants import ReportLevel
 from mq.utils.scoring import get_nested_config
-from mq.tools.base import Project, Scan
+from mq.tools.base import Project, Scan, ToolType
 from mq.web import render_project_selector
 from mq.web.page import render_page
 
@@ -46,12 +46,12 @@ def render_partial_project_summary(request, s_project_id: str):
     # Render our grid of results.
     sections = []
     for tool_name in get_nested_config(args.config, "dashboard.tool_order"):
-        o_tool = args.tools[tool_name]
-        for tool_name, analysis in o_tool.iter_tool_analysis():
+        o_tool = args.tools[tool_name]  # We validated tool-names in setup_configuration!
+        for analysis in o_tool.models:
             sections.append(
                 fh.Div(
-                    fh.Div(fh.Hr(), *content.get((ReportLevel.SUMMARY, tool_name, analysis), [])),
-                    fh.Div(fh.Hr(), *content.get((ReportLevel.DERIVED, tool_name, analysis), [])),
+                    fh.Div(fh.Hr(), *content.get((ReportLevel.SUMMARY, o_tool.name, analysis), [])),
+                    fh.Div(fh.Hr(), *content.get((ReportLevel.DERIVED, o_tool.name, analysis), [])),
                     cls="grid",
                 ),
             )
@@ -69,47 +69,49 @@ def render_all_summary_derived(args: Namespace, project: Project) -> dict:
         (ReportLevel.SUMMARY, True),  # All analyses prolly have summary web renderer defined...
         (ReportLevel.DERIVED, False),  # ...but not all them have derived results renderers!
     ):
-        for tool, analysis, render_method in get_web_render_methods(args, level=level, required=required):
-            web_render_methods.append((level, tool, analysis, render_method))
+        for o_tool, analysis, render_method in get_web_render_methods(args, level=level, required=required):
+            web_render_methods.append((level, o_tool.name, analysis, render_method))
 
     ################################################################################################
     # Given the methods, call each renderer and cache contents based on available project & scans.
     ################################################################################################
     content = dict()
-    for level, tool, analysis, render_method in web_render_methods:
-        if scan := Scan.get_most_recent(project, tool, analysis):
+    for level, tool_name, analysis, render_method in web_render_methods:
+        if scan := Scan.get_most_recent(project, tool_name, analysis):
             if level_contents := render_method(args, project=project, scan=scan):
-                content[(level, tool, analysis)] = level_contents
+                content[(level, tool_name, analysis)] = level_contents
     return content
 
 
 def get_web_render_methods(args: Namespace, level: str, required: bool) -> Iterator:
     for tool_name in get_nested_config(args.config, "dashboard.tool_order"):
-        o_tool = args.tools[tool_name]
-        for tool_name, analysis in o_tool.iter_tool_analysis():
-            # Lookup the appropriate module that contains the web renderer for tool_name & analysis
-            method_module = None
-            for method_module_name in (f"web_{analysis.lower()}", "web"):
+        o_tool: ToolType = args.tools[tool_name]
+        for analysis in o_tool.models:
+            # Lookup the appropriate module that contains the web renderer for tool_module & analysis
+            web_method_module: ModuleType = None
+            for web_method_module_name in (f"web_{analysis.lower()}", "web"):
                 try:
-                    method_module: ModuleType = o_tool.import_component(method_module_name)
+                    web_method_module: ModuleType = o_tool.import_component(web_method_module_name)
                     break
                 except ModuleNotFoundError:
                     continue
-            if not method_module:
+            if not web_method_module:
                 log.warning(
-                    f"Sorry, we couldn't find a {method_module_name=} in {o_tool.module_name}.web",
+                    f"Sorry, we couldn't find a {web_method_module_name=} in {o_tool.module_name}.web",
                 )
                 break
 
-            # Using the module, lookup the respective method to render tool_name & analysis
+            # Using the module, lookup the respective method to render tool_module & analysis
             try:
-                method_name: str = f"{analysis}_{level.value}"  # e.g. ruff_0, cloc_d or hal_d
-                method: Callable = getattr(method_module, method_name)
+                method_name: str = f"{analysis.lower()}_{level.value}"  # e.g. ruff_0, cloc_d or hal_d
+                method: Callable = getattr(web_method_module, method_name)
             except AttributeError:
                 if required:
-                    log.warning(
-                        f"Sorry, we have a valid {method_module_name=} {method_module=} but can't find {method_name=}?",
+                    msg = (
+                        f"Sorry, we have a valid {web_method_module_name=} "
+                        f"{web_method_module=} but can't find {method_name=}?",
                     )
+                    log.warning(msg)
                 continue
 
-            yield tool_name, analysis, method
+            yield o_tool, analysis, method

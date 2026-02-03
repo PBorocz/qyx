@@ -27,7 +27,7 @@ def _get_test_cases(test_args):
     for o_tool in test_args.tools.values():
         for analysis, report_level in o_tool.iter_reports("web"):
             for project in Project.select():
-                tool = o_tool.module_name
+                tool = o_tool.name
                 description = f"T:{tool} A:{analysis} L:{report_level.value} P:{project.name} [{project.id}]"
 
                 scan = Scan.get_most_recent(project, tool, analysis)
