@@ -55,7 +55,7 @@ def test_server_args():
     # Create args for your server
     args = Namespace(port=port, browser=False, log_level="info")
     _, _, configuration = setup_configuration()
-    setup_logging(args.log_level)
+    setup_logging(args)
     setup_tools(args)
     setup_sqlite(args)
     args.config = configuration

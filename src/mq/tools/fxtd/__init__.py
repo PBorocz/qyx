@@ -10,18 +10,10 @@ from mq.tools.fxtd.models import Fxtd
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class FxtdAnalysisType(str, Enum):
+class AnalysisType(str, Enum):
     """Fxtd analysis types."""
 
     FXTD = "fxtd"
-
-    @property
-    def description(self) -> str:
-        """More granular definitions."""
-        descriptions = {
-            "fxtd": "FixMe, ToDo's etc.",
-        }
-        return descriptions.get(self.value, "-")
 
 
 class Configuration(ToolType):
@@ -40,7 +32,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="fxtd",
             name="fxtd",
-            analyses=[enum.value for enum in FxtdAnalysisType],
+            analyses={AnalysisType.FXTD.value: "FixMe, ToDo's etc."},
             models=dict(fxtd=(Fxtd,)),
             results_required=False,  # In this case,  Scans without data ARE valid!
             reports=dict(cli=cli, web=web),

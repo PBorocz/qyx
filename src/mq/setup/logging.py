@@ -1,13 +1,15 @@
 """Setup applications logging configuration."""
 
 import logging
+from argparse import Namespace
+
 from rich.console import Console
 from rich.logging import RichHandler
 
 
 ################################################################################################
-def setup_logging(arg_log_level: str, arg_peewee_debug: bool = False) -> logging.Logger:
-    level = getattr(logging, arg_log_level.upper())
+def setup_logging(args: Namespace, arg_peewee_debug: bool = False) -> logging.Logger:
+    level = getattr(logging, args.log_level.upper())
     peewee_level = "DEBUG" if arg_peewee_debug else "INFO"
 
     # Setup Rich handler

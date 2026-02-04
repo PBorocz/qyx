@@ -12,12 +12,12 @@ from mq.utils.state import load_state
 
 # fmt: off
 PROMPT_STYLE = Style([
+    ('pointer'     , 'fg:#00ff87 bold' ), # Selection pointer
+    ('highlighted' , 'fg:#00ff87'      ), # Highlighted choice
     # ('qmark'       , 'fg:#00d7ff bold' ), # Question mark
     # ('question'    , 'fg:#ffffff bold' ), # Question text
     # ('answer'      , 'fg:#00ff87 bold' ), # Selected answer
     # ('selected'    , 'fg:#00ff87'      ), # Selected (in checkbox)
-    # ('pointer'     , 'fg:#00ff87 bold' ), # Selection pointer
-    # ('highlighted' , 'fg:#00ff87'      ), # Highlighted choice
     # ('instruction' , 'fg:#888888'      ), # Instructions
 ])
 # fmt: on
@@ -73,7 +73,7 @@ def _select_main_command():
     # fmt: on
 
     return select(
-        "Select command:",
+        "Command",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -90,14 +90,14 @@ def _prompt_command_status(args: Namespace) -> Namespace:
 
 def _prompt_command_report(args: Namespace) -> Namespace:
     args.name = _prompt_existing_name()
-    args.tool_analysis = _prompt_tool_analysis(args, "Analysis to report on?")
+    args.tool_analysis = _prompt_tool_analysis(args, "Analysis")
     args.level = _prompt_report_level()
     return args
 
 
 def _prompt_command_ingest(args: Namespace) -> Namespace:
     args.name, args.path = _prompt_name_path()
-    args.tool_analysis = _prompt_tool_analysis(args, "Analysis to ingest?")
+    args.tool_analysis = _prompt_tool_analysis(args, "Analysis")
     args.stdin = False  # Obviously since we're not able to read from stdin interactively!
     return args
 
@@ -118,7 +118,7 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
     ]
 
     args.admin_command = select(
-        "Select administration command:",
+        "Administration command",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -158,7 +158,7 @@ def _prompt_existing_name(include_new_option: bool = False):
         choices.append(Choice(title="-New Project-", value="__new__"))
 
     project = select(
-        "Select Project:",
+        "Project",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -178,7 +178,7 @@ def _prompt_name_path() -> tuple[str, str]:
         Choice(title="Git repo", value="g"),
     ]
     source = select(
-        "What type of source do you want to ingest from?:",
+        "Source to ingest from",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -187,19 +187,19 @@ def _prompt_name_path() -> tuple[str, str]:
 
     match source:
         case "f":
-            path_ = path("Enter path:", style=PROMPT_STYLE, only_directories=True).unsafe_ask()
+            path_ = path("Path", style=PROMPT_STYLE, only_directories=True).unsafe_ask()
         case "g":
-            path_ = text("Enter git repo URL:", style=PROMPT_STYLE).unsafe_ask()
+            path_ = text("Git repo URL", style=PROMPT_STYLE).unsafe_ask()
 
     if project_name == "__new__":
-        project_name = text("Enter project name:", style=PROMPT_STYLE).unsafe_ask()
+        project_name = text("Project name", style=PROMPT_STYLE).unsafe_ask()
 
     return project_name, path_
 
 
 def _prompt_port() -> int:
     port = text(
-        "Port to run on?",
+        "Port",
         default="5011",
         style=PROMPT_STYLE,
         validate=lambda port: port.isdigit()
@@ -210,13 +210,13 @@ def _prompt_port() -> int:
 
 
 def _prompt_browser() -> str:
-    return confirm("Auto-open browser?", default=False, style=PROMPT_STYLE).unsafe_ask()
+    return confirm("Auto-open browser", default=False, style=PROMPT_STYLE).unsafe_ask()
 
 
 def _prompt_delete_entity() -> BaseModel:
     choices = [Choice(title=model.value.title(), value=model.value) for model in BaseModel]
     value = select(
-        "What entity do you want to delete?",
+        "Eentity to delete",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -227,7 +227,7 @@ def _prompt_delete_entity() -> BaseModel:
 
 def _prompt_delete_id(delete_entity: BaseModel) -> int:
     value = text(
-        f"Enter database id of the {delete_entity.title()} you want to delete:",
+        f"Database id of the {delete_entity.title()} you want to delete",
         style=PROMPT_STYLE,
         validate=lambda text: text.isdigit() or "Please enter a valid integer database id",
     ).unsafe_ask()
@@ -237,7 +237,7 @@ def _prompt_delete_id(delete_entity: BaseModel) -> int:
 def _prompt_status_level() -> StatusLevel:
     choices = [Choice(title=level.description, value=level.value) for level in StatusLevel]
     value = select(
-        "Status Level?",
+        "Status Level",
         choices=choices,
         default=choices[0],
         style=PROMPT_STYLE,
@@ -250,38 +250,40 @@ def _prompt_status_level() -> StatusLevel:
 def _prompt_report_level() -> ReportLevel:
     choices = [Choice(title=level.description, value=level.value) for level in ReportLevel]
     value = select(
-        message="Report Level of Detail?",
+        "Report detail level",
         choices=choices,
-        default=ReportLevel.SUMMARY,
         style=PROMPT_STYLE,
+        default=ReportLevel.SUMMARY,
+        use_indicator=True,
+        use_emacs_keys=True,
     ).unsafe_ask()
     return ReportLevel(value)
 
 
 def _prompt_tool_analysis(args: Namespace, message: str) -> str:
-    # fmt: off
     state = load_state()
     kwargs = dict()
-    # if last_tool_analysis := state.get("last_tool_analysis"):
-    #     kwargs["default"] = last_tool_analysis
+    if last_tool_analysis := state.get("last_tool_analysis"):
+        kwargs["default"] = last_tool_analysis
 
-    # TODO: Oooh, would be nice to make this list dynamic!
-    choices = [
-        Choice(title="-ALL-", value=""),
-    ]
-    # Add the "raw" tools themselves..
+    choices = [Choice(title="-ALL-", value="")]
     for o_tool in args.tools.values():
-        choice = Choice(title=f"Name: {o_tool.name}", value=o_tool.name)
+        # Each tool goes out "as itself":
+        if len(o_tool.analyses) == 1:
+            # Tool only has 1 analysis..
+            title = o_tool.analyses[o_tool.name]
+        else:
+            # Tool only has multiple analyses, thus, the option here is to run ALL of them!
+            title = f"{o_tool.name.title()} - ALL"
+        choice = Choice(title=title, value=o_tool.name)
         choices.append(choice)
-    # START HERE!!!!
-        # Choice(title="Count lines of code ('cloc')"  , value="cloc"      ),
-        # Choice(title="FixMe, ToDo's etc."            , value="fxtd"      ),
-        # Choice(title="Python linter ('ruff check')"  , value="ruff"      ),
-        # Choice(title="Radon - ALL"                   , value="radon"     ),
-        # Choice(title="Radon - Cyclomatic complexity" , value="radon:cc"  ),
-        # Choice(title="Radon - Halstead metrics"      , value="radon:hal" ),
-        # Choice(title="Radon - Maintainability index" , value="radon:mi"  ),
-        # Choice(title="Radon - Raw lines of code"     , value="radon:raw" ),
 
-    # fmt: on
+        # For tools with multiple analyses, put another option out for each one..
+        if len(o_tool.analyses) > 1:
+            for analysis, description in o_tool.analyses.items():
+                value = f"{o_tool.name}:{analysis}"
+                title = f"{o_tool.name.title()} - {description}"
+                choice = Choice(title, value=value)
+                choices.append(choice)
+
     return select(message=message, choices=choices, style=PROMPT_STYLE, **kwargs).unsafe_ask()

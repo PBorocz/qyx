@@ -7,18 +7,10 @@ from mq.tools.base import ToolType
 from mq.tools.cloc.models import Cloc
 
 
-class ClocAnalysisType(str, Enum):
+class AnalysisType(str, Enum):
     """Cloc analysis types."""
 
     CLOC = "cloc"
-
-    @property
-    def description(self) -> str:
-        """More granular definitions."""
-        descriptions = {
-            "cloc": "Count lines of code ('cloc')",
-        }
-        return descriptions.get(self.value, "-")
 
 
 class Configuration(ToolType):
@@ -36,7 +28,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="cloc",
             name="cloc",
-            analyses=[enum.value for enum in ClocAnalysisType],
+            analyses={AnalysisType.CLOC.value: "Count lines of code ('cloc')"},
             models=dict(cloc=(Cloc,)),
             reports=dict(cli=cli, web=web),
         )

@@ -16,7 +16,7 @@ def test_args():
     """Setup our application (mostly database connection and registration)."""
     args = Namespace(log_level="warning")
     _, _, args.config = setup_configuration()
-    setup_logging(args.log_level)
+    setup_logging(args)
     setup_tools(args)
     setup_sqlite(args)
     yield args

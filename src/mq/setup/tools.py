@@ -1,6 +1,7 @@
 """Setup our tools configuration."""
 
 import logging
+import shutil
 from argparse import Namespace
 from importlib import import_module
 from pathlib import Path
@@ -40,15 +41,36 @@ def setup_tools(args: Namespace) -> dict:
             ################################################################################
             try:
                 tool_configuration_class: ToolType = getattr(tool_module, "Configuration")
-                log.debug(f"{tool_configuration_class=}")
             except AttributeError as exc:
                 raise ConfigurationError(f"Sorry, can't instantiate {tool_name}'s configuration class?: {exc}!")
 
             ################################################################################
-            # ...instantiate it and store it!
+            # Instantiate it but validate before making available!
             ################################################################################
-            tools[tool_name] = tool_configuration_class()
+            o_tool = tool_configuration_class()
+            if issues := validate_tool(o_tool):
+                log.warning(f"Sorry, encountered the following issues, '{o_tool.name}' is NOT available for use!")
+                for issue in issues:
+                    log.warning(issue)
+                continue
 
-    log.debug(f"Tools available: {', '.join(tools.keys())}")
+            ################################################################################
+            # Good to use!
+            ################################################################################
+            tools[tool_name] = o_tool
+
+    log.info(f"{len(tools)} tools available: {', '.join(tools.keys())}")
     args.tools = tools
-    # return tools
+
+
+def validate_tool(o_tool: ToolType) -> list[str] | None:
+    """Validate the tool before we allow it to be used/referred to."""
+    issues = []
+
+    # Validate that the tool is actually available on our path..
+    # (we assume that the first entry of the ingest command is the actual tool executable)
+    ingest_command = o_tool.get_ingest_command(relative="", absolute="", analysis="anAnalysis")
+    executable = ingest_command[0]
+    if not shutil.which(executable):
+        issues.append(f"- Couldn't find {executable=} on your path!")
+    return issues

@@ -78,7 +78,7 @@ def main():
     # install_traceback(show_locals=False)  # Before anything else, setup colorful/informative tracebacks
 
     args = get_args_command_line()  # Get/read configuration file (if any) and process all *command-line* arguments.
-    setup_logging(args.log_level)  # Setup logging (now that we know what potential level to log to)
+    setup_logging(args)  # Setup logging (now that we know what potential level to log to)
     setup_tools(args)  # Find and setup the tools currently defined/available (and place into args)
     setup_sqlite(args)  # Setup our data-store and respective tables.
 

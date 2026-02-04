@@ -11,7 +11,7 @@ from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, 
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class RadonAnalysisType(str, Enum):
+class AnalysisType(str, Enum):
     """Radon analysis types."""
 
     # fmt: off
@@ -20,17 +20,6 @@ class RadonAnalysisType(str, Enum):
     MI  = "mi"
     RAW = "raw"
     # fmt: on
-
-    @property
-    def description(self) -> str:
-        """More granular definitions."""
-        descriptions = {
-            "cc": "Cyclomatic Complexity",
-            "hal": "Halstead Metrics",
-            "mi": "Maintainability Index",
-            "raw": "Raw Lines of Code",
-        }
-        return descriptions.get(self.value, "-")
 
 
 class RadonCcEntityType(str, Enum):
@@ -52,16 +41,16 @@ class RadonCcEntityType(str, Enum):
 # Define the various report levels available for the CLI and Web-based report rendering.
 # fmt: off
 CLI_LEVELS_BY_ANALYSIS = {
-    RadonAnalysisType.CC.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-    RadonAnalysisType.HAL.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-    RadonAnalysisType.MI.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
-    RadonAnalysisType.RAW.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
+    AnalysisType.CC.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    AnalysisType.HAL.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    AnalysisType.MI.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
+    AnalysisType.RAW.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
 }
 WEB_LEVELS_BY_ANALYSIS = {
-    RadonAnalysisType.CC.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-    RadonAnalysisType.HAL.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
-    RadonAnalysisType.MI.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
-    RadonAnalysisType.RAW.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
+    AnalysisType.CC.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    AnalysisType.HAL.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
+    AnalysisType.MI.value  : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,            Rl.DERIVED, Rl.HISTORY),
+    AnalysisType.RAW.value : (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE,                        Rl.HISTORY),
 }
 # fmt: on
 
@@ -71,18 +60,25 @@ class Configuration(ToolType):
 
     def __init__(self):
         """Class meta-definition for the Radon tool."""
+        # fmt: off
         super(Configuration, self).__init__(
             module="radon",
             name="radon",
-            analyses=[enum.value for enum in RadonAnalysisType],
+            analyses={
+                AnalysisType.CC.value  : "Cyclomatic Complexity",
+                AnalysisType.HAL.value : "Halstead Metrics",
+                AnalysisType.MI.value  : "Maintainability Index",
+                AnalysisType.RAW.value : "Raw Lines of Code",
+            },
             models={
-                RadonAnalysisType.CC.value: (RadonCc,),
-                RadonAnalysisType.HAL.value: (RadonHal, RadonHalFunction),
-                RadonAnalysisType.MI.value: (RadonMi,),
-                RadonAnalysisType.RAW.value: (RadonRaw,),
+                AnalysisType.CC.value  : (RadonCc,),
+                AnalysisType.HAL.value : (RadonHal, RadonHalFunction),
+                AnalysisType.MI.value  : (RadonMi,),
+                AnalysisType.RAW.value : (RadonRaw,),
             },
             reports=dict(cli=CLI_LEVELS_BY_ANALYSIS, web=WEB_LEVELS_BY_ANALYSIS),
         )
+        # fmt: off
 
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
         """Return the command sent to subprocess to directly perform an ingest operation."""

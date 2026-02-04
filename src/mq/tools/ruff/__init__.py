@@ -13,18 +13,10 @@ RUFF_RULES = None  # Hold as a cache after first read
 COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
-class RuffAnalysisType(str, Enum):
+class AnalysisType(str, Enum):
     """Ruff analysis types."""
 
     RUFF = "ruff"
-
-    @property
-    def description(self) -> str:
-        """More granular definitions."""
-        descriptions = {
-            "ruff": "Python linter ('ruff check')",
-        }
-        return descriptions.get(self.value, "-")
 
 
 class Configuration(ToolType):
@@ -42,7 +34,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="ruff",
             name="ruff",
-            analyses=[enum.value for enum in RuffAnalysisType],
+            analyses={AnalysisType.RUFF.value: "Python linter ('ruff check')"},
             models=dict(ruff=(Ruff,)),
             reports=dict(cli=cli, web=web),
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!

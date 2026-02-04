@@ -54,7 +54,7 @@ class AbstractToolConfiguration(ABC):
         # Are results "required" for a Scan to be valid? (usually yes)
         self.results_required = True
 
-        # Save any other values sent in...
+        # Save any other non-required values sent in...
         for attr, value in kwargs.items():
             setattr(self, attr, value)
 
