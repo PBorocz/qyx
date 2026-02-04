@@ -60,25 +60,17 @@ class AbstractToolConfiguration(ABC):
 
         # Setup some methods that help use the tool later on.
         # (we do this up front to help validate tool configuration)
-        # FIXME: Make these possibly NONE to indicate that the respective capabilities aren't available yet!
         self.render_cli_method = self._get_render_method("cli")
-        self.render_web_method = self._get_render_method("web")
-
-    @abstractmethod
-    def get_ingest_command(self, *args, **kwargs):
-        """Return the command sent to subprocess to directly perform a "tool" ingest operation."""
-        raise ConfigurationError("Sorry, this method needs to be implemented by an inherited class!")
+        self.render_web_module, self.render_web_method = self._get_render_method("web")
 
     def import_component(self, component: str) -> ModuleType:
         """Dynamically import a component from this module."""
         return import_module(f"mq.tools.{self.module}.{component}")
 
-    def _get_render_method(self, interface: str) -> Callable:
-        """Return the root render method for this tool and the specified interace, e.g. "web" or "cli"."""
-        render_module: ModuleType = self.import_component(interface)
-        if not (render_method := getattr(render_module, "render")):
-            raise ConfigurationError("Unable to find 'render' method in {self.module}'s {interface}.py file!")
-        return render_method
+    @abstractmethod
+    def get_ingest_command(self, *args, **kwargs):
+        """Return the command sent to subprocess to directly perform a "tool" ingest operation."""
+        raise ConfigurationError("Sorry, this method needs to be implemented by an inherited class!")
 
     def get_ingest_method(self, *args, **kwargs) -> Callable:
         """Return the parse method to parse/ingest this tool's output (usually JSON)."""
@@ -87,6 +79,20 @@ class AbstractToolConfiguration(ABC):
         # - For multi-analysis tools (like radon), this method is *OVERRIDDEN* in their respective __init__.py.
         py_ingest: ModuleType = self.import_component("ingest")
         return getattr(py_ingest, "ingest")
+
+    def _get_render_method(self, interface: str) -> tuple[ModuleType | None, Callable | None]:
+        """Return the root render method for this tool and the specified interace, e.g. "web" or "cli"."""
+        try:
+            render_module: ModuleType = self.import_component(interface)
+        except ModuleNotFoundError:
+            log.warning(f"{self.name}: Sorry, no '{interface}' capabilities available.")
+            return None, None
+
+        if not (render_method := getattr(render_module, "render")):
+            log.warning(f"{self.name}: Sorry, no 'render' method found in {self.module}'s {interface}.py file!")
+            return None, None
+
+        return render_module, render_method
 
     def iter_reports(self, interface: str) -> Iterator[str, ReportLevel]:
         """Iterator over analysis available for the specified interface."""

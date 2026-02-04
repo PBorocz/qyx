@@ -1,16 +1,15 @@
 """."""
 
-import logging
 from argparse import Namespace
 
-from mq.tools import generate_ta_pairs
-from mq.tools.base import ToolType
+from rich import print as rprint
 
-log = logging.getLogger(__name__)
+from mq.tools import generate_ta_pairs
 
 
 def report(args: Namespace) -> None:
-    tools_analyses: list[tuple[ToolType, str]] = generate_ta_pairs(args)
-
-    for o_tool, analysis in tools_analyses:
-        o_tool.render_cli_method(args, o_tool, analysis)
+    for o_tool, analysis in generate_ta_pairs(args):
+        if o_tool.render_cli_method:
+            o_tool.render_cli_method(args, o_tool, analysis)
+        else:
+            rprint("[red]Sorry, unable to run reports for this tool as it doesn't have command-line rendering.[/red]")

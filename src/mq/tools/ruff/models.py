@@ -199,7 +199,7 @@ def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, r
 
         "A": 2,  # Flake8                  (builtins - shadowing built-ins)
         "C": 2,  # Complexity (mccabe)     (maintainability)
-        "R": 2,  # Refactoring suggestions (maintainability)
+        "R": 2,  # Suggestion to refactor  (maintainability)
         "U": 2,  # Unused code             (dead code)
         "W": 2,  # Warnings                (various issues)
 

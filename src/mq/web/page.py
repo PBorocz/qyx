@@ -9,17 +9,21 @@ from mq.utils.scoring import get_nested_config
 
 def render_navbar(request, active_page):
     """Render our navbar."""
-    # Left nav is simply branding and link back to home page...
+    # Left nav:
     kwargs = dict(aria_current="page") if not active_page else dict()
     l_nav = [ft.Li(ft.A("MQ", href="/", **kwargs))]
 
-    for tool_name in get_nested_config(request.app.state.args.config, "ui.tool_order"):
+    args = request.app.state.args
+    for tool_name in get_nested_config(args.config, "ui.tool_order"):
+        o_tool = args.tools.get(tool_name)
+        if not o_tool.render_web_method:
+            continue
         name = tool_name.title()
         path = f"/{tool_name}"
         kwargs = dict(aria_current="page") if active_page == tool_name else dict()
         l_nav.append(ft.Li(ft.A(name, href=path, **kwargs)))
 
-    # Right nav is ....
+    # Right nav:
     # r_nav = [*render_project_selector(request, "/partials")]
     # r_nav = []
 

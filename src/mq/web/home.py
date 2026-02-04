@@ -47,6 +47,8 @@ def render_partial_project_summary(request, s_project_id: str):
     sections = []
     for tool_name in get_nested_config(args.config, "dashboard.tool_order"):
         o_tool = args.tools[tool_name]  # We validated tool-names in setup_configuration!
+        if not o_tool.render_web_method:
+            continue  # Skip tools that can't render themselves!
         for analysis in o_tool.models:
             sections.append(
                 fh.Div(
@@ -96,9 +98,11 @@ def get_web_render_methods(args: Namespace, level: str, required: bool) -> Itera
                 except ModuleNotFoundError:
                     continue
             if not web_method_module:
-                log.warning(
-                    f"Sorry, we couldn't find a {web_method_module_name=} in {o_tool.module_name}.web",
+                msg = (
+                    f"{o_tool.name}: Skipping rendering as we couldn't find "
+                    f"'{o_tool.module}/{web_method_module_name}.py'."
                 )
+                log.warning(msg)
                 break
 
             # Using the module, lookup the respective method to render tool_module & analysis

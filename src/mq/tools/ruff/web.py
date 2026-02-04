@@ -19,7 +19,7 @@ from mq.web.page import render_page
 # Page layout...
 ################################################################################################
 def render(request, name, config):
-    """Do the primary page layout for this tools display page."""
+    """Render the primary page layout for this tools display page."""
     return render_page(
         request,
         name.title(),

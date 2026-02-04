@@ -79,12 +79,11 @@ def register(args, rt):  # noqa: C901
         """HTMX endpoint to update content on a "tool" page based on an updated project selection."""
         o_tool = args.tools[tool]
         try:
-            # FIXME: Use what's already in o_tool instead of doing another import_component on every request.
-            web_file_module = o_tool.import_component("web")
-        except ImportError:
-            return ft.Div(f"Couldn't find '{tool}/web.py' file!", cls="error")
+            render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
+        except AttributeError:
+            return ft.Div(f"Sorry, unable to render_content obo '{tool}'!", cls="error")
 
         if project:
             update_state(last_project_id=project, last_tool=tool)
 
-        return (*web_file_module.render_content(args, request, s_project_id=project, analysis=analysis),)
+        return (*render_content_method(args, request, s_project_id=project, analysis=analysis),)
