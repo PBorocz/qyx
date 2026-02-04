@@ -47,3 +47,7 @@ def setup_logging(args: Namespace, arg_peewee_debug: bool = False) -> logging.Lo
     peewee_logger.addHandler(rich_handler)
     peewee_logger.setLevel(peewee_level)  # Allows us to segregate sql logging if desired.
     peewee_logger.propagate = False
+
+    # Turn off asyncio logging
+    asyncio_logger = logging.getLogger("asyncio")
+    asyncio_logger.setLevel(logging.WARNING)

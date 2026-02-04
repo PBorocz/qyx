@@ -163,30 +163,6 @@ def get_args_command_line():
     )
 
     ################################################################################
-    parser_trim = subparser_admin.add_parser(
-        "trim",
-        parents=[parser_root],
-        help="Trim old data, leaving the most recent run for each analysis",
-        formatter_class=RichHelpFormatter,
-    )
-    parser_trim.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
-    parser_trim.add_argument("-a", "--analysis", help="Analysis to trim data for, e.g. radon-cc, ruff, cloc etc.")
-    # TODO: Implement this:
-    # parse_trim.add_argument("-n", "--name", help='Name of project')
-
-    ################################################################################
-    parser_clear = subparser_admin.add_parser(
-        "clear",
-        parents=[parser_root],
-        help="Clear the database, either for all analyses (default) or a specific one.",
-        formatter_class=RichHelpFormatter,
-    )
-    parser_clear.add_argument("--no_confirm", action="store_true", help="Run clear *without* confirmation(!)")
-    parser_clear.add_argument("-a", "--analysis", help="Optional, analysis clear, e.g. radon:cc, ruff, cloc etc.")
-    # TODO: Implement this:
-    # parser_clear.add_argument("-p", "--project", default=".", help='Base path to project, defaults to "."')
-
-    ################################################################################
     parser_delete = subparser_admin.add_parser(
         "delete",
         parents=[parser_root],

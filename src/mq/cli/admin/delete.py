@@ -16,7 +16,7 @@ def delete(args: Namespace) -> None:
     """Delete the specified Project, Request or Scan."""
     # Did we even *get* an argument to work from?
     if not args.delete_target:
-        raise RuntimeError("Sorry, we need to have a particular project, request or scan specified!")
+        raise RuntimeError("Sorry, we need to have a particular project, request or scan")
 
     # Is it in the right format?
     if ":" not in args.delete_target:

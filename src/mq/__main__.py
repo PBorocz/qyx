@@ -6,10 +6,8 @@ from typing import Callable
 
 # from rich.traceback import install as install_traceback
 
-from mq.cli.admin.clear import clear
 from mq.cli.admin.delete import delete
 from mq.cli.admin.clean import clean
-from mq.cli.admin.trim import trim
 from mq.cli.ingest import ingest
 from mq.cli.report import report
 from mq.cli.status import status
@@ -38,21 +36,17 @@ def _get_dispatch_method(args: argparse.Namespace) -> Callable:
             match args.admin_command:
                 case "clean":
                     return clean
-                case "trim":
-                    return trim
-                case "clear":
-                    return clear
                 case "delete":
                     return delete
                 case _:
                     raise RuntimeError(
-                        "Sorry, invalid admin option selected, must be one of 'clean', 'trim', 'clear' or 'delete'",
+                        "Sorry, invalid admin option selected, must be one of 'clean' or 'delete'",
                     )
         case _:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
 
-def dispatch(args: argparse.Namespace) -> None:
+def dispatch(args: argparse.Namespace) -> str:
     """Primary dispatch for core command requested."""
     # If no command yet provided, go into "interactive" mode and get rest of the arguments.
     if not args.command:
@@ -73,14 +67,26 @@ def dispatch(args: argparse.Namespace) -> None:
     # If we finished cleanly, save away the last project we worked on:
     update_state_from_args(args)
 
+    return method_.__name__
+
 
 def main():
     # install_traceback(show_locals=False)  # Before anything else, setup colorful/informative tracebacks
 
-    args = get_args_command_line()  # Get/read configuration file (if any) and process all *command-line* arguments.
-    setup_logging(args)  # Setup logging (now that we know what potential level to log to)
-    setup_tools(args)  # Find and setup the tools currently defined/available (and place into args)
-    setup_sqlite(args)  # Setup our data-store and respective tables.
+    # Get/read configuration file (if any) and process all *command-line* arguments.
+    args = get_args_command_line()
 
-    dispatch(args)  # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
-    clean(args)  # Do database housekeeping
+    # Setup logging (now that we know what potential level to log to)
+    setup_logging(args)
+
+    # Find and setup the tools currently defined/available (and place into args)
+    setup_tools(args)
+
+    # Setup our data-store and respective tables.
+    setup_sqlite(args)
+
+    # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
+    cmd_run = dispatch(args)
+
+    if cmd_run != "clean":
+        clean(args)  # Do database housekeeping (if we haven't done so on explicit request above
