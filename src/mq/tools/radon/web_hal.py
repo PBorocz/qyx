@@ -3,14 +3,14 @@
 from argparse import Namespace
 from datetime import datetime
 
+import plotly.graph_objects as go
 from fasthtml import common as fh
-from pygal import DateTimeLine
-from pygal.style import Style
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import RadonHal, query_hal
-from mq.web import DEFAULT_CHART_STYLE
+from mq.web import SERIES_COLORS
+from mq.utils.plotly_styles import style_figure
 
 
 def hal_0(args: Namespace, scan: Scan, project: Project = None):
@@ -182,28 +182,36 @@ def hal_d(args: Namespace, project: Project, scan: Scan):
     )
 
 
-def hal_h(args: Namespace, project: Project, scan: Scan = None):
-    timestamps, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
+def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict:
+    _, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
+    if not transposed:
+        return dict()
 
-    style = Style(**DEFAULT_CHART_STYLE)
-
-    # Create a chart for EACH separate metric!
-    charts = dict()
+    # This is a bit unique in that we create a chart for EACH separate metric!
     radon_names = {attr.name: attr.display for attr in RadonHal.attrs()}
+    charts = dict()
     for metric, values_by_timestamp in transposed.items():
-        dt_values = [(datetime.fromisoformat(ts_), value) for ts_, value in values_by_timestamp.items()]
-        chart = DateTimeLine(
-            y_title=radon_names[metric],
-            dots_size=1,
-            height=500,
-            show_legend=False,
-            style=style,
-            tooltip_border_radius=10,
-            x_label_rotation=45,  # Angle labels to prevent overlap
-            x_labels_major_every=2,  # Show every 5th label
-            x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
+        fig = go.Figure()
+        x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
+        y_values = list(values_by_timestamp.values())
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                hovertemplate="%{y:.2f}<br>As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+                line_color=SERIES_COLORS[0],
+                marker_color=SERIES_COLORS[0],
+                mode="lines+markers",
+                name=radon_names[metric],
+            ),
         )
-        chart.add(metric, dt_values)
-        charts[metric] = chart.render()
+        style_figure(
+            fig,
+            layout={
+                "yaxis_title": radon_names[metric],
+            },
+        )
+
+        charts[metric] = fig.to_html().encode()
 
     return charts

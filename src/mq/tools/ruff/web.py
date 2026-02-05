@@ -3,16 +3,16 @@
 from argparse import Namespace
 from datetime import datetime
 
+import plotly.graph_objects as go
 from fasthtml import common as fh
-from pygal import DateTimeLine
-from pygal.style import Style
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.ruff import get_ruff_rule_name
 from mq.tools.ruff.models import query
-from mq.web import DEFAULT_CHART_STYLE, render_project_selector
+from mq.web import SERIES_COLORS, render_project_selector
 from mq.web.page import render_page
+from mq.utils.plotly_styles import style_figure
 
 
 ################################################################################################
@@ -56,7 +56,6 @@ def _render_current(args: Namespace, request, s_project_id: str = None, analysis
 
 def _render_history(args: Namespace, request, s_project_id: str = None, analysis: str = None):
     """Render the history portion of the page."""
-    # Create Pygal chart
     if not s_project_id:
         return fh.Section()
     project = Project.get(Project.id == int(s_project_id))
@@ -192,24 +191,43 @@ def ruff_d(args: Namespace, project: Project, scan: Scan):
 
 
 def ruff_h(args: Namespace, project: Project, scan: Scan = None):
-    # Create Pygal chart
+    """Render the history chart of number of issues over time."""
     _, rows, _ = query(args, ReportLevel.HISTORY, project=project)
+    if not rows:
+        return None
 
-    style = Style(**DEFAULT_CHART_STYLE)
+    x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
+    y_values = list(rows.values())
 
-    chart = DateTimeLine(
-        y_title="Ruff Issues",
-        dots_size=1,
-        height=500,
-        show_legend=False,
-        style=style,
-        tooltip_border_radius=10,
-        x_label_rotation=45,  # Angle labels to prevent overlap
-        x_labels_major_every=2,  # Show every 5th label
-        x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
+    # We want custom hover labels based on the respective count
+    custom_hover = []
+    for count in y_values:
+        if count == 0:
+            hover = "<b>No</b> Ruff Issues!"
+        elif count == 1:
+            hover = f"<b>{count}</b> Ruff Issue"
+        else:
+            hover = f"<b>{count}</b> Ruff Issues"
+        custom_hover.append(hover)
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode="lines+markers",
+            marker_color=SERIES_COLORS[0],
+            line_color=SERIES_COLORS[0],
+            customdata=custom_hover,
+            hovertemplate="%{customdata}<br>As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+        ),
     )
-    datetime_values = [(datetime.fromisoformat(ts_), count) for ts_, count in rows.items()]
 
-    chart.add("-count-", datetime_values)
+    style_figure(
+        fig,
+        layout={
+            "yaxis_title": "Ruff Issues",
+        },
+    )
 
-    return chart.render()  # Render as SVG and return bytes
+    return fig.to_html().encode()

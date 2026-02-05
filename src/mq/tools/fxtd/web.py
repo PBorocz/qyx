@@ -219,23 +219,19 @@ def fxtd_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None
         y_values = list(dt_values.values())
         fig.add_trace(
             go.Scatter(
+                line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                mode="lines+markers",
+                name=metric.title(),
                 x=x_values,
                 y=y_values,
-                mode="lines+markers",  # Specify mode
-                name=metric.title(),
-                marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
-                line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
-                hovertemplate="%{y} "
-                + f"<b>{metric}'s</b><br>"
-                + "As Of: %{x|%Y-%m-%d %H:%M}<br>"
-                + "<extra></extra>",  # Removes secondary box
+                hovertemplate="%{y} " + f"<b>{metric}'s</b><br>" + "As Of: %{x|%Y-%m-%d %H:%M}<br>" + "<extra></extra>",
             ),
         )
 
     style_figure(
         fig,
         layout={
-            "xaxis_title": "Commit Date",
             "yaxis_title": "Number of Instances",
         },
     )

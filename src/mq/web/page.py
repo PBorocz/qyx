@@ -53,7 +53,6 @@ def render_page(request, title, active_page, *main_page_content):
             ft.Link(rel="icon", type="image/png", sizes="32x32", href="/favicon-32x32.png"),
             ft.Link(rel="icon", type="image/png", sizes="16x16", href="/favicon-16x16.png"),
             ft.Link(rel="manifest", href="/site.webmanifest"),
-            ft.Script(src="https://kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js"),
             ft.Script(src="https://unpkg.com/htmx.org@1.9.10"),
             ft.Script(src="https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js"),
             ft.Script(src="https://unpkg.com/tablesort@5.3.0/dist/sorts/tablesort.number.min.js"),

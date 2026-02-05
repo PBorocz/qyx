@@ -8,8 +8,8 @@
 
 - **Multi-Tool Integration**: Aggregate metrics from CLOC, Ruff, Radon, and custom analyzers
 - **Persistent Storage**: SQLite database for historical tracking and trend analysis
-- **Rich CLI Interface**: Beautiful terminal output with detailed reports at multiple levels
-- **Web Dashboard**: FastHTML-based interactive dashboard with HTMX for dynamic updates
+- **CLI Interface**: Terminal output with detailed reports at multiple levels (Rich)
+- **Web Dashboard**: Interactive dashboard (FastHTML & HTMX).
 - **Git Integration**: Analyze code across commit history
 - **Configurable Grading**: Define custom thresholds and scoring for all metrics
 - **Multi-Level Reporting**: Summary, directory, file, detailed, derived, and historical views
@@ -47,10 +47,10 @@ Track code annotations and technical debt markers:
 
 - Python >= 3.11.9
 - External tools (installed separately):
-  - `cloc` - Count Lines of Code
-  - `ruff` - Python linter
+  - `cloc`  - Count Lines of Code
+  - `ruff`  - Python linter
   - `radon` - Complexity analyzer
-  - `git` - Version control (for history analysis)
+  - `git`   - Version control (for history analysis)
 
 ### Install MQ
 
@@ -327,7 +327,7 @@ The web dashboard provides an interactive view of all metrics.
 - **Project Selection**: Dropdown to switch between analyzed projects
 - **Tool Panels**: Dedicated panels for each analysis tool (CLOC, Ruff, Radon, FXTD)
 - **Dynamic Updates**: HTMX-powered updates without page reloads
-- **Charts**: Historical trend visualization using Pygal
+- **Charts**: Historical trend visualization using Plotly
 - **Multi-Level Views**: Summary, directory, file, and detail levels
 - **Health Monitoring**: `/health` endpoint for status checks
 
@@ -386,7 +386,7 @@ python-code-quality/
 **Core:**
 - peewee >= 3.18.3 (ORM)
 - python-fasthtml >= 0.12.36 (Web framework)
-- pygal >= 3.1.0 (Charts)
+- plotly >= 6.5.0 (Charts)
 - questionary >= 2.1.1 (Interactive prompts)
 - rich >= 14.2.0 (Terminal formatting)
 
@@ -524,14 +524,14 @@ thresholds:
 
 MQ provides multiple reporting levels for different perspectives:
 
-| Level | Name | Description |
-|-------|------|-------------|
-| 0 | Summary | Project-level overview with overall metrics |
-| 1 | Directory | Directory-level aggregation |
-| 2 | File | File-level detail |
-| 3 | Detail | Deep detailed metrics (function-level where available) |
-| d | Derived | Composite scores, rates of change, trends |
-| h | History | Historical trends with charts |
+| Level | Name      | Description                                            |
+|-------|-----------|--------------------------------------------------------|
+| 0     | Summary   | Project-level overview with overall metrics            |
+| 1     | Directory | Directory-level aggregation                            |
+| 2     | File      | File-level detail                                      |
+| 3     | Detail    | Deep detailed metrics (function-level where available) |
+| d     | Derived   | Composite scores, rates of change, trends              |
+| h     | History   | Historical trends with charts                          |
 
 ## Examples
 
@@ -564,15 +564,14 @@ mq report --name myproject --level h
 
 ```bash
 # Analyze all commits in repository
-mq ingest --name myproject --path ~/projects/myapp
+mq ingest --name myproject --path https://github.org/someone/myproject
 
 # This will:
-# 1. Detect git repository
-# 2. Get commit history
-# 3. Checkout each commit
-# 4. Run analysis tools
-# 5. Store results with commit metadata
-# 6. Return to original HEAD
+# 1. Clone the repo and get the complete commit history
+# 2. For each commit not yet processed:
+# 3. - Will checkout the commit
+# 4. - Run analysis tools
+# 5. - Store results with commit metadata
 
 # View historical trends
 mq report --name myproject --level h
@@ -656,8 +655,7 @@ Built with:
 - [FastHTML](https://fastht.ml/) - Modern Python web framework
 - [Rich](https://rich.readthedocs.io/) - Beautiful terminal output
 - [HTMX](https://htmx.org/) - Dynamic web interactions
-- [Pygal](http://www.pygal.org/) - Elegant SVG charts
-- External tools: CLOC, Ruff, Radon
+- [Plotly](https://plotly.com/python/) - Elegant charts
 
 ## Version
 

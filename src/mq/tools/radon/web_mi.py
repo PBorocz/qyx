@@ -4,13 +4,13 @@ from argparse import Namespace
 from datetime import datetime
 
 from fasthtml import common as fh
-from pygal import DateTimeLine
-from pygal.style import Style
+import plotly.graph_objects as go
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_mi
-from mq.web import DEFAULT_CHART_STYLE
+from mq.web import SERIES_COLORS
+from mq.utils.plotly_styles import style_figure
 
 
 def mi_0(args: Namespace, scan: Scan, project: Project = None):
@@ -118,25 +118,27 @@ def mi_d(args: Namespace, project: Project, scan: Scan):
 
 
 def mi_h(args: Namespace, project: Project, scan: Scan = None):
-    """Create Pygal chart."""
-    timestamps, transposed, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
-
-    style = Style(**DEFAULT_CHART_STYLE)
-
-    chart = DateTimeLine(
-        y_title="Maintainability Index",
-        dots_size=1,
-        height=500,
-        show_legend=False,
-        style=style,
-        tooltip_border_radius=10,
-        x_label_rotation=45,  # Angle labels to prevent overlap
-        x_labels_major_every=2,  # Show every 5th label
-        x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
-    )
-
+    """Render the maintainability index chart."""
+    _, transposed, _ = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
     dt_complexity = transposed["mi"]
-    datetime_values = [(datetime.fromisoformat(timestamp), value) for timestamp, value in dt_complexity.items()]
-    chart.add("-", datetime_values)
+    x_values = [datetime.fromisoformat(ts_) for ts_ in dt_complexity.keys()]
+    y_values = list(dt_complexity.values())
 
-    return chart.render()
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode="lines+markers",
+            marker_color=SERIES_COLORS[0],
+            line_color=SERIES_COLORS[0],
+            hovertemplate="%{y:.2f}<br>As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+        ),
+    )
+    style_figure(
+        fig,
+        layout={
+            "yaxis_title": "Maintainability Index",
+        },
+    )
+    return fig.to_html().encode()

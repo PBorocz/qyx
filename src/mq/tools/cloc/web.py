@@ -292,14 +292,14 @@ def cloc_f(args: Namespace, scan: Scan, project: Project = None):
             x=[label for label, _ in histogram],
             y=[entry["value"] for entry in chart_entries],
             marker_color=[entry["color"] for entry in chart_entries],
-            hovertemplate="%{y}% " + "of files are <b>%{x}</b><br>" + "<extra></extra>",  # Removes secondary box
+            hovertemplate="%{y}% " + "of files are <b>%{x}</b> lines long<br>" + "<extra></extra>",
         ),
     )
 
     style_figure(
         fig,
         layout={
-            "xaxis": None,  # Not dates here!
+            "xaxis": None,
             "yaxis_title": "Percent of Files by Total Lines",
         },
     )
@@ -326,21 +326,17 @@ def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None
             go.Scatter(
                 x=x_values,
                 y=y_values,
-                mode="lines+markers",  # Specify mode
+                mode="lines+markers",
                 name=title,
                 marker=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], size=4, opacity=0.5),
                 line=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], width=2),
-                hovertemplate="%{y} "
-                + f"<b>{title}'s</b><br>"
-                + "As Of: %{x|%Y-%m-%d %H:%M}<br>"
-                + "<extra></extra>",  # Removes secondary box
+                hovertemplate="%{y} " + f"<b>{title}'s</b><br>" + "As Of: %{x|%Y-%m-%d %H:%M}<br>" + "<extra></extra>",
             ),
         )
 
     style_figure(
         fig,
         layout={
-            "xaxis_title": "Commit Date",
             "yaxis_title": "Lines",
         },
     )

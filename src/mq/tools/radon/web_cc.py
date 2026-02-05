@@ -3,15 +3,15 @@
 from argparse import Namespace
 from datetime import datetime
 
+import plotly.graph_objects as go
 from fasthtml import common as fh
-from pygal import DateTimeLine
-from pygal.style import Style
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon import RadonCcEntityType
 from mq.tools.radon.models import query_cc
-from mq.web import DEFAULT_CHART_STYLE
+from mq.web import SERIES_COLORS
+from mq.utils.plotly_styles import style_figure
 
 
 def cc_0(args: Namespace, scan: Scan, project: Project = None):
@@ -184,26 +184,34 @@ def cc_d(args: Namespace, project: Project, scan: Scan):
 
 
 def cc_h(args: Namespace, project: Project, scan: Scan = None):
-    """Create Pygal chart."""
-    timestamps, transposed, roc = query_cc(args, ReportLevel.HISTORY, project=project, last=None)
+    """Render our chart to display Radon CC information."""
+    _, transposed, _ = query_cc(args, ReportLevel.HISTORY, project=project, last=None)
 
-    style = Style(**DEFAULT_CHART_STYLE)
-
-    chart = DateTimeLine(
-        y_title="Complexity",
-        dots_size=1,
-        height=500,
-        legend_at_bottom=True,
-        legend_at_bottom_columns=3,
-        style=style,
-        tooltip_border_radius=10,
-        x_label_rotation=45,  # Angle labels to prevent overlap
-        x_labels_major_every=2,  # Show every 5th label
-        x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
-    )
-    for entity_type in RadonCcEntityType:
+    fig = go.Figure()
+    for i, entity_type in enumerate(RadonCcEntityType):
         values_by_timestamp = transposed[entity_type.value]
-        datetime_values = [(datetime.fromisoformat(ts_), value) for ts_, value in values_by_timestamp.items()]
-        chart.add(entity_type.plural, datetime_values)
+        x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
+        y_values = [f"{value:.2f}" for value in values_by_timestamp.values()]
+        y_values = list(values_by_timestamp.values())
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                hovertemplate=f"{entity_type.plural}: "
+                + "<b>%{y:.2f}</b><br>"
+                + "As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+                line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                mode="lines+markers",
+                name=entity_type.plural,
+            ),
+        )
 
-    return chart.render()
+    style_figure(
+        fig,
+        layout={
+            "yaxis_title": "Cyclomatic Complexity",
+        },
+    )
+
+    return fig.to_html().encode()

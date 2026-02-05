@@ -4,13 +4,13 @@ from argparse import Namespace
 from datetime import datetime
 
 from fasthtml import common as fh
-from pygal import DateTimeLine
-from pygal.style import Style
+import plotly.graph_objects as go
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_raw
-from mq.web import DEFAULT_CHART_STYLE
+from mq.web import SERIES_COLORS
+from mq.utils.plotly_styles import style_figure
 
 
 def raw_0(args: Namespace, scan: Scan, project: Project = None):
@@ -28,7 +28,7 @@ def raw_0(args: Namespace, scan: Scan, project: Project = None):
             style="text-align: center",
         ),
         fh.Th(
-            "Comments",
+            "Comment",
             scope="col",
             style="text-align: center",
         ),
@@ -92,7 +92,7 @@ def raw_1(args: Namespace, scan: Scan, project: Project = None):
     t_head = fh.Tr(
         fh.Th("Directory" , scope="col", style="text-align: left"),
         fh.Th("SLOC"      , scope="col", style="text-align: right"),
-        fh.Th("Comments"  , scope="col", style="text-align: right"),
+        fh.Th("Comment"   , scope="col", style="text-align: right"),
         fh.Th("Multi"     , scope="col", style="text-align: right"),
         fh.Th("Blank"     , scope="col", style="text-align: right"),
         fh.Th("Total"     , scope="col", style="text-align: right"),
@@ -132,7 +132,7 @@ def raw_2(args: Namespace, scan: Scan, project: Project = None):
         fh.Th("Directory" , scope="col", style="text-align: left"),
         fh.Th("File"      , scope="col", style="text-align: left"),
         fh.Th("SLOC"      , scope="col", style="text-align: right"),
-        fh.Th("Comments"  , scope="col", style="text-align: right"),
+        fh.Th("Comment"   , scope="col", style="text-align: right"),
         fh.Th("Multi"     , scope="col", style="text-align: right"),
         fh.Th("Blank"     , scope="col", style="text-align: right"),
         fh.Th("Total"     , scope="col", style="text-align: right"),
@@ -166,26 +166,33 @@ def raw_2(args: Namespace, scan: Scan, project: Project = None):
 
 
 def raw_h(args: Namespace, project: Project, scan: Scan = None):
-    """Create Pygal chart."""
-    timestamps, transposed, rocs, roc_gt = query_raw(args, ReportLevel.HISTORY, project=project, last=None)
+    """Create chart obo all Raw metrics."""
+    _, transposed, _, _ = query_raw(args, ReportLevel.HISTORY, project=project, last=None)
 
-    style = Style(**DEFAULT_CHART_STYLE)
+    fig = go.Figure()
+    for i, (metric, dt_rows) in enumerate(list(transposed.items())):
+        x_values = [datetime.fromisoformat(ts_) for ts_ in dt_rows.keys()]
+        y_values = list(dt_rows.values())
+        fig.add_trace(
+            go.Scatter(
+                line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                mode="lines+markers",
+                name=metric.upper(),
+                x=x_values,
+                y=y_values,
+                hovertemplate="<b>%{y}</b> "
+                + f"{metric.upper()}'s"
+                + "<br>As Of: %{x|%Y-%m-%d %H:%M}<br>"
+                + "<extra></extra>",
+            ),
+        )
 
-    chart = DateTimeLine(
-        y_title="Lines",
-        dots_size=1,
-        height=500,
-        legend_at_bottom=True,
-        legend_at_bottom_columns=3,
-        style=style,
-        tooltip_border_radius=10,
-        x_label_rotation=45,  # Angle labels to prevent overlap
-        x_labels_major_every=2,  # Show every other label
-        x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
+    style_figure(
+        fig,
+        layout={
+            "yaxis_title": "Number of Lines",
+        },
     )
 
-    for metric, dt_rows in transposed.items():
-        datetime_values = [(datetime.fromisoformat(timestamp), value) for timestamp, value in dt_rows.items()]
-        chart.add(metric.upper(), datetime_values)
-
-    return chart.render()
+    return fig.to_html().encode()
