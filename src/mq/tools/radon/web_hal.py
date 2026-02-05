@@ -9,8 +9,7 @@ from fasthtml import common as fh
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import RadonHal, query_hal
-from mq.web import SERIES_COLORS
-from mq.utils.plotly_styles import style_figure
+from mq.web.plotly import SERIES_COLORS, style_figure
 
 
 def hal_0(args: Namespace, scan: Scan, project: Project = None):

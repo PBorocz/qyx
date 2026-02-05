@@ -4,8 +4,6 @@ from pathlib import Path
 
 from fasthtml import common as ft
 
-from mq.utils.scoring import get_nested_config
-
 
 def render_navbar(request, active_page):
     """Render our navbar."""
@@ -14,7 +12,7 @@ def render_navbar(request, active_page):
     l_nav = [ft.Li(ft.A("MQ", href="/", **kwargs))]
 
     args = request.app.state.args
-    for tool_name in get_nested_config(args.config, "renderers.web.ui.tool_order"):
+    for tool_name in args.config.get("renderers.web.ui.tool_order"):
         o_tool = args.tools.get(tool_name)
         if not o_tool.render_web_method:
             continue

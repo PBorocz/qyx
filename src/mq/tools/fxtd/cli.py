@@ -5,7 +5,6 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
-from mq.utils.scoring import get_nested_config
 from mq.tools.base import Project, Scan
 from mq.tools.fxtd.models import query
 from mq.utils import format_timestamp_headers
@@ -121,7 +120,7 @@ def fxtd_h(args: Namespace, project: Project) -> None:
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta")
 
-    colors = get_nested_config(args.config, "renderers.cli.colors")
+    colors = args.config.get("renderers.cli.colors")
     for entity_type, values in transposed.items():
         t_row = [entity_type]
         for timestamp in sorted(timestamps):

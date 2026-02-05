@@ -9,8 +9,7 @@ import plotly.graph_objects as go
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_mi
-from mq.web import SERIES_COLORS
-from mq.utils.plotly_styles import style_figure
+from mq.web.plotly import SERIES_COLORS, style_figure
 
 
 def mi_0(args: Namespace, scan: Scan, project: Project = None):

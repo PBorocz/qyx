@@ -2,23 +2,8 @@
 
 import logging
 from argparse import Namespace
-from typing import Any
 
 log = logging.getLogger(__name__)
-
-
-def get_nested_config(config: dict, path: str, default: Any = None) -> Any:
-    """Get nested config value using dot notation."""
-    keys = path.split(".")
-    value = config
-    for key in keys:
-        if isinstance(value, dict):
-            value = value.get(key)
-            if value is None:
-                return default
-        else:
-            return default
-    return value
 
 
 def score_metric(args: Namespace, metric_path: str, value: float) -> Namespace:
@@ -27,7 +12,7 @@ def score_metric(args: Namespace, metric_path: str, value: float) -> Namespace:
     Returns:
         Namespace with score, grade, and color
     """
-    metric_config = get_nested_config(args.config, metric_path)
+    metric_config = args.config.get(metric_path)
     if not metric_config:
         # Fallback to default if not configured
         log.warning(f"Sorry, couldn't find a scoring configuration for {metric_path=}!")

@@ -11,7 +11,7 @@ from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.tools.cloc.models import query as query_cloc
 from mq.tools.radon.models import query_raw
 from mq.utils import rate_of_change_percentage
-from mq.utils.scoring import get_nested_config, score_metric
+from mq.utils.scoring import score_metric
 
 
 log = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ def _by_type_per_kloc(args: Namespace, lines_of_code: int, rows):
 
 def _composite_per_kloc(args: Namespace, lines_of_code: int, rows) -> Namespace:
     """Calculate composite_weighted score of FixMe issues per thousand loc (not including comments and blank lines)."""
-    weights = get_nested_config(args.config, "tools.fxtd.composite_weighted_per_kloc.weights")
+    weights = args.config.get("tools.fxtd.composite_weighted_per_kloc.weights")
     weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows])
     metric_value = (weighted_score / lines_of_code) * 1000
     return score_metric(args, "tools.fxtd.composite_weighted_per_kloc", metric_value)

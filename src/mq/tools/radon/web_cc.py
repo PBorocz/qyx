@@ -10,8 +10,7 @@ from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon import RadonCcEntityType
 from mq.tools.radon.models import query_cc
-from mq.web import SERIES_COLORS
-from mq.utils.plotly_styles import style_figure
+from mq.web.plotly import SERIES_COLORS, style_figure
 
 
 def cc_0(args: Namespace, scan: Scan, project: Project = None):

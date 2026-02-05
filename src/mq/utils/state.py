@@ -18,7 +18,6 @@ def update_state(**kwargs):
     state = load_state()
     for key, value in kwargs.items():
         state[key] = value
-        # log.debug(f"Set state {key=} to {value=}")
     save_state(state)
 
 
@@ -27,7 +26,7 @@ def update_state_from_args(args: Namespace) -> None:
     kwargs = dict()
     if "name" in args:
         kwargs["last_name"] = args.name
-    if "tool_analysis" in args:
+    if "tool_analysis" in args and args.tool_analysis is not None:
         kwargs["last_tool_analysis"] = args.tool_analysis
     update_state(**kwargs)
 
@@ -35,12 +34,10 @@ def update_state_from_args(args: Namespace) -> None:
 def save_state(state_dict: dict) -> None:
     """Save UI state to file."""
     STATE_FILE.write_text(json.dumps(state_dict, indent=2))
-    # log.debug(f"Saved state to: {STATE_FILE=}")
 
 
 def load_state() -> dict | None:
     """Load UI state from file."""
     if STATE_FILE.exists():
-        # log.debug(f"Reading state from: {STATE_FILE=}")
         return json.loads(STATE_FILE.read_text())
     return {}

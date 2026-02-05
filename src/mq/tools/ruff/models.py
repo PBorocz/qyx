@@ -10,7 +10,7 @@ from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.tools.cloc.models import query as query_cloc
 from mq.tools.radon.models import query_raw as query_radon_raw
 from mq.utils import rate_of_change_percentage
-from mq.utils.scoring import get_nested_config, score_metric
+from mq.utils.scoring import score_metric
 
 log = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, r
     if not lines_of_code or not violations_by_severity:
         result.weighted_violations_per_kloc = None
         return result
-    weights = get_nested_config(args.config, "tools.ruff.weighted_violations_per_kloc.weights")
+    weights = args.config.get("tools.ruff.weighted_violations_per_kloc.weights")
     weighted_score = sum(violations_by_severity.get(code, 0) * weight for code, weight in weights.items())
     metric_value = (weighted_score / lines_of_code) * 1000
     result.weighted_violations_per_kloc = score_metric(

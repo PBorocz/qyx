@@ -10,9 +10,9 @@ from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.ruff import get_ruff_rule_name
 from mq.tools.ruff.models import query
-from mq.web import SERIES_COLORS, render_project_selector
+from mq.web import render_project_selector
 from mq.web.page import render_page
-from mq.utils.plotly_styles import style_figure
+from mq.web.plotly import SERIES_COLORS, style_figure
 
 
 ################################################################################################

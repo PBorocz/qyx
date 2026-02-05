@@ -9,10 +9,10 @@ from fasthtml import common as fh
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.cloc.models import query
-from mq.utils.scoring import find_grade, get_nested_config
-from mq.web import SERIES_COLORS, render_project_selector
+from mq.utils.scoring import find_grade
+from mq.web import render_project_selector
 from mq.web.page import render_page
-from mq.utils.plotly_styles import style_figure
+from mq.web.plotly import SERIES_COLORS, style_figure
 
 
 # Page layout...
@@ -271,7 +271,7 @@ def cloc_d(args: Namespace, project: Project, scan: Scan):
 
 def cloc_f(args: Namespace, scan: Scan, project: Project = None):
     # Get bucket definitions from configuration for coloring
-    buckets = get_nested_config(args.config, "tools.cloc.histogram_file_size.buckets")
+    buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     histogram = query(args, "f", scan=scan)
 
     # Values to chart are a combination of the respective value AND the color

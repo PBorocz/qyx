@@ -12,7 +12,6 @@ from mq.cli.ingest import ingest
 from mq.cli.report import report
 from mq.cli.status import status
 from mq.setup.args_cli import get_args_command_line
-from mq.setup.args_configuration import validate_config
 from mq.setup.args_interactive import get_args_interactively
 from mq.setup.args_validate import validate_args
 from mq.setup.logging import setup_logging
@@ -48,26 +47,40 @@ def _get_dispatch_method(args: argparse.Namespace) -> Callable:
 
 def dispatch(args: argparse.Namespace) -> str:
     """Primary dispatch for core command requested."""
-    # If no command yet provided, go into "interactive" mode and get rest of the arguments.
-    if not args.command:
-        args = get_args_interactively(args)
+    interactive = not args.command
+    iter = 0
+    while True:
+        # If no command yet provided, go into "interactive" mode and get rest of the arguments.
+        if not args.command:
+            args = get_args_interactively(args, iter)
 
-    # Are our arguments valid? (irrespective of whether they came from arguments or interactively)
-    if not validate_args(args):
-        sys.exit(1)
+            # Allow user to exit interactive mode
+            if args.command is None or args.command == "exit":
+                break
 
-    # Is our configuration valid?
-    if not validate_config(args):
-        sys.exit(1)
+        # Are our arguments valid? (irrespective of whether they came from arguments or interactively)
+        if not validate_args(args):
+            if interactive:
+                args.command = None  # Go back up and try again..
+                continue
+            else:
+                sys.exit(1)
 
-    # Get our ultimate run command and run it!
-    method_ = _get_dispatch_method(args)
-    method_(args)
+        # Get our ultimate run command and run it!
+        method = _get_dispatch_method(args)
+        method(args)
 
-    # If we finished cleanly, save away the last project we worked on:
-    update_state_from_args(args)
+        # If we finished cleanly, save away the last state..
+        update_state_from_args(args)
 
-    return method_.__name__
+        # If not in interactive mode, exit after the command requested.
+        if not interactive:
+            return method.__name__
+
+        # Reset for the next interactive cycle
+        args.command = None
+        print()
+        iter += 1
 
 
 def main():
@@ -84,6 +97,10 @@ def main():
 
     # Setup our data-store and respective tables.
     setup_sqlite(args)
+
+    # Is our configuration valid? (we do this after tools and db are setup)
+    if not args.config.validate(args):
+        sys.exit(1)
 
     # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
     cmd_run = dispatch(args)

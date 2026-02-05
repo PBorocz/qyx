@@ -23,40 +23,47 @@ PROMPT_STYLE = Style([
 # fmt: on
 
 
-def get_args_interactively(args: Namespace) -> Namespace:
-    def _goodbye():
-        qprint(
-            "\nThanks, gracias, merci, danka, ありがとう, cпacи6o, köszönöm...!",
-            style="bold italic fg:green",
-        )
-        sys.exit(0)
+def get_args_interactively(args: Namespace, iter: int) -> Namespace:
+    if not iter:
+        # Only print title the first time through...
+        qprint("MQ → Code Quality Analysis Tool", style="bold italic fg:cyan")
 
-    qprint("Code Quality Analysis Tool\n", style="bold italic fg:cyan")
-
-    # Select command
     try:
         args.command = _select_main_command()
-        match args.command.lower():
-            case "status":
-                args = _prompt_command_status(args)
-            case "report":
-                args = _prompt_command_report(args)
-            case "ingest":
-                args = _prompt_command_ingest(args)
-            case "serve":
-                args = _prompt_command_serve(args)
-            case "admin":
-                args = _prompt_command_admin(args)
-                if not args:
-                    _goodbye()
-            case "exit":
-                _goodbye()
+        args = _get_command_args(args)
     except KeyboardInterrupt:
         qprint("Ok...nothing done.")
         _goodbye()
 
     qprint("")  # Add an extra line to demarcate whatever comes below...
     return args
+
+
+def _get_command_args(args: Namespace) -> Namespace:
+    match args.command.lower():
+        case "status":
+            args = _prompt_command_status(args)
+        case "report":
+            args = _prompt_command_report(args)
+        case "ingest":
+            args = _prompt_command_ingest(args)
+        case "serve":
+            args = _prompt_command_serve(args)
+        case "admin":
+            args = _prompt_command_admin(args)
+            if not args:
+                _goodbye()
+        case "exit":
+            _goodbye()
+    return args
+
+
+def _goodbye():
+    qprint(
+        "\nThanks, gracias, merci, danka, ありがとう, cпacи6o, köszönöm...!",
+        style="bold italic fg:green",
+    )
+    sys.exit(0)
 
 
 def _select_main_command():

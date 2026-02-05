@@ -9,9 +9,9 @@ from fasthtml import common as fh
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.fxtd.models import query
-from mq.web import SERIES_COLORS, render_project_selector
+from mq.web import render_project_selector
 from mq.web.page import render_page
-from mq.utils.plotly_styles import style_figure
+from mq.web.plotly import SERIES_COLORS, style_figure
 
 
 ################################################################################################

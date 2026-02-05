@@ -11,7 +11,7 @@ from peewee import IntegerField, fn
 from mq.constants import ReportLevel
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
 from mq.utils import bucket, rate_of_change_percentage
-from mq.utils.scoring import get_nested_config, score_metric
+from mq.utils.scoring import score_metric
 
 
 log = logging.getLogger(__name__)
@@ -35,7 +35,11 @@ class Cloc(BaseResultsModel):
 
 
 def query(
-    args: Namespace, level: str = ReportLevel.SUMMARY, project: Project = None, scan: Scan = None, last: int = None,
+    args: Namespace,
+    level: str = ReportLevel.SUMMARY,
+    project: Project = None,
+    scan: Scan = None,
+    last: int = None,
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
@@ -229,7 +233,7 @@ def _query_d(args: Namespace, scan: Scan) -> Any:
 
 def _query_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
     """Calculate histogram buckets over filesize."""
-    buckets = get_nested_config(args.config, "tools.cloc.histogram_file_size.buckets")
+    buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     bucket_breaks = [level["min"] for level in buckets]
 
     # Calculate file density histogram

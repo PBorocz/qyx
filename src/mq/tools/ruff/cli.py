@@ -5,7 +5,6 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
-from mq.utils.scoring import get_nested_config
 from mq.tools.base import Project, Scan
 from mq.tools.ruff import get_ruff_rule_name
 from mq.tools.ruff.models import query
@@ -121,7 +120,7 @@ def ruff_h(args: Namespace, project: Project) -> None:
     for timestamp in sorted(timestamps):
         row.append(str(rows[timestamp]))
 
-    colors = get_nested_config(args.config, "renderers.cli.colors")
+    colors = args.config.get("renderers.cli.colors")
     color = colors["neutral"]
     if roc:
         if roc > 0.01:
