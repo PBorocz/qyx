@@ -7,8 +7,7 @@ from peewee import fn, CharField, IntegerField, JOIN
 
 from mq.constants import ReportLevel
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
-from mq.tools.cloc.models import query as query_cloc
-from mq.tools.radon.models import query_raw as query_radon_raw
+from mq.tools.common import get_loc
 from mq.utils import rate_of_change_percentage
 from mq.utils.scoring import score_metric
 
@@ -152,18 +151,9 @@ def _query_h(args: Namespace, project: Project, last: int = None):
 
 def _query_d(args: Namespace, project: Project, scan: Scan):
     """Calculate derived ruff metrics."""
-    cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
-    if cloc_scan:
-        result = query_cloc(args, ReportLevel.SUMMARY, scan=cloc_scan)
-        lines_of_code = result.lines_code
-    else:
-        radon_scan = Scan.get_most_recent(project, "radon", "raw")
-        if radon_scan:
-            result = query_radon_raw(args, ReportLevel.SUMMARY, project=project, scan=radon_scan)
-            lines_of_code = result.loc
-        else:
-            log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have an LOC metrics yet!")
-            return None
+    if not (lines_of_code := get_loc(args, project)):
+        log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have any LOC metrics yet!")
+        return None, None
 
     result = _query_0(args, scan)
     result = _derived_violations_per_kloc(args, lines_of_code, result)
