@@ -7,8 +7,6 @@ from mq.constants import ReportLevel as Rl
 from mq.tools.base import ToolType
 from mq.tools.fxtd.models import Fxtd
 
-COLORS: dict = dict(positive="red", negative="green", neutral="white")
-
 
 class AnalysisType(str, Enum):
     """Fxtd analysis types."""

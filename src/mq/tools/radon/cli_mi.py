@@ -5,8 +5,8 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
+from mq.utils.scoring import get_nested_config
 from mq.tools.base import Project, Scan
-from mq.tools.radon import COLORS
 from mq.tools.radon.models import query_mi
 from mq.utils import format_timestamp_headers
 
@@ -80,17 +80,18 @@ def mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta", justify="right")
 
+    colors = get_nested_config(args.config, "renderers.cli.colors")
     for metric, dt_rows in transposed.items():
         row = ["Maintainability Index"]
         for timestamp in sorted(timestamps):
             row.append(f"{dt_rows[timestamp]:.2f}")
 
         if roc > 0.01:
-            color = COLORS["positive"]
+            color = colors["positive"]
         elif roc < -0.01:
-            color = COLORS["negative"]
+            color = colors["negative"]
         else:
-            color = COLORS["neutral"]
+            color = colors["neutral"]
 
         row.append(f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]")
 

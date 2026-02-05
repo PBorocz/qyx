@@ -45,7 +45,7 @@ def render_partial_project_summary(request, s_project_id: str):
 
     # Render our grid of results.
     sections = []
-    for tool_name in get_nested_config(args.config, "dashboard.tool_order"):
+    for tool_name in get_nested_config(args.config, "renderers.web.dashboard.tool_order"):
         o_tool = args.tools[tool_name]  # We validated tool-names in setup_configuration!
         if not o_tool.render_web_method:
             continue  # Skip tools that can't render themselves!
@@ -86,7 +86,7 @@ def render_all_summary_derived(args: Namespace, project: Project) -> dict:
 
 
 def get_web_render_methods(args: Namespace, level: str, required: bool) -> Iterator:
-    for tool_name in get_nested_config(args.config, "dashboard.tool_order"):
+    for tool_name in get_nested_config(args.config, "renderers.web.dashboard.tool_order"):
         o_tool: ToolType = args.tools[tool_name]
         for analysis in o_tool.models:
             # Lookup the appropriate module that contains the web renderer for tool_module & analysis

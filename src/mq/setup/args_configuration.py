@@ -61,15 +61,17 @@ def validate_config(args: Namespace) -> bool:
     config = args.config
 
     # Dashboard layout..
-    for tool_name in get_nested_config(config, "dashboard.tool_order"):
+    for tool_name in get_nested_config(config, "renderers.web.dashboard.tool_order"):
         if tool_name not in args.tools:
-            log.error(f"Sorry, encountered {tool_name=} in 'dashboard.tool_order' section that isn't available!")
+            log.error(
+                f"Sorry, encountered {tool_name=} in 'renderers.web.dashboard.tool_order' section that isn't available!"
+            )
             error_encountered = True
 
     # UI layout..
-    for tool_name in get_nested_config(config, "ui.tool_order"):
+    for tool_name in get_nested_config(config, "renderers.web.ui.tool_order"):
         if tool_name not in args.tools:
-            log.error(f"Sorry, encountered {tool_name=} in 'ui.tool_order' section that isn't available!")
+            log.error(f"Sorry, encountered {tool_name=} in 'renderers.web.ui.tool_order' section that isn't available!")
             error_encountered = True
 
     # Tool definitions

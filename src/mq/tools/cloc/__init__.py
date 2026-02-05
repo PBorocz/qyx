@@ -39,7 +39,7 @@ class Configuration(ToolType):
             "cloc",
             "--by-file",
             "--include-lang=Python",
-            "--json",
             "--vcs=git",
+            "--json",
             absolute,
         ]

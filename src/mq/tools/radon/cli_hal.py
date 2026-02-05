@@ -5,8 +5,8 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
+from mq.utils.scoring import get_nested_config
 from mq.tools.base import Project, Scan
-from mq.tools.radon import COLORS
 from mq.tools.radon.models import query_hal, RadonHal
 from mq.utils import format_timestamp_headers
 
@@ -100,6 +100,7 @@ def hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta")
 
+    colors = get_nested_config(args.config, "renderers.cli.colors")
     for attr, dt_rows in transposed.items():
         t_row = [attr]
         for timestamp in sorted(timestamps):
@@ -109,11 +110,11 @@ def hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
             roc = rocs[attr]
             t_value = ""
             if roc > 0.01:
-                color = COLORS["positive"]
+                color = colors["positive"]
                 t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
 
             elif roc < -0.01:
-                color = COLORS["negative"]
+                color = colors["negative"]
                 t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
         else:
             t_value = ""

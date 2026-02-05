@@ -188,29 +188,6 @@ def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result):
 
 def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, result, scan: Scan):
     """Calculate *weighted* violations per thousand loc (not including comments and blank lines)."""
-    # fmt: off
-    weights = {
-        "F": 5,  # Pyflakes                (likely bugs, runtime errors)
-
-        "B": 4,  # Flake8                  (bugbear - likely bugs, design issues)
-        "S": 4,  # Security issues         (potential vulnerabilities)
-
-        "E": 3,  # Errors                  (PEP8 violations, code correctness)
-
-        "A": 2,  # Flake8                  (builtins - shadowing built-ins)
-        "C": 2,  # Complexity (mccabe)     (maintainability)
-        "R": 2,  # Suggestion to refactor  (maintainability)
-        "U": 2,  # Unused code             (dead code)
-        "W": 2,  # Warnings                (various issues)
-
-        ReportLevel.DERIVED: 1,  # Docstring conventions   (documentation quality)
-        "I": 1,  # Import sorting          (organization)
-        "N": 1,  # Naming conventions      (readability)
-        "P": 1,  # Pylint conventions      (style preferences)
-        "Q": 1,  # Quote consistency       (minor style)
-        "T": 1,  # Print statements        (debugging leftovers)
-    }
-    # fmt: off
     violations_by_severity = __query_counts_by_rule_code_prefix(scan)
     if not lines_of_code or not violations_by_severity:
         result.weighted_violations_per_kloc = None
@@ -218,7 +195,8 @@ def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, r
     weights = get_nested_config(args.config, "tools.ruff.weighted_violations_per_kloc.weights")
     weighted_score = sum(violations_by_severity.get(code, 0) * weight for code, weight in weights.items())
     metric_value = (weighted_score / lines_of_code) * 1000
-    result.weighted_violations_per_kloc = score_metric(args,
+    result.weighted_violations_per_kloc = score_metric(
+        args,
         "tools.ruff.weighted_violations_per_kloc",
         metric_value,
     )

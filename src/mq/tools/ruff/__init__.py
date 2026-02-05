@@ -10,7 +10,6 @@ from mq.tools.base import ToolType
 from mq.tools.ruff.models import Ruff
 
 RUFF_RULES = None  # Hold as a cache after first read
-COLORS: dict = dict(positive="red", negative="green", neutral="white")
 
 
 class AnalysisType(str, Enum):

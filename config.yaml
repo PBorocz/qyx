@@ -13,11 +13,17 @@ command_line_defaults:
   level: "0"
   log_level: "INFO"  # Default log level, ie. DEBUG, INFO, WARNING, ERROR, CRITICAL
 
-dashboard:
-  tool_order: ["cloc", "ruff", "radon", "fxtd"]
-
-ui:
-  tool_order: ["cloc", "ruff", "radon", "fxtd"]
+renderers:
+  web:
+    dashboard:
+      tool_order: ["cloc", "ruff", "radon", "fxtd"]
+    ui:
+      tool_order: ["cloc", "ruff", "radon", "fxtd"]
+  cli:
+    colors:
+      positive: "red"
+      negative: "green"
+      neutral: "white"
 
 tools:
   cloc:

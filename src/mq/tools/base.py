@@ -60,7 +60,7 @@ class AbstractToolConfiguration(ABC):
 
         # Setup some methods that help use the tool later on.
         # (we do this up front to help validate tool configuration)
-        self.render_cli_method = self._get_render_method("cli")
+        self.render_cli_module, self.render_cli_method = self._get_render_method("cli")
         self.render_web_module, self.render_web_method = self._get_render_method("web")
 
     def import_component(self, component: str) -> ModuleType:
@@ -85,7 +85,7 @@ class AbstractToolConfiguration(ABC):
         try:
             render_module: ModuleType = self.import_component(interface)
         except ModuleNotFoundError:
-            log.warning(f"{self.name}: Sorry, no '{interface}' capabilities available.")
+            log.warning(f"Sorry, no '{interface}' capabilities available for {self.name} (bad import perhaps?)")
             return None, None
 
         if not (render_method := getattr(render_module, "render")):

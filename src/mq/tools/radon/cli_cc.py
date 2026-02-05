@@ -5,8 +5,9 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
+from mq.utils.scoring import get_nested_config
 from mq.tools.base import Project, Scan
-from mq.tools.radon import COLORS, RadonCcEntityType
+from mq.tools.radon import RadonCcEntityType
 from mq.tools.radon.models import query_cc
 from mq.utils import format_timestamp_headers
 
@@ -105,6 +106,7 @@ def cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta")
 
+    colors = get_nested_config(args.config, "renderers.cli.colors")
     for entity_type, values in transposed.items():
         t_row = [entity_type]
         for timestamp in sorted(timestamps):
@@ -113,10 +115,10 @@ def cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         t_value = ""
         roc_ = roc.get(entity_type, 0)
         if roc_ > 0.01:
-            color = COLORS["negative"]
+            color = colors["negative"]
             t_value = f"[{color}][bold]{roc_:+.2f}%[/bold][/{color}]"
         elif roc_ < -0.01:
-            color = COLORS["positive"]
+            color = colors["positive"]
             t_value = f"[{color}][bold]{roc_:+.2f}%[/bold][/{color}]"
         else:
             t_value = ""

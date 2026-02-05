@@ -3,15 +3,15 @@
 from argparse import Namespace
 from datetime import datetime
 
+import plotly.graph_objects as go
 from fasthtml import common as fh
-from pygal import DateTimeLine
-from pygal.style import Style
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.fxtd.models import query
-from mq.web import DEFAULT_CHART_STYLE, render_project_selector
+from mq.web import SERIES_COLORS, render_project_selector
 from mq.web.page import render_page
+from mq.utils.plotly_styles import style_figure
 
 
 ################################################################################################
@@ -55,7 +55,6 @@ def _render_current(args: Namespace, request, s_project_id: str = None, analysis
 
 def _render_history(args: Namespace, request, s_project_id: str = None, analysis: str = None):
     """Render the history portion of the page."""
-    # Create Pygal chart
     if not s_project_id:
         return fh.Section()
     project = Project.get(Project.id == int(s_project_id))
@@ -209,27 +208,36 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan):
 
 
 def fxtd_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
-    # Create Pygal chart
     timestamps, transposed, rocs = query(args, ReportLevel.HISTORY, project=project)
     if not transposed:
         return None
 
-    style = Style(**DEFAULT_CHART_STYLE)
-
-    chart = DateTimeLine(
-        y_title="Instances",
-        dots_size=1,
-        height=500,
-        legend_at_bottom=True,
-        style=style,
-        tooltip_border_radius=10,
-        x_label_rotation=45,  # Angle labels to prevent overlap
-        x_labels_major_every=2,  # Show every 5th label
-        x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
-    )
-    for metric in list(transposed.keys()):
+    fig = go.Figure()
+    for i, metric in enumerate(list(transposed.keys())):
         dt_values = transposed[metric]
-        datetime_values = [(datetime.fromisoformat(ts_), count) for ts_, count in dt_values.items()]
-        chart.add(metric, datetime_values)
+        x_values = [datetime.fromisoformat(ts_) for ts_ in dt_values.keys()]
+        y_values = list(dt_values.values())
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                mode="lines+markers",  # Specify mode
+                name=metric.title(),
+                marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                hovertemplate="%{y} "
+                + f"<b>{metric}'s</b><br>"
+                + "As Of: %{x|%Y-%m-%d %H:%M}<br>"
+                + "<extra></extra>",  # Removes secondary box
+            ),
+        )
 
-    return chart.render()  # Render as SVG and return bytes
+    style_figure(
+        fig,
+        layout={
+            "xaxis_title": "Commit Date",
+            "yaxis_title": "Number of Instances",
+        },
+    )
+
+    return fig.to_html().encode()

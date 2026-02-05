@@ -8,8 +8,6 @@ from mq.constants import ReportLevel as Rl
 from mq.tools.base import ToolType
 from mq.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
-COLORS: dict = dict(positive="red", negative="green", neutral="white")
-
 
 class AnalysisType(str, Enum):
     """Radon analysis types."""

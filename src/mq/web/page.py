@@ -14,7 +14,7 @@ def render_navbar(request, active_page):
     l_nav = [ft.Li(ft.A("MQ", href="/", **kwargs))]
 
     args = request.app.state.args
-    for tool_name in get_nested_config(args.config, "ui.tool_order"):
+    for tool_name in get_nested_config(args.config, "renderers.web.ui.tool_order"):
         o_tool = args.tools.get(tool_name)
         if not o_tool.render_web_method:
             continue

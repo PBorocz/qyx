@@ -53,17 +53,32 @@ def get_project_select(request, hx_get: str):
 
 
 ################################################################################################
-# Default chart style elements for all History charts for consistency sake..
+# Default colors (based on Plotly "BOLD")
 ################################################################################################
-DEFAULT_CHART_STYLE = dict(
-    background="transparent",
-    font_family="Inter",
-    guide_stroke_color="#cccccc",  # Lighter minor lines
-    guide_stroke_dasharray="2,4",  # Different dash for minor
-    guide_stroke_width=0.5,  # Thinner minor lines
-    legend_font_size=10,
-    major_guide_stroke_color="#333333",  # Darker major lines
-    major_guide_stroke_dasharray="6,6",  # Dashed major lines
-    major_guide_stroke_width=2,  # Thicker major lines
-    transition="400ms ease-in",
-)
+SERIES_COLORS = [
+    "#7F3C8D",
+    "#11A579",
+    "#3969AC",
+    "#F2B701",
+    "#E73F74",
+    "#80BA5A",
+    "#E68310",
+    "#008695",
+    "#CF1C90",
+    "#f97b72",
+    "#4b4b8f",
+    "#A5AA99",
+]
+
+# DEFAULT_CHART_STYLE = dict(
+#     background="transparent",
+#     font_family="Inter",
+#     guide_stroke_color="#cccccc",  # Lighter minor lines
+#     guide_stroke_dasharray="2,4",  # Different dash for minor
+#     guide_stroke_width=0.5,  # Thinner minor lines
+#     legend_font_size=10,
+#     major_guide_stroke_color="#333333",  # Darker major lines
+#     major_guide_stroke_dasharray="6,6",  # Dashed major lines
+#     major_guide_stroke_width=2,  # Thicker major lines
+#     transition="400ms ease-in",
+# )

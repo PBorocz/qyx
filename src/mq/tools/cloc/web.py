@@ -3,16 +3,16 @@
 from argparse import Namespace
 from datetime import datetime
 
+import plotly.graph_objects as go
 from fasthtml import common as fh
-from pygal import Bar, DateTimeLine
-from pygal.style import Style
 
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.cloc.models import query
 from mq.utils.scoring import find_grade, get_nested_config
-from mq.web import DEFAULT_CHART_STYLE, render_project_selector
+from mq.web import SERIES_COLORS, render_project_selector
 from mq.web.page import render_page
+from mq.utils.plotly_styles import style_figure
 
 
 # Page layout...
@@ -51,7 +51,7 @@ def _render_current(args: Namespace, request, s_project_id: str = None, analysis
         fh.Details(fh.Summary("By File"), name="details", *cloc_2(args, scan)),
         fh.Details(fh.Summary("Derived"), name="details", *cloc_d(args, project, scan)),
         fh.Details(
-            fh.Summary("File Sizes"),
+            fh.Summary("File Size Distribution"),
             fh.Section(fh.Div(fh.NotStr(chart_file_sizes.decode("utf-8"))), cls="bordered"),
             name="details",
         ),
@@ -272,61 +272,77 @@ def cloc_d(args: Namespace, project: Project, scan: Scan):
 def cloc_f(args: Namespace, scan: Scan, project: Project = None):
     # Get bucket definitions from configuration for coloring
     buckets = get_nested_config(args.config, "tools.cloc.histogram_file_size.buckets")
-
     histogram = query(args, "f", scan=scan)
 
     # Values to chart are a combination of the respective value AND the color
     # (which is based on the configurable bucket definitions)
     chart_entries = []
-    for bucket_label, count in histogram:  # e.g. (("100-199", 23), ("200+", 3))
+    for bucket_label, count in histogram:  # e.g. (("100-199", 23.5), ("200+", 30.4))
         try:
             (lookup, _) = bucket_label.split("-")
         except ValueError:
             lookup = bucket_label.replace("+", "")
 
         _, color = find_grade(float(lookup), buckets)
-        chart_entries.append(dict(value=count, color=color))
+        chart_entries.append(dict(value=int(count), color=color))
 
-    chart = Bar(
-        height=400,
-        show_legend=False,
-        style=Style(**DEFAULT_CHART_STYLE),
-        title=None,
-        tooltip_border_radius=10,
-        y_title="Percent of Files by Total Lines",
-        x_labels=[label for label, _ in histogram],
-        value_formatter=lambda x: f"{x:.0f}%",  # Y-axis labels
-        formatter=lambda x: f"{x:.1f}%",  # Tooltips when hovering
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=[label for label, _ in histogram],
+            y=[entry["value"] for entry in chart_entries],
+            marker_color=[entry["color"] for entry in chart_entries],
+            hovertemplate="%{y}% " + "of files are <b>%{x}</b><br>" + "<extra></extra>",  # Removes secondary box
+        ),
     )
-    chart.add("File Size", chart_entries)
 
-    return chart.render()
+    style_figure(
+        fig,
+        layout={
+            "xaxis": None,  # Not dates here!
+            "yaxis_title": "Percent of Files by Total Lines",
+        },
+    )
+    return fig.to_html().encode()
 
 
-def cloc_h(args: Namespace, project: Project, scan: Scan = None):
-    # Create Pygal chart
+def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
     _, rows, _, _, _, _ = query(args, ReportLevel.HISTORY, project=project)
+    if not rows:
+        return None
 
-    style = Style(**DEFAULT_CHART_STYLE)
-
-    chart = DateTimeLine(
-        dots_size=1,
-        height=500,
-        legend_at_bottom=True,
-        legend_at_bottom_columns=3,
-        style=style,
-        tooltip_border_radius=10,
-        x_label_rotation=45,  # Angle labels to prevent overlap
-        x_labels_major_every=2,  # Show every 5th label
-        x_value_formatter=lambda dt: dt.strftime("%Y-%m-%d %H:%M"),
-        y_title="Lines",
+    metric_titles = (
+        ("total_code", "Total Code Lines"),
+        ("total_comment", "Total Comment Lines"),
+        ("total_blank", "Total Blank Lines"),
     )
-    datetime_values_cd = [(datetime.fromisoformat(row.timestamp), row.total_code) for row in rows]
-    datetime_values_cm = [(datetime.fromisoformat(row.timestamp), row.total_comment) for row in rows]
-    datetime_values_bl = [(datetime.fromisoformat(row.timestamp), row.total_blank) for row in rows]
+    fig = go.Figure()
+    for i, (metric, title) in enumerate(metric_titles):
+        x_values = [datetime.fromisoformat(row.timestamp) for row in rows]
+        y_values = [getattr(row, metric) for row in rows]
 
-    chart.add("LOC", datetime_values_cd)
-    chart.add("Comments", datetime_values_cm)
-    chart.add("Blanks", datetime_values_bl)
+        # Add a series for each specific metric
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                mode="lines+markers",  # Specify mode
+                name=title,
+                marker=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], size=4, opacity=0.5),
+                line=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], width=2),
+                hovertemplate="%{y} "
+                + f"<b>{title}'s</b><br>"
+                + "As Of: %{x|%Y-%m-%d %H:%M}<br>"
+                + "<extra></extra>",  # Removes secondary box
+            ),
+        )
 
-    return chart.render()  # Render as SVG and return bytes
+    style_figure(
+        fig,
+        layout={
+            "xaxis_title": "Commit Date",
+            "yaxis_title": "Lines",
+        },
+    )
+
+    return fig.to_html().encode()
