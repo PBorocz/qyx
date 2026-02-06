@@ -7,7 +7,7 @@ from peewee import fn, CharField, IntegerField, JOIN
 
 from mq.constants import ReportLevel
 from mq.tools.base import BaseResultsModel, Project, Request, Scan
-from mq.tools.common import get_loc
+from mq.tools.common import get_loc, get_scans_for_pta
 from mq.utils import rate_of_change_percentage
 from mq.utils.scoring import score_metric
 
@@ -97,26 +97,10 @@ def _query_2(args: Namespace, scan: Scan):
 
 
 def _query_h(args: Namespace, project: Project, last: int = None):
-    scans = (
-        Scan.select()
-        .where(
-            Request.project == project,
-            Scan.tool == "ruff",
-        )
-        .join(Request)
-        .order_by(
-            Scan.as_of.desc(),
-        )
-    )
-    if last:
-        scans = scans.limit(last)
-
-    ################################################################################################
-    # Query
-    ################################################################################################
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular
     # scan. We still want the timestamp back with a Ruff count of *0*.
+    scans = get_scans_for_pta(project, tool="ruff", last=last)
     rows = (
         Scan.select(
             Scan.as_of.alias("timestamp"),

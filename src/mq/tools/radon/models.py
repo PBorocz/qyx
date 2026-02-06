@@ -10,6 +10,7 @@ from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
 from mq.constants import ReportLevel
 from mq.tools.base import BaseModel, BaseResultsModel, Project, Request, Scan
+from mq.tools.common import get_scans_for_pta
 from mq.utils import rate_of_change_percentage
 from mq.utils.scoring import score_metric
 
@@ -243,20 +244,7 @@ def _query_raw_2(args: Namespace, scan: Scan) -> Any:
 
 
 def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
-    # FIXME: Refactor to make this a "common" query given the number of places we use it:
-    scans = (
-        Scan.select()
-        .where(
-            Request.project == project,
-            Scan.tool == "radon",
-            Scan.analysis == "raw",
-        )
-        .join(Request)
-        .order_by(Scan.as_of.desc())
-    )
-    if last:
-        scans = scans.limit(last)
-
+    scans = get_scans_for_pta(project, tool="radon", analysis="raw", last=last)
     query = (
         RadonRaw.select(
             Scan.as_of.alias("timestamp"),
@@ -432,19 +420,7 @@ def _query_hal_3(args: Namespace, scan: Scan) -> Any:
 
 
 def _query_hal_h(args: Namespace, project: Project = None, last: int = 5) -> Any:
-    scans = (
-        Scan.select()
-        .where(
-            Request.project == project,
-            Scan.tool == "radon",
-            Scan.analysis == "hal",
-        )
-        .join(Request)
-        .order_by(Scan.as_of.desc())
-    )
-    if last:
-        scans = scans.limit(last)
-
+    scans = get_scans_for_pta(project, tool="radon", analysis="hal", last=last)
     query = (
         RadonHal.select(
             Scan.as_of.alias("timestamp"),
@@ -548,92 +524,108 @@ def query_mi(
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_mi_0(args: Namespace, scan: Scan) -> Any:
-    # TODO: Should this be weighted by number of lines in file?
-    row = RadonMi.select(fn.AVG(RadonMi.mi).alias("mi_mean")).where(RadonMi.scan == scan).get()
-    return row
+def _query_mi_0(args: Namespace, mi_scan: Scan):
+    """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
+    raw_scan = Scan.get_most_recent(mi_scan.request.project, "radon", "raw")
+    query = (
+        RadonMi.select(
+            fn.SUM(RadonRaw.loc * RadonMi.mi).alias("weighted_sum"),
+            fn.SUM(RadonRaw.loc).alias("total_loc"),
+        )
+        .join(
+            RadonRaw,
+            on=(
+                (RadonRaw.scan_id == raw_scan.id)
+                & (RadonMi.directory == RadonRaw.directory)
+                & (RadonMi.filename == RadonRaw.filename)
+            ),
+        )
+        .where(RadonMi.scan_id == mi_scan.id)
+    )
+    result = query.dicts().get()
+    if result["total_loc"]:
+        return result["weighted_sum"] / result["total_loc"]
+    return None
 
 
-def _query_mi_1(args: Namespace, scan: Scan) -> Any:
-    rows = (
-        RadonMi.select(RadonMi.directory, fn.AVG(RadonMi.mi).alias("mi_mean"))
-        .where(RadonMi.scan == scan)
-        .order_by(fn.AVG(RadonMi.mi).asc(), RadonMi.directory)
+def _query_mi_1(args: Namespace, mi_scan: Scan) -> Any:
+    raw_scan = Scan.get_most_recent(mi_scan.request.project, "radon", "raw")
+    query = (
+        RadonMi.select(
+            RadonMi.directory,
+            fn.SUM(RadonMi.mi * RadonRaw.loc).alias("weighted_sum"),
+            fn.SUM(RadonRaw.loc).alias("total_loc"),
+        )
+        .join(
+            RadonRaw,
+            on=(
+                (RadonRaw.scan_id == raw_scan.id)
+                & (RadonMi.directory == RadonRaw.directory)
+                & (RadonMi.filename == RadonRaw.filename)
+            ),
+        )
+        .where(RadonMi.scan_id == mi_scan.id)
         .group_by(RadonMi.directory)
     )
-
-    # Calculate the mean mean maintainability index
-    mi_mean_s = [row.mi_mean for row in rows]
-    if mi_mean_s:
-        mean_mi_mean = sum(mi_mean_s) / len(mi_mean_s)
-        mean_mi_mean_footer = f"{mean_mi_mean:.2f}"
-        show_footer = True
-    else:
-        mean_mi_mean_footer = ""
-        show_footer = False
-    return rows, mean_mi_mean, mean_mi_mean_footer, show_footer
+    mi_by_directory = {
+        row["directory"]: row["weighted_sum"] / row["total_loc"] for row in query.dicts() if row["total_loc"]
+    }
+    mi_ = _query_mi_0(args, mi_scan)
+    return mi_, mi_by_directory
 
 
-def _query_mi_2(args: Namespace, scan: Scan) -> Any:
+def _query_mi_2(args: Namespace, scan: Scan) -> tuple:
     rows = RadonMi.select().where(RadonMi.scan == scan).order_by(RadonMi.mi.asc(), RadonMi.directory, RadonMi.filename)
-    # Calculate the average maintainability index
-    mi_s = [row.mi for row in rows]
-    if mi_s:
-        avg_mi = sum(mi_s) / len(mi_s)
-        avg_footer = f"{avg_mi:.2f}"
-        show_footer = True
-    else:
-        avg_footer = ""
-        show_footer = False
-    return rows, avg_footer, show_footer
+    mi_ = _query_mi_0(args, scan)
+    return mi_, rows
 
 
 def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
     assert project
-    scans = (
-        Scan.select(Scan.id)
-        .where(
-            Request.project == project,
-            Scan.tool == "radon",
-            Scan.analysis == "mi",
-        )
-        .join(Request)
-        .order_by(Scan.as_of.desc())
-    )
-    if last:
-        scans = scans.limit(last)
 
-    scan_ids = [scan.id for scan in scans]
+    mi_scans = get_scans_for_pta(project, tool="radon", analysis="mi", last=last)
+    mi_scan_ids = [scan.id for scan in mi_scans]
+
+    # Alias for the RAW scan to make the query clearer
+    RawScan = Scan.alias()
 
     query = (
         RadonMi.select(
             Scan.as_of.alias("timestamp"),
-            fn.AVG(RadonMi.mi).alias("mi_mean"),
+            (fn.SUM(RadonMi.mi * RadonRaw.loc) / fn.SUM(RadonRaw.loc)).alias("mi_weighted"),
         )
-        .where(
-            RadonMi.scan.in_(scan_ids),
+        .join(
+            Scan,
+            on=(RadonMi.scan == Scan.id),
         )
-        .join(Scan)
+        .switch(RadonMi)
+        .join(
+            RadonRaw,
+            on=((RadonMi.directory == RadonRaw.directory) & (RadonMi.filename == RadonRaw.filename)),
+        )
+        .join(
+            RawScan,
+            on=(
+                (RadonRaw.scan == RawScan.id)
+                & (RawScan.request == Scan.request)
+                & (RawScan.tool == "radon")
+                & (RawScan.analysis == "raw")
+            ),
+        )
+        .where(RadonMi.scan.in_(mi_scan_ids))
         .group_by(Scan.as_of)
         .order_by(Scan.as_of.desc())
-        .objects()
     )
-
-    ################################################################################################
-    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
-    ################################################################################################
-    timestamps = [result.timestamp for result in query]
-    transposed = defaultdict(lambda: defaultdict(dict))
-    for result in query:
-        transposed["mi"][result.timestamp] = result.mi_mean
+    rows = {row["timestamp"]: row["mi_weighted"] for row in query.dicts()}
 
     # Calculate rate of change of last 2 entries..
+    timestamps = list(rows.keys())
+    roc = 0.00
     if len(timestamps) > 1:
-        roc = rate_of_change_percentage(transposed["mi"][timestamps[-1]], transposed["mi"][timestamps[-2]])
-    else:
-        roc = 0.00
+        ts_penultimate, ts_last = sorted(timestamps)[-2:]
+        roc = rate_of_change_percentage(rows[ts_penultimate], rows[ts_last])
 
-    return timestamps, transposed, roc
+    return rows, roc
 
 
 def _query_mi_d(args: Namespace, scan: Scan):
@@ -716,19 +708,7 @@ def _query_cc_3(args: Namespace, scan: Scan) -> Any:
 
 
 def _query_cc_h(args: Namespace, project: Project, last: int = None) -> Any:
-    scans = (
-        Scan.select()
-        .where(
-            Request.project == project,
-            Scan.tool == "radon",
-            Scan.analysis == "cc",
-        )
-        .join(Request)
-        .order_by(Scan.as_of.desc())
-    )
-    if last:
-        scans = scans.limit(last)
-
+    scans = get_scans_for_pta(project, tool="radon", analysis="cc", last=last)
     query = (
         RadonCc.select(
             Scan.as_of.alias("timestamp"),

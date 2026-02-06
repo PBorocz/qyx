@@ -7,8 +7,8 @@ from collections import defaultdict
 from peewee import fn, CharField, IntegerField, JOIN
 
 from mq.constants import ReportLevel
-from mq.tools.base import BaseResultsModel, Project, Request, Scan
-from mq.tools.common import get_loc
+from mq.tools.base import BaseResultsModel, Project, Scan
+from mq.tools.common import get_loc, get_scans_for_pta
 from mq.utils import rate_of_change_percentage
 from mq.utils.scoring import score_metric
 
@@ -90,22 +90,7 @@ def _query_2(args: Namespace, scan: Scan):
 
 
 def _query_h(args: Namespace, project: Project, last: int = None):
-    # FIXME: This query is COMMON across a bunch of stuff...
-    scans = (
-        Scan.select()
-        .where(
-            Request.project == project,
-            Scan.tool == "fxtd",
-        )
-        .join(Request)
-        .order_by(Scan.as_of.desc())
-    )
-    if last:
-        scans = scans.limit(last)
-
-    ################################################################################################
-    # Query
-    ################################################################################################
+    scans = get_scans_for_pta(project, tool="fxtd", last=last)
     rows = (
         Scan.select(
             Scan.as_of.alias("timestamp"),
@@ -145,7 +130,6 @@ def _query_h(args: Namespace, project: Project, last: int = None):
 
 def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):
     """Calculate derived fxtd metrics."""
-    # FIXME: We lookup the respective SLOC in multiple _d methods, can we centralise it?
     if not (lines_of_code := get_loc(args, project)):
         log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have any LOC metrics yet!")
         return None, None

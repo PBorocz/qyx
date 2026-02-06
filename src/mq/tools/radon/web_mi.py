@@ -13,15 +13,15 @@ from mq.web.plotly import SERIES_COLORS, style_figure
 
 
 def mi_0(args: Namespace, scan: Scan, project: Project = None):
-    row = query_mi(args, ReportLevel.SUMMARY, scan=scan)
+    mi_ = query_mi(args, ReportLevel.SUMMARY, scan=scan)
 
     # fmt: off
     t_head = (
         fh.Th("Composite Maintainability",  style="text-align: left", colspan=ReportLevel.FILE),
     )
     t_body = (
-        fh.Th("Score"             , style="text-align: left" ),
-        fh.Th(f"{row.mi_mean:.2f}", style="text-align: right"),
+        fh.Th("Score"     , style="text-align: left" ),
+        fh.Th(f"{mi_:.2f}", style="text-align: right"),
     )
     # fmt: on
 
@@ -32,7 +32,7 @@ def mi_0(args: Namespace, scan: Scan, project: Project = None):
 
 
 def mi_1(args: Namespace, scan: Scan, project: Project = None):
-    rows, _, _, _ = query_mi(args, ReportLevel.DIRECTORY, scan)
+    mi_, mi_by_directory = query_mi(args, ReportLevel.DIRECTORY, scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -41,10 +41,10 @@ def mi_1(args: Namespace, scan: Scan, project: Project = None):
     )
 
     t_body = []
-    for row in rows:
+    for directory, mi_ in mi_by_directory.items():
         t_row = fh.Tr(
-            fh.Td(row.directory       , style="text-align: left"),
-            fh.Td(f"{row.mi_mean:.2f}", style="text-align: right"),
+            fh.Td(directory   , style="text-align: left"),
+            fh.Td(f"{mi_:.2f}", style="text-align: right"),
         )
         t_body.append(t_row)
     # fmt: on
@@ -60,7 +60,7 @@ def mi_1(args: Namespace, scan: Scan, project: Project = None):
 
 
 def mi_2(args: Namespace, scan: Scan, project: Project = None):
-    rows, _, _ = query_mi(args, ReportLevel.FILE, scan)
+    mi_, rows = query_mi(args, ReportLevel.FILE, scan)
 
     # fmt: off
     t_head = fh.Tr(
@@ -118,10 +118,9 @@ def mi_d(args: Namespace, project: Project, scan: Scan):
 
 def mi_h(args: Namespace, project: Project, scan: Scan = None):
     """Render the maintainability index chart."""
-    _, transposed, _ = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
-    dt_complexity = transposed["mi"]
-    x_values = [datetime.fromisoformat(ts_) for ts_ in dt_complexity.keys()]
-    y_values = list(dt_complexity.values())
+    rows = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
+    x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
+    y_values = list(rows.values())
 
     fig = go.Figure()
     fig.add_trace(

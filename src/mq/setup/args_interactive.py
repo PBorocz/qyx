@@ -32,7 +32,6 @@ def get_args_interactively(args: Namespace, iter: int) -> Namespace:
         args.command = _select_main_command()
         args = _get_command_args(args)
     except KeyboardInterrupt:
-        qprint("Ok...nothing done.")
         _goodbye()
 
     qprint("")  # Add an extra line to demarcate whatever comes below...

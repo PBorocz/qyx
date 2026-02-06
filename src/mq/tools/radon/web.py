@@ -2,6 +2,7 @@
 
 import logging
 from argparse import Namespace
+from typing import Any
 
 from fasthtml import common as fh
 
@@ -53,68 +54,40 @@ def _render_current(args: Namespace, request, s_project_id: str = None, analysis
 
     fh_sections = [
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display()}")),
-        fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level_0(args, scan)),
-        fh.Details(fh.Summary("By Directory"), name="details", *render_level_1(args, scan)),
-        fh.Details(fh.Summary("By File"), name="details", *render_level_2(args, scan)),
+        fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level(args, 0, scan)),
+        fh.Details(fh.Summary("By Directory"), name="details", *render_level(args, 1, scan)),
+        fh.Details(fh.Summary("By File"), name="details", *render_level(args, 2, scan)),
     ]
     if scan.analysis.lower() in ("cc", "hal"):
         fh_sections.append(
-            fh.Details(fh.Summary("By Item"), name="details", *render_level_3(args, scan)),
+            fh.Details(fh.Summary("By Item"), name="details", *render_level(args, 3, scan)),
         )
     return fh.Section(*fh_sections, cls="bordered")
 
 
-# FIXME: Can we make these more dynamic?
-def render_level_0(args: Namespace, scan: Scan):
-    match scan.analysis.lower():
-        case "cc":
-            return cc_0(args, scan)
-        case "hal":
-            return hal_0(args, scan)
-        case "mi":
-            return mi_0(args, scan)
-        case "raw":
-            return raw_0(args, scan)
-        case _:
-            return fh.Section()
+# fmt: off
+RENDER_METHODS = {
+    "cc" : ( cc_0,  cc_1,  cc_2,  cc_3),
+    "hal": (hal_0, hal_1, hal_2, hal_3),
+    "mi" : ( mi_0,  mi_1,  mi_2,  None),
+    "raw": (raw_0, raw_1, raw_2,  None),
+}
+# fmt: on
 
 
-def render_level_1(args: Namespace, scan: Scan):
-    match scan.analysis.lower():
-        case "cc":
-            return cc_1(args, scan)
-        case "hal":
-            return hal_1(args, scan)
-        case "mi":
-            return mi_1(args, scan)
-        case "raw":
-            return raw_1(args, scan)
-        case _:
-            return fh.Section()
+def render_level(args: Namespace, level: int, scan: Scan) -> Any:
+    """Render the specified level for the given scan's analysis type."""
+    analysis = scan.analysis.lower()
 
+    if analysis not in RENDER_METHODS:
+        return fh.Section()
 
-def render_level_2(args: Namespace, scan: Scan):
-    match scan.analysis.lower():
-        case "cc":
-            return cc_2(args, scan)
-        case "hal":
-            return hal_2(args, scan)
-        case "mi":
-            return mi_2(args, scan)
-        case "raw":
-            return raw_2(args, scan)
-        case _:
-            return fh.Section()
+    renderers = RENDER_METHODS[analysis]
 
+    if level >= len(renderers) or renderers[level] is None:
+        return fh.Section()
 
-def render_level_3(args: Namespace, scan: Scan):
-    match scan.analysis.lower():
-        case "cc":
-            return cc_3(args, scan)
-        case "hal":
-            return hal_3(args, scan)
-        case _:
-            return fh.Section()
+    return renderers[level](args, scan)
 
 
 ################################################################################################

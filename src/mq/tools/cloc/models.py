@@ -9,7 +9,8 @@ from typing import Any
 from peewee import IntegerField, fn
 
 from mq.constants import ReportLevel
-from mq.tools.base import BaseResultsModel, Project, Request, Scan
+from mq.tools.base import BaseResultsModel, Project, Scan
+from mq.tools.common import get_scans_for_pta
 from mq.utils import bucket, rate_of_change_percentage
 from mq.utils.scoring import score_metric
 
@@ -131,28 +132,7 @@ def _query_2(scan: Scan) -> [list[Cloc], dict[str, int], int]:
 
 
 def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict, defaultdict]:
-    # If the most recent request (provided) has more than one scan,
-    # use only the scan in THAT request! otherwise, scan over all the
-    # scans for the project.
-    # if Scan.filter(Scan.request == request).count() > 1:
-    #     # Essentially "git" mode, where our request triggered MULTIPLE scans (over time)
-    #     scans = (
-    #         Scan.select().where(Scan.request == request, Scan.tool == "cloc").order_by(Scan.as_of.desc()).limit(last)
-    #     )
-    # else:
-    # Simple mode, our most recent request triggered on a single scan, consider all scans for the project:
-    scans = (
-        Scan.select()
-        .join(Request)
-        .where(
-            Request.project == project,
-            Scan.tool == "cloc",
-        )
-        .order_by(Scan.as_of.desc())
-    )
-    if last:
-        scans = scans.limit(last)
-
+    scans = get_scans_for_pta(project, tool="cloc", last=last)
     query = (
         Cloc.select(
             Scan.as_of.alias("timestamp"),
