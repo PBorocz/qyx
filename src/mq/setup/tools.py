@@ -59,7 +59,7 @@ def setup_tools(args: Namespace) -> dict:
             ################################################################################
             tools[tool_name] = o_tool
 
-    log.info(f"{len(tools)} tools available: {', '.join(tools.keys())}")
+    log.debug(f"{len(tools)} tools available: {', '.join(tools.keys())}")
     args.tools = tools
 
 

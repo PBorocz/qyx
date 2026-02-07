@@ -8,10 +8,9 @@
 ################################################################################
 command_line_defaults:
   # These set defaults for common command-line arguments (that can still be overridden explicitly)
-  name: "python-code-quality"
   path: "."
   level: "0"
-  log_level: "INFO"  # Default log level, ie. DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: "info"  # Default log level, ie. DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 renderers:
   web:

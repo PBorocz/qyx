@@ -27,7 +27,7 @@ def ingest(args: Namespace) -> None:
     # runs.
     #
     # Lookup (or create) our Project and associated Request
-    project: Project = Project.create_from_args(args)
+    project: Project = Project.factory(args)
     request: Request = Request.get_or_create(args, project)
 
     # Gather all the git hash keys we've already processed for this request (if any)

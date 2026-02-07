@@ -105,5 +105,6 @@ def main():
     # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
     cmd_run = dispatch(args)
 
+    # Do *short* database housekeeping (if we haven't done so on explicit request above)
     if cmd_run != "clean":
-        clean(args)  # Do database housekeeping (if we haven't done so on explicit request above
+        clean(args, vacuum=False)

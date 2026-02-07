@@ -304,7 +304,7 @@ dependencies = [
     { name = "rich-argparse" },
 ]
 
-[package.dev-dependencies]
+[package.optional-dependencies]
 dev = [
     { name = "pytest" },
 ]
@@ -314,14 +314,13 @@ requires-dist = [
     { name = "peewee", specifier = ">=3.18.3" },
     { name = "platformdirs", specifier = ">=4.5.1" },
     { name = "plotly", specifier = ">=6.5.2" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "python-fasthtml", specifier = ">=0.12.36" },
     { name = "questionary", specifier = ">=2.1.1" },
     { name = "rich", specifier = ">=14.2.0" },
     { name = "rich-argparse", specifier = ">=1.7.2" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.0.2" }]
+provides-extras = ["dev"]
 
 [[package]]
 name = "narwhals"

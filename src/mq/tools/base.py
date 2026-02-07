@@ -149,7 +149,7 @@ class Project(BaseModel):
         return None
 
     @classmethod
-    def create_from_args(cls, args: Namespace) -> Project:
+    def factory(cls, args: Namespace) -> Project:
         """Get the project of the specified input path, even if we have to insert."""
         if project := cls.find_from_args(args):
             return project
@@ -197,7 +197,7 @@ class Request(BaseModel):
         if not is_git:
             # For a NON git-based scan (ie. a directory), we create a new Request each time, easy!!
             log.debug("Creating new request this project...")
-            return cls.create_from_args(project, args, normalised, is_git)
+            return cls.factory(project, args, normalised, is_git)
 
         # Otherwise, we first look for the most recent git-based Request for this project.
         request = (
@@ -214,11 +214,11 @@ class Request(BaseModel):
             request.save()
         else:
             log.debug("No existing git request found for this project, creating a new one.")
-            request = cls.create_from_args(project, args, normalised, is_git)
+            request = cls.factory(project, args, normalised, is_git)
         return request
 
     @classmethod
-    def create_from_args(cls, project: Project, args: Namespace, normalised: str, is_git: bool) -> Request:
+    def factory(cls, project: Project, args: Namespace, normalised: str, is_git: bool) -> Request:
         """Create a new request instance on behalf of the specified Project."""
         return cls.create(
             project=project,

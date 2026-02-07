@@ -11,12 +11,13 @@ from mq.tools.base import Project, Request, Scan
 
 
 def setup_sqlite(args: Namespace) -> None:
+    """Setup our db store, setting the db connection into args for subsequent use."""
     if "tools" not in args:
         raise RuntimeError("Sorry, setup/tools.py must have already been run before we can setup the database!")
 
     db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    db = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
+    db_ = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
 
     # Make sure our models have tables defined for 'em!
     models = [Project, Request, Scan]
@@ -26,8 +27,9 @@ def setup_sqlite(args: Namespace) -> None:
                 models.append(tool_peewee_class)
 
     for model_class in models:
-        model_class._meta.database = db
+        model_class._meta.database = db_
         model_class.create_table(safe=True)
 
     log = logging.getLogger(__name__)
+    args._db = db_  # Set for subsequent use (very few places though)
     log.debug(f"...connected to {db_path.name=} with {len(models)} models defined.")

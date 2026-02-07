@@ -4,7 +4,7 @@ import argparse
 
 from rich_argparse import RichHelpFormatter
 
-from mq.constants import ReportLevel
+from mq.constants import ReportLevel, StatusLevel
 from mq.setup.args_configuration import setup_configuration
 
 
@@ -47,16 +47,16 @@ def get_args_command_line():
         formatter_class=RichHelpFormatter,
     )
     parser_status.add_argument(
-        "-l",
-        "--level",
-        help="Level to report on, e.g. 0 (summary), 1 (usually directory) or 2 (usually file).",
-        default=defaults.get("level", ReportLevel.SUMMARY),
-    )
-    parser_status.add_argument(
         "-n",
         "--name",
         default=defaults.get("name"),
         help="Project name, if not specified, defaults to ALL projects.",
+    )
+    parser_status.add_argument(
+        "-l",
+        "--level",
+        help="Level to report on, eg. g (grouped, default), i (individual scans IN DETAIL!).",
+        default=StatusLevel.GROUPED,
     )
 
     ################################################################################
@@ -111,12 +111,12 @@ def get_args_command_line():
         "-a",
         "--analysis",
         dest="tool_analysis",
-        help="Analysis to report on, e.g. cloc, radon:cc, ruff etc.",
+        help="Analysis to report on, eg. cloc, radon:cc, ruff etc.",
     )
     parser_report.add_argument(
         "-l",
         "--level",
-        help="Level to report on, e.g. 0 (summary), 1 (directory), 2 (file), d (derived) or h (history).",
+        help="Level to report on, eg. 0 (summary), 1 (directory), 2 (file), d (derived) or h (history).",
         default=defaults.get("level", ReportLevel.SUMMARY),
     )
 

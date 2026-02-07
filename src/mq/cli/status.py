@@ -12,7 +12,7 @@ from mq.utils import dt_to_display
 
 
 def status(args: Namespace) -> None:
-    """Use a simple terminal tree to display current db information."""
+    """Use a simple Rich terminal tree to display current db information."""
     tree = Tree("MQ Status")
 
     projects = Project.select()
@@ -20,18 +20,10 @@ def status(args: Namespace) -> None:
         projects = projects.where(Project.name == args.name)
 
     for project in projects:
-        s_project = f"[red]PROJECT → {project.name}[/red]"
-        if args.log_level != "info":
-            s_project += f" [{project.id:3d}]"
-
-        project_tree = tree.add(s_project)
+        project_tree = tree.add(_get_project_name(args, project))
 
         for request in Request.select().where(Request.project == project):
-            source = request.arg_normalised if request.is_git else request.arg_raw
-            s_request = f"[orange1]REQUEST[/orange1] [grey50]source='{source}'[/grey50]"
-            if args.log_level != "info":
-                s_request += f" [{request.id}] "
-            scan_tree = project_tree.add(s_request)
+            scan_tree = project_tree.add(_get_request_name(args, request))
 
             scans_for_request = Scan.select().order_by(Scan.as_of).where(Scan.request == request)
             if request.is_git and args.level == StatusLevel.GROUPED:
@@ -66,17 +58,7 @@ def scan_tree_summary(args: Namespace, request, scans_for_request, scan_tree):
 
 def scan_tree_detailed(args: Namespace, request, scans_for_request, scan_tree):
     for scan in scans_for_request:
-        s_scan_count = _get_scan_count(args, scan)
-        s_analysis = scan.tool_analysis_display()
-        s_scan = (
-            f"[bright_green]SCAN[/bright_green] → "
-            f"[cyan]{s_analysis}[/cyan] "
-            f"[green]{s_scan_count:4s}[/green] "
-            f"[grey50]{dt_to_display(scan.as_of)}[/grey50]"
-        )
-        if args.log_level != "info":
-            s_scan += f" [{scan.id}]"
-
+        s_scan = _get_scan_name(args, scan)
         scan_tree.add(s_scan)
 
 
@@ -86,3 +68,32 @@ def _get_scan_count(args: Namespace, scan: Scan) -> str:
     model_class = o_tool.models[scan.analysis][0]  # Only the first one is relevant
     count = model_class.filter(model_class.scan == scan).count()
     return f"{count:3d}"
+
+
+def _get_project_name(args: Namespace, project: Project) -> str:
+    s_project = f"[red]PROJECT → {project.name}[/red]"
+    if args.log_level != "info":
+        s_project += f" [{project.id:3d}]"
+    return s_project
+
+
+def _get_request_name(args: Namespace, request: Request) -> str:
+    source = request.arg_normalised if request.is_git else request.arg_raw
+    s_request = f"[orange1]REQUEST[/orange1] [grey50]source='{source}'[/grey50]"
+    if args.log_level != "info":
+        s_request += f" [{request.id}] "
+    return s_request
+
+
+def _get_scan_name(args: Namespace, scan: Scan) -> str:
+    s_scan_count = _get_scan_count(args, scan)
+    s_analysis = scan.tool_analysis_display()
+    s_scan = (
+        f"[bright_green]SCAN[/bright_green] → "
+        f"[cyan]{s_analysis}[/cyan] "
+        f"[green]{s_scan_count:4s}[/green] "
+        f"[grey50]{dt_to_display(scan.as_of)}[/grey50]"
+    )
+    if args.log_level != "info":
+        s_scan += f" [{scan.id}]"
+    return s_scan
