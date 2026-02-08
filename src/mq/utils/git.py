@@ -27,11 +27,19 @@ def get_git_commits(git_repo: str) -> tuple[Path, list[str]]:
     if repo_path.exists() and (repo_path / ".git").exists():
         # Yep, we still have it, refresh it!
         log.info(f"Updating existing repo at {repo_path}")
-        subprocess.run(["git", "fetch", "origin"], cwd=repo_path, check=True)
+        subprocess.run(
+            ["git", "fetch", "origin"],
+            cwd=repo_path,
+            check=True,
+        )
     else:
-        # Don't have it yet locally, clone it!
+        # Don't have it yet locally, clone it (but only the "default" branch, we don't care about others)
         log.info(f"Cloning '{git_repo}' into {repo_path}...")
-        subprocess.run(["git", "clone", git_repo, str(repo_path)], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "clone", "--single-branch", git_repo, str(repo_path)],
+            check=True,
+            capture_output=True,
+        )
 
     # Given the repo, find all commit hashes associated all revisions:
     commits: list[str] = _get_commit_hashes(repo_path)

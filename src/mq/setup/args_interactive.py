@@ -79,7 +79,7 @@ def _select_main_command():
     # fmt: on
 
     return select(
-        "Command",
+        "Command:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -96,14 +96,14 @@ def _prompt_command_status(args: Namespace) -> Namespace:
 
 def _prompt_command_report(args: Namespace) -> Namespace:
     args.name = _prompt_existing_name()
-    args.tool_analysis = _prompt_tool_analysis(args, "Analysis")
+    args.tool_analysis = _prompt_tool_analysis(args, "Analysis:")
     args.level = _prompt_report_level()
     return args
 
 
 def _prompt_command_ingest(args: Namespace) -> Namespace:
     args.name, args.path = _prompt_name_path()
-    args.tool_analysis = _prompt_tool_analysis(args, "Analysis")
+    args.tool_analysis = _prompt_tool_analysis(args, "Analysis:")
     args.stdin = False  # Obviously since we're not able to read from stdin interactively!
     return args
 
@@ -130,7 +130,7 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
     ]
 
     args.admin_command = select(
-        "Administration command",
+        "Administration command:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -140,12 +140,8 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
     match args.admin_command:
         case "delete":
             args = _prompt_admin_command_delete(args)
-        # case "clean":
-        #     args = _prompt_admin_command_clean(args)
-        # case "trim":
-        #     args = _prompt_admin_command_trim(args)
-        # case "clear":
-        #     args = _prompt_admin_command_clear(args)
+        case "clean":
+            pass  # No arguments required here!
     return args
 
 
@@ -170,7 +166,7 @@ def _prompt_existing_name(include_new_option: bool = False):
         choices.append(Choice(title="-New Project-", value="__new__"))
 
     project = select(
-        "Project",
+        "Project:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -190,7 +186,7 @@ def _prompt_name_path() -> tuple[str, str]:
         Choice(title="Git repo", value="g"),
     ]
     source = select(
-        "Source to ingest from",
+        "Source to ingest from:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -228,7 +224,7 @@ def _prompt_browser() -> str:
 def _prompt_delete_entity() -> BaseModel:
     choices = [Choice(title=model.value.title(), value=model.value) for model in BaseModel]
     value = select(
-        "Eentity to delete",
+        "Entity to Delete:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
@@ -249,7 +245,7 @@ def _prompt_delete_id(delete_entity: BaseModel) -> int:
 def _prompt_status_level() -> StatusLevel:
     choices = [Choice(title=level.description, value=level.value) for level in StatusLevel]
     value = select(
-        "Status Level",
+        "Status Level:",
         choices=choices,
         default=choices[0],
         style=PROMPT_STYLE,
@@ -262,7 +258,7 @@ def _prompt_status_level() -> StatusLevel:
 def _prompt_report_level() -> ReportLevel:
     choices = [Choice(title=level.description, value=level.value) for level in ReportLevel]
     value = select(
-        "Report detail level",
+        "Report Level:",
         choices=choices,
         style=PROMPT_STYLE,
         default=ReportLevel.SUMMARY,

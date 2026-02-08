@@ -1,6 +1,7 @@
 """Common utilities."""
 
 import logging
+import re
 import zoneinfo
 from collections import defaultdict
 from datetime import datetime
@@ -109,6 +110,22 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
     return {ts: __local(ts).strftime(fmt_) for ts in timestamps}
 
 
+def is_git_url(url: str) -> bool:
+    """Return true if str_path is to a "remote" site (ie. git)."""
+    # Quick and (too) easy: url.startswith(("http://", "https://", "git@"))
+    # Better:
+    # fmt: off
+    patterns = [
+        r"^https?://[^/]+/.+\.git$",       # https://github.com/user/repo.git
+        r"^https?://[^/]+/[^/]+/[^/]+/?$", # https://github.com/user/repo
+        r"^git@[^:]+:[^/]+/.+\.git$",      # git@github.com:user/repo.git
+        r"^git@[^:]+:[^/]+/[^/]+$",        # git@github.com:user/repo
+        r"^ssh://git@[^/]+/.+$",           # ssh://git@github.com/user/repo
+    ]
+    # fmt: off
+    return any(re.match(pattern, url) for pattern in patterns)
+
+
 def parse_path_arg(arg_path: str) -> tuple[str, str, bool]:
     """Parse user input and return (normalised, display_string).
 
@@ -119,7 +136,7 @@ def parse_path_arg(arg_path: str) -> tuple[str, str, bool]:
         tuple: (normalised, name)
     """
     # Check if it's a URL
-    if arg_path.startswith(("http://", "https://", "git@")):
+    if is_git_url(arg_path):
         normalised = arg_path
 
         # Parse URL to get project name
