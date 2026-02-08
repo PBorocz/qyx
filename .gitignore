@@ -1,4 +1,5 @@
 # LOCAL
+.claude
 .flaskenv
 .DS_Store
 .sd_token

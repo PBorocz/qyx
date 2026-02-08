@@ -71,13 +71,13 @@ def test_web_rendering_methods(test_args, subtests):
             match result:
                 case None:
                     pass
-                case bytes() as svg:
-                    assert svg.startswith(b"<svg") or svg.startswith(b"<?xml")
-                    assert b"</svg>" in svg
+                case bytes() as html:
+                    assert html.startswith(b"<html>")
+                    assert html.endswith(b"</html>")
                 case dict():
-                    for svg in result.values():
-                        assert svg.startswith(b"<svg") or svg.startswith(b"<?xml")
-                        assert b"</svg>" in svg
+                    for html in result.values():
+                        assert html.startswith(b"<html>")
+                        assert html.endswith(b"</html>")
                 case tuple() as components if len(components) > 0:
                     for component in components:
                         assert hasattr(component, "__ft__") or hasattr(component, "to_xml")

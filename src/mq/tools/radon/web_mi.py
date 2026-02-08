@@ -105,10 +105,10 @@ def mi_d(args: Namespace, project: Project, scan: Scan):
             fh.Tbody(
                 fh.Tr(
                     fh.Td("Maintainability", style="text-align: left"),
-                    fh.Td(f"{row.mi_d.score:.0f}%", style="text-align: center;"),
+                    fh.Td(f"{row.score:.0f}%", style="text-align: center;"),
                     fh.Td(
-                        f"{row.mi_d.grade}",
-                        style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.mi_d.color}",
+                        f"{row.grade}",
+                        style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.color}",
                     ),
                 ),
             ),
@@ -118,7 +118,7 @@ def mi_d(args: Namespace, project: Project, scan: Scan):
 
 def mi_h(args: Namespace, project: Project, scan: Scan = None):
     """Render the maintainability index chart."""
-    rows = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
+    rows, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
     x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
     y_values = list(rows.values())
 

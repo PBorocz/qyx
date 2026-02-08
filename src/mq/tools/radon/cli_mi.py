@@ -66,8 +66,8 @@ def mi_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Grade", justify="center")
     table.add_row(
         "Maintainability",
-        f"{row.mi_d.score:.1f}",
-        row.mi_d.grade,
+        f"{row.score:.1f}",
+        row.grade,
     )
     cli_console.print(table)
 

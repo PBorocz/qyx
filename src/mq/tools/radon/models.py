@@ -630,9 +630,8 @@ def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
 
 def _query_mi_d(args: Namespace, scan: Scan):
     """Calculate derived radon-mi metric(s)."""
-    result = _query_mi_0(args, scan)
-    result.mi_d = score_metric(args, "tools.radon.mi.mean", result.mi_mean)
-    return result
+    mi_ = _query_mi_0(args, scan)
+    return score_metric(args, "tools.radon.mi.mean", mi_)
 
 
 ################################################################################################
