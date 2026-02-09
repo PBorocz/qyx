@@ -48,7 +48,7 @@ def setup_tools(args: Namespace) -> dict:
             # Instantiate it but validate before making available!
             ################################################################################
             o_tool = tool_configuration_class()
-            if issues := validate_tool(o_tool):
+            if issues := validate_tool(args, o_tool):
                 log.warning(f"Sorry, encountered the following issues, '{o_tool.name}' is NOT available for use!")
                 for issue in issues:
                     log.warning(issue)
@@ -63,7 +63,7 @@ def setup_tools(args: Namespace) -> dict:
     args.tools = tools
 
 
-def validate_tool(o_tool: ToolType) -> list[str] | None:
+def validate_tool(args: Namespace, o_tool: ToolType) -> list[str] | None:
     """Validate the tool before we allow it to be used/referred to."""
     issues = []
 
@@ -71,7 +71,7 @@ def validate_tool(o_tool: ToolType) -> list[str] | None:
     # 1: Validate that the tool is actually available on our path..
     #    (we assume that the first entry of the ingest command is the actual tool executable)
     ################################################################################################
-    ingest_command = o_tool.get_ingest_command(relative="", absolute="", analysis="anAnalysis")
+    ingest_command = o_tool.get_ingest_command(args, relative="", absolute="", analysis="anAnalysis")
     executable = ingest_command[0]
     if not shutil.which(executable):
         issues.append(f"- Couldn't find {executable=} on your path!")

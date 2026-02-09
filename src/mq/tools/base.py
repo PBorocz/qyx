@@ -67,10 +67,13 @@ class AbstractToolConfiguration(ABC):
         """Dynamically import a component from this module."""
         return import_module(f"mq.tools.{self.module}.{component}")
 
-    @abstractmethod
-    def get_ingest_command(self, *args, **kwargs):
+    def get_ingest_command(self, args: Namespace, relative=None, absolute=None, analysis=None) -> list[str]:
         """Return the command sent to subprocess to directly perform a "tool" ingest operation."""
-        raise ConfigurationError("Sorry, this method needs to be implemented by an inherited class!")
+        cmd_template = args.config.get(f"tools.{self.name}.run.command")
+        return [
+            part.format(relative=relative or "", absolute=absolute or "", analysis=analysis or "")
+            for part in cmd_template
+        ]
 
     def get_ingest_method(self, *args, **kwargs) -> Callable:
         """Return the parse method to parse/ingest this tool's output (usually JSON)."""

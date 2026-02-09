@@ -26,6 +26,14 @@ renderers:
 
 tools:
   cloc:
+    run:
+      command:
+        - cloc
+        - --by-file
+        - --include-lang=Python
+        - --vcs=git
+        - --json
+        - "{absolute}"
     code_density:
       thresholds:
         - {min:  0, max:   10, grade: "B", color: "#84cc16"}
@@ -87,6 +95,13 @@ tools:
         - {min: 20, max: .inf, grade: "F", color: "#ef4444"}
 
   radon:
+    run:
+      command:
+        - uvx
+        - radon
+        - "{analysis}"
+        - --json
+        - "{absolute}"
     cc:
       classes:
         thresholds:
@@ -144,6 +159,13 @@ tools:
           - {min: 40, max: .inf, grade: "F", color: "#ef4444"}
 
   ruff:
+    run:
+      command:
+        - ruff
+        - check
+        - --exit-zero
+        - --output-format=json
+        - "{absolute}"
     violations_per_kloc:
       thresholds:
         - {min:  0, max:    5, grade: "A", color: "#22c55e"}

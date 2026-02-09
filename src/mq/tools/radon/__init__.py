@@ -1,6 +1,7 @@
 """Radon Module Configuration."""
 
 import types
+from argparse import Namespace
 from enum import Enum
 from typing import Callable
 
@@ -77,18 +78,6 @@ class Configuration(ToolType):
             reports=dict(cli=CLI_LEVELS_BY_ANALYSIS, web=WEB_LEVELS_BY_ANALYSIS),
         )
         # fmt: off
-
-    def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
-        """Return the command sent to subprocess to directly perform an ingest operation."""
-        if not analysis:
-            raise RuntimeError("Sorry, we need a analysis argument here!")
-        return [
-            "uvx",
-            "radon",
-            analysis,
-            "--json",
-            absolute,
-        ]
 
     def get_ingest_method(self, analysis: str) -> Callable:
         """Return the ingest method to parse & save this Radon analysis's JSON output."""

@@ -6,7 +6,7 @@ from argparse import Namespace
 from peewee import fn, CharField, IntegerField, JOIN
 
 from mq.constants import ReportLevel
-from mq.tools.base import BaseResultsModel, Project, Request, Scan
+from mq.tools.base import BaseResultsModel, Project, Scan
 from mq.tools.common import get_loc, get_scans_for_pta
 from mq.utils import rate_of_change_percentage
 from mq.utils.scoring import score_metric

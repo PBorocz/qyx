@@ -9,7 +9,7 @@ from typing import Any, Literal
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
 from mq.constants import ReportLevel
-from mq.tools.base import BaseModel, BaseResultsModel, Project, Request, Scan
+from mq.tools.base import BaseModel, BaseResultsModel, Project, Scan
 from mq.tools.common import get_scans_for_pta
 from mq.utils import rate_of_change_percentage
 from mq.utils.scoring import score_metric
@@ -592,7 +592,7 @@ def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
     mi_scan_ids = [scan.id for scan in mi_scans]
 
     # Alias for the RAW scan to make the query clearer
-    RawScan = Scan.alias()
+    rawscan = Scan.alias()
 
     query = (
         RadonMi.select(
@@ -610,12 +610,12 @@ def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
             on=((RadonMi.directory == RadonRaw.directory) & (RadonMi.filename == RadonRaw.filename)),
         )
         .join(
-            RawScan,
+            rawscan,
             on=(
-                (RadonRaw.scan == RawScan.id)
-                & (RawScan.request == Scan.request)
-                & (RawScan.tool == "radon")
-                & (RawScan.analysis == "raw")
+                (RadonRaw.scan == rawscan.id)
+                & (rawscan.request == Scan.request)
+                & (rawscan.tool == "radon")
+                & (rawscan.analysis == "raw")
             ),
         )
         .where(RadonMi.scan.in_(mi_scan_ids))

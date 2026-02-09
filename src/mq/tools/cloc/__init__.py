@@ -32,14 +32,3 @@ class Configuration(ToolType):
             models=dict(cloc=(Cloc,)),
             reports=dict(cli=cli, web=web),
         )
-
-    def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
-        """Return the command sent to subprocess to directly perform a CLOC operation."""
-        return [
-            "cloc",
-            "--by-file",
-            "--include-lang=Python",
-            "--vcs=git",
-            "--json",
-            absolute,
-        ]

@@ -141,12 +141,12 @@ def _run_tool_analysis_ingest(
         # DIRECT mode - run the tool's command ourselves
         ################################################################################################
         command: list[str] = o_tool.get_ingest_command(
+            args,
             relative=str(request.arg_raw),  # eg. "." usually
             absolute=str(scan_request.cwd),  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
             analysis=analysis,
         )
         log.debug(f"Executing {' '.join(command)=} in {scan_request.cwd}")
-
         try:
             # log.info(f"{scan_request.as_of=}")
             # log.info(f"{scan_request.hash[:8]=}")

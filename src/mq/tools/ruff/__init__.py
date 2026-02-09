@@ -39,16 +39,6 @@ class Configuration(ToolType):
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
 
-    def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
-        """Return the command sent to subprocess to directly perform a Ruff operation."""
-        return [
-            "ruff",
-            "check",
-            "--exit-zero",
-            "--output-format=json",
-            absolute,
-        ]
-
 
 def get_ruff_rule_name(rule_code: str) -> dict:
     """Lookup the description of the ruff rule name for a rule code."""
