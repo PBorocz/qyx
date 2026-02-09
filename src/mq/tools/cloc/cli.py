@@ -6,18 +6,14 @@ from argparse import Namespace
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
 from mq.tools import format_int_or_percentage as fmt
-from mq.tools.base import Project, Scan
+from mq.tools.base import Project, Scan, ToolType
 from mq.tools.cloc.models import query
 from mq.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
 
-def render(args: Namespace, o_tool, analysis: str) -> None:
-    if not (project := Project.find_from_args(args)):
-        log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
-        return None
-
+def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -> None:
     # Get most recent Scan for simple "current-state" reporting..
     # Note: We safely can disregard whether or not the Scan was based on
     # git or directly from a directory as we're searching based on "as of",
@@ -135,8 +131,12 @@ def cloc_d(args: Namespace, scan: Scan) -> None:
 
 
 def cloc_h(args: Namespace, project: Project, scan: Scan) -> None:
-    timestamps, rows, transposed, grand_totals, roc, adgs = query(
-        args, ReportLevel.HISTORY, project=project, scan=scan, last=5,
+    timestamps, messages, rows, transposed, grand_totals, roc, adgs = query(
+        args,
+        ReportLevel.HISTORY,
+        project=project,
+        scan=scan,
+        last=5,
     )
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:

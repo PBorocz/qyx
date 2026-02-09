@@ -73,7 +73,7 @@ def mi_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=5)
+    _, rows, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps = list(rows.keys())
     timestamps_formatted = format_timestamp_headers(timestamps)
 

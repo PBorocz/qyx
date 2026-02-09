@@ -5,7 +5,7 @@ from argparse import Namespace
 
 from mq.cli import cli_console, cli_table
 from mq.constants import ReportLevel
-from mq.tools.base import Project, Scan
+from mq.tools.base import Project, Scan, ToolType
 from mq.tools.ruff import get_ruff_rule_name
 from mq.tools.ruff.models import query
 from mq.utils import format_timestamp_headers
@@ -13,11 +13,7 @@ from mq.utils import format_timestamp_headers
 log = logging.getLogger(__name__)
 
 
-def render(args: Namespace, o_tool, analysis: str) -> None:
-    if not (project := Project.find_from_args(args)):
-        log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
-        return None
-
+def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -> None:
     # Get most recent Scan for simple "current-state" reporting.
     # Note: We safely can disregard whether or not the Scan was based on
     # git or directly from a directory as we're searching based on "as of",
@@ -101,7 +97,7 @@ def ruff_d(args: Namespace, project: Project, scan: Scan) -> None:
 # History at the ReportLevel.SUMMARY level...
 def ruff_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, rows, roc = query(args, ReportLevel.HISTORY, project=project, last=5)
+    timestamps, _, rows, roc = query(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################

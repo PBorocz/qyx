@@ -11,7 +11,7 @@ from mq.tools.base import Project, Scan
 from mq.tools.fxtd.models import query
 from mq.web import render_project_selector
 from mq.web.page import render_page
-from mq.web.plotly import SERIES_COLORS, style_figure
+from mq.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 ################################################################################################
@@ -208,7 +208,7 @@ def fxtd_d(args: Namespace, project: Project, scan: Scan):
 
 
 def fxtd_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
-    timestamps, transposed, rocs = query(args, ReportLevel.HISTORY, project=project)
+    timestamps, messages, transposed, rocs = query(args, ReportLevel.HISTORY, project=project)
     if not transposed:
         return None
 
@@ -217,15 +217,20 @@ def fxtd_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None
         dt_values = transposed[metric]
         x_values = [datetime.fromisoformat(ts_) for ts_ in dt_values.keys()]
         y_values = list(dt_values.values())
+
+        # We want custom hover labels based on the respective git messages
+        labels = custom_labels(metric, messages, x_values, y_values)
+
         fig.add_trace(
             go.Scatter(
                 line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
                 marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
                 mode="lines+markers",
-                name=metric.title(),
+                name=f"{metric.title()}'s",
                 x=x_values,
                 y=y_values,
-                hovertemplate="%{y} " + f"<b>{metric}'s</b><br>" + "As Of: %{x|%Y-%m-%d %H:%M}<br>" + "<extra></extra>",
+                customdata=labels,
+                hovertemplate="%{customdata}",
             ),
         )
 

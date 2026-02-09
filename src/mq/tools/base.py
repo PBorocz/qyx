@@ -149,6 +149,15 @@ class Project(BaseModel):
         return None
 
     @classmethod
+    def iter_from_args(cls, args: Namespace) -> Iterator[Project]:
+        """Iterate over all projects based on args.name."""
+        if args.name == "*":  # SENTINEL!
+            for project in cls:
+                yield project
+        else:
+            yield cls.find_from_args(args)
+
+    @classmethod
     def factory(cls, args: Namespace) -> Project:
         """Get the project of the specified input path, even if we have to insert."""
         if project := cls.find_from_args(args):
@@ -252,10 +261,6 @@ class Scan(BaseModel):
         help_text="GMT/UTC datetime the scan/ingest occurred",
         default=lambda: datetime.now(UTC).replace(microsecond=0),
     )
-    # cwd = pw.CharField(
-    #     help_text="Directory for tool execuction (ie. /tmp/... for git or /users/dev/project",
-    #     null=True,
-    # )
     git_commit_hash = pw.CharField(
         help_text="Git commit/revision hash",
         null=True,

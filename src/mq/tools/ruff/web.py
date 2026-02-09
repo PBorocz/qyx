@@ -12,7 +12,7 @@ from mq.tools.ruff import get_ruff_rule_name
 from mq.tools.ruff.models import query
 from mq.web import render_project_selector
 from mq.web.page import render_page
-from mq.web.plotly import SERIES_COLORS, style_figure
+from mq.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 ################################################################################################
@@ -192,23 +192,24 @@ def ruff_d(args: Namespace, project: Project, scan: Scan):
 
 def ruff_h(args: Namespace, project: Project, scan: Scan = None):
     """Render the history chart of number of issues over time."""
-    _, rows, _ = query(args, ReportLevel.HISTORY, project=project)
+    _, messages, rows, _ = query(args, ReportLevel.HISTORY, project=project)
     if not rows:
         return None
 
     x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
     y_values = list(rows.values())
 
-    # We want custom hover labels based on the respective count
-    custom_hover = []
+    # Create custom hover labels
+    s_y_values = []
     for count in y_values:
-        if count == 0:
-            hover = "<b>No</b> Ruff Issues!"
-        elif count == 1:
-            hover = f"<b>{count}</b> Ruff Issue"
-        else:
-            hover = f"<b>{count}</b> Ruff Issues"
-        custom_hover.append(hover)
+        match count:
+            case 0:
+                s_y_values.append("No Ruff Issues!")
+            case 1:
+                s_y_values.append(f"{count} Ruff Issue")
+            case _:
+                s_y_values.append(f"{count} Ruff Issues")
+    labels = custom_labels("", messages, x_values, s_y_values)
 
     fig = go.Figure()
     fig.add_trace(
@@ -218,8 +219,8 @@ def ruff_h(args: Namespace, project: Project, scan: Scan = None):
             mode="lines+markers",
             marker_color=SERIES_COLORS[0],
             line_color=SERIES_COLORS[0],
-            customdata=custom_hover,
-            hovertemplate="%{customdata}<br>As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+            customdata=labels,
+            hovertemplate="%{customdata}",
         ),
     )
 

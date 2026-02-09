@@ -104,6 +104,7 @@ def _query_h(args: Namespace, project: Project, last: int = None):
     rows = (
         Scan.select(
             Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
             fn.COUNT(Ruff.id).alias("count"),
         )
         .join(Ruff, JOIN.LEFT_OUTER)
@@ -115,6 +116,7 @@ def _query_h(args: Namespace, project: Project, last: int = None):
         .objects()
     )
     timestamps = [row.timestamp for row in rows]
+    messages = {row.timestamp: row.message for row in rows}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
@@ -130,7 +132,7 @@ def _query_h(args: Namespace, project: Project, last: int = None):
             if not (roc := rate_of_change_percentage(value_2, value_1)):
                 log.debug(f"{timestamps[-2]=}:{value_2=} {timestamps[-1]=}:{value_1=}")
 
-    return timestamps, transposed, roc
+    return timestamps, messages, transposed, roc
 
 
 def _query_d(args: Namespace, project: Project, scan: Scan):

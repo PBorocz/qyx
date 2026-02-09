@@ -27,7 +27,7 @@ LAYOUT_DEFAULTS = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
     xaxis=dict(type="date", tickformat="%Y-%m-%d"),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
 )
 
 ################################################################################################
@@ -67,3 +67,16 @@ def style_figure(fig, **kwargs):
     fig.update_yaxes(**merge_and_filter(Y_AXIS_DEFAULTS, kwargs.get("yaxis", {})))
 
     return fig
+
+
+def custom_labels(metric: str, messages: dict, x_values: str, y_values: str) -> list[str]:
+    """Return a list of custom hover labels based on the respective git messages."""
+    labels = []
+    for timestamp, value in zip(x_values, y_values):
+        label = f"• <b>{value}</b> {metric}<br>"
+        if message := messages.get(timestamp):
+            label += f"• {message}<br>"
+        label += f"• {timestamp.strftime('%Y-%m-%d %H:%M')}"
+        label += "<extra></extra>"
+        labels.append(label)
+    return labels

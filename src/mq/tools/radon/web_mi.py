@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_mi
-from mq.web.plotly import SERIES_COLORS, style_figure
+from mq.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 def mi_0(args: Namespace, scan: Scan, project: Project = None):
@@ -118,10 +118,10 @@ def mi_d(args: Namespace, project: Project, scan: Scan):
 
 def mi_h(args: Namespace, project: Project, scan: Scan = None):
     """Render the maintainability index chart."""
-    rows, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
+    messages, rows, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
     x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
-    y_values = list(rows.values())
-
+    y_values = [round(value, 2) for value in rows.values()]
+    labels = custom_labels("", messages, x_values, y_values)
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
@@ -130,7 +130,8 @@ def mi_h(args: Namespace, project: Project, scan: Scan = None):
             mode="lines+markers",
             marker_color=SERIES_COLORS[0],
             line_color=SERIES_COLORS[0],
-            hovertemplate="%{y:.2f}<br>As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+            customdata=labels,
+            hovertemplate="%{customdata}",
         ),
     )
     style_figure(

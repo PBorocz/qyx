@@ -90,7 +90,7 @@ def raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def raw_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, rocs, roc_gt = query_raw(args, ReportLevel.HISTORY, project=project, last=5)
+    timestamps, _, transposed, rocs, roc_gt = query_raw(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-RAW Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")

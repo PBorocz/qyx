@@ -97,7 +97,7 @@ def cc_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
 
 
 def cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, transposed, roc = query_cc(args, ReportLevel.HISTORY, project=project, last=5)
+    timestamps, _, transposed, roc = query_cc(args, ReportLevel.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-CC Results Over Time")
     table.add_column("Complexity", justify="left")

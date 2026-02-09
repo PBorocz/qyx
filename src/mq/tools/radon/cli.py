@@ -11,11 +11,7 @@ from mq.tools.base import Project, Scan, ToolType
 log = logging.getLogger(__name__)
 
 
-def render(args: Namespace, o_tool: ToolType, analysis: str) -> None:
-    if not (project := Project.find_from_args(args)):
-        log.error(f"Sorry, we didn't find any data yet for project: {args.project}")
-        return None
-
+def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -> None:
     if not (scan := Scan.get_most_recent(project, "radon", analysis)):
         log.info(f"Sorry, we haven't performed a '{analysis}' measurement yet for this project.")
         return None

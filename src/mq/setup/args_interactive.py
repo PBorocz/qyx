@@ -163,7 +163,9 @@ def _prompt_existing_name(include_new_option: bool = False):
             kwargs["default"] = project.name
         choices.append(Choice(title=project.name))
     if include_new_option:
-        choices.append(Choice(title="-New Project-", value="__new__"))
+        choices.append(Choice(title="-New Project-", value="__new__"))  # SENTINEL!
+    else:
+        choices.append(Choice(title="-ALL-", value="*"))  # SENTINEL!
 
     project = select(
         "Project:",
@@ -235,7 +237,7 @@ def _prompt_delete_entity() -> BaseModel:
 
 def _prompt_delete_id(delete_entity: BaseModel) -> int:
     value = text(
-        f"Database id of the {delete_entity.title()} you want to delete",
+        f"Database id of the {delete_entity.title()} you want to delete:",
         style=PROMPT_STYLE,
         validate=lambda text: text.isdigit() or "Please enter a valid integer database id",
     ).unsafe_ask()

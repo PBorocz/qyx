@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import query_raw
-from mq.web.plotly import SERIES_COLORS, style_figure
+from mq.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 def raw_0(args: Namespace, scan: Scan, project: Project = None):
@@ -166,12 +166,13 @@ def raw_2(args: Namespace, scan: Scan, project: Project = None):
 
 def raw_h(args: Namespace, project: Project, scan: Scan = None):
     """Create chart obo all Raw metrics."""
-    _, transposed, _, _ = query_raw(args, ReportLevel.HISTORY, project=project, last=None)
+    _, messages, transposed, _, _ = query_raw(args, ReportLevel.HISTORY, project=project, last=None)
 
     fig = go.Figure()
     for i, (metric, dt_rows) in enumerate(list(transposed.items())):
         x_values = [datetime.fromisoformat(ts_) for ts_ in dt_rows.keys()]
         y_values = list(dt_rows.values())
+        labels = custom_labels(metric.upper(), messages, x_values, y_values)
         fig.add_trace(
             go.Scatter(
                 line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
@@ -180,10 +181,8 @@ def raw_h(args: Namespace, project: Project, scan: Scan = None):
                 name=metric.upper(),
                 x=x_values,
                 y=y_values,
-                hovertemplate="<b>%{y}</b> "
-                + f"{metric.upper()}'s"
-                + "<br>As Of: %{x|%Y-%m-%d %H:%M}<br>"
-                + "<extra></extra>",
+                customdata=labels,
+                hovertemplate="%{customdata}",
             ),
         )
 

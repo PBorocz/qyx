@@ -94,6 +94,7 @@ def _query_h(args: Namespace, project: Project, last: int = None):
     rows = (
         Scan.select(
             Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
             Fxtd.type,
             fn.COUNT(Fxtd.id).alias("count"),
         )
@@ -106,11 +107,12 @@ def _query_h(args: Namespace, project: Project, last: int = None):
         .order_by(Scan.as_of)
         .objects()
     )
+    timestamps = list({row.timestamp for row in rows if row.count})
+    messages = {row.timestamp: row.message for row in rows}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    timestamps = list({row.timestamp for row in rows if row.count})
     transposed = defaultdict(dict)
     for row in rows:
         if row.count:
@@ -125,7 +127,7 @@ def _query_h(args: Namespace, project: Project, last: int = None):
             if value_2 is not None and value_1 is not None:
                 rocs[type_] = rate_of_change_percentage(value_2, value_1)
 
-    return timestamps, transposed, rocs
+    return timestamps, messages, transposed, rocs
 
 
 def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):

@@ -136,6 +136,7 @@ def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict
     query = (
         Cloc.select(
             Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
             fn.SUM(Cloc.lines_code).alias("total_code"),
             fn.SUM(Cloc.lines_comment).alias("total_comment"),
             fn.SUM(Cloc.lines_blank).alias("total_blank"),
@@ -146,11 +147,12 @@ def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict
         .order_by(Scan.as_of)
         .objects()
     )
+    timestamps = [result.timestamp for result in query]
+    messages = {result.timestamp: result.message for result in query}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    timestamps = [result.timestamp for result in query]
     transposed = defaultdict(lambda: defaultdict(dict))
     grand_totals = defaultdict(int)
     for result in query:
@@ -187,7 +189,7 @@ def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict
         adgs["total_blank"  ] = (query[-1].total_blank   - query[0].total_blank  ) / days
         # fmt: on
 
-    return timestamps, query, transposed, grand_totals, roc, adgs
+    return timestamps, messages, query, transposed, grand_totals, roc, adgs
 
 
 def _query_d(args: Namespace, scan: Scan) -> Any:

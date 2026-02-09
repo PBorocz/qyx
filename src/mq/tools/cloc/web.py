@@ -12,7 +12,7 @@ from mq.tools.cloc.models import query
 from mq.utils.scoring import find_grade
 from mq.web import render_project_selector
 from mq.web.page import render_page
-from mq.web.plotly import SERIES_COLORS, style_figure
+from mq.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 # Page layout...
@@ -307,7 +307,7 @@ def cloc_f(args: Namespace, scan: Scan, project: Project = None):
 
 
 def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
-    _, rows, _, _, _, _ = query(args, ReportLevel.HISTORY, project=project)
+    _, messages, rows, _, _, _, _ = query(args, ReportLevel.HISTORY, project=project)
     if not rows:
         return None
 
@@ -321,6 +321,17 @@ def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None
         x_values = [datetime.fromisoformat(row.timestamp) for row in rows]
         y_values = [getattr(row, metric) for row in rows]
 
+        # We want custom hover labels based on the respective git messages
+        labels = custom_labels(title, messages, x_values, y_values)
+        # labels = []
+        # for timestamp, value in zip(x_values, y_values):
+        #     label = f"• <b>{value}</b> {title}<br>"
+        #     if message := messages.get(timestamp):
+        #         label += f"• {message}<br>"
+        #     label += f"• {timestamp.strftime('%Y-%m-%d %H:%M')}"
+        #     label += "<extra></extra>"
+        #     labels.append(label)
+
         # Add a series for each specific metric
         fig.add_trace(
             go.Scatter(
@@ -330,7 +341,8 @@ def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None
                 name=title,
                 marker=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], size=4, opacity=0.5),
                 line=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], width=2),
-                hovertemplate="%{y} " + f"<b>{title}'s</b><br>" + "As Of: %{x|%Y-%m-%d %H:%M}<br>" + "<extra></extra>",
+                customdata=labels,
+                hovertemplate="%{customdata}",
             ),
         )
 

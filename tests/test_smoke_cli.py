@@ -66,12 +66,12 @@ def test_cli_rendering_methods(test_args, subtests, capsys):
             test_args.name, test_args.level = case.project.name, case.level
 
             # Run the test...
-            case.render_method(test_args, case.o_tool, case.analysis)
+            case.render_method(test_args, case.project, case.o_tool, case.analysis)
 
             # If we got here, no exceptions where raised.
             # Did the output at least have the project information?
             captured = capsys.readouterr()
-            # if case.o_tool.name.upper() not in captured.out:
-            #     breakpoint()
+            if case.o_tool.name.upper() not in captured.out:
+                breakpoint()
 
             assert case.o_tool.name.upper() in captured.out

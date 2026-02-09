@@ -248,6 +248,7 @@ def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
     query = (
         RadonRaw.select(
             Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
             fn.SUM(RadonRaw.blank).alias("blank"),
             fn.SUM(RadonRaw.comments).alias("comments"),
             fn.SUM(RadonRaw.loc).alias("loc"),
@@ -260,6 +261,8 @@ def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
         .order_by(Scan.as_of)
         .objects()
     )
+    timestamps = [result.timestamp for result in query]
+    messages = {result.timestamp: result.message for result in query}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
@@ -292,7 +295,7 @@ def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
     else:
         roc_gt = 0.0
 
-    return timestamps, transposed, rocs, roc_gt
+    return timestamps, messages, transposed, rocs, roc_gt
 
 
 ################################################################################################
@@ -424,6 +427,7 @@ def _query_hal_h(args: Namespace, project: Project = None, last: int = 5) -> Any
     query = (
         RadonHal.select(
             Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
             fn.AVG(RadonHal.h1).alias("h1"),
             fn.AVG(RadonHal.h2).alias("h2"),
             fn.AVG(RadonHal.N1).alias("N1"),
@@ -443,11 +447,12 @@ def _query_hal_h(args: Namespace, project: Project = None, last: int = 5) -> Any
         .order_by(Scan.as_of)
         .objects()
     )
+    timestamps = [result.timestamp for result in query]
+    messages = {result.timestamp: result.message for result in query}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    timestamps = [result.timestamp for result in query]
     transposed = defaultdict(lambda: defaultdict(dict))
     for result in query:
         total = 0
@@ -467,7 +472,7 @@ def _query_hal_h(args: Namespace, project: Project = None, last: int = 5) -> Any
         else:
             rocs[attr] = 0.00
 
-    return timestamps, transposed, rocs
+    return timestamps, messages, transposed, rocs
 
 
 def _query_hal_d(args: Namespace, project: Project, scan: Scan):
@@ -592,6 +597,7 @@ def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
     query = (
         RadonMi.select(
             Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
             (fn.SUM(RadonMi.mi * RadonRaw.loc) / fn.SUM(RadonRaw.loc)).alias("mi_weighted"),
         )
         .join(
@@ -617,6 +623,7 @@ def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
         .order_by(Scan.as_of.desc())
     )
     rows = {row["timestamp"]: row["mi_weighted"] for row in query.dicts()}
+    messages = {row["timestamp"]: row["message"] for row in query.dicts()}
 
     # Calculate rate of change of last 2 entries..
     timestamps = list(rows.keys())
@@ -625,7 +632,7 @@ def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
         ts_penultimate, ts_last = sorted(timestamps)[-2:]
         roc = rate_of_change_percentage(rows[ts_penultimate], rows[ts_last])
 
-    return rows, roc
+    return messages, rows, roc
 
 
 def _query_mi_d(args: Namespace, scan: Scan):
@@ -711,6 +718,7 @@ def _query_cc_h(args: Namespace, project: Project, last: int = None) -> Any:
     query = (
         RadonCc.select(
             Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
             RadonCc.entity_type,
             fn.AVG(RadonCc.complexity).alias("complexity"),
         )
@@ -720,11 +728,12 @@ def _query_cc_h(args: Namespace, project: Project, last: int = None) -> Any:
         .order_by(Scan.as_of)
         .objects()
     )
+    timestamps = list({result.timestamp for result in query})
+    messages = {result.timestamp: result.message for result in query}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    timestamps = list({result.timestamp for result in query})
     transposed = defaultdict(lambda: defaultdict(dict))
     for result in query:
         transposed[result.entity_type][result.timestamp] = result.complexity
@@ -738,7 +747,7 @@ def _query_cc_h(args: Namespace, project: Project, last: int = None) -> Any:
                 values_by_timestamp[timestamps[-1]],
             )
 
-    return timestamps, transposed, rocs
+    return timestamps, messages, transposed, rocs
 
 
 def _query_cc_d(args: Namespace, scan: Scan):

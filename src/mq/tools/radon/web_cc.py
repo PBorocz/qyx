@@ -10,7 +10,7 @@ from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon import RadonCcEntityType
 from mq.tools.radon.models import query_cc
-from mq.web.plotly import SERIES_COLORS, style_figure
+from mq.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 def cc_0(args: Namespace, scan: Scan, project: Project = None):
@@ -184,21 +184,20 @@ def cc_d(args: Namespace, project: Project, scan: Scan):
 
 def cc_h(args: Namespace, project: Project, scan: Scan = None):
     """Render our chart to display Radon CC information."""
-    _, transposed, _ = query_cc(args, ReportLevel.HISTORY, project=project, last=None)
+    _, messages, transposed, _ = query_cc(args, ReportLevel.HISTORY, project=project, last=None)
 
     fig = go.Figure()
     for i, entity_type in enumerate(RadonCcEntityType):
         values_by_timestamp = transposed[entity_type.value]
         x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
-        y_values = [f"{value:.2f}" for value in values_by_timestamp.values()]
-        y_values = list(values_by_timestamp.values())
+        y_values = [round(value, 2) for value in values_by_timestamp.values()]
+        labels = custom_labels(f"({entity_type.plural})", messages, x_values, y_values)
         fig.add_trace(
             go.Scatter(
                 x=x_values,
                 y=y_values,
-                hovertemplate=f"{entity_type.plural}: "
-                + "<b>%{y:.2f}</b><br>"
-                + "As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+                customdata=labels,
+                hovertemplate="%{customdata}",
                 line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
                 marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
                 mode="lines+markers",
@@ -206,11 +205,6 @@ def cc_h(args: Namespace, project: Project, scan: Scan = None):
             ),
         )
 
-    style_figure(
-        fig,
-        layout={
-            "yaxis_title": "Cyclomatic Complexity",
-        },
-    )
+    style_figure(fig, layout={"yaxis_title": "Cyclomatic Complexity"})
 
     return fig.to_html().encode()

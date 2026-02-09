@@ -9,7 +9,7 @@ from fasthtml import common as fh
 from mq.constants import ReportLevel
 from mq.tools.base import Project, Scan
 from mq.tools.radon.models import RadonHal, query_hal
-from mq.web.plotly import SERIES_COLORS, style_figure
+from mq.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 def hal_0(args: Namespace, scan: Scan, project: Project = None):
@@ -182,7 +182,7 @@ def hal_d(args: Namespace, project: Project, scan: Scan):
 
 
 def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict:
-    _, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
+    _, messages, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
     if not transposed:
         return dict()
 
@@ -192,12 +192,14 @@ def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict:
     for metric, values_by_timestamp in transposed.items():
         fig = go.Figure()
         x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
-        y_values = list(values_by_timestamp.values())
+        y_values = [round(value, 2) for value in values_by_timestamp.values()]
+        labels = custom_labels(radon_names[metric], messages, x_values, y_values)
         fig.add_trace(
             go.Scatter(
                 x=x_values,
                 y=y_values,
-                hovertemplate="%{y:.2f}<br>As Of: %{x|%Y-%m-%d %H:%M}<br><extra></extra>",
+                customdata=labels,
+                hovertemplate="%{customdata}",
                 line_color=SERIES_COLORS[0],
                 marker_color=SERIES_COLORS[0],
                 mode="lines+markers",
