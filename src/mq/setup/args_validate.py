@@ -102,7 +102,7 @@ def _validate_git_remote(url: str, timeout: int = 10) -> tuple[bool, Optional[st
     """Validate git URL by checking remote. Returns (is_valid, error_message)."""
     try:
         result = subprocess.run(
-            ["gt", "ls-remote", "--exit-code", "--heads", url],
+            ["git", "ls-remote", "--exit-code", "--heads", url],
             capture_output=True,
             timeout=timeout,
             text=True,
