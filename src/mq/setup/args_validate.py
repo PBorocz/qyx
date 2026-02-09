@@ -13,11 +13,7 @@ from mq.utils import is_git_url
 
 def validate_args(args: Namespace) -> bool:
     """Validate arguments now that we've got everything setup."""
-    # if args.command and args.command.lower() not in ("serve", "status"):
-    #     if not getattr(args, "name", None) and not getattr(args, "path", None):
-    #         rprint("[red]Sorry! one of either [bold]-n/--name[/bold] or  [bold]-p/--path[/bold] is required")
-    #         return False
-    #
+    # Validate command-specific arguments:
     issues = []
     match args.command.lower():
         case "ingest":
@@ -25,15 +21,9 @@ def validate_args(args: Namespace) -> bool:
         case "report":
             issues.extend(_validate_report(args))
 
-    # Irrespective of the command, if a tool:analysis was specifed, validate it.
+    # Irrespective of the command, if a tool:analysis was specifed, validate it:
     if "analysis" in args:
-        tool, analysis, sub = split_arg_tool_analysis(args.tool_analysis)
-        if tool not in args.tools:
-            s_names = ", ".join(args.tools.keys())
-            issues.append(
-                f"[red]Sorry! analysis: [bold]{args.tool_analysis}[/bold] is not valid, "
-                f"tool must be one of:[/red] [blue]{s_names}[/blue]",
-            )
+        issues.extend(_validate_tool_analysis(args))
 
     # Did we find anything untowards?
     if issues:
@@ -84,6 +74,16 @@ def _validate_report(args: Namespace) -> list[str]:
     if not args.name:
         return ["[red]Sorry! [bold]-n/--name[/bold] is required to report results."]
     return []
+
+
+def _validate_tool_analysis(args: Namespace) -> list[str]:
+    tool, analysis, sub = split_arg_tool_analysis(args.tool_analysis)
+    if tool not in args.tools:
+        s_names = ", ".join(args.tools.keys())
+        return (
+            f"[red]Sorry! analysis: [bold]{args.tool_analysis}[/bold] is not valid, "
+            f"tool must be one of:[/red] [blue]{s_names}[/blue]",
+        )
 
 
 def __find_git_root(dir: Path) -> Path | None:

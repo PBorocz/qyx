@@ -81,7 +81,7 @@ class Configuration(ToolType):
     def get_ingest_command(self, relative: str = None, absolute: str = None, analysis: str = None) -> list[str]:
         """Return the command sent to subprocess to directly perform an ingest operation."""
         if not analysis:
-            raise RuntimeError("Sorry, we need a sub_module here!")
+            raise RuntimeError("Sorry, we need a analysis argument here!")
         return [
             "uvx",
             "radon",

@@ -13,7 +13,7 @@ from rich import print as rprint
 
 from mq.tools import generate_ta_pairs
 from mq.tools.base import ToolType, Project, Request, Scan
-from mq.utils.git import get_git_commit_hash, git_checkout, get_git_commits
+from mq.utils.git import git_checkout, get_git_commits
 
 log = logging.getLogger(__name__)
 
@@ -73,11 +73,23 @@ def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]
     """Iterate over ingest request(s) to perform, abstracting out git vs. direct file sources."""
     if request.is_git:
         repo_path, commits = get_git_commits(request.arg_normalised)
-        for commit_hash, commit_date in commits:
-            yield Namespace(as_git=True, cwd=repo_path, as_of=commit_date, hash=commit_hash)
+        for hash, date, message in commits:
+            yield Namespace(
+                as_git=True,
+                cwd=repo_path,
+                as_of=date,
+                hash=hash,
+                message=message,
+            )
     else:
         as_of = datetime.now(UTC).replace(microsecond=0)
-        yield Namespace(as_git=False, cwd=Path(request.arg_normalised), as_of=as_of, hash=get_git_commit_hash())
+        yield Namespace(
+            as_git=False,
+            cwd=Path(request.arg_normalised),
+            as_of=as_of,
+            hash=None,
+            message=None,
+        )
 
 
 def _ingest_analysis(
@@ -88,29 +100,30 @@ def _ingest_analysis(
     scan_request: Namespace,
 ) -> int:
     """Do the specified analysis for respective tool, running the respective command, parsing and saving results!."""
-    # Get the scan (if necessary) on whose behalf the results will be stored.
+    # Create the scan on whose behalf the results will be stored.
     scan = Scan.create(
         request=request,
         tool=o_tool.name,
         analysis=analysis,
         cwd=scan_request.cwd,
         git_commit_hash=scan_request.hash,
+        git_commit_message=scan_request.message,
         as_of=scan_request.as_of,
     )
 
     ################################################################################################
     # Run the respective tool's data collection method...
     ################################################################################################
-    datum = _get_ta_results(args, request, o_tool, analysis, scan_request)
+    datum = _run_tool_analysis_ingest(args, request, o_tool, analysis, scan_request)
 
     ################################################################################################
     # Parse & save the results received this time using the respective tool's ingest method
     ################################################################################################
-    ingest_method: Callable = o_tool.get_ingest_method(analysis)
-    return ingest_method(scan, datum)
+    parse_method: Callable = o_tool.get_ingest_method(analysis)
+    return parse_method(scan, datum)
 
 
-def _get_ta_results(
+def _run_tool_analysis_ingest(
     args: Namespace,
     request: Request,
     o_tool: ToolType,

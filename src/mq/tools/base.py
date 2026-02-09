@@ -130,7 +130,7 @@ class Project(BaseModel):
 
     created = pw.DateTimeField(
         help_text="GMT/UTC datetime the project was created.",
-        default=lambda: datetime.now(UTC),
+        default=lambda: datetime.now(UTC).replace(microsecond=0),
     )
 
     @classmethod
@@ -250,14 +250,18 @@ class Scan(BaseModel):
     )
     timestamp = pw.DateTimeField(
         help_text="GMT/UTC datetime the scan/ingest occurred",
-        default=lambda: datetime.now(UTC),
+        default=lambda: datetime.now(UTC).replace(microsecond=0),
     )
     # cwd = pw.CharField(
     #     help_text="Directory for tool execuction (ie. /tmp/... for git or /users/dev/project",
     #     null=True,
     # )
     git_commit_hash = pw.CharField(
-        help_text="ID from respective sport's site",
+        help_text="Git commit/revision hash",
+        null=True,
+    )
+    git_commit_message = pw.TextField(
+        help_text="Git message",
         null=True,
     )
 

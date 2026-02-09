@@ -17,13 +17,13 @@ def render(args: Namespace, o_tool: ToolType, analysis: str) -> None:
         return None
 
     if not (scan := Scan.get_most_recent(project, "radon", analysis)):
-        log.info(f"Sorry, we haven't performed a {args.sub_module} measurement yet for this project.")
+        log.info(f"Sorry, we haven't performed a '{analysis}' measurement yet for this project.")
         return None
 
-    _dispatch_level_submodule(args, o_tool, project=project, scan=scan, analysis=analysis)
+    _dispatch_level_analysis(args, o_tool, project=project, scan=scan, analysis=analysis)
 
 
-def _dispatch_level_submodule(args: Namespace, o_tool, project: Project, scan: Scan, analysis: str) -> None:
+def _dispatch_level_analysis(args: Namespace, o_tool, project: Project, scan: Scan, analysis: str) -> None:
     """Dispatch to the report method using the report level and sub_module requested."""
     try:
         cli_render_module_name: str = f"mq.tools.{o_tool.module}.cli_{analysis}"

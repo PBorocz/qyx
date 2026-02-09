@@ -10,13 +10,13 @@ from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
 
-
-def get_git_commit_hash() -> str:
-    try:
-        result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
-        return result.stdout.strip()
-    except subprocess.CalledProcessError:
-        return "unknown"  # Not in git repo or git not available
+# <2026-02-08 Sun> Not used anymore (we don't store git hash on non-git scans)
+# def get_git_commit_hash() -> str:
+#     try:
+#         result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
+#         return result.stdout.strip()
+#     except subprocess.CalledProcessError:
+#         return "unknown"  # Not in git repo or git not available
 
 
 def get_git_commits(git_repo: str) -> tuple[Path, list[str]]:
@@ -41,8 +41,8 @@ def get_git_commits(git_repo: str) -> tuple[Path, list[str]]:
             capture_output=True,
         )
 
-    # Given the repo, find all commit hashes associated all revisions:
-    commits: list[str] = _get_commit_hashes(repo_path)
+    # Given the repo, find all commit revisions associated all revisions:
+    commits: list[str] = _get_commits(repo_path)
     log.debug(f"{repo_path} has {len(commits)} commits")
     return repo_path, commits
 
@@ -77,10 +77,10 @@ def _get_repo_cache_dir(git_url: str) -> Path:
     return repo_dir
 
 
-def _get_commit_hashes(repo_path: Path) -> list[tuple[str, str]]:
+def _get_commits(repo_path: Path) -> list[tuple[str, str, str]]:
     """Get all commit hashes in chronological order (oldest to newest)."""
     result = subprocess.run(
-        ["git", "log", "--reverse", "--pretty=format:%H|%at", "origin/HEAD"],  # Unix timestamp!
+        ["git", "log", "--reverse", "--pretty=format:%H|%at|%s", "origin/HEAD"],  # Unix timestamp!
         cwd=repo_path,
         capture_output=True,
         text=True,
@@ -88,9 +88,9 @@ def _get_commit_hashes(repo_path: Path) -> list[tuple[str, str]]:
     )
     commits = []
     for line in result.stdout.strip().split("\n"):
-        hash_val, s_date = line.split("|")
+        hash_val, s_date, message = line.split("|")
         utc_date = datetime.fromtimestamp(int(s_date), tz=timezone.utc)
-        commits.append((hash_val, utc_date))
+        commits.append((hash_val, utc_date, message))
     return commits
 
 
