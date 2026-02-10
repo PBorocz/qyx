@@ -7,7 +7,7 @@ from pathlib import Path
 from peewee import SqliteDatabase
 from platformdirs import user_data_dir
 
-from mq.tools.base import Project, Request, Scan
+from mq.tools.base import Project, Request, Scan, State
 
 
 def setup_sqlite(args: Namespace) -> None:
@@ -22,7 +22,7 @@ def setup_sqlite(args: Namespace) -> None:
     db_ = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
 
     # Make sure our models have tables defined for 'em!
-    models = [Project, Request, Scan]
+    models = [State, Project, Request, Scan]
     for o_tool in args.tools.values():
         for tool_peewee_classes in o_tool.models.values():
             for tool_peewee_class in tool_peewee_classes:

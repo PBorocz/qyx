@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from fasthtml import common as fh
 
 from mq.constants import ReportLevel
-from mq.tools.base import Project, Scan
+from mq.tools.base import Project, Scan, State
 from mq.tools.ruff import get_ruff_rule_name
 from mq.tools.ruff.models import query
 from mq.web import render_project_selector
@@ -44,6 +44,8 @@ def _render_current(args: Namespace, request, s_project_id: str = None, analysis
         return fh.Section()
     project = Project.get(Project.id == int(s_project_id))
     scan = Scan.get_most_recent(project, "ruff", "ruff")
+
+    State.update(args, project=project.name, analysis="ruff")
 
     return fh.Section(
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display(collapse_today=True)}")),

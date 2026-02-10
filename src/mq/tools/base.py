@@ -121,6 +121,33 @@ class BaseModel(pw.Model):
         database = None
 
 
+class State(BaseModel):
+    """Key-value store for application state."""
+
+    key = pw.CharField(primary_key=True, max_length=100)
+    value = pw.TextField()
+
+    @classmethod
+    def update(cls, args: Namespace, **kwargs):
+        """Update state fields atomically."""
+        with args._db.atomic():
+            for key, value in kwargs.items():
+                if value is None:
+                    # Delete the key if value is None
+                    State.delete().where(State.key == key).execute()
+                else:
+                    # Otherwise, simply replace it.
+                    State.replace(key=key, value=str(value)).execute()
+
+    @classmethod
+    def lookup(cls, key: str, default=None):
+        """Get a single state value."""
+        try:
+            return State.get(State.key == key.lower()).value
+        except State.DoesNotExist:
+            return default
+
+
 class Project(BaseModel):
     """Root of result storage, a 'project' is primarily just a project "name"."""
 
@@ -290,7 +317,7 @@ class Scan(BaseModel):
             return run
         return None
 
-    def tool_analysis_display(self) -> str:
+    def analysis_display(self) -> str:
         """Return a nicely formatted tool + analysis."""
         if self.tool == self.analysis:
             return f"{self.tool:9s}"

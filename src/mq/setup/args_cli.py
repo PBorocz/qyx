@@ -83,8 +83,8 @@ def get_args_command_line():
     parser_ingest.add_argument(
         "-a",
         "--analysis",
-        dest="tool_analysis",
-        help="Tool & analysis to run, eg. cloc, radon:cc, ruff etc.",
+        dest="analysis",
+        help="Analysis to ingest, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
     )
     parser_ingest.add_argument(
         "--stdin",
@@ -110,8 +110,8 @@ def get_args_command_line():
     parser_report.add_argument(
         "-a",
         "--analysis",
-        dest="tool_analysis",
-        help="Analysis to report on, eg. cloc, radon:cc, ruff etc.",
+        dest="analysis",
+        help="Analysis to run, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
     )
     parser_report.add_argument(
         "-l",

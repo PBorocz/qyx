@@ -2,8 +2,7 @@
 
 from fasthtml import common as fh
 
-from mq.tools.base import Project
-from mq.utils.state import load_state
+from mq.tools.base import Project, State
 
 
 def render_project_selector(request, hx_get: str):
@@ -25,12 +24,11 @@ def get_project_select(request, hx_get: str):
 
     # Convert our project(s) into selector items..
     elif len(projects) > 1:
-        state = load_state()  # Just load it here!
-        last_project_id = state.get("last_project_id", None)
+        last_project = State.lookup("project")
         fh_select_items = [fh.Option("Project...", value="")]
         for project in projects:
             option_kwargs = dict(value=str(project.id))
-            if last_project_id and str(project.id) == last_project_id:
+            if last_project and project.name.lower() == last_project.lower():
                 option_kwargs["selected"] = True
             fh_select_items.append(
                 fh.Option(project.name, **option_kwargs),

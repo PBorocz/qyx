@@ -41,10 +41,6 @@ def ingest(args: Namespace) -> None:
         s_as_of = f"{scan_request.as_of.strftime('%Y-%m-%dT%H:%M:%S')}"
 
         for o_tool, analysis in tools_analyses:
-            s_tool_analysis: str = o_tool.name
-            if o_tool.name != analysis:
-                s_tool_analysis += f":{analysis}"
-
             if scan_request.as_git:
                 # If we're scanning a git repo, check to make sure we haven't already ingested this hash!
                 if _is_git_commit_already_ingested(git_hashes, o_tool, analysis, scan_request.hash):
@@ -62,7 +58,9 @@ def ingest(args: Namespace) -> None:
             rprint(f"{s_as_of} → {o_tool.name} {s_analysis}...", end="\r")
 
             num = _ingest_analysis(args, request, o_tool, analysis, scan_request)
-            rprint(f"[green]✔ Ingested [bold]{num:3d}[/bold] results on behalf of {s_tool_analysis}[/green]")
+
+            display: str = o_tool.name if o_tool.name == analysis else f"{o_tool.name}:{analysis}"
+            rprint(f"[green]✔ Ingested [bold]{num:3d}[/bold] results on behalf of {display}[/green]")
             ingestion_count += 1
 
     if not ingestion_count:
@@ -114,7 +112,7 @@ def _ingest_analysis(
     ################################################################################################
     # Run the respective tool's data collection method...
     ################################################################################################
-    datum = _run_tool_analysis_ingest(args, request, o_tool, analysis, scan_request)
+    datum = _run_ingest(args, request, o_tool, analysis, scan_request)
 
     ################################################################################################
     # Parse & save the results received this time using the respective tool's ingest method
@@ -123,7 +121,7 @@ def _ingest_analysis(
     return parse_method(scan, datum)
 
 
-def _run_tool_analysis_ingest(
+def _run_ingest(
     args: Namespace,
     request: Request,
     o_tool: ToolType,

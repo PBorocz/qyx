@@ -33,7 +33,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="ruff",
             name="ruff",
-            analyses={AnalysisType.RUFF.value: "Python linter ('ruff check')"},
+            analyses={AnalysisType.RUFF.value: "ruff - Linter"},
             models=dict(ruff=(Ruff,)),
             reports=dict(cli=cli, web=web),
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!

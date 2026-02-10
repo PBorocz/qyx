@@ -47,8 +47,8 @@ def _delete_superseded_requests(args: Namespace) -> None:
             continue
 
         # Delete the scans of NON-GIT based requests for the project that occurred BEFORE the cutoff time!
-        # (keeping a small buffer (e.g., 1 hour) in case of clock skew)
-        cutoff = datetime.fromisoformat(latest_git_scan.as_of) - timedelta(hours=1)
+        # (keeping a small buffer in case of clock skew)
+        cutoff = datetime.fromisoformat(latest_git_scan.as_of) - timedelta(minutes=2)
         num = 0
         for local_request in Request.select().where(Request.project == project, ~Request.is_git):
             num += Scan.delete().where(Scan.request == local_request, Scan.timestamp <= cutoff).execute()

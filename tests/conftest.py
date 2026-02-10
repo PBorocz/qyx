@@ -28,7 +28,7 @@ def app_args(db_path):
     args = Namespace(
         log_level="warning",
         db_path=db_path,
-        tool_analysis=None,  # Will force us to ingest all tools & analyses
+        analysis=None,  # Will force us to ingest all tools & analyses
         stdin=None,  # Will force us to use respective tools to ingest
         path=str(Path(__file__).parent.parent),  # str as if we're getting from the command-line
         name=TEST_PROJECT,

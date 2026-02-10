@@ -16,7 +16,7 @@ def status(args: Namespace) -> None:
     tree = Tree("MQ Status")
 
     projects = Project.select()
-    if args.name:
+    if args.name and args.name != "*":
         projects = projects.where(Project.name == args.name)
 
     for project in projects:
@@ -47,8 +47,7 @@ def scan_tree_summary(args: Namespace, request, scans_for_request, scan_tree):
     # Count up the total number of scans by tool/analysis:
     counts = defaultdict(int)
     for scan in scans_for_request:
-        s_analysis = scan.tool_analysis_display()
-        counts[s_analysis] += 1
+        counts[scan.analysis_display()] += 1
     for s_analysis, count in sorted(counts.items()):
         s_scan = f"[cyan]{s_analysis}[/cyan] → [green]{count:,d}[/green] scans"
         ta_tree.add(s_scan)
@@ -87,7 +86,7 @@ def _get_request_name(args: Namespace, request: Request) -> str:
 
 def _get_scan_name(args: Namespace, scan: Scan) -> str:
     s_scan_count = _get_scan_count(args, scan)
-    s_analysis = scan.tool_analysis_display()
+    s_analysis = scan.analysis_display()
     s_scan = (
         f"[bright_green]SCAN[/bright_green] → "
         f"[cyan]{s_analysis}[/cyan] "

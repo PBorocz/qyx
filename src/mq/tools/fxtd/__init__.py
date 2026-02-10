@@ -31,7 +31,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="fxtd",
             name="fxtd",
-            analyses={AnalysisType.FXTD.value: "FixMe, ToDo's etc."},
+            analyses={AnalysisType.FXTD.value: "fxtd - FixMe's, ToDo's, Notes etc."},
             models=dict(fxtd=(Fxtd,)),
             results_required=False,  # In this case,  Scans without data ARE valid!
             reports=dict(cli=cli, web=web),

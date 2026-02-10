@@ -7,7 +7,6 @@ from typing import Callable
 from fasthtml import common as ft
 
 from mq.web.home import render_page_home, render_partial_project_summary
-from mq.utils.state import update_state
 
 log = logging.getLogger("uvicorn")
 
@@ -70,8 +69,6 @@ def register(args, rt):  # noqa: C901
     @rt("/partials/set_project/_main_")
     def set_project_main(request, project: str):
         """HTMX endpoint to update content on the main/summary page based on updated project selection."""
-        if project:
-            update_state(last_project_id=project)
         return (*render_partial_project_summary(request, s_project_id=project),)
 
     @rt("/partials/set_project/{tool}")
@@ -82,8 +79,5 @@ def register(args, rt):  # noqa: C901
             render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
         except AttributeError:
             return ft.Div(f"Sorry, unable to render_content obo '{tool}'!", cls="error")
-
-        if project:
-            update_state(last_project_id=project, last_tool=tool)
 
         return (*render_content_method(args, request, s_project_id=project, analysis=analysis),)

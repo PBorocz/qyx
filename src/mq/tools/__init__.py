@@ -19,48 +19,33 @@ def format_int_or_percentage(value: float, as_percentage: bool = False) -> str:
 def generate_ta_pairs(args: Namespace) -> list[tuple[str, str]]:
     """Process the command-line argument and return a list of Tools and analyses to perform."""
     ################################################################################
-    # Case 1: tool_analysis is empty -> we want to ingest everything!
+    # Case 1: No analysis specified -> we want to "process" everything!
     ################################################################################
-    return_: list = list()
-    if not args.tool_analysis:
+    if not args.analysis or args.analysis == "*":  # SENTINEL!
+        return_: list = list()
         for tool_name in args.tools.keys():
             o_tool: ToolType = args.tools[tool_name]
-            for analysis_name in o_tool.models:
-                if analysis_name.startswith("_"):
-                    continue
+            for analysis_name in o_tool.analyses:
                 return_.append((o_tool, analysis_name))
         return return_
 
-    s_tool, s_analysis = split_arg_tool_analysis(args.tool_analysis)
+    # Is the arg a "tool" or an analysis?
+    if args.analysis.lower() in args.tools.keys():
+        ################################################################################
+        # Case 2: Tool only, return *all* the analyses the tool supports
+        ################################################################################
+        o_tool = args.tools[args.analysis.lower()]
+        return [(o_tool, analysis) for analysis in o_tool.analyses]
 
-    ################################################################################
-    # Case 2: Tool only, give all the analyses the tool supports
-    ################################################################################
-    if not s_analysis:
-        o_tool = args.tools[s_tool]
-        for analysis_name in o_tool.models:
-            if analysis_name.startswith("_"):
-                continue
-            return_.append((o_tool, analysis_name))
-        return return_
+    else:
+        ################################################################################
+        # Case 3: The arg is an analysis, find the matching tool for it.
+        ################################################################################
+        for tool_name in args.tools.keys():
+            o_tool: ToolType = args.tools[tool_name]
+            for analysis_name in o_tool.analyses:
+                if args.analysis.lower() == analysis_name.lower():
+                    # Found it!
+                    return [(o_tool, analysis_name)]
 
-    ################################################################################
-    # Case 3: Tool *AND* Analysis specified!
-    ################################################################################
-    assert s_tool and s_analysis
-    return [(args.tools[s_tool], s_analysis)]
-
-
-################################################################################################
-def split_arg_tool_analysis(arg: str = None) -> tuple[str, str]:
-    """Split the input argument that embeds tool & analysis together."""
-    # - ""          returns [None, None]
-    # - "cloc"      returns ["cloc", None]
-    # - "radon:raw" returns ["radon", "raw"]
-    # etc.
-    if not arg:
-        return [None, None]
-    if ":" in arg:
-        tool, analysis = arg.lower().split(":")
-        return [tool, analysis]  # Tool + specific analysis
-    return [arg.lower(), False]  # Tool only
+    raise RuntimeError("Sorry, we already validated args.analysis but couldn't find a tool or analysis?")

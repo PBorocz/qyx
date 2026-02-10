@@ -17,8 +17,8 @@ from mq.setup.args_validate import validate_args
 from mq.setup.logging import setup_logging
 from mq.setup.sqlite import setup_sqlite
 from mq.setup.tools import setup_tools
+from mq.tools.base import State
 from mq.web.serve import serve
-from mq.utils.state import update_state_from_args
 
 
 def _get_dispatch_method(args: argparse.Namespace) -> Callable:
@@ -60,18 +60,19 @@ def dispatch(args: argparse.Namespace) -> str:
 
         # Are our arguments valid? (irrespective of whether they came from arguments or interactively)
         if not validate_args(args):
+            # Didn't pass validation!
             if interactive:
                 args.command = None  # Go back up and try again..
                 continue
             else:
-                sys.exit(1)
+                sys.exit(1)  # We're done!
 
         # Get our ultimate run command and run it!
         method = _get_dispatch_method(args)
         method(args)
 
         # If we finished cleanly, save away the last state..
-        update_state_from_args(args)
+        _update_state(args)
 
         # If not in interactive mode, exit after the command requested.
         if not interactive:
@@ -81,6 +82,14 @@ def dispatch(args: argparse.Namespace) -> str:
         args.command = None
         print()
         iter += 1
+
+
+def _update_state(args):
+    if "name" in args and args.name is not None:
+        State.update(args, project=args.name)
+
+    if "analysis" in args and args.analysis is not None:
+        State.update(args, analysis=args.analysis)
 
 
 def main():

@@ -7,8 +7,7 @@ from questionary import Style, Choice, confirm, path, select, text
 from questionary import print as qprint
 
 from mq.constants import BaseModel, ReportLevel, StatusLevel
-from mq.tools.base import Project
-from mq.utils.state import load_state
+from mq.tools.base import Project, State
 
 # fmt: off
 PROMPT_STYLE = Style([
@@ -89,21 +88,21 @@ def _select_main_command():
 
 ################################################################################################
 def _prompt_command_status(args: Namespace) -> Namespace:
-    args.name = _prompt_existing_name()
+    args.name = _prompt_existing_name(args)
     args.level = _prompt_status_level()
     return args
 
 
 def _prompt_command_report(args: Namespace) -> Namespace:
-    args.name = _prompt_existing_name()
-    args.tool_analysis = _prompt_tool_analysis(args, "Analysis:")
+    args.name = _prompt_existing_name(args)
+    args.analysis = _prompt_analysis(args, "Analysis:")
     args.level = _prompt_report_level()
     return args
 
 
 def _prompt_command_ingest(args: Namespace) -> Namespace:
-    args.name, args.path = _prompt_name_path()
-    args.tool_analysis = _prompt_tool_analysis(args, "Analysis:")
+    args.name, args.path = _prompt_name_path(args)
+    args.analysis = _prompt_analysis(args, "Analysis:")
     args.stdin = False  # Obviously since we're not able to read from stdin interactively!
     return args
 
@@ -154,12 +153,12 @@ def _prompt_admin_command_delete(args: Namespace) -> Namespace:
 
 
 ################################################################################################
-def _prompt_existing_name(include_new_option: bool = False):
-    state = load_state()
+def _prompt_existing_name(args: Namespace, include_new_option: bool = False):
+    last_project = State.lookup("project")  # Get the name of the last project we've referred to..
     choices = []
     kwargs = dict()
     for project in Project.select():
-        if state.get("last_name") and project.name.lower() == state.get("last_name").lower():
+        if last_project and project.name.lower() == last_project.lower():
             kwargs["default"] = project.name
         choices.append(Choice(title=project.name))
     if include_new_option:
@@ -178,9 +177,9 @@ def _prompt_existing_name(include_new_option: bool = False):
     return project
 
 
-def _prompt_name_path() -> tuple[str, str]:
+def _prompt_name_path(args: Namespace) -> tuple[str, str]:
     """Prompt for either an existing project or a new one, if new, get name and path."""
-    project_name = _prompt_existing_name(include_new_option=True)
+    project_name = _prompt_existing_name(args, include_new_option=True)
 
     # New project! Where from?
     choices = [
@@ -270,30 +269,29 @@ def _prompt_report_level() -> ReportLevel:
     return ReportLevel(value)
 
 
-def _prompt_tool_analysis(args: Namespace, message: str) -> str:
-    state = load_state()
-    kwargs = dict()
-    if last_tool_analysis := state.get("last_tool_analysis"):
-        kwargs["default"] = last_tool_analysis
-
-    choices = [Choice(title="-ALL-", value="")]
-    for o_tool in args.tools.values():
-        # Each tool goes out "as itself":
+def _prompt_analysis(args: Namespace, message: str) -> str:
+    choices = []
+    names = [o_tool.name for o_tool in args.tools.values()]
+    for tool in sorted(names):
+        o_tool = args.tools[tool]
+        # Tools with a single analysis go out with just their analysis
         if len(o_tool.analyses) == 1:
-            # Tool only has 1 analysis..
-            title = o_tool.analyses[o_tool.name]
-        else:
-            # Tool only has multiple analyses, thus, the option here is to run ALL of them!
-            title = f"{o_tool.name.title()} - ALL"
-        choice = Choice(title=title, value=o_tool.name)
-        choices.append(choice)
+            choices.append(Choice(title=o_tool.analyses[o_tool.name], value=o_tool.name))
 
-        # For tools with multiple analyses, put another option out for each one..
-        if len(o_tool.analyses) > 1:
+        else:
+            # For tools with multiple analyses, put an option out for each analysis and and "all" one
             for analysis, description in o_tool.analyses.items():
-                value = f"{o_tool.name}:{analysis}"
-                title = f"{o_tool.name.title()} - {description}"
-                choice = Choice(title, value=value)
+                choice = Choice(f"{o_tool.name} - {description}", value=analysis)
                 choices.append(choice)
+            choices.append(Choice(title=f"{o_tool.name} - ALL", value=o_tool.name))
+
+    # Final choice is a "global" all
+    choices.append(Choice(title="-ALL-", value="*"))
+
+    # Do we have an existing value to default?
+    kwargs = dict()
+    last_analysis = State.lookup("analysis")
+    if last_analysis:
+        kwargs["default"] = last_analysis
 
     return select(message=message, choices=choices, style=PROMPT_STYLE, **kwargs).unsafe_ask()

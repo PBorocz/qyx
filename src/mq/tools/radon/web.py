@@ -6,7 +6,7 @@ from typing import Any
 
 from fasthtml import common as fh
 
-from mq.tools.base import Project, Scan
+from mq.tools.base import Project, Scan, State
 from mq.tools.radon.models import RadonHal
 from mq.tools.radon.web_cc import cc_0, cc_1, cc_2, cc_3, cc_h
 from mq.tools.radon.web_hal import hal_0, hal_1, hal_2, hal_3, hal_h
@@ -51,6 +51,7 @@ def _render_current(args: Namespace, request, s_project_id: str = None, analysis
     if not scan:
         log.warning(f"Sorry, no Scan's performed yet for radon:{analysis}")
         return fh.Section()
+    State.update(args, project=project.name, analysis=analysis)
 
     fh_sections = [
         fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display()}")),

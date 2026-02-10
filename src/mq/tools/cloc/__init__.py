@@ -28,7 +28,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="cloc",
             name="cloc",
-            analyses={AnalysisType.CLOC.value: "Count lines of code ('cloc')"},
+            analyses={AnalysisType.CLOC.value: "cloc - Count lines of code"},
             models=dict(cloc=(Cloc,)),
             reports=dict(cli=cli, web=web),
         )

@@ -8,7 +8,7 @@ from typing import Callable, Iterator
 from fasthtml import common as fh
 
 from mq.constants import ReportLevel
-from mq.tools.base import Project, Scan, ToolType
+from mq.tools.base import Project, Scan, State, ToolType
 from mq.web import render_project_selector
 from mq.web.page import render_page
 
@@ -38,6 +38,7 @@ def render_partial_project_summary(request, s_project_id: str):
 
     # Find the respective project to display results for
     project = Project.get(Project.id == int(s_project_id))
+    State.update(args, project=project.name)
 
     # Query all level 0 summaries of raw results *and* derived metrics:
     content = render_all_summary_derived(args, project)
