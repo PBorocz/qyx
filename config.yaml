@@ -8,9 +8,9 @@
 ################################################################################
 command_line_defaults:
   # These set defaults for common command-line arguments (that can still be overridden explicitly)
-  path: "."
-  level: "0"
   log_level: "info"  # Default log level, ie. DEBUG, INFO, WARNING, ERROR, CRITICAL
+  report_level: "0"
+  port: "5011"
 
 renderers:
   web:

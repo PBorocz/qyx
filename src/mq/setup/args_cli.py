@@ -49,7 +49,7 @@ def get_args_command_line():
     parser_status.add_argument(
         "-n",
         "--name",
-        default=defaults.get("name"),
+        default="*",  # SENTINEL!
         help="Project name, if not specified, defaults to ALL projects.",
     )
     parser_status.add_argument(
@@ -71,19 +71,18 @@ def get_args_command_line():
     parser_ingest.add_argument(
         "-n",
         "--name",
-        default=defaults.get("name"),
         help="Project name, required to ingest data.",
     )
     parser_ingest.add_argument(
         "-p",
         "--path",
-        default=defaults.get("path"),
         help="Path to run analysis tool against, eg. '.', '../src', '/abs/path', 'https:...'.",
     )
     parser_ingest.add_argument(
         "-a",
         "--analysis",
         dest="analysis",
+        default="*",  # SENTINEL!
         help="Analysis to ingest, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
     )
     parser_ingest.add_argument(
@@ -104,20 +103,21 @@ def get_args_command_line():
     parser_report.add_argument(
         "-n",
         "--name",
-        default=defaults.get("name"),
+        default="*",  # SENTINEL!
         help="Project name, if not specified, will be determined from path.",
     )
     parser_report.add_argument(
         "-a",
         "--analysis",
         dest="analysis",
+        default="*",  # SENTINEL!
         help="Analysis to run, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
     )
     parser_report.add_argument(
         "-l",
         "--level",
+        default=defaults.get("report_level", ReportLevel.SUMMARY),
         help="Level to report on, eg. 0 (summary), 1 (directory), 2 (file), d (derived) or h (history).",
-        default=defaults.get("level", ReportLevel.SUMMARY),
     )
 
     ################################################################################
