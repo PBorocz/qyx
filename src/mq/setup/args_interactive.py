@@ -3,11 +3,12 @@
 import sys
 from argparse import Namespace
 
-from questionary import Style, Choice, confirm, path, select, text
+from questionary import Separator, Style, Choice, confirm, path, select, text
 from questionary import print as qprint
 
 from mq.constants import BaseModel, ReportLevel, StatusLevel
-from mq.tools.base import Project, State
+from mq.tools.base import Project, Request, Scan, State
+from mq.utils import dt_to_display
 
 # fmt: off
 PROMPT_STYLE = Style([
@@ -28,7 +29,7 @@ def get_args_interactively(args: Namespace, iter: int) -> Namespace:
         qprint("MQ → Code Quality Analysis Tool", style="bold italic fg:cyan")
 
     try:
-        args.command = _select_main_command()
+        args.command = _select_main_command(args)
         args = _get_command_args(args)
     except KeyboardInterrupt:
         _goodbye()
@@ -64,44 +65,62 @@ def _goodbye():
     sys.exit(0)
 
 
-def _select_main_command():
+def _lookup_state_default(key: str) -> dict | None:
+    """Return the default kwargs entry based on current state for the respective key."""
+    kwargs = {}
+    last_command = State.lookup(key)
+    if last_command:
+        kwargs["default"] = last_command
+    return kwargs
+
+
+def _select_main_command(args: Namespace):
     """Prompt user for primary command to run."""
     # fmt: off
     choices = [
-        Choice(title="Status - Display current status"                     , value="status" , shortcut_key="s"),
-        Choice(title="Report - Report on results of existing scans"        , value="report" , shortcut_key="r"),
-        Choice(title="Ingest - Ingest new scan(s) for a project"           , value="ingest" , shortcut_key="i"),
-        Choice(title="Serve  - Run built-in web server to display reports" , value="serve"  , shortcut_key="v"),
-        Choice(title="Admin  - Access administrative functions"            , value="admin"  , shortcut_key="a"),
-        Choice(title="Exit"                                                , value="exit"   , shortcut_key="x"),
+        Choice(title="Status", value="status" , shortcut_key="s"),
+        Choice(title="Report", value="report" , shortcut_key="r"),
+        Choice(title="Ingest", value="ingest" , shortcut_key="i"),
+        Choice(title="Serve" , value="serve"  , shortcut_key="v"),
+        Choice(title="Admin" , value="admin"  , shortcut_key="a"),
+        Separator("────────────"),
+        Choice(title="Exit"  , value="_exit_" , shortcut_key="x"), # SENTINEL!
     ]
     # fmt: on
 
-    return select(
+    kwargs = _lookup_state_default("command")
+    command = select(
         "Command:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
-        use_emacs_keys=True,
+        use_shortcuts=True,
+        **kwargs,
     ).unsafe_ask()
+
+    if command != "_exit_":
+        State.update(args, command=command)
+
+    return command
 
 
 ################################################################################################
 def _prompt_command_status(args: Namespace) -> Namespace:
-    args.name = _prompt_existing_name(args)
+    args.name = _prompt_name(args)
     args.level = _prompt_status_level()
     return args
 
 
 def _prompt_command_report(args: Namespace) -> Namespace:
-    args.name = _prompt_existing_name(args)
+    args.name = _prompt_name(args)
     args.analysis = _prompt_analysis(args, "Analysis:")
     args.level = _prompt_report_level()
     return args
 
 
 def _prompt_command_ingest(args: Namespace) -> Namespace:
-    args.name, args.path = _prompt_name_path(args)
+    args.name = _prompt_name(args, include_new_option=True)
+    args.path = _prompt_path(args)
     args.analysis = _prompt_analysis(args, "Analysis:")
     args.stdin = False  # Obviously since we're not able to read from stdin interactively!
     return args
@@ -117,12 +136,12 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
     """Prompt user for primary command to run."""
     choices = [
         Choice(
-            title="Delete a particular Scan, Request or entire Project",
+            title="Delete a scan, request or project",
             value="delete",
             shortcut_key="d",
         ),
         Choice(
-            title="Run database housekeeping, ie. clean extraneous fluff from data store",
+            title="Run db housekeeping (clean fluff & vacuum data store)",
             value="clean",
             shortcut_key="c",
         ),
@@ -133,7 +152,7 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
-        use_emacs_keys=True,
+        use_shortcuts=True,
     ).unsafe_ask()
 
     match args.admin_command:
@@ -146,64 +165,83 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
 
 def _prompt_admin_command_delete(args: Namespace) -> Namespace:
     delete_entity: BaseModel = _prompt_delete_entity()
-    delete_id: int = _prompt_delete_id(delete_entity)
+    match delete_entity:
+        case BaseModel.PROJECT:
+            delete_id: int = _prompt_delete_project()
+        case BaseModel.REQUEST:
+            delete_id: int = _prompt_delete_request()
+        case BaseModel.SCAN:
+            delete_id: int = _prompt_delete_scan()
+        case _:
+            raise RuntimeError(f"Invalid delete_entity recieved!: {delete_entity}")
     args.delete_target: str = f"{delete_entity.value}:{delete_id}"
     args.no_confirm: bool = False  # Let the delete commmand itself do the confirmation.
     return args
 
 
 ################################################################################################
-def _prompt_existing_name(args: Namespace, include_new_option: bool = False):
+def _prompt_name(args: Namespace, include_new_option: bool = False):
     last_project = State.lookup("project")  # Get the name of the last project we've referred to..
     choices = []
     kwargs = dict()
-    for project in Project.select():
+    for project in Project.select().order_by(Project.name):
         if last_project and project.name.lower() == last_project.lower():
             kwargs["default"] = project.name
         choices.append(Choice(title=project.name))
-    if include_new_option:
-        choices.append(Choice(title="-New Project-", value="__new__"))  # SENTINEL!
-    else:
-        choices.append(Choice(title="-ALL-", value="*"))  # SENTINEL!
 
-    project = select(
+    if include_new_option:
+        choices.append(Choice(title="─── Add New ───", value="__new__"))  # SENTINEL!
+    else:
+        choices.append(Choice(title="─── All ───", value="*"))  # SENTINEL!
+
+    name = select(
         "Project:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
-        use_emacs_keys=True,
         **kwargs,
     ).unsafe_ask()
-    return project
+
+    if name == "__new__":  # SENTINEL!
+        name = text("Project name:", style=PROMPT_STYLE).unsafe_ask()
+
+    State.update(args, name=name)
+
+    return name
 
 
-def _prompt_name_path(args: Namespace) -> tuple[str, str]:
-    """Prompt for either an existing project or a new one, if new, get name and path."""
-    project_name = _prompt_existing_name(args, include_new_option=True)
+def _prompt_path(args: Namespace) -> tuple[str, str]:
+    """Prompt for appropriate path to ingest from (only used in this case)."""
+    # See if we have any previous info on the project.
+    try:
+        project = Project.get(Project.name == args.name)
+        # Have a project, find the history of request sources:
+        arg_raws = {request.arg_raw for request in Request.select().where(Request.project == project)}
+        arg_raws = list(arg_raws)
+    except Project.DoesNotExist:
+        arg_raws = []
 
-    # New project! Where from?
-    choices = [
-        Choice(title="File path", value="f"),
-        Choice(title="Git repo", value="g"),
-    ]
+    choices = [Choice(title=arg_raw, value=arg_raw) for arg_raw in arg_raws]
+    choices.append(Choice(title="─── From new path ───", value="__path__"))  # SENTINEL (local to method only)
+    choices.append(Choice(title="─── From new repo ───", value="__repo__"))  # SENTINEL (local to method only)
+
     source = select(
-        "Source to ingest from:",
+        "Source:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
-        use_emacs_keys=True,
     ).unsafe_ask()
 
+    if not source.startswith("__"):
+        return source
+
     match source:
-        case "f":
-            path_ = path("Path", style=PROMPT_STYLE, only_directories=True).unsafe_ask()
-        case "g":
-            path_ = text("Git repo URL", style=PROMPT_STYLE).unsafe_ask()
+        case "__path__":
+            path_ = path("Path:", style=PROMPT_STYLE, only_directories=True).unsafe_ask()
+        case "__repo__":
+            path_ = text("Git repo URL:", style=PROMPT_STYLE).unsafe_ask()
 
-    if project_name == "__new__":
-        project_name = text("Project name", style=PROMPT_STYLE).unsafe_ask()
-
-    return project_name, path_
+    return path_
 
 
 def _prompt_port() -> int:
@@ -225,21 +263,94 @@ def _prompt_browser() -> str:
 def _prompt_delete_entity() -> BaseModel:
     choices = [Choice(title=model.value.title(), value=model.value) for model in BaseModel]
     value = select(
-        "Entity to Delete:",
+        "Model:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
-        use_emacs_keys=True,
     ).unsafe_ask()
     return BaseModel(value)
 
 
-def _prompt_delete_id(delete_entity: BaseModel) -> int:
-    value = text(
-        f"Database id of the {delete_entity.title()} you want to delete:",
+def _prompt_delete_project() -> int:
+    choices = [Choice(title=project.name, value=project.id) for project in Project.select()]
+    value = select(
+        "Project to delete:",
+        choices=choices,
         style=PROMPT_STYLE,
-        validate=lambda text: text.isdigit() or "Please enter a valid integer database id",
+        use_indicator=True,
     ).unsafe_ask()
+    return int(value)
+
+
+def _prompt_delete_request() -> int:
+    # First, get the project...
+    choices = [Choice(title=project.name, value=project.id) for project in Project.select()]
+    s_project_id = select(
+        "Project to delete from:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+    ).unsafe_ask()
+
+    # Now, get the request to delete from this project:
+    choices = []
+    project = Project.get(Project.id == int(s_project_id))
+    for request in Request.select().where(Request.project == project):
+        most_current_scan = Scan.select(Scan.as_of).where(Scan.request == request).order_by(Scan.as_of).first()
+        source = request.arg_normalised if request.is_git else request.arg_raw
+        title = f"{dt_to_display(most_current_scan.as_of)} from {source}"
+        choices.append(Choice(title=title, value=request.id))
+
+    value = select(
+        "Request to delete:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+    ).unsafe_ask()
+
+    return int(value)
+
+
+def _prompt_delete_scan() -> int:
+    # First, get the project...
+    choices = [Choice(title=project.name, value=project.id) for project in Project.select()]
+    s_project_id = select(
+        "Project to delete from:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+    ).unsafe_ask()
+
+    # Secondly, get the request:
+    choices = []
+    project = Project.get(Project.id == int(s_project_id))
+    for request in Request.select().where(Request.project == project):
+        most_current_scan = Scan.select(Scan.as_of).where(Scan.request == request).order_by(Scan.as_of).first()
+        source = request.arg_normalised if request.is_git else request.arg_raw
+        title = f"{dt_to_display(most_current_scan.as_of)} from {source}"
+        choices.append(Choice(title=title, value=request.id))
+
+    s_request_id = select(
+        "Request to delete from:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+    ).unsafe_ask()
+
+    # Finally, get the particular scan
+    choices = []
+    request = Request.get(Request.id == int(s_request_id))
+    for scan in Scan.select().where(Scan.request == request):
+        title = f"{scan.analysis_display()} as of {dt_to_display(scan.as_of)}"
+        choices.append(Choice(title=title, value=scan.id))
+
+    value = select(
+        "Scan to delete:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        use_indicator=True,
+    ).unsafe_ask()
+
     return int(value)
 
 
@@ -251,20 +362,19 @@ def _prompt_status_level() -> StatusLevel:
         default=choices[0],
         style=PROMPT_STYLE,
         use_indicator=True,
-        use_emacs_keys=True,
     ).unsafe_ask()
     return StatusLevel(value)
 
 
 def _prompt_report_level() -> ReportLevel:
-    choices = [Choice(title=level.description, value=level.value) for level in ReportLevel]
+    choices = [Choice(title=level.description, value=level.value, shortcut_key=level.value) for level in ReportLevel]
     value = select(
         "Report Level:",
         choices=choices,
         style=PROMPT_STYLE,
         default=ReportLevel.SUMMARY,
         use_indicator=True,
-        use_emacs_keys=True,
+        use_shortcuts=True,
     ).unsafe_ask()
     return ReportLevel(value)
 
@@ -286,12 +396,18 @@ def _prompt_analysis(args: Namespace, message: str) -> str:
             choices.append(Choice(title=f"{o_tool.name} - ALL", value=o_tool.name))
 
     # Final choice is a "global" all
-    choices.append(Choice(title="-ALL-", value="*"))
+    choices.append(Choice(title="─── All ───", value="*"))  # SENTINEL!
 
     # Do we have an existing value to default?
-    kwargs = dict()
-    last_analysis = State.lookup("analysis")
-    if last_analysis:
-        kwargs["default"] = last_analysis
+    kwargs = _lookup_state_default("analysis")
 
-    return select(message=message, choices=choices, style=PROMPT_STYLE, **kwargs).unsafe_ask()
+    analysis = select(
+        message=message,
+        choices=choices,
+        style=PROMPT_STYLE,
+        **kwargs,
+    ).unsafe_ask()
+
+    State.update(args, analysis=analysis)
+
+    return analysis

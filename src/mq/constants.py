@@ -10,7 +10,7 @@ class ConfigurationError(ValueError):
 
 
 class BaseModel(str, Enum):
-    """Base data models."""
+    """Base (non-application internal) data models."""
 
     # fmt: off
     SCAN    = "scan"
@@ -56,7 +56,7 @@ class ReportLevel(str, Enum):
             "0": "Summary",
             "1": "Directory",
             "2": "File",
-            "3": "Deep!",
+            "3": "Extended",
             "d": "Derived",
             "h": "History",
         }

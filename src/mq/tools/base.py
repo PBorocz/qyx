@@ -330,7 +330,7 @@ class Scan(BaseModel):
 
 
 class BaseResultsModel(pw.Model):
-    """Define an base model definition from which all the module's storage model(s) will inherit."""
+    """Define an base model definition from which all the module's storage model(s) should inherit."""
 
     # fmt: off
     id        = pw.AutoField()

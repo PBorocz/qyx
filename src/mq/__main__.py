@@ -1,7 +1,8 @@
 """Primary driver script."""
 
-import argparse
 import sys
+from argparse import Namespace
+from enum import Enum
 from typing import Callable
 
 # from rich.traceback import install as install_traceback
@@ -21,7 +22,7 @@ from mq.tools.base import State
 from mq.web.serve import serve
 
 
-def _get_dispatch_method(args: argparse.Namespace) -> Callable:
+def _get_dispatch_method(args: Namespace) -> Callable:
     match args.command.lower():
         case "ingest":
             return ingest
@@ -45,7 +46,7 @@ def _get_dispatch_method(args: argparse.Namespace) -> Callable:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
 
-def dispatch(args: argparse.Namespace) -> str:
+def dispatch(args: Namespace) -> str:
     """Primary dispatch for core command requested."""
     interactive = not args.command
     iter = 0
@@ -55,7 +56,7 @@ def dispatch(args: argparse.Namespace) -> str:
             args = get_args_interactively(args, iter)
 
             # Allow user to exit interactive mode
-            if args.command is None or args.command == "exit":
+            if args.command is None or args.command == "_exit_":  # SENTINEL!
                 break
 
         # Are our arguments valid? (irrespective of whether they came from arguments or interactively)
@@ -71,11 +72,9 @@ def dispatch(args: argparse.Namespace) -> str:
         method = _get_dispatch_method(args)
         method(args)
 
-        # If we finished cleanly, save away the last state..
-        _update_state(args)
-
-        # If not in interactive mode, exit after the command requested.
+        # If in command-line mode, save state and exit!
         if not interactive:
+            _update_state(args)
             return method.__name__
 
         # Reset for the next interactive cycle
@@ -84,12 +83,14 @@ def dispatch(args: argparse.Namespace) -> str:
         iter += 1
 
 
-def _update_state(args):
-    if "name" in args and args.name is not None:
-        State.update(args, project=args.name)
-
-    if "analysis" in args and args.analysis is not None:
-        State.update(args, analysis=args.analysis)
+def _update_state(args: Namespace) -> None:
+    """Update state for command-line activity."""
+    kwargs = {}
+    for attr in ("command", "name", "level", "analysis"):
+        if attr in args and getattr(args, attr) is not None:
+            value = getattr(args, attr)
+            kwargs[attr] = value.value if isinstance(value, Enum) else value
+    State.update(args, **kwargs)
 
 
 def main():
