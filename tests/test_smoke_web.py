@@ -4,69 +4,53 @@ from argparse import Namespace
 
 import pytest
 
-from mq.tools.base import Project, Scan
-from mq.setup.args_configuration import setup_configuration
-from mq.setup.logging import setup_logging
-from mq.setup.sqlite import setup_sqlite
-from mq.setup.tools import setup_tools
+from mq.tools.base import Scan
 
 
-@pytest.fixture(scope="session")
-def test_args():
-    """Setup our application (mostly database connection and registration)."""
-    args = Namespace(log_level="warning")
-    _, _, args.config = setup_configuration()
-    setup_logging(args)
-    setup_tools(args)
-    setup_sqlite(args)
-    yield args
-
-
-def _get_test_cases(test_args):
+def _get_test_cases(app_args, ingested_project):
     cases = []
-    for o_tool in test_args.tools.values():
+    for o_tool in app_args.tools.values():
         for analysis, report_level in o_tool.iter_reports("web"):
-            for project in Project.select():
-                tool = o_tool.name
-                description = f"T:{tool} A:{analysis} L:{report_level.value} P:{project.name} [{project.id}]"
+            tool = o_tool.name
 
-                scan = Scan.get_most_recent(project, tool, analysis)
+            scan = Scan.get_most_recent(ingested_project, tool, analysis)
 
-                # Lookup the correct web rendering method. Note, this could from either:
-                # - <tool>/web.py            (e.g. ruff, cloc etc.)
-                # - <tool>/web_<analysis>.py (e.g. radon with it's sub-analyses)
-                render_method_name = f"{analysis}_{report_level.value}"
+            # Lookup the correct web rendering method. Note, this could from either:
+            # - <tool>/web.py            (e.g. ruff, cloc etc.)
+            # - <tool>/web_<analysis>.py (e.g. radon with it's sub-analyses)
+            render_method_name = f"{analysis}_{report_level.value}"
+            try:
+                web_render_module = o_tool.import_component("web")
+                web_render_method = getattr(web_render_module, render_method_name)
+            except AttributeError:
                 try:
-                    web_render_module = o_tool.import_component("web")
+                    web_render_module = o_tool.import_component(f"web_{analysis}")
                     web_render_method = getattr(web_render_module, render_method_name)
                 except AttributeError:
-                    try:
-                        web_render_module = o_tool.import_component(f"web_{analysis}")
-                        web_render_method = getattr(web_render_module, render_method_name)
-                    except AttributeError:
-                        raise RuntimeError(
-                            f"Sorry, unable to setup test case: {tool} {render_method_name}",
-                        )
-                case = Namespace(
-                    description=description,
-                    project=project,
-                    scan=scan,
-                    web_render_method=web_render_method,
-                )
-                cases.append(case)
+                    raise RuntimeError(
+                        f"Sorry, unable to setup test case: {tool} {render_method_name}",
+                    )
+            msg = f"T:{o_tool.name} A:{analysis} L:{report_level.value}]"
+            cases.append(Namespace(msg=msg, scan=scan, web_render_method=web_render_method))
     return cases
 
 
-def test_web_rendering_methods(test_args, subtests):
+def test_web_rendering_methods(app_args, ingested_project, subtests):
     """Test that each URL returns a valid HTTP status code."""
-    for case in _get_test_cases(test_args):
-        with subtests.test(case.description):
+    for case in _get_test_cases(app_args, ingested_project):
+        with subtests.test(case.msg):
+            #
             # Run the test (running without error is our primary test!!)
-            result = case.web_render_method(test_args, project=case.project, scan=case.scan)
+            #
+            result = case.web_render_method(
+                app_args,
+                project=ingested_project,
+                scan=case.scan,
+            )
 
             # Check if we got back any of the valid possibilities:
             # - None (is ok as some projects may not have scan or the scans have no results)
-            # - SVG
+            # - HTML (on behalf of plotly methods)
             # - FastHTML components.
             match result:
                 case None:

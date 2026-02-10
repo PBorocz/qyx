@@ -40,7 +40,7 @@ def wait_for_server(url: str, timeout: int = 10) -> bool:
 
 
 @pytest.fixture(scope="session")
-def test_server_args():
+def server_and_args(app_args, ingested_project):
     # Base URL for your local web service
     port = 5012
     base_url = f"http://localhost:{port}"
@@ -52,18 +52,14 @@ def test_server_args():
         yield
         return
 
-    # Create args for your server
-    args = Namespace(port=port, browser=False, log_level="info")
-    _, _, configuration = setup_configuration()
-    setup_logging(args)
-    setup_tools(args)
-    setup_sqlite(args)
-    args.config = configuration
+    # Create args for your server (note: we don't need the app_args here!)
+    app_args.port = port
+    app_args.browser = False
 
     # Create the app
     global app, rt
-    app, rt = create_app(args)
-    register(args, rt)
+    app, rt = create_app(app_args)
+    register(app_args, rt)
 
     # Setup uvicorn
     config = uvicorn.Config(
@@ -87,20 +83,20 @@ def test_server_args():
     print(f"\n↑ Test server successfully started ({port=})")
 
     time.sleep(1)
-    yield (server, args)
+    yield (server, app_args)
 
     # Cleanup: shutdown server
     print(f"\n↓ Test server shut down ({port=})")
     server.should_exit = True
 
 
-def test_server(test_server_args, subtests, capsys, base_url="http://localhost:5012"):
+def test_server(server_and_args, subtests, capsys, base_url="http://localhost:5012"):
     """Test that each URL returns a valid HTTP status code.
 
-    Since we already have test_smoke_web to test the underlying web renderers, here
-    we only want/need to make sure that routing is working.
+    Since we already have test_smoke_web to test the underlying web
+    renderers, here we only want/need to make sure that routing is working.
     """
-    server, test_args = test_server_args
+    server, test_args = server_and_args
     # urls = []
     # for project in Project.select():
     #     urls.append(f"{base_url}/{project.id}")

@@ -15,8 +15,10 @@ def setup_sqlite(args: Namespace) -> None:
     if "tools" not in args:
         raise RuntimeError("Sorry, setup/tools.py must have already been run before we can setup the database!")
 
-    db_path = Path(user_data_dir("mq")) / "mq.sqlite3"
+    db_path = Path(user_data_dir("mq")) / "mq.sqlite3"  # Normal path..
+    db_path = getattr(args, "db_path", db_path)  # Override primarily used to override db path for testing!
     db_path.parent.mkdir(parents=True, exist_ok=True)
+
     db_ = SqliteDatabase(db_path, pragmas={"autocommit": True, "check_same_thread": False, "foreign_keys": 1})
 
     # Make sure our models have tables defined for 'em!
