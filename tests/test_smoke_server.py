@@ -3,7 +3,6 @@
 import socket
 import threading
 import time
-from argparse import Namespace
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
@@ -11,10 +10,6 @@ import pytest
 import uvicorn
 
 from mq.tools.base import Project
-from mq.setup.args_configuration import setup_configuration
-from mq.setup.logging import setup_logging
-from mq.setup.sqlite import setup_sqlite
-from mq.setup.tools import setup_tools
 from mq.web.serve import create_app, register
 
 

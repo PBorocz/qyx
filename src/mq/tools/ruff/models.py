@@ -41,18 +41,18 @@ def query(
 ) -> Ruff:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_0(args, scan)
+            return _query_0(scan)
         case ReportLevel.DIRECTORY:
-            return _query_1(args, scan)
+            return _query_1(scan)
         case ReportLevel.FILE:
-            return _query_2(args, scan)
+            return _query_2(scan)
         case ReportLevel.DERIVED:
             return _query_d(args, project, scan)
         case ReportLevel.HISTORY:
-            return _query_h(args, project, last)
+            return _query_h(project, last)
 
 
-def _query_0(args: Namespace, scan: Scan):
+def _query_0(scan: Scan):
     return (
         Ruff.select(
             fn.COUNT(Ruff.id).alias("count"),
@@ -64,7 +64,7 @@ def _query_0(args: Namespace, scan: Scan):
     )
 
 
-def _query_1(args: Namespace, scan: Scan):
+def _query_1(scan: Scan):
     return (
         Ruff.select(
             Ruff.rule_code,
@@ -82,7 +82,7 @@ def _query_1(args: Namespace, scan: Scan):
     )
 
 
-def _query_2(args: Namespace, scan: Scan):
+def _query_2(scan: Scan):
     return (
         Ruff.select()
         .where(
@@ -96,7 +96,7 @@ def _query_2(args: Namespace, scan: Scan):
     )
 
 
-def _query_h(args: Namespace, project: Project, last: int = None):
+def _query_h(project: Project, last: int = None):
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular
     # scan. We still want the timestamp back with a Ruff count of *0*.
@@ -141,7 +141,7 @@ def _query_d(args: Namespace, project: Project, scan: Scan):
         log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have any LOC metrics yet!")
         return None, None
 
-    result = _query_0(args, scan)
+    result = _query_0(scan)
     result = _derived_violations_per_kloc(args, lines_of_code, result)
     result = _derived_weighted_violations_per_kloc(args, lines_of_code, result, scan)
     return result

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from argparse import Namespace
 from datetime import datetime, UTC
 from importlib import import_module
@@ -12,7 +12,7 @@ from typing import Callable, Iterator, TypeAlias
 
 import peewee as pw
 
-from mq.constants import ConfigurationError, ReportLevel
+from mq.constants import ReportLevel
 from mq.utils import dt_to_display, parse_path_arg
 
 

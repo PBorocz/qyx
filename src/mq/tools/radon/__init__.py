@@ -1,7 +1,6 @@
 """Radon Module Configuration."""
 
 import types
-from argparse import Namespace
 from enum import Enum
 from typing import Callable
 

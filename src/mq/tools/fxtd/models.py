@@ -41,18 +41,18 @@ def query(
 ) -> Fxtd:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_0(args, scan)
+            return _query_0(scan)
         case ReportLevel.DIRECTORY:
-            return _query_1(args, scan)
+            return _query_1(scan)
         case ReportLevel.FILE:
-            return _query_2(args, scan)
+            return _query_2(scan)
         case ReportLevel.DERIVED:
             return _query_d(args, project, scan)
         case ReportLevel.HISTORY:
-            return _query_h(args, project, last)
+            return _query_h(project, last)
 
 
-def _query_0(args: Namespace, scan: Scan):
+def _query_0(scan: Scan):
     return (
         Fxtd.select(
             Fxtd.type,
@@ -64,7 +64,7 @@ def _query_0(args: Namespace, scan: Scan):
     )
 
 
-def _query_1(args: Namespace, scan: Scan):
+def _query_1(scan: Scan):
     return (
         Fxtd.select(
             Fxtd.directory,
@@ -77,7 +77,7 @@ def _query_1(args: Namespace, scan: Scan):
     )
 
 
-def _query_2(args: Namespace, scan: Scan):
+def _query_2(scan: Scan):
     return (
         Fxtd.select()
         .where(Fxtd.scan == scan)
@@ -89,7 +89,7 @@ def _query_2(args: Namespace, scan: Scan):
     )
 
 
-def _query_h(args: Namespace, project: Project, last: int = None):
+def _query_h(project: Project, last: int = None):
     scans = get_scans_for_pta(project, tool="fxtd", last=last)
     rows = (
         Scan.select(
@@ -136,7 +136,7 @@ def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):
         log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have any LOC metrics yet!")
         return None, None
 
-    score_by_type = _query_0(args, fxtd_scan)
+    score_by_type = _query_0(fxtd_scan)
     if score_by_type:  # Perfectly valid to not have any!
         score_by_type = _by_type_per_kloc(args, lines_of_code, score_by_type)
         composite_weighted_score = _composite_per_kloc(args, lines_of_code, score_by_type)

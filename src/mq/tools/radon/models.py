@@ -181,18 +181,18 @@ def query_raw(
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_raw_0(args, scan)
+            return _query_raw_0(scan)
         case ReportLevel.DIRECTORY:
-            return _query_raw_1(args, scan)
+            return _query_raw_1(scan)
         case ReportLevel.FILE:
-            return _query_raw_2(args, scan)
+            return _query_raw_2(scan)
         case ReportLevel.HISTORY:
-            return _query_raw_h(args, project, last)
+            return _query_raw_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_raw_0(args: Namespace, scan: Scan) -> Any:
+def _query_raw_0(scan: Scan) -> Any:
     row = (
         RadonRaw.select(
             fn.SUM(RadonRaw.blank).alias("blank"),
@@ -216,7 +216,7 @@ def _query_raw_0(args: Namespace, scan: Scan) -> Any:
     return row
 
 
-def _query_raw_1(args: Namespace, scan: Scan) -> Any:
+def _query_raw_1(scan: Scan) -> Any:
     rows = (
         RadonRaw.select(
             RadonRaw.directory,
@@ -239,11 +239,11 @@ def _query_raw_1(args: Namespace, scan: Scan) -> Any:
     return rows, totals
 
 
-def _query_raw_2(args: Namespace, scan: Scan) -> Any:
+def _query_raw_2(scan: Scan) -> Any:
     return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.directory, RadonRaw.filename)
 
 
-def _query_raw_h(args: Namespace, project: Project, last: int = None) -> Any:
+def _query_raw_h(project: Project, last: int = None) -> Any:
     scans = get_scans_for_pta(project, tool="radon", analysis="raw", last=last)
     query = (
         RadonRaw.select(
@@ -310,22 +310,22 @@ def query_hal(
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_hal_0(args, scan)
+            return _query_hal_0(scan)
         case ReportLevel.DIRECTORY:
-            return _query_hal_1(args, scan)
+            return _query_hal_1(scan)
         case ReportLevel.FILE:
-            return _query_hal_2(args, scan)
+            return _query_hal_2(scan)
         case ReportLevel.DETAIL:
-            return _query_hal_3(args, scan)
+            return _query_hal_3(scan)
         case ReportLevel.DERIVED:
             return _query_hal_d(args, project, scan)
         case ReportLevel.HISTORY:
-            return _query_hal_h(args, project, last)
+            return _query_hal_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level requested {level=}")
 
 
-def _query_hal_0(args: Namespace, scan: Scan) -> Any:
+def _query_hal_0(scan: Scan) -> Any:
     return (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
@@ -348,7 +348,7 @@ def _query_hal_0(args: Namespace, scan: Scan) -> Any:
     )
 
 
-def _query_hal_1(args: Namespace, scan: Scan) -> Any:
+def _query_hal_1(scan: Scan) -> Any:
     rows = (
         RadonHal.select(
             RadonHal.directory,
@@ -378,7 +378,7 @@ def _query_hal_1(args: Namespace, scan: Scan) -> Any:
     return rows, mean_means
 
 
-def _query_hal_2(args: Namespace, scan: Scan) -> Any:
+def _query_hal_2(scan: Scan) -> Any:
     rows = RadonHal.select().where(RadonHal.scan == scan).order_by(RadonHal.directory, RadonHal.filename)
 
     # Calculate means
@@ -389,7 +389,7 @@ def _query_hal_2(args: Namespace, scan: Scan) -> Any:
     return rows, means
 
 
-def _query_hal_3(args: Namespace, scan: Scan) -> Any:
+def _query_hal_3(scan: Scan) -> Any:
     rows = (
         RadonHalFunction.select(
             RadonHal.directory,
@@ -422,7 +422,7 @@ def _query_hal_3(args: Namespace, scan: Scan) -> Any:
     return rows, means
 
 
-def _query_hal_h(args: Namespace, project: Project = None, last: int = 5) -> Any:
+def _query_hal_h(project: Project = None, last: int = 5) -> Any:
     scans = get_scans_for_pta(project, tool="radon", analysis="hal", last=last)
     query = (
         RadonHal.select(
@@ -477,8 +477,8 @@ def _query_hal_h(args: Namespace, project: Project = None, last: int = 5) -> Any
 
 def _query_hal_d(args: Namespace, project: Project, scan: Scan):
     """Calculate derived radon-hal metric(s)."""
-    raw = _query_raw_0(args, scan=Scan.get_most_recent(project, "radon", "raw"))
-    row = _query_hal_0(args, scan)
+    raw = _query_raw_0(scan=Scan.get_most_recent(project, "radon", "raw"))
+    row = _query_hal_0(scan)
 
     ################################################################################
     # Calculate all HAL metrics
@@ -516,20 +516,20 @@ def query_mi(
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_mi_0(args, scan)
+            return _query_mi_0(scan)
         case ReportLevel.DIRECTORY:
-            return _query_mi_1(args, scan)
+            return _query_mi_1(scan)
         case ReportLevel.FILE:
-            return _query_mi_2(args, scan)
+            return _query_mi_2(scan)
         case ReportLevel.DERIVED:
             return _query_mi_d(args, scan)
         case ReportLevel.HISTORY:
-            return _query_mi_h(args, project, last)
+            return _query_mi_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_mi_0(args: Namespace, mi_scan: Scan):
+def _query_mi_0(mi_scan: Scan):
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
     raw_scan = Scan.get_most_recent(mi_scan.request.project, "radon", "raw")
     query = (
@@ -553,7 +553,7 @@ def _query_mi_0(args: Namespace, mi_scan: Scan):
     return None
 
 
-def _query_mi_1(args: Namespace, mi_scan: Scan) -> Any:
+def _query_mi_1(mi_scan: Scan) -> Any:
     raw_scan = Scan.get_most_recent(mi_scan.request.project, "radon", "raw")
     query = (
         RadonMi.select(
@@ -575,17 +575,17 @@ def _query_mi_1(args: Namespace, mi_scan: Scan) -> Any:
     mi_by_directory = {
         row["directory"]: row["weighted_sum"] / row["total_loc"] for row in query.dicts() if row["total_loc"]
     }
-    mi_ = _query_mi_0(args, mi_scan)
+    mi_ = _query_mi_0(mi_scan)
     return mi_, mi_by_directory
 
 
-def _query_mi_2(args: Namespace, scan: Scan) -> tuple:
+def _query_mi_2(scan: Scan) -> tuple:
     rows = RadonMi.select().where(RadonMi.scan == scan).order_by(RadonMi.mi.asc(), RadonMi.directory, RadonMi.filename)
-    mi_ = _query_mi_0(args, scan)
+    mi_ = _query_mi_0(scan)
     return mi_, rows
 
 
-def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
+def _query_mi_h(project, last: int = 5) -> Any:
     assert project
 
     mi_scans = get_scans_for_pta(project, tool="radon", analysis="mi", last=last)
@@ -637,7 +637,7 @@ def _query_mi_h(args: Namespace, project, last: int = 5) -> Any:
 
 def _query_mi_d(args: Namespace, scan: Scan):
     """Calculate derived radon-mi metric(s)."""
-    mi_ = _query_mi_0(args, scan)
+    mi_ = _query_mi_0(scan)
     return score_metric(args, "tools.radon.mi.mean", mi_)
 
 
@@ -653,22 +653,22 @@ def query_cc(
 ) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_cc_0(args, scan)
+            return _query_cc_0(scan)
         case ReportLevel.DIRECTORY:
-            return _query_cc_1(args, scan)
+            return _query_cc_1(scan)
         case ReportLevel.FILE:
-            return _query_cc_2(args, scan)
+            return _query_cc_2(scan)
         case ReportLevel.DETAIL:
-            return _query_cc_3(args, scan)
+            return _query_cc_3(scan)
         case ReportLevel.DERIVED:
             return _query_cc_d(args, scan)
         case ReportLevel.HISTORY:
-            return _query_cc_h(args, project, last)
+            return _query_cc_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_cc_0(args: Namespace, scan: Scan) -> Any:
+def _query_cc_0(scan: Scan) -> Any:
     return (
         RadonCc.select(
             RadonCc.entity_type.alias("entity_type"),
@@ -680,7 +680,7 @@ def _query_cc_0(args: Namespace, scan: Scan) -> Any:
     )
 
 
-def _query_cc_1(args: Namespace, scan: Scan) -> Any:
+def _query_cc_1(scan: Scan) -> Any:
     return (
         RadonCc.select(
             RadonCc.directory,
@@ -693,7 +693,7 @@ def _query_cc_1(args: Namespace, scan: Scan) -> Any:
     )
 
 
-def _query_cc_2(args: Namespace, scan: Scan) -> Any:
+def _query_cc_2(scan: Scan) -> Any:
     return (
         RadonCc.select(
             RadonCc.directory,
@@ -707,13 +707,13 @@ def _query_cc_2(args: Namespace, scan: Scan) -> Any:
     )
 
 
-def _query_cc_3(args: Namespace, scan: Scan) -> Any:
+def _query_cc_3(scan: Scan) -> Any:
     return (
         RadonCc.select().where(RadonCc.scan == scan).order_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_name)
     )
 
 
-def _query_cc_h(args: Namespace, project: Project, last: int = None) -> Any:
+def _query_cc_h(project: Project, last: int = None) -> Any:
     scans = get_scans_for_pta(project, tool="radon", analysis="cc", last=last)
     query = (
         RadonCc.select(
@@ -757,7 +757,7 @@ def _query_cc_d(args: Namespace, scan: Scan):
     # - NIST          : CC > 15 is concerning, > 20 is dangerous
     from mq.tools.radon import RadonCcEntityType  # Circular import??
 
-    results = _query_cc_0(args, scan)
+    results = _query_cc_0(scan)
     for result in results:
         threshold_type = (
             "tools.radon.cc.classes"
