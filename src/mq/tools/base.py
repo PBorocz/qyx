@@ -75,13 +75,13 @@ class AbstractToolConfiguration(ABC):
             for part in cmd_template
         ]
 
-    def get_ingest_method(self, *args, **kwargs) -> Callable:
-        """Return the parse method to parse/ingest this tool's output (usually JSON)."""
+    def get_parse_method(self, *args, **kwargs) -> Callable:
+        """Return the method to parse & save this tool's output (usually JSON)."""
         # NOTE:
         # - This implementation is for "single"-analysis tools (ruff, cloc etc.).
         # - For multi-analysis tools (like radon), this method is *OVERRIDDEN* in their respective __init__.py.
-        py_ingest: ModuleType = self.import_component("ingest")
-        return getattr(py_ingest, "ingest")
+        py_parse: ModuleType = self.import_component("parse")
+        return getattr(py_parse, "parse")
 
     def _get_render_method(self, interface: str) -> tuple[ModuleType | None, Callable | None]:
         """Return the root render method for this tool and the specified interace, e.g. "web" or "cli"."""

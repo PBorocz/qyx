@@ -13,7 +13,7 @@ from mq.tools.base import Scan
 log = logging.getLogger(__name__)
 
 
-def ingest_raw(scan: Scan, data: Any) -> int:
+def parse_raw(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
@@ -46,7 +46,7 @@ def ingest_raw(scan: Scan, data: Any) -> int:
     return len(rows)
 
 
-def ingest_mi(scan: Scan, data: Any) -> int:
+def parse_mi(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
@@ -74,7 +74,7 @@ def ingest_mi(scan: Scan, data: Any) -> int:
     return len(rows)
 
 
-def ingest_cc(scan: Scan, data: Any) -> int:
+def parse_cc(scan: Scan, data: Any) -> int:
     rows = []
     try:
         json_ = json.loads(data)
@@ -111,7 +111,7 @@ def ingest_cc(scan: Scan, data: Any) -> int:
     return len(rows)
 
 
-def ingest_hal(scan: Scan, data: Any) -> int:
+def parse_hal(scan: Scan, data: Any) -> int:
     # Have to do this nested to reflect json file structure:
     count = 0
     try:

@@ -46,6 +46,6 @@ class Configuration(ToolType):
     ) -> list[str]:
         """Return the command sent to subprocess to directly perform the scan operation."""
         script_dir = Path(__file__).parent
-        fxtd_script = script_dir / "fxtd_ingest.py"
-        assert fxtd_script.exists(), f"Sorry, we expected to find 'fxtd.sh' at {script_dir}!"
-        return ["python3", str(fxtd_script), str(absolute)]
+        fxtd_tool = script_dir / "fxtd_tool.py"
+        assert fxtd_tool.exists(), f"Sorry, we expected to find 'fxtd_tool.py' at {script_dir}!"
+        return ["python3", str(fxtd_tool), str(absolute)]

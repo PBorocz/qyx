@@ -9,7 +9,7 @@ from mq.tools.cloc.models import Cloc
 from mq.tools.base import Scan
 
 
-def ingest(scan: Scan, data: Any) -> int:
+def parse(scan: Scan, data: Any) -> int:
     def _json_to_row(fn_: str, cloc_result: dict) -> Cloc:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         return Cloc(

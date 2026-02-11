@@ -1,4 +1,4 @@
-"""Master ingest logic."""
+"""Master ingest (ie. run, parse/save) logic."""
 
 import logging
 import subprocess
@@ -112,16 +112,16 @@ def _ingest_analysis(
     ################################################################################################
     # Run the respective tool's data collection method...
     ################################################################################################
-    datum = _run_ingest(args, request, o_tool, analysis, scan_request)
+    datum = _run_tool(args, request, o_tool, analysis, scan_request)
 
     ################################################################################################
     # Parse & save the results received this time using the respective tool's ingest method
     ################################################################################################
-    parse_method: Callable = o_tool.get_ingest_method(analysis)
+    parse_method: Callable = o_tool.get_parse_method(analysis)
     return parse_method(scan, datum)
 
 
-def _run_ingest(
+def _run_tool(
     args: Namespace,
     request: Request,
     o_tool: ToolType,

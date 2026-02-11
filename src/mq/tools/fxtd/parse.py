@@ -7,7 +7,7 @@ from mq.tools.base import Scan
 from mq.tools.fxtd.models import Fxtd
 
 
-def ingest(scan: Scan, data: Any) -> int:
+def parse(scan: Scan, data: Any) -> int:
     def _delimited_to_row(cwd: Path, s_result: str) -> Fxtd:
         if "|" not in s_result:
             return None

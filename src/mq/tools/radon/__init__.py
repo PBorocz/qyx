@@ -78,7 +78,7 @@ class Configuration(ToolType):
         )
         # fmt: off
 
-    def get_ingest_method(self, analysis: str) -> Callable:
-        """Return the ingest method to parse & save this Radon analysis's JSON output."""
-        py_ingest: types.ModuleType = self.import_component("ingest")  # eg. .../<module>/ingest.py
-        return getattr(py_ingest, f"ingest_{analysis.lower()}")  # eg. ingest_cc()
+    def get_parse_method(self, analysis: str) -> Callable:
+        """Return the method to parse & save this Radon analysis's JSON output."""
+        py_parse: types.ModuleType = self.import_component("parse")  # eg. .../tools/radon/parse.py
+        return getattr(py_parse, f"parse_{analysis.lower()}")  # eg. ingest_cc()

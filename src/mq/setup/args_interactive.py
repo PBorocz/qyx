@@ -272,7 +272,7 @@ def _prompt_delete_entity() -> BaseModel:
 
 
 def _prompt_delete_project() -> int:
-    choices = [Choice(title=project.name, value=project.id) for project in Project.select()]
+    choices = __get_project_choices()
     value = select(
         "Project to delete:",
         choices=choices,
@@ -284,7 +284,7 @@ def _prompt_delete_project() -> int:
 
 def _prompt_delete_request() -> int:
     # First, get the project...
-    choices = [Choice(title=project.name, value=project.id) for project in Project.select()]
+    choices = __get_project_choices()
     s_project_id = select(
         "Project to delete from:",
         choices=choices,
@@ -313,7 +313,7 @@ def _prompt_delete_request() -> int:
 
 def _prompt_delete_scan() -> int:
     # First, get the project...
-    choices = [Choice(title=project.name, value=project.id) for project in Project.select()]
+    choices = __get_project_choices()
     s_project_id = select(
         "Project to delete from:",
         choices=choices,
@@ -411,3 +411,8 @@ def _prompt_analysis(args: Namespace, message: str) -> str:
     State.update(args, analysis=analysis)
 
     return analysis
+
+
+def __get_project_choices() -> list[Choice]:
+    """Return the list of existing projects as choices (syntactic sugar)."""
+    return [Choice(title=project.name, value=project.id) for project in Project.select().order_by(Project.name)]
