@@ -81,7 +81,7 @@ cmd = "uv run qyx admin clean"
 
 [tool.poe.tasks.sql]
 help = "Run litecli for interactive db querying (note that db path is for Mac)"
-cmd = "litecli \"~/Library/Application Support/qyx/qyx.sqlite3\""
+cmd = "litecli \"~/Library/Application Support/qyx/db.sqlite3\""
 
 
 #-----------------------------------------------------------------------------------------------
