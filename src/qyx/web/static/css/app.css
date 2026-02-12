@@ -13,9 +13,10 @@ details summary {
   max-width: fit-content;
 }
 
-/* Make "small"...well...small! */
-small {
-  font-size: 0.75rem;
+/* We use a lot of summary's */
+summary {
+  font-size: 1.0rem;
+  font-weight: bold;
 }
 
 /* Make tables more compact */
@@ -25,6 +26,9 @@ table {
 }
 table th, table td {
   padding: 0.2rem 0.5rem;
+}
+table th {
+  font-size: 1.1rem;
 }
 
 /* Style the navbar differently */

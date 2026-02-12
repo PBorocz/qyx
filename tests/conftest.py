@@ -17,9 +17,11 @@ TEST_PROJECT = "__test_project__"
 
 
 @pytest.fixture(scope="session")
-def db_path():
+def db_path(memory=False):
+    if memory:
+        return ":memory:"
     with tempfile.TemporaryDirectory() as tmpdir:
-        yield Path(tmpdir) / "test.db"
+        return Path(tmpdir) / "test.db"
 
 
 @pytest.fixture(scope="session")

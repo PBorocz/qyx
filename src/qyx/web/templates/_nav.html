@@ -1,0 +1,8 @@
+<nav>
+  <ul>
+    <li><a href="/" aria-current="page">QYX</a></li>
+    {% for tool in navbar %}
+    <li><a href="/{{ tool.name }}">{{ tool.description }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>

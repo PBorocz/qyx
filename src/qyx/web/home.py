@@ -2,14 +2,17 @@
 
 import logging
 from argparse import Namespace
+from pathlib import Path
 from types import ModuleType
 from typing import Callable, Iterator
 
+from bottle import request
 from fasthtml import common as fh
 
 from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan, State, ToolType
-from qyx.web import render_project_selector
+
+from qyx.web import get_project_selector
 from qyx.web.page import render_page
 
 
@@ -19,15 +22,29 @@ log = logging.getLogger(__name__)
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render_page_home(request):
+def render_page_home():
+    project_options = get_project_selector()
     return render_page(
-        request,
-        None,
-        None,
-        fh.H1("Meta-code Quality - Project Summary"),
-        *render_project_selector(request, "/partials/set_project/_main_"),
-        fh.Div(id="page-body-content"),
+        "QYX Home",
+        "pages/home.html",
+        project_options=project_options,
+        set_project="/partials/set_project/_main_",
     )
+    #     fh.H1("QYX - Project Summary"),
+    #     *render_project_selector(request, "/partials/set_project/_main_"),
+    #     fh.Div(id="page-body-content"),
+    # )
+
+
+# def render_page_home_fasthtml(request):
+#     return render_page(
+#         request,
+#         None,
+#         None,
+#         fh.H1("Meta-code Quality - Project Summary"),
+#         *render_project_selector(request, "/partials/set_project/_main_"),
+#         fh.Div(id="page-body-content"),
+#     )
 
 
 def render_partial_project_summary(request, s_project_id: str):

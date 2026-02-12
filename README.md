@@ -646,7 +646,7 @@ This is a proof-of-concept project. Contributions are welcome!
 
 ## Author
 
-Peter Borocz
+Péter Böröcz
 
 ## Acknowledgments
 

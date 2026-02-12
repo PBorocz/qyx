@@ -1,0 +1,41 @@
+<section>
+
+  <details name="details" open>
+    <summary>Summary</summary>
+    {% include "fragments/body/summary.html" %}
+  </details>
+
+  <details name="details">
+    <summary>Directory</summary>
+    {% include "fragments/body/directory.html" %}
+  </details>
+
+  <details name="details">
+    <summary>File</summary>
+    {% include "fragments/body/file.html" %}
+  </details>
+
+  <details name="details">
+    <summary>Derived Metrics</summary>
+    {% include "fragments/body/derived.html" %}
+  </details>
+
+  <details name="details">
+    <summary>Trend</summary>
+    <div class="bordered">
+      {{ chart_t }}
+    </div>
+  </details>
+
+  <details name="details">
+    <summary>File Sizes</summary>
+    <div class="bordered">
+      {{ chart_f }}
+    </div>
+  </details>
+
+</section>
+
+<hr />
+
+<h6>As Of {{ as_of }}</h6>

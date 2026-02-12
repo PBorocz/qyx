@@ -4,274 +4,72 @@ from argparse import Namespace
 from datetime import datetime
 
 import plotly.graph_objects as go
-from fasthtml import common as fh
+from bottle import request
 
 from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.cloc.models import query
 from qyx.utils.scoring import find_grade
-from qyx.web import render_project_selector
-from qyx.web.page import render_page
+from qyx.web import get_project_selector
+from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
-# Page layout...
-def render(request, name, config):
-    """Render the primary page layout for this tools display page."""
+def render():
+    """Render the tool's primary page."""
+    project_options = get_project_selector()
     return render_page(
-        request,
-        name.title(),
-        name,
-        *render_project_selector(request, "/partials/set_project/cloc"),
-        fh.Div(id="page-body-content"),
+        "QYX-CLOC",
+        "pages/main.html",
+        project_options=project_options,
+        set_project="/partials/set_project/cloc",
     )
 
 
-def render_content(args: Namespace, request, s_project_id: str = None, analysis: str = None):
+def render_content(template: str = "fragments/body.html"):
     """Render the content portion (ie. body) of the page."""
-    return (
-        *_render_current(args, request, s_project_id, analysis),
-        *_render_history(args, request, s_project_id, analysis),
-    )
-
-
-def _render_current(args: Namespace, request, s_project_id: str = None, analysis: str = None):
-    """Render the current status."""
+    args = request.app.args
+    s_project_id = request.query.project
     if not s_project_id:
-        return fh.Section()
+        render_partial(template)
+
     project = Project.get(Project.id == int(s_project_id))
     scan = Scan.get_most_recent(project, "cloc", "cloc")
+    if not (project and scan):
+        render_partial(template)
 
     State.update(args, project=project.name, analysis="cloc")
 
-    chart_file_sizes = cloc_f(args, scan)
-
-    return fh.Section(
-        fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display(collapse_today=True)}")),
-        fh.Details(fh.Summary("Summary"), name="details", open=True, *cloc_0(args, scan)),
-        fh.Details(fh.Summary("By Directory"), name="details", *cloc_1(args, scan)),
-        fh.Details(fh.Summary("By File"), name="details", *cloc_2(args, scan)),
-        fh.Details(fh.Summary("Derived"), name="details", *cloc_d(args, project, scan)),
-        fh.Details(
-            fh.Summary("File Size Distribution"),
-            fh.Section(fh.Div(fh.NotStr(chart_file_sizes.decode("utf-8"))), cls="bordered"),
-            name="details",
-        ),
-        cls="bordered",
-    )
-
-
-def _render_history(args: Namespace, request, s_project_id: str = None, analysis: str = None):
-    """Render any history."""
-    if not s_project_id:
-        return fh.Section()
-    project = Project.get(Project.id == int(s_project_id))
-    chart = cloc_h(args, project)
-
-    return fh.Section(
-        fh.H1("History", style="margin-top: 1rem;"),
-        fh.Div(
-            fh.NotStr(chart.decode("utf-8")),
-            cls="bordered",
-        ),
-    )
-
-
-def cloc_0(args: Namespace, scan: Scan, project: Project = None):
-    results = query(args, ReportLevel.SUMMARY, scan=scan)
-    if not results.lines_total:
-        return ()
-    return (
-        fh.Table(
-            fh.Thead(
-                fh.Tr(
-                    fh.Th(
-                        "LOC",
-                        scope="col",
-                        style="text-align: center",
-                    ),
-                    fh.Th(
-                        "Comments",
-                        scope="col",
-                        style="text-align: center",
-                    ),
-                    fh.Th(
-                        "Blanks",
-                        scope="col",
-                        style="text-align: center",
-                    ),
-                    fh.Th(
-                        "TOTAL",
-                        scope="col",
-                        style="text-align: center",
-                    ),
-                ),
-            ),
-            fh.Tbody(
-                fh.Tr(
-                    fh.Td(
-                        f"{results.lines_code:,d}",
-                        " ",
-                        fh.Small(f"({results.lines_code_p:.1f}%)"),
-                        style="text-align: right",
-                    ),
-                    fh.Td(
-                        f"{results.lines_comment:,d}",
-                        " ",
-                        fh.Small(f"({results.lines_comment_p:.1f}%)"),
-                        style="text-align: right",
-                    ),
-                    fh.Td(
-                        f"{results.lines_blank:,d}",
-                        " ",
-                        fh.Small(f"({results.lines_blank_p:.1f}%)"),
-                        style="text-align: right",
-                    ),
-                    fh.Td(
-                        fh.B(f"{results.lines_total:,d}"),
-                        style="text-align: right",
-                    ),
-                ),
-            ),
-        ),
-    )
+    # fmt: off
+    context = Namespace()
+    context.as_of   = scan.as_of_display(collapse_today=True)
+    context.cloc_0  = query(args, ReportLevel.SUMMARY, scan=scan)
+    context.cloc_1  = cloc_1(args, scan)
+    context.cloc_2  = cloc_2(args, scan)
+    context.cloc_d  = cloc_d(args, scan, project)
+    context.chart_f = cloc_f(args, scan)
+    context.chart_t = cloc_h(args, project)
+    # fmt: on
+    return render_partial(template, **context.__dict__)
 
 
 def cloc_1(args: Namespace, scan: Scan, project: Project = None):
-    grand_total = query(args, ReportLevel.SUMMARY, scan=scan)
-    detail_rows = query(args, ReportLevel.DIRECTORY, scan=scan)
-
-    t_head = fh.Tr(
-        fh.Th("Directory", scope="col", style="text-align: left"),
-        fh.Th("LOC", scope="col", style="text-align: right"),
-        fh.Th("Comments", scope="col", style="text-align: right"),
-        fh.Th("Blanks", scope="col", style="text-align: right"),
-        fh.Th("TOTAL", scope="col", style="text-align: right"),
-    )
-
-    t_body = []
-    for result in detail_rows:
-        t_row = fh.Tr(
-            fh.Td(result.directory, style="text-align: left"),
-            fh.Td(f"{result.lines_code:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_comment:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_blank:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_total:,d}", style="text-align: right"),
-        )
-        t_body.append(t_row)
-
-    t_total = fh.Tr(
-        fh.Td("TOTAL", style="text-align: left"),
-        fh.Td(f"{grand_total.lines_code:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total.lines_comment:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total.lines_blank:,d}", style="text-align: right"),
-        fh.Td(f"{grand_total.lines_total:,d}", style="text-align: right"),
-    )
-
-    return (
-        fh.Table(
-            fh.Thead(t_head),
-            fh.Tbody(*t_body),
-            fh.Tfoot(t_total),
-            id="level_1",
-        ),
-        fh.Script("new Tablesort(document.getElementById('level_1'));"),
+    return dict(
+        grand_total=query(args, ReportLevel.SUMMARY, scan=scan),
+        detail_rows=query(args, ReportLevel.DIRECTORY, scan=scan),
     )
 
 
 def cloc_2(args: Namespace, scan: Scan, project: Project = None):
     results, column_totals, grand_total = query(args, ReportLevel.FILE, scan=scan)
-
-    t_head = fh.Tr(
-        fh.Th("File", scope="col", style="text-align: left"),
-        fh.Th("LOC", scope="col", style="text-align: right"),
-        fh.Th("Comments", scope="col", style="text-align: right"),
-        fh.Th("Blanks", scope="col", style="text-align: right"),
-        fh.Th("TOTAL", scope="col", style="text-align: right"),
-    )
-
-    t_body = []
-    for result in results:
-        t_row = fh.Tr(
-            fh.Td(f"{result.directory}/{result.filename}", style="text-align: left"),
-            fh.Td(f"{result.lines_code:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_comment:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_blank:,d}", style="text-align: right"),
-            fh.Td(f"{result.lines_total:,d}", style="text-align: right"),
-        )
-        t_body.append(t_row)
-
-    t_total = fh.Tr(
-        fh.Td("TOTAL", style="text-align: left"),
-        fh.Td(f"{column_totals['lines_code']:.0f}", style="text-align: right"),
-        fh.Td(f"{column_totals['lines_comment']:.0f}", style="text-align: right"),
-        fh.Td(f"{column_totals['lines_blank']:.0f}", style="text-align: right"),
-        fh.Td(f"{grand_total:.0f}", style="text-align: right"),
-    )
-
-    return (
-        fh.Table(
-            fh.Thead(t_head),
-            fh.Tbody(*t_body),
-            fh.Tfoot(t_total),
-            id="level_2",
-        ),
-        fh.Script("new Tablesort(document.getElementById('level_2'));"),
-    )
+    return dict(results=results, column_totals=column_totals, grand_total=grand_total)
 
 
-def cloc_d(args: Namespace, project: Project, scan: Scan):
-    row = query(args, ReportLevel.DERIVED, scan=scan)
-    return (
-        fh.Table(
-            fh.Thead(
-                fh.Tr(
-                    fh.Th("Metric", scope="col", style="text-align: left"),
-                    fh.Th("Value", scope="col", style="text-align: center"),
-                    fh.Th("Grade", scope="col", style="text-align: center"),
-                    fh.Th(fh.Small("Explanation"), scope="col", style="text-align: left;"),
-                ),
-            ),
-            fh.Tbody(
-                fh.Tr(
-                    fh.Td("File Density", style="text-align: left"),
-                    fh.Td(f"{row.avg_lines_per_file.score:.0f}", style="text-align: center;"),
-                    fh.Td(
-                        f"{row.avg_lines_per_file.grade}",
-                        style="text-align: center; "
-                        "color: var(--pico-muted-color); "
-                        f"background-color: {row.avg_lines_per_file.color}",
-                    ),
-                    fh.Td(fh.Small("Average LoC per File"), style="text-align: left;"),
-                ),
-                fh.Tr(
-                    fh.Td("Code Density", style="text-align: left"),
-                    fh.Td(f"{row.code_density.score:.0f}%", style="text-align: center;"),
-                    fh.Td(
-                        f"{row.code_density.grade}",
-                        style="text-align: center; "
-                        "color: var(--pico-muted-color); "
-                        f"background-color: {row.code_density.color}",
-                    ),
-                    fh.Td(fh.Small("LOC / (LOC + Blanks)"), style="text-align: left;"),
-                ),
-                fh.Tr(
-                    fh.Td("Comment Ratio", style="text-align: left"),
-                    fh.Td(f"{row.comment_ratio.score:.0f}%", style="text-align: center;"),
-                    fh.Td(
-                        f"{row.comment_ratio.grade}",
-                        style="text-align: center; "
-                        "color: var(--pico-muted-color); "
-                        f"background-color: {row.comment_ratio.color}",
-                    ),
-                    fh.Td(fh.Small("Comments / (Comment + LOC)"), style="text-align: left;"),
-                ),
-            ),
-        ),
-    )
+def cloc_d(args: Namespace, scan: Scan, project: Project):
+    return dict(row=query(args, ReportLevel.DERIVED, scan=scan))
 
 
-def cloc_f(args: Namespace, scan: Scan, project: Project = None):
+def cloc_f(args: Namespace, scan: Scan):
     # Get bucket definitions from configuration for coloring
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     histogram = query(args, "f", scan=scan)
@@ -305,7 +103,7 @@ def cloc_f(args: Namespace, scan: Scan, project: Project = None):
             "yaxis_title": "Percent of Files by Total Lines",
         },
     )
-    return fig.to_html().encode()
+    return fig.to_html()
 
 
 def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
@@ -325,14 +123,6 @@ def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None
 
         # We want custom hover labels based on the respective git messages
         labels = custom_labels(title, messages, x_values, y_values)
-        # labels = []
-        # for timestamp, value in zip(x_values, y_values):
-        #     label = f"• <b>{value}</b> {title}<br>"
-        #     if message := messages.get(timestamp):
-        #         label += f"• {message}<br>"
-        #     label += f"• {timestamp.strftime('%Y-%m-%d %H:%M')}"
-        #     label += "<extra></extra>"
-        #     labels.append(label)
 
         # Add a series for each specific metric
         fig.add_trace(
@@ -348,11 +138,6 @@ def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None
             ),
         )
 
-    style_figure(
-        fig,
-        layout={
-            "yaxis_title": "Lines",
-        },
-    )
+    style_figure(fig, layout={"yaxis_title": "Lines"})
 
-    return fig.to_html().encode()
+    return fig.to_html()

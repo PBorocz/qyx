@@ -1,46 +1,74 @@
 """..."""
 
-import argparse
 import logging
 import threading
 import time
 import webbrowser
 from argparse import Namespace
+from pathlib import Path
+from typing import Callable
 
-import uvicorn
-from fasthtml import common as fh
+# import uvicorn
+from bottle import Bottle
+from bottle import static_file
+from bottle import request
+from jinja2 import Environment, FileSystemLoader
 
-from qyx.web.routes import register
+from qyx.web.home import render_page_home, render_partial_project_summary
 
 log = logging.getLogger(__name__)
 
-app, rt = None, None
+app = None
 
 
 def create_app(args):
-    app, rt = fh.fast_app(static_path="src/qyx/web/static")
+    global app
+    app = Bottle()
 
-    # Send our args into the FastHtml environment for availability
-    # within the various page renderers:
-    app.state.args = args
+    # Setup templating based on both static and dynamic tool directories:
+    paths = [str(Path(__file__).parent / "templates")]
+    for tool_name, o_tool in args.tools.items():
+        paths.append(f"src/qyx/tools/{tool_name}/templates")
+    args.jinja_env = Environment(loader=FileSystemLoader(paths), auto_reload=True)
 
-    return app, rt
+    # Send our args into Bottle environment for availability across page renderers
+    app.args = args
+
+    return app
+
+
+def serve_static(filepath):
+    return static_file(filepath, root="src/qyx/web/static")
+
+
+def about():
+    return "<H1>Welcome to QYX!</H1>"
 
 
 def serve(args: Namespace) -> None:
     """Run our web server."""
-    # Create our application and route instances..
-    global app, rt
-    app, rt = create_app(args)
+    app = create_app(args)
 
-    # Register routes..
-    register(args, rt)
+    ################################################################################
+    # Register routes (first static and then dynamic ones)
+    ################################################################################
+    app.route("/static/<filepath:path>")(serve_static)
+    app.route("/")(render_page_home)
+    app.route("/about")(about)
+    for tool_name, o_tool in args.tools.items():
+        app.route(f"/{tool_name}")(o_tool.render_web_method)
 
-    # And start us up!
+        render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
+        app.route(f"/partials/set_project/{tool_name}")(render_content_method)
+
+    if False:
+        for route in app.routes:
+            print(f"-{route.method:6s} {route.rule:30s} -> {route.callback.__module__}:{route.callback.__name__}")
+
     if args.browser:
 
         def __open_browser():
-            """Start browser (ultimately in a background thread)."""
+            """Start browser (using a background thread)."""
             log.info(f"Starting browser to https://localhost/{int(args.port)}")
             time.sleep(1)  # Wait for server to start
             webbrowser.open(f"http://localhost:{args.port}")
@@ -48,27 +76,63 @@ def serve(args: Namespace) -> None:
 
         __open_browser()
 
+    ################################################################################
+    # Start us up!
+    ################################################################################
     log.info(f"Starting server at https://localhost/{int(args.port)}")
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
+    app.run(
+        host="localhost",
         port=int(args.port),
-        log_level="debug",
-        access_log=True,
-        use_colors=True,
-        # reload=True,
+        debug=True,
+        reloader=True,
     )
 
 
-# This is only necessary to diagnose issues when running server from within CLI.
-# If so: % uv run python "src/qyx/web/server.py"
-if __name__ == "__main__":
-    from qyx import setup_sqlite
+# def serve(args: Namespace) -> None:
+#     """Run our web server."""
+#     # Create our application and route instances..
+#     global app, rt
+#     app, rt = create_app(args)
 
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--port", help="Optional port, default is 5011.", default=5011)
-    parser.add_argument("--browser", action="store_true", help="Auto-open browser", default=False)
-    args = parser.parse_args()
+#     # Register routes..
+#     register(args, rt)
+
+#     # And start us up!
+#     if args.browser:
+
+#         def __open_browser():
+#             """Start browser (ultimately in a background thread)."""
+#             log.info(f"Starting browser to https://localhost/{int(args.port)}")
+#             time.sleep(1)  # Wait for server to start
+#             webbrowser.open(f"http://localhost:{args.port}")
+#             threading.Thread(target=__open_browser, daemon=True).start()
+
+#         __open_browser()
+
+#     log.info(f"Starting server at https://localhost/{int(args.port)}")
+#     uvicorn.run(
+#         app,
+#         host="0.0.0.0",
+#         port=int(args.port),
+#         log_level="debug",
+#         access_log=True,
+#         use_colors=True,
+#         # reload=True,
+#     )
+
+
+# This is only necessary to diagnose issues when running server from within CLI.
+# If so: % uv run python "src/qyx/web/serve.py"
+if __name__ == "__main__":
+    from qyx.setup.args_configuration import setup_configuration
+    from qyx.setup.logging import setup_logging
+    from qyx.setup.sqlite import setup_sqlite
+    from qyx.setup.tools import setup_tools
+
+    args = Namespace(log_level="warning", browser=False, port=5011)
+    _, _, args.config = setup_configuration()
+    setup_logging(args)
+    setup_tools(args)
     setup_sqlite(args)
     serve(args)
 

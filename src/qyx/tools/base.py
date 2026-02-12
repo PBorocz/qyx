@@ -87,8 +87,9 @@ class AbstractToolConfiguration(ABC):
         """Return the root render method for this tool and the specified interace, e.g. "web" or "cli"."""
         try:
             render_module: ModuleType = self.import_component(interface)
-        except ModuleNotFoundError:
-            log.warning(f"Sorry, no '{interface}' capabilities available for {self.name} (bad import perhaps?)")
+        except ModuleNotFoundError as exc:
+            log.error(f"Sorry, no '{interface}' capabilities available for {self.name}:")
+            log.error(exc)
             return None, None
 
         if not (render_method := getattr(render_module, "render")):
