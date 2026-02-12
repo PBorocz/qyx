@@ -1,13 +1,13 @@
-# MQ - Python Code Quality Data Warehouse
+# QYX - Python Code Quality Data Warehouse
 
 > A comprehensive code quality analysis and visualization platform for Python projects
 
-**MQ** is a proof-of-concept data warehouse that aggregates, analyzes, and reports on multiple code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
+**QYX** (pronounced "kix" [like the cereal!]) is a proof-of-concept data warehouse that aggregates, analyzes, and reports on multiple code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
 
 ## Features
 
-- **Multi-Tool Integration**: Aggregate metrics from CLOC, Ruff, Radon, and custom analyzers
-- **Persistent Storage**: SQLite database for historical tracking and trend analysis
+- **Multi-Tool Integration**: Aggregate metrics from tools like CLOC, Ruff, Radon, and custom analyzers.
+- **Persistent Storage**: SQLite database for historical tracking and trend analysis.
 - **CLI Interface**: Terminal output with detailed reports at multiple levels (Rich)
 - **Web Dashboard**: Interactive dashboard (FastHTML & HTMX).
 - **Git Integration**: Analyze code across commit history
@@ -52,7 +52,7 @@ Track code annotations and technical debt markers:
   - `radon` - Complexity analyzer
   - `git`   - Version control (for history analysis)
 
-### Install MQ
+### Install QYX
 
 ```bash
 # Clone the repository
@@ -62,18 +62,18 @@ cd python-code-quality
 # Install with uv (recommended)
 uv sync
 
-# The mq command will be available
-mq --help
+# The qyx command will be available
+qyx --help
 ```
 
 ### Alternative Installation Methods
 
 ```bash
 # Direct Python invocation
-python -m mq --help
+python -m qyx --help
 
 # Using uv run
-uv run mq --help
+uv run qyx --help
 ```
 
 ## Quick Start
@@ -82,61 +82,61 @@ uv run mq --help
 
 ```bash
 # Analyze current project
-mq ingest --name myproject --path /path/to/project
+qyx ingest --name myproject --path /path/to/project
 
 # Analyze with specific tool
-mq ingest --name myproject --path /path/to/project --analysis ruff
+qyx ingest --name myproject --path /path/to/project --analysis ruff
 
 # Analyze git history (all commits)
-mq ingest --name myproject --path /path/to/repo
+qyx ingest --name myproject --path /path/to/repo
 
 # Read from stdin (pipe tool output)
-ruff check --output-format=json . | mq ingest --name myproject --stdin ruff
+ruff check --output-format=json . | qyx ingest --name myproject --stdin ruff
 ```
 
 ### View Status
 
 ```bash
 # Summary status
-mq status
+qyx status
 
 # Grouped by scan
-mq status --level g
+qyx status --level g
 
 # Individual scans
-mq status --level i
+qyx status --level i
 ```
 
 ### Generate Reports
 
 ```bash
 # Summary report
-mq report --name myproject
+qyx report --name myproject
 
 # Directory-level report
-mq report --name myproject --level 1
+qyx report --name myproject --level 1
 
 # File-level report
-mq report --name myproject --level 2
+qyx report --name myproject --level 2
 
 # Detailed metrics
-mq report --name myproject --level 3
+qyx report --name myproject --level 3
 
 # Derived metrics (composite scores, rates)
-mq report --name myproject --level d
+qyx report --name myproject --level d
 
 # Historical trends with charts
-mq report --name myproject --level h
+qyx report --name myproject --level h
 ```
 
 ### Web Interface
 
 ```bash
 # Start web server on default port (5011)
-mq serve
+qyx serve
 
 # Custom port and auto-launch browser
-mq serve --port 8080 --browser
+qyx serve --port 8080 --browser
 
 # Access at http://localhost:5011
 ```
@@ -145,30 +145,30 @@ mq serve --port 8080 --browser
 
 ```bash
 # Safe housekeeping (remove orphaned records)
-mq admin clean
+qyx admin clean
 
 # Remove old scan data
-mq admin trim
+qyx admin trim
 
 # Delete specific project
-mq admin delete
+qyx admin delete
 
 # Complete database wipe (destructive!)
-mq admin clear
+qyx admin clear
 ```
 
 ## Interactive Mode
 
-If you run `mq` without arguments, it enters interactive mode with guided prompts:
+If you run `qyx` without arguments, it enters interactive mode with guided prompts:
 
 ```bash
-mq
+qyx
 # Follow the prompts to select command and options
 ```
 
 ## Configuration
 
-MQ uses `config.yaml` for default settings and metric thresholds.
+QYX uses `config.yaml` for default settings and metric thresholds.
 
 ### Configuration File Location
 
@@ -185,7 +185,7 @@ defaults:
 
 # Database configuration
 database:
-  path: "~/.config/mq/mq.sqlite3"
+  path: "~/.config/qyx/qyx.sqlite3"
 
 # Tool-specific configurations
 tools:
@@ -238,22 +238,22 @@ CLI arguments override config file settings:
 
 ```bash
 # Override log level
-mq report --name myproject --log-level DEBUG
+qyx report --name myproject --log-level DEBUG
 
 # Override project path
-mq ingest --name myproject --path /custom/path
+qyx ingest --name myproject --path /custom/path
 ```
 
 ## CLI Reference
 
 ### Commands
 
-#### `mq ingest`
+#### `qyx ingest`
 
 Analyze code with quality tools and store results.
 
 ```bash
-mq ingest [OPTIONS]
+qyx ingest [OPTIONS]
 ```
 
 **Options:**
@@ -263,12 +263,12 @@ mq ingest [OPTIONS]
 - `--stdin TEXT`: Read from stdin for specified tool
 - `--log-level LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR)
 
-#### `mq report`
+#### `qyx report`
 
 Generate code quality reports.
 
 ```bash
-mq report [OPTIONS]
+qyx report [OPTIONS]
 ```
 
 **Options:**
@@ -276,12 +276,12 @@ mq report [OPTIONS]
 - `--level LEVEL`: Report level (0=summary, 1=directory, 2=file, 3=detail, d=derived, h=history)
 - `--log-level LEVEL`: Logging level
 
-#### `mq status`
+#### `qyx status`
 
 Display project analysis status.
 
 ```bash
-mq status [OPTIONS]
+qyx status [OPTIONS]
 ```
 
 **Options:**
@@ -289,12 +289,12 @@ mq status [OPTIONS]
 - `--level LEVEL`: Status level (g=grouped, i=individual)
 - `--log-level LEVEL`: Logging level
 
-#### `mq serve`
+#### `qyx serve`
 
 Start web dashboard server.
 
 ```bash
-mq serve [OPTIONS]
+qyx serve [OPTIONS]
 ```
 
 **Options:**
@@ -302,19 +302,19 @@ mq serve [OPTIONS]
 - `--browser`: Auto-launch browser
 - `--log-level LEVEL`: Logging level
 
-#### `mq admin clean`
+#### `qyx admin clean`
 
 Safe database housekeeping (removes orphaned records).
 
-#### `mq admin clear`
+#### `qyx admin clear`
 
 **DESTRUCTIVE**: Completely wipe database.
 
-#### `mq admin delete`
+#### `qyx admin delete`
 
 Delete specific project from database.
 
-#### `mq admin trim`
+#### `qyx admin trim`
 
 Remove old scan data based on retention policy.
 
@@ -344,7 +344,7 @@ The web dashboard provides an interactive view of all metrics.
 
 ```
 python-code-quality/
-├── src/mq/                     # Main package
+├── src/qyx/                     # Main package
 │   ├── __main__.py             # Entry point
 │   ├── constants.py            # Enums and constants
 │   ├── cli/                    # CLI interface
@@ -406,12 +406,12 @@ pytest tests/test_smoke_cli.py
 pytest -v
 
 # Run with coverage
-pytest --cov=mq
+pytest --cov=qyx
 ```
 
 ### Adding a New Tool
 
-1. Create tool directory in `src/mq/tools/<tool_name>/`
+1. Create tool directory in `src/qyx/tools/<tool_name>/`
 2. Implement required modules:
    - `__init__.py` - Tool configuration
    - `models.py` - Database models
@@ -454,7 +454,7 @@ def render_web(scan: Scan, level: int) -> FT:
 
 ### Database Schema
 
-MQ uses Peewee ORM with SQLite3.
+QYX uses Peewee ORM with SQLite3.
 
 **Core Tables:**
 - `project` - Project records
@@ -479,8 +479,8 @@ Quick automation tasks defined in `pyproject.toml`:
 # Deploy (clean, update, push)
 poe deploy
 
-# Run MQ
-poe mq
+# Run QYX
+poe qyx
 
 # Start server
 poe serve
@@ -501,7 +501,7 @@ poe sql
 
 ## Grading System
 
-MQ uses a configurable grading system (A-F) with color coding:
+QYX uses a configurable grading system (A-F) with color coding:
 
 - **A** (Green): Excellent
 - **B** (Light Green): Good
@@ -522,7 +522,7 @@ thresholds:
 
 ## Report Levels
 
-MQ provides multiple reporting levels for different perspectives:
+QYX provides multiple reporting levels for different perspectives:
 
 | Level | Name      | Description                                            |
 |-------|-----------|--------------------------------------------------------|
@@ -539,32 +539,32 @@ MQ provides multiple reporting levels for different perspectives:
 
 ```bash
 # 1. Initial analysis
-mq ingest --name myproject --path ~/projects/myapp
+qyx ingest --name myproject --path ~/projects/myapp
 
 # 2. Check status
-mq status --name myproject
+qyx status --name myproject
 
 # 3. View summary report
-mq report --name myproject --level 0
+qyx report --name myproject --level 0
 
 # 4. Drill into files with issues
-mq report --name myproject --level 2
+qyx report --name myproject --level 2
 
 # 5. Start web dashboard for exploration
-mq serve --browser
+qyx serve --browser
 
 # 6. After code changes, re-analyze
-mq ingest --name myproject --path ~/projects/myapp
+qyx ingest --name myproject --path ~/projects/myapp
 
 # 7. View historical trends
-mq report --name myproject --level h
+qyx report --name myproject --level h
 ```
 
 ### Analyzing Git History
 
 ```bash
 # Analyze all commits in repository
-mq ingest --name myproject --path https://github.org/someone/myproject
+qyx ingest --name myproject --path https://github.org/someone/myproject
 
 # This will:
 # 1. Clone the repo and get the complete commit history
@@ -574,18 +574,18 @@ mq ingest --name myproject --path https://github.org/someone/myproject
 # 5. - Store results with commit metadata
 
 # View historical trends
-mq report --name myproject --level h
+qyx report --name myproject --level h
 ```
 
 ### Custom Analysis Pipeline
 
 ```bash
 # Run only specific tools
-mq ingest --name myproject --path . --analysis ruff
-mq ingest --name myproject --path . --analysis radon_cc
+qyx ingest --name myproject --path . --analysis ruff
+qyx ingest --name myproject --path . --analysis radon_cc
 
 # Pipe custom tool output
-my-custom-tool --json | mq ingest --name myproject --stdin ruff
+my-custom-tool --json | qyx ingest --name myproject --stdin ruff
 ```
 
 ## Troubleshooting
@@ -594,10 +594,10 @@ my-custom-tool --json | mq ingest --name myproject --stdin ruff
 
 ```bash
 # Clean up orphaned records
-mq admin clean
+qyx admin clean
 
 # Reset database completely
-mq admin clear
+qyx admin clear
 ```
 
 ### Tool Not Found
@@ -617,13 +617,13 @@ pip install ruff radon
 
 ### Permission Issues
 
-Database location: `~/.config/mq/mq.sqlite3`
+Database location: `~/.config/qyx/qyx.sqlite3`
 
 Ensure write permissions:
 
 ```bash
-mkdir -p ~/.config/mq
-chmod 755 ~/.config/mq
+mkdir  -p ~/.config/qyx
+chmod 755 ~/.config/qyx
 ```
 
 ## Contributing

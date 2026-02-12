@@ -4,7 +4,7 @@ from argparse import Namespace
 
 import pytest
 
-from mq.cli.status import status
+from qyx.cli.status import status
 from conftest import TEST_PROJECT
 
 

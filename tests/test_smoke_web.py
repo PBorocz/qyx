@@ -4,7 +4,7 @@ from argparse import Namespace
 
 import pytest
 
-from mq.tools.base import Scan
+from qyx.tools.base import Scan
 
 
 def _get_test_cases(app_args, ingested_project):

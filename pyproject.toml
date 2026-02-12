@@ -1,5 +1,5 @@
 [project]
-name = "mq"
+name = "qyx"
 version = "0.1.0"
 description = "Python Code Quality Data Warehouse"
 license = {file = "LICENSE"}
@@ -17,18 +17,18 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/PBorocz/mq"
-Repository = "https://github.com/PBorocz/mq"
-Issues = "https://github.com/PBorocz/mq/issues"
+Homepage = "https://github.com/PBorocz/qyx"
+Repository = "https://github.com/PBorocz/qyx"
+Issues = "https://github.com/PBorocz/qyx/issues"
 
 [project.scripts]
-mq = "mq.__main__:main"
+qyx = "qyx.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=9.0.2",
 ]
@@ -42,46 +42,46 @@ verbosity = -1
 #-------------------------------------------------------------------------------
 # Ingest examples:
 #-------------------------------------------------------------------------------
-# poe mq ingest --name python-code-quality --path "."                                          --log-level debug
-# poe mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git            --log-level debug
-# poe mq ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
+# poe qyx ingest --name python-code-quality --path "."                                          --log-level debug
+# poe qyx ingest --name python-code-quality --path https://github.com/PBorocz/qyx.git            --log-level debug
+# poe qyx ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
 #-------------------------------------------------------------------------------
 # Direct JSON ingestion examples
-# cloc --include-lang=Python src/ --by-file --json | uv run mq ingest --stdin --name python-code-quality --path "." --analysis cloc
-# ruff check --output-format=json                  | uv run mq ingest --stdin --name python-code-quality --path "." --analysis ruff
-# uvx radon cc  . --json                           | uv run mq ingest --stdin --name python-code-quality --path "." --analysis radon:cc
-# uvx radon hal . --json                           | uv run mq ingest --stdin --name python-code-quality --path "." --analysis radon:hal
-# uvx radon mi  . --json                           | uv run mq ingest --stdin --name python-code-quality --path "." --analysis radon:mi
-# uvx radon raw . --json                           | uv run mq ingest --stdin --name python-code-quality --path "." --analysis radon:raw
+# cloc --include-lang=Python src/ --by-file --json | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis cloc
+# ruff check --output-format=json                  | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis ruff
+# uvx radon cc  . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:cc
+# uvx radon hal . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:hal
+# uvx radon mi  . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:mi
+# uvx radon raw . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:raw
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # Admin support
 #-------------------------------------------------------------------------------
 
-[tool.poe.tasks.mq]
-help = "Run the mq command"
-cmd = "uv run mq"
+[tool.poe.tasks.qyx]
+help = "Run the qyx command"
+cmd = "uv run qyx"
 
 [tool.poe.tasks.status]
 help = "Report current status"
-cmd = "uv run mq status"
+cmd = "uv run qyx status"
 
 [tool.poe.tasks.serve]
-help = "Run the mq command"
-cmd = "uv run mq serve"
+help = "Run the qyx command"
+cmd = "uv run qyx serve"
 
 [tool.poe.tasks.report]
 help = "Display summary report across all modules"
-cmd = """uv run mq report"""
+cmd = """uv run qyx report"""
 
 [tool.poe.tasks.housekeeping]
 help = "Run housekeeping cleanse on the database"
-cmd = "uv run mq admin clean"
+cmd = "uv run qyx admin clean"
 
 [tool.poe.tasks.sql]
 help = "Run litecli for interactive db querying (note that db path is for Mac)"
-cmd = "litecli \"~/Library/Application Support/mq/mq.sqlite3\""
+cmd = "litecli \"~/Library/Application Support/qyx/qyx.sqlite3\""
 
 
 #-----------------------------------------------------------------------------------------------
@@ -92,12 +92,12 @@ help = "Push to github (NOTE: I use jujutsu & fish shell..YMMV!)"
 interpreter = "fish"
 shell = """
   uvx cleanpy --all --exclude-envs --verbose .
-  ruff rule   --all --output-format json > src/mq/tools/ruff/ruff_rules.json
+  ruff rule   --all --output-format json > src/qyx/tools/ruff/ruff_rules.json
   if not jj diff --quiet
     jj describe -m "chore: update ruff rules database [automated]"
   end
   jj bookmark set trunk --revision 'coalesce(@-, @)'
   jj git push --bookmark trunk
 
-  uv run mq ingest --name python-code-quality --path https://github.com/PBorocz/mq.git
+  uv run qyx ingest --name python-code-quality --path https://github.com/PBorocz/qyx.git
   """

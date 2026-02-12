@@ -6,12 +6,12 @@ from argparse import Namespace
 
 import pytest
 
-from mq.cli.ingest import ingest
-from mq.setup.args_configuration import setup_configuration
-from mq.setup.logging import setup_logging
-from mq.setup.sqlite import setup_sqlite
-from mq.setup.tools import setup_tools
-from mq.tools.base import Project, Request, Scan
+from qyx.cli.ingest import ingest
+from qyx.setup.args_configuration import setup_configuration
+from qyx.setup.logging import setup_logging
+from qyx.setup.sqlite import setup_sqlite
+from qyx.setup.tools import setup_tools
+from qyx.tools.base import Project, Request, Scan
 
 TEST_PROJECT = "__test_project__"
 

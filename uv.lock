@@ -291,38 +291,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mq"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "peewee" },
-    { name = "platformdirs" },
-    { name = "plotly" },
-    { name = "python-fasthtml" },
-    { name = "questionary" },
-    { name = "rich" },
-    { name = "rich-argparse" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "peewee", specifier = ">=3.18.3" },
-    { name = "platformdirs", specifier = ">=4.5.1" },
-    { name = "plotly", specifier = ">=6.5.2" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
-    { name = "python-fasthtml", specifier = ">=0.12.36" },
-    { name = "questionary", specifier = ">=2.1.1" },
-    { name = "rich", specifier = ">=14.2.0" },
-    { name = "rich-argparse", specifier = ">=1.7.2" },
-]
-provides-extras = ["dev"]
-
-[[package]]
 name = "narwhals"
 version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -540,6 +508,39 @@ sdist = { url = "https://files.pythonhosted.org/packages/f6/45/eafb0bba0f9988f6a
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3c/26/1062c7ec1b053db9e499b4d2d5bc231743201b74051c973dadeac80a8f43/questionary-2.1.1-py3-none-any.whl", hash = "sha256:a51af13f345f1cdea62347589fbb6df3b290306ab8930713bfae4d475a7d4a59", size = 36753, upload-time = "2025-08-28T19:00:19.56Z" },
 ]
+
+[[package]]
+name = "qyx"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "peewee" },
+    { name = "platformdirs" },
+    { name = "plotly" },
+    { name = "python-fasthtml" },
+    { name = "questionary" },
+    { name = "rich" },
+    { name = "rich-argparse" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "peewee", specifier = ">=3.18.3" },
+    { name = "platformdirs", specifier = ">=4.5.1" },
+    { name = "plotly", specifier = ">=6.5.2" },
+    { name = "python-fasthtml", specifier = ">=0.12.36" },
+    { name = "questionary", specifier = ">=2.1.1" },
+    { name = "rich", specifier = ">=14.2.0" },
+    { name = "rich-argparse", specifier = ">=1.7.2" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "rich"

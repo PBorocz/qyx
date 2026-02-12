@@ -1,6 +1,6 @@
 """..."""
 
-from mq.utils import parse_path_arg
+from qyx.utils import parse_path_arg
 
 
 def test_parse_path_arg():

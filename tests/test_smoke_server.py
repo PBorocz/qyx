@@ -9,8 +9,8 @@ from urllib.request import urlopen
 import pytest
 import uvicorn
 
-from mq.tools.base import Project
-from mq.web.serve import create_app, register
+from qyx.tools.base import Project
+from qyx.web.serve import create_app, register
 
 
 def is_port_in_use(port: int) -> bool:
