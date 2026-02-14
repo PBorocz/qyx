@@ -25,6 +25,15 @@ renderers:
       neutral: "white"
 
 tools:
+  ty:
+    run:
+      command:
+        - ty
+        - check
+        - --exit-zero
+        - --output-format
+        - gitlab
+        - "{absolute}"
   cloc:
     run:
       command:

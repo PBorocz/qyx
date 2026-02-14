@@ -144,7 +144,10 @@ def _run_tool(
             absolute=str(scan_request.cwd),  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
             analysis=analysis,
         )
-        log.debug(f"Executing {' '.join(command)=} in {scan_request.cwd}")
+        import shlex
+
+        log.debug(f"Executing from: {scan_request.cwd=}")
+        log.debug(f"Executing cmd:  {shlex.join(command)=}")
         try:
             # log.info(f"{scan_request.as_of=}")
             # log.info(f"{scan_request.hash[:8]=}")
@@ -157,10 +160,9 @@ def _run_tool(
             result = subprocess.run(command, cwd=str(scan_request.cwd), capture_output=True, check=True)
         except subprocess.CalledProcessError as exc:
             log.error(f"{str(exc)}")
-            log.error(f"{exc.stdout.decode()=}")
+            log.error(f"{len(exc.stdout.decode())=}")
             log.error(f"{exc.stderr.decode()=}")
             log.error(f"{scan_request.as_of=}")
-            log.error(f"{scan_request.hash[:8]=}")
             log.error(f"{scan_request.cwd=}")
             log.error(f"{command=}")
             sys.exit(1)

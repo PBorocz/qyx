@@ -335,7 +335,7 @@ class BaseResultsModel(pw.Model):
 
     # fmt: off
     id        = pw.AutoField()
-    scan      = pw.ForeignKeyField(Scan, backref="modules", on_delete="CASCADE")
+    scan      = pw.ForeignKeyField(Scan, on_delete="CASCADE")
     directory = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
     filename  = pw.CharField(help_text="eg. foo.py")
     # fmt: on
