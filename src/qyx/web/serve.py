@@ -8,13 +8,11 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Callable
 
-# import uvicorn
 from bottle import Bottle
 from bottle import static_file
-from bottle import request
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, PrefixLoader
 
-from qyx.web.home import render_page_home, render_partial_project_summary
+from qyx.web.home import render_page_home
 
 log = logging.getLogger(__name__)
 
@@ -25,11 +23,19 @@ def create_app(args):
     global app
     app = Bottle()
 
-    # Setup templating based on both static and dynamic tool directories:
-    paths = [str(Path(__file__).parent / "templates")]
+    # paths = [str(Path(__file__).parent / "templates")]
+    # for tool_name, o_tool in args.tools.items():
+    #     paths.append(f"src/qyx/tools/{tool_name}/templates")
+    # args.jinja_env = Environment(loader=FileSystemLoader(paths), auto_reload=True)
+
+    # Setup prefix-based templating based on both static and dynamic tool directories:
+    loaders = dict(base=FileSystemLoader(str(Path(__file__).parent / "templates")))
     for tool_name, o_tool in args.tools.items():
-        paths.append(f"src/qyx/tools/{tool_name}/templates")
-    args.jinja_env = Environment(loader=FileSystemLoader(paths), auto_reload=True)
+        loaders[tool_name] = FileSystemLoader(f"src/qyx/tools/{tool_name}/templates")
+    args.jinja_env = Environment(
+        loader=PrefixLoader(loaders, delimiter="::"),
+        auto_reload=True,
+    )
 
     # Send our args into Bottle environment for availability across page renderers
     app.args = args
@@ -52,15 +58,17 @@ def serve(args: Namespace) -> None:
     ################################################################################
     # Register routes (first static and then dynamic ones)
     ################################################################################
-    app.route("/static/<filepath:path>")(serve_static)
+    app.route("/static/<filepath:path>")(serve_static)  # Love how easy THIS is!
     app.route("/")(render_page_home)
     app.route("/about")(about)
     for tool_name, o_tool in args.tools.items():
         app.route(f"/{tool_name}")(o_tool.render_web_method)
-
-        render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
-        app.route(f"/partials/set_project/{tool_name}")(render_content_method)
-
+        if o_tool.render_web_module:  # Tools may not have web reporting setup yet!
+            try:
+                render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
+                app.route(f"/partials/set_project/{tool_name}")(render_content_method)
+            except AttributeError as exc:
+                log.error(f"Expected to find 'render_content' in {tool_name}'s web.py module! ({exc})")
     if False:
         for route in app.routes:
             print(f"-{route.method:6s} {route.rule:30s} -> {route.callback.__module__}:{route.callback.__name__}")
@@ -70,7 +78,7 @@ def serve(args: Namespace) -> None:
         def __open_browser():
             """Start browser (using a background thread)."""
             log.info(f"Starting browser to https://localhost/{int(args.port)}")
-            time.sleep(1)  # Wait for server to start
+            time.sleep(1)  # Wait for browser to start-up
             webbrowser.open(f"http://localhost:{args.port}")
             threading.Thread(target=__open_browser, daemon=True).start()
 

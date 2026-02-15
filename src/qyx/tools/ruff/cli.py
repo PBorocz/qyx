@@ -6,7 +6,6 @@ from argparse import Namespace
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.ruff import get_ruff_rule_name
 from qyx.tools.ruff.models import query
 from qyx.utils import format_timestamp_headers
 
@@ -53,11 +52,10 @@ def ruff_1(args: Namespace, scan: Scan) -> None:
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
-    table.add_column("Count", justify="center", footer=f"{summary.count:,}")
+    table.add_column("Count", justify="right", footer=f"{summary.count:,}")
     table.add_column("Message")
     for result in results:
-        rule_name = get_ruff_rule_name(result.rule_code)
-        table.add_row(result.rule_code, f"{result.count:,d}", rule_name.title())
+        table.add_row(result.rule_code, f"{result.count:,d}", result.rule_name.title())
     cli_console.print(table)
 
 

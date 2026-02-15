@@ -2,35 +2,28 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "cloc::fragments/body/summary.html" %}
+    {% include "ruff::fragments/body/summary.html" %}
   </details>
 
   <details name="details">
     <summary>Directory</summary>
-    {% include "cloc::fragments/body/directory.html" %}
+    {% include "ruff::fragments/body/directory.html" %}
   </details>
 
   <details name="details">
     <summary>File</summary>
-    {% include "cloc::fragments/body/file.html" %}
+    {% include "ruff::fragments/body/file.html" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "cloc::fragments/body/derived.html" %}
+    {% include "ruff::fragments/body/derived.html" %}
   </details>
 
   <details name="details">
     <summary>Trend</summary>
     <div class="bordered">
       {{ chart_t }}
-    </div>
-  </details>
-
-  <details name="details">
-    <summary>File Sizes</summary>
-    <div class="bordered">
-      {{ chart_f }}
     </div>
   </details>
 

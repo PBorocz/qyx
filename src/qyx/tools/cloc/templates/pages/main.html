@@ -1,10 +1,10 @@
-{% extends "_base.html" %}
+{% extends "base::_base.html" %}
 
 {% block content %}
 
   <h2>CLOC - Count Lines of Code</h2>
 
-  {% include "_select_project.html" %}
+  {% include "base::_select_project.html" %}
 
   {# Primary div that'll be replaced dynamically by HTMX based on project selection above #}
   <div id="page-body-content"></div>

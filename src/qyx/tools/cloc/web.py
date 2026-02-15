@@ -15,18 +15,18 @@ from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
-def render():
+def render(template: str = "cloc::pages/main.html") -> str:
     """Render the tool's primary page."""
     project_options = get_project_selector()
     return render_page(
         "QYX-CLOC",
-        "pages/main.html",
+        template,
         project_options=project_options,
         set_project="/partials/set_project/cloc",
     )
 
 
-def render_content(template: str = "fragments/body.html"):
+def render_content(template: str = "cloc::fragments/body.html"):
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
     s_project_id = request.query.project

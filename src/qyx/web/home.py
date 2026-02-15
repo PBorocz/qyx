@@ -26,7 +26,7 @@ def render_page_home():
     project_options = get_project_selector()
     return render_page(
         "QYX Home",
-        "pages/home.html",
+        "base::pages/home.html",
         project_options=project_options,
         set_project="/partials/set_project/_main_",
     )

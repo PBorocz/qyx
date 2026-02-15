@@ -65,7 +65,9 @@ def _query_0(scan: Scan):
 
 
 def _query_1(scan: Scan):
-    return (
+    from qyx.tools.ruff import get_ruff_rule_name
+
+    query = (
         Ruff.select(
             Ruff.rule_code,
             fn.COUNT(Ruff.id).alias("count"),
@@ -80,6 +82,12 @@ def _query_1(scan: Scan):
             fn.COUNT(Ruff.id).desc(),
         )
     )
+    # Add another attribute onto to each result for nicer reporting.
+    rows = []
+    for row in query:
+        row.rule_name = get_ruff_rule_name(row.rule_code).title()
+        rows.append(row)
+    return rows
 
 
 def _query_2(scan: Scan):
