@@ -52,14 +52,14 @@ def _get_command_args(args: Namespace) -> Namespace:
             args = _prompt_command_admin(args)
             if not args:
                 _goodbye()
-        case "exit":
+        case "_exit_":
             _goodbye()
     return args
 
 
 def _goodbye():
     qprint(
-        "\nThanks, gracias, merci, danka, ありがとう, cпacи6o, köszönöm...!",
+        "Thanks, gracias, merci, danka, ありがとう, cпacи6o, köszönöm...!",
         style="bold italic fg:green",
     )
     sys.exit(0)
@@ -181,7 +181,7 @@ def _prompt_admin_command_delete(args: Namespace) -> Namespace:
 
 ################################################################################################
 def _prompt_name(args: Namespace, include_new_option: bool = False):
-    last_project = State.lookup("project")  # Get the name of the last project we've referred to..
+    last_project = State.lookup("name")  # Get the name of the last project we've referred to..
     choices = []
     kwargs = dict()
     for project in Project.select().order_by(Project.name):
@@ -368,6 +368,8 @@ def _prompt_status_level() -> StatusLevel:
 
 def _prompt_report_level() -> ReportLevel:
     choices = [Choice(title=level.description, value=level.value, shortcut_key=level.value) for level in ReportLevel]
+    # FIXME: Make the following work! (doesn't now as sentinel isn't in the Enum)
+    # choices.append(Choice(title="─── All ───", value="*", shortcut_key="a"))  # SENTINEL!
     value = select(
         "Report Level:",
         choices=choices,

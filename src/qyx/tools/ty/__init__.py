@@ -19,7 +19,7 @@ class Configuration(ToolType):
     def __init__(self):
         """..."""
         cli = {
-            # AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DETAIL, Rl.DERIVED, Rl.HISTORY),
         }
         web = {
             # AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
@@ -31,5 +31,5 @@ class Configuration(ToolType):
             analyses={AnalysisType.TY.value: "ty - TypeChecker"},
             models=dict(ty=(Ty,)),
             reports=dict(cli=cli, web=web),
-            results_required=True,  # In this case,  Ty Scans without data ARE valid!
+            results_required=False,  # In this case,  Ty Scans without data ARE valid (albeit rare?)
         )

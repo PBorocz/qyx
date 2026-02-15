@@ -25,15 +25,6 @@ renderers:
       neutral: "white"
 
 tools:
-  ty:
-    run:
-      command:
-        - ty
-        - check
-        - --exit-zero
-        - --output-format
-        - gitlab
-        - "{absolute}"
   cloc:
     run:
       command:
@@ -182,7 +173,6 @@ tools:
         - {min: 10, max:   20, grade: "C", color: "#eab308"}
         - {min: 20, max:   40, grade: "D", color: "#f97316"}
         - {min: 40, max: .inf, grade: "F", color: "#ef4444"}
-
     weighted_violations_per_kloc:
       weights:
         F: 5.0  # Pyflakes                (likely bugs, runtime errors)
@@ -204,6 +194,147 @@ tools:
         P: 1.0  # Pylint conventions      (style preferences)
         Q: 1.0  # Quote consistency       (minor style)
         T: 1.0  # Print statements        (debugging leftovers)
+      thresholds:
+        - {min:   0, max:   10, grade: "A", color: "#22c55e"}
+        - {min:  10, max:   25, grade: "B", color: "#84cc16"}
+        - {min:  25, max:   50, grade: "C", color: "#eab308"}
+        - {min:  50, max:  100, grade: "D", color: "#f97316"}
+        - {min: 100, max: .inf, grade: "F", color: "#ef4444"}
+  ty:
+    run:
+      command:
+        - ty
+        - check
+        - --exit-zero
+        - --output-format
+        - gitlab
+        - "{absolute}"
+    violations_per_kloc:
+      thresholds:
+        - {min:  0, max:    5, grade: "A", color: "#22c55e"}  # Excellent
+        - {min:  5, max:   15, grade: "B", color: "#84cc16"}  # Good
+        - {min: 15, max:   30, grade: "C", color: "#eab308"}  # Acceptable
+        - {min: 30, max:   50, grade: "D", color: "#f97316"}  # Needs work
+        - {min: 50, max: .inf, grade: "F", color: "#ef4444"}  # Poor
+    weighted_violations_per_kloc:
+      categories:
+        critical:
+          - call-non-callable
+          - division-by-zero
+          - not-iterable
+          - not-subscriptable
+          - invalid-argument-type
+          - missing-argument
+          - too-many-positional-arguments
+          - index-out-of-bounds
+          - invalid-raise
+          - invalid-return-type
+          - call-abstract-method
+          - invalid-exception-caught
+          - missing-typed-dict-key
+          - positional-only-parameter-as-kwarg
+          - unknown-argument
+          - unsupported-operator
+        high:
+          - unresolved-import
+          - unresolved-reference
+          - unresolved-attribute
+          - unresolved-global
+          - invalid-assignment
+          - invalid-attribute-access
+          - no-matching-overload
+          - type-assertion-failure
+          - override-of-final-method
+          - override-of-final-variable
+          - subclass-of-final-class
+          - possibly-unresolved-reference
+          - possibly-missing-attribute
+          - possibly-missing-import
+          - invalid-method-override
+          - invalid-await
+          - invalid-key
+          - call-top-callable
+        medium:
+          - invalid-base
+          - invalid-context-manager
+          - invalid-dataclass
+          - invalid-dataclass-override
+          - invalid-declaration
+          - invalid-explicit-override
+          - invalid-frozen-dataclass-subclass
+          - invalid-generic-class
+          - invalid-generic-enum
+          - invalid-metaclass
+          - invalid-named-tuple
+          - invalid-newtype
+          - invalid-overload
+          - invalid-parameter-default
+          - invalid-paramspec
+          - invalid-protocol
+          - invalid-super-argument
+          - invalid-syntax-in-forward-annotation
+          - invalid-total-ordering
+          - invalid-type-alias-type
+          - invalid-type-arguments
+          - invalid-type-checking-constant
+          - invalid-type-form
+          - invalid-type-guard-call
+          - invalid-type-guard-definition
+          - invalid-type-variable-bound
+          - invalid-type-variable-constraints
+          - invalid-type-variable-default
+          - invalid-typed-dict-header
+          - invalid-typed-dict-statement
+          - invalid-legacy-positional-parameter
+          - invalid-legacy-type-variable
+          - isinstance-against-protocol
+          - isinstance-against-typed-dict
+          - conflicting-argument-forms
+          - conflicting-declarations
+          - conflicting-metaclass
+          - cyclic-class-definition
+          - cyclic-type-alias-definition
+          - dataclass-field-order
+          - duplicate-base
+          - duplicate-kw-only
+          - inconsistent-mro
+          - instance-layout-conflict
+          - parameter-already-assigned
+          - possibly-missing-implicit-call
+          - unavailable-implicit-super-arguments
+          - unsupported-base
+          - unsupported-bool-conversion
+          - unsupported-dynamic-base
+          - abstract-method-in-final-class
+          - ambiguous-protocol-member
+          - super-call-in-named-tuple-method
+          - zero-stepsize-in-slice
+        low:
+          - unused-ignore-comment
+          - unused-type-ignore-comment
+          - redundant-cast
+          - deprecated
+          - ineffective-final
+          - ignore-comment-unknown-rule
+          - invalid-ignore-comment
+          - final-without-value
+          - empty-body
+          - useless-overload-body
+          - byte-string-type-annotation
+          - fstring-type-annotation
+          - implicit-concatenated-string-type-annotation
+          - raw-string-type-annotation
+          - escape-character-in-forward-annotation
+          - assert-type-unspellable-subtype
+        info:
+          - undefined-reveal
+          - static-assert-error
+      weights:
+        critical: 10.0
+        high: 5.0
+        medium: 3.0
+        low: 1.0
+        info: 0.5
       thresholds:
         - {min:   0, max:   10, grade: "A", color: "#22c55e"}
         - {min:  10, max:   25, grade: "B", color: "#84cc16"}

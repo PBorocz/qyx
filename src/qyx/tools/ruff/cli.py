@@ -128,34 +128,3 @@ def ruff_h(args: Namespace, project: Project) -> None:
     table.add_row(*row)
 
     cli_console.print(table)
-
-
-#
-# Still used??
-#
-# def _report_history(project: Project) -> None:
-#     """Report on the history of scans "across" at the ReportLevel.DIRECTORY level."""
-#     rows, messages, transposed, grand_totals = query(args, ReportLevel.HISTORY, project=project, last=5)
-#     ################################################################################################
-#     # Render the table
-#     ################################################################################################
-#     table = cli_table(title="RUFF Results Over Time", show_footer=True)
-#     table.add_column("Rule", justify="left", footer="TOTAL")
-#     table.add_column("Message", justify="left", footer="")
-#     timestamps = list({row.timestamp for row in rows})
-#     timestamps_formatted = format_timestamp_headers(timestamps)
-#     for timestamp in sorted(timestamps):
-#         table.add_column(
-#             timestamps_formatted[timestamp],
-#             justify="right",
-#             footer=str(grand_totals[timestamp]),
-#             footer_style="bold cyan",
-#         )
-
-#     for rule_code, dt_rows in transposed.items():
-#         row = [rule_code, messages[rule_code]]
-#         for timestamp in sorted(timestamps):
-#             row.append(str(dt_rows[timestamp]))
-#         table.add_row(*row)
-
-#     cli_console.print(table)
