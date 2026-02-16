@@ -1,0 +1,27 @@
+<table id="level_2" class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left" >Directory</th>
+      <th scope="col" style="text-align: left" >File</th>
+      <th scope="col" style="text-align: right">SLOC</th>
+      <th scope="col" style="text-align: right">Multi</th>
+      <th scope="col" style="text-align: right">Comment</th>
+      <th scope="col" style="text-align: right">Blank</th>
+      <th scope="col" style="text-align: right">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in level_2.rows %}
+    <tr>
+      <td style="text-align: left" >{{ row.directory }}</td>
+      <td style="text-align: left" >{{ row.filename  }}</td>
+      <td style="text-align: right">{{"{:,}".format(row.sloc)     }}</td>
+      <td style="text-align: right">{{"{:,}".format(row.multi)    }}</td>
+      <td style="text-align: right">{{"{:,}".format(row.comments) }}</td>
+      <td style="text-align: right">{{"{:,}".format(row.blank)    }}</td>
+      <td style="text-align: right">{{"{:,}".format(row.loc)      }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<script>new Tablesort(document.getElementById('level_2'));</script>

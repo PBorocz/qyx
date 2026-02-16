@@ -31,6 +31,7 @@ def render_content(template: str = "cloc::fragments/body.html"):
     args = request.app.args
     s_project_id = request.query.project
     if not s_project_id:
+        # FIXME: Make this use the template that notifies of an empty project
         render_partial(template)
 
     project = Project.get(Project.id == int(s_project_id))

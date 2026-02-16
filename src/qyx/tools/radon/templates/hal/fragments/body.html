@@ -1,0 +1,72 @@
+<style>
+ .chart-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+   gap: 1rem;
+ }
+
+ .chart-card {
+   background: var(--card-background-color);
+   border-radius: var(--border-radius);
+   padding: 1rem;
+   border: 1px solid var(--muted-border-color);
+ }
+
+ .chart-placeholder {
+   background: var(--code-background-color);
+   height: 400px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border-radius: var(--border-radius);
+   color: var(--muted-color);
+ }
+</style>
+
+<section>
+
+  <details name="details" open>
+    <summary>Summary</summary>
+    {% include "radon::hal/fragments/body/level_0.html" %}
+  </details>
+
+  <details name="details">
+    <summary>By Directory</summary>
+    {% include "radon::hal/fragments/body/level_1.html" %}
+  </details>
+
+  <details name="details">
+    <summary>By File</summary>
+    {% include "radon::hal/fragments/body/level_2.html" %}
+  </details>
+
+  <details name="details">
+    <summary>By Entity</summary>
+    {% include "radon::hal/fragments/body/level_3.html" %}
+  </details>
+
+  <details name="details">
+    <summary>Derived Metrics</summary>
+    {% include "radon::hal/fragments/body/level_d.html" %}
+  </details>
+
+  <details name="details">
+    <summary>Trends</summary>
+    <section>
+      <div class="chart-grid">
+        {% for chart in chart_h.values() %}
+        <article class="chart-card">
+          <div class="chart-placeholder">{{ chart }}</div>
+        </article>
+        {% endfor %}
+
+      </div>
+    </section>
+
+  </details>
+
+</section>
+
+<hr />
+
+<h6>As Of {{ as_of }}</h6>

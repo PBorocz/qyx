@@ -1,0 +1,21 @@
+<table id="level_2" class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left">File</th>
+      {% for thead in level_2.thead %}
+        <th scope="col" style="text-align: right">{{ thead }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      {% for tbody in level_2.tbody %}
+        <td style="text-align: left">{{ tbody.directory_filename }}</td>
+          {% for value in tbody.values %}
+            <td style="text-align: right">{{ value }}</td>
+          {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<script>new Tablesort(document.getElementById('level_2'));</script>

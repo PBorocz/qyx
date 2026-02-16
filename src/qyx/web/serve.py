@@ -59,8 +59,8 @@ def serve(args: Namespace) -> None:
     # Register routes (first static and then dynamic ones)
     ################################################################################
     app.route("/static/<filepath:path>")(serve_static)  # Love how easy THIS is!
-    app.route("/")(render_page_home)
     app.route("/about")(about)
+    app.route("/")(render_page_home)
     for tool_name, o_tool in args.tools.items():
         app.route(f"/{tool_name}")(o_tool.render_web_method)
         if o_tool.render_web_module:  # Tools may not have web reporting setup yet!

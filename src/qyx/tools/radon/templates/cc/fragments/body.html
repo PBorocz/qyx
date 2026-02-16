@@ -2,27 +2,34 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "ruff::fragments/body/level_0.html" %}
+    {% include "radon::cc/fragments/body/level_0.html" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "ruff::fragments/body/level_1.html" %}
+    {% include "radon::cc/fragments/body/level_1.html" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "ruff::fragments/body/level_2.html" %}
+    {% include "radon::cc/fragments/body/level_2.html" %}
+  </details>
+
+  <details name="details">
+    <summary>By Entity</summary>
+    {% include "radon::cc/fragments/body/level_3.html" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "ruff::fragments/body/level_d.html" %}
+    {% include "radon::cc/fragments/body/level_d.html" %}
   </details>
 
   <details name="details">
     <summary>Trend</summary>
-    <div class="bordered">{{ chart_h }}</div>
+    <div class="bordered">
+      {{ chart_h }}
+    </div>
   </details>
 
 </section>

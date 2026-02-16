@@ -1,4 +1,4 @@
-"""..."""
+"""CLI rendering obo 'radon' tool."""
 
 import logging
 from argparse import Namespace

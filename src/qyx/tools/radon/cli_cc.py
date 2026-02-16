@@ -6,7 +6,6 @@ from argparse import Namespace
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan
-from qyx.tools.radon import RadonCcEntityType
 from qyx.tools.radon.models import query_cc
 from qyx.utils import format_timestamp_headers
 
@@ -21,9 +20,9 @@ def cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Rank", justify="center")
     for row in rows:
         table.add_row(
-            RadonCcEntityType(row.entity_type).plural,
-            f"{row.mean_complexity:.2f}",
-            row.get_rank(row.mean_complexity),
+            row.entity_type,
+            f"{row.complexity:.2f}",
+            row.rank,
         )
     cli_console.print(table)
 
@@ -38,9 +37,9 @@ def cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     for row in rows:
         table.add_row(
             row.directory,
-            RadonCcEntityType(row.entity_type).plural,
-            f"{row.mean_complexity:.2f}",
-            row.get_rank(row.mean_complexity),
+            row.entity_type,
+            f"{row.complexity:.2f}",
+            row.rank,
         )
     cli_console.print(table)
 
@@ -55,9 +54,9 @@ def cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     for row in rows:
         table.add_row(
             f"{row.directory}/{row.filename}",
-            RadonCcEntityType(row.entity_type).plural,
-            f"{row.mean_complexity:.2f}",
-            row.get_rank(row.mean_complexity),
+            row.entity_type,
+            f"{row.complexity:.2f}",
+            row.rank,
         )
     cli_console.print(table)
 

@@ -50,8 +50,7 @@ def test_web_rendering_methods(app_args, ingested_project, subtests):
 
             # Check if we got back any of the valid possibilities:
             # - None (is ok as some projects may not have scan or the scans have no results)
-            # - HTML (on behalf of plotly methods)
-            # - FastHTML components.
+            # - HTML
             match result:
                 case None:
                     pass

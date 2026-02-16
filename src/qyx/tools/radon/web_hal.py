@@ -1,10 +1,9 @@
-"""HAL - Level 0."""
+"""Render all Radon:HAL Metrics for page templating."""
 
 from argparse import Namespace
 from datetime import datetime
 
 import plotly.graph_objects as go
-from fasthtml import common as fh
 
 from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan
@@ -12,176 +11,89 @@ from qyx.tools.radon.models import RadonHal, query_hal
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
-def hal_0(args: Namespace, scan: Scan, project: Project = None):
+def hal_0(args: Namespace, project: Project, scan: Scan = None) -> list:
     row = query_hal(args, ReportLevel.SUMMARY, scan=scan)
-
-    # fmt: off
-    t_head = fh.Tr(
-        fh.Th("Metric", scope="col", style="text-align: left" ),
-        fh.Th("Value" , scope="col", style="text-align: right"),
-    )
-
-    t_body = []
+    return_ = []
     for attr in RadonHal.attrs():
-        t_row = fh.Tr(
-            fh.Th(fh.Span(attr.display), " ", fh.Small(attr.calculation), style="text-align: left" ),
-            fh.Td(f"{getattr(row, attr.name):.1f}"                      , style="text-align: right"),
+        value = Namespace(
+            metric=attr.display + " " + attr.calculation,
+            value=getattr(row, attr.name),
         )
-        t_body.append(t_row)
-    # fmt: on
-
-    return (
-        fh.Table(
-            fh.Thead(*t_head),
-            fh.Tbody(*t_body),
-            id="hal_0",
-        ),
-        fh.Script("new Tablesort(document.getElementById('hal_0'));"),
-    )
+        return_.append(value)
+    return return_
 
 
-def hal_1(args: Namespace, scan: Scan, project: Project = None):
-    rows, mean_means = query_hal(args, ReportLevel.DIRECTORY, scan)
-
-    t_tr = [fh.Th("Metric", scope="col", style="text-align: left")]
-    for attr in RadonHal.attrs():
-        t_tr.append(fh.Th(attr.display, scope="col", style="text-align: right"))
-    t_head = fh.Tr(*t_tr)
-
-    t_body = []
+def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
+    rows, _ = query_hal(args, ReportLevel.DIRECTORY, scan)
+    thead = [attr.display for attr in RadonHal.attrs()]
+    tbody = []
     for row in rows:
-        t_row = [fh.Th(row.directory, style="text-align: left")]
+        tbody_row = Namespace(directory=row.directory, values=[])
         for attr in RadonHal.attrs():
-            t_row.append(fh.Td(f"{getattr(row, attr.name):.2f}", style="text-align: right"))
-        t_body.append(fh.Tr(*t_row))
+            # Since these are aggregated to the directory level, all the attributes are Float!
+            tbody_row.values.append(getattr(row, attr.name))
+        tbody.append(tbody_row)
 
-    return (
-        fh.Table(
-            fh.Thead(*t_head),
-            fh.Tbody(*t_body),
-            id="hal_1",
-        ),
-        fh.Script("new Tablesort(document.getElementById('hal_1'));"),
-    )
+    return dict(thead=thead, tbody=tbody)
 
 
-def hal_2(args: Namespace, scan: Scan, project: Project = None):
+def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
     rows, _ = query_hal(args, ReportLevel.FILE, scan)
-
-    t_tr = [fh.Th("File", scope="col", style="text-align: left")]
-    for attr in RadonHal.attrs():
-        t_tr.append(fh.Th(attr.display, scope="col", style="text-align: right"))
-    t_head = fh.Tr(*t_tr)
-
-    t_body = []
+    thead = [attr.display for attr in RadonHal.attrs()]
+    tbody = []
     for row in rows:
-        t_row = [fh.Th(f"{row.directory}/{row.filename}", style="text-align: left")]
+        tbody_row = Namespace(directory_filename=f"{row.directory}/{row.filename}", values=[])
         for attr in RadonHal.attrs():
-            if attr.type == "float":
+            if attr.type == "float":  # HARDCODE
                 s_value = f"{getattr(row, attr.name):.2f}"
-            elif attr.type == "int":
+            elif attr.type == "int":  # HARDCODE
                 s_value = f"{getattr(row, attr.name):,d}"
-            t_row.append(fh.Td(s_value, style="text-align: right"))
-        t_body.append(fh.Tr(*t_row))
-
-    return (
-        fh.Table(
-            fh.Thead(*t_head),
-            fh.Tbody(*t_body),
-            id="hal_2",
-        ),
-        fh.Script("new Tablesort(document.getElementById('hal_2'));"),
-    )
+            tbody_row.values.append(s_value)
+        tbody.append(tbody_row)
+    return dict(thead=thead, tbody=tbody)
 
 
-def hal_3(args: Namespace, scan: Scan, project: Project = None):
+def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
     rows, _ = query_hal(args, ReportLevel.DETAIL, scan)
-
-    t_tr = [
-        fh.Th("File", scope="col", style="text-align: left"),
-        fh.Th("Name", scope="col", style="text-align: left"),
-    ]
-    for attr in RadonHal.attrs():
-        t_tr.append(fh.Th(attr.display, scope="col", style="text-align: right"))
-    t_head = fh.Tr(*t_tr)
-
-    t_body = []
+    thead = [attr.display for attr in RadonHal.attrs()]
+    tbody = []
     for row in rows:
-        t_row = [
-            fh.Td(f"{row.directory}/{row.filename}", style="text-align: left"),
-            fh.Td(row.name, style="text-align: left"),
-        ]
+        tbody_row = Namespace(
+            directory_filename=f"{row.directory}/{row.filename}",
+            name=row.name,
+            values=[],
+        )
         for attr in RadonHal.attrs():
-            if attr.type == "float":
-                s_value = f"{getattr(row, attr.name):.3f}"
-            elif attr.type == "int":
+            if attr.type == "float":  # HARDCODE
+                s_value = f"{getattr(row, attr.name):.2f}"
+            elif attr.type == "int":  # HARDCODE
                 s_value = f"{getattr(row, attr.name):,d}"
-            t_row.append(fh.Td(s_value, style="text-align: right"))
-        t_body.append(fh.Tr(*t_row))
-
-    return (
-        fh.Table(
-            fh.Thead(*t_head),
-            fh.Tbody(*t_body),
-            id="hal_3",
-        ),
-        fh.Script("new Tablesort(document.getElementById('hal_3'));"),
-    )
+            tbody_row.values.append(s_value)
+        tbody.append(tbody_row)
+    return dict(thead=thead, tbody=tbody)
 
 
-def hal_d(args: Namespace, project: Project, scan: Scan):
-    row = query_hal(args, ReportLevel.DERIVED, project=project, scan=scan)
-
-    t_head = fh.Tr(
-        fh.Th("Metric", scope="col", style="text-align: left"),
-        fh.Th("Value", scope="col", style="text-align: right"),
-        fh.Th("Grade", scope="col", style="text-align: center"),
-    )
-
-    t_body = (
-        fh.Tr(
-            fh.Td("Mean Bugs per kLOC", style="text-align: left"),
-            fh.Td(f"{row.bugs_d.score:.1f}", style="text-align: right"),
-            fh.Td(
-                f"{row.bugs_d.grade}",
-                style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.bugs_d.color}",
+def hal_d(args: Namespace, project: Project, scan: Scan) -> list[Namespace]:
+    metric_row = query_hal(args, ReportLevel.DERIVED, project=project, scan=scan)
+    rows = []
+    for name, attr in [
+        ("Mean Bugs per kLOC", "bugs_d"),
+        ("Mean Difficulty", "difficulty_d"),
+        ("Mean Effort per LOC", "effort_d"),
+        ("Composite Score", "composite_d"),
+    ]:
+        rows.append(
+            Namespace(
+                name=name,
+                score=getattr(metric_row, attr).score,
+                grade=getattr(metric_row, attr).grade,
+                color=getattr(metric_row, attr).color,
             ),
-        ),
-        fh.Tr(
-            fh.Td("Mean Difficulty", style="text-align: left"),
-            fh.Td(f"{row.difficulty_d.score:.1f}", style="text-align: right"),
-            fh.Td(
-                f"{row.difficulty_d.grade}",
-                style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.difficulty_d.color}",
-            ),
-        ),
-        fh.Tr(
-            fh.Td("Mean Effort per LOC", style="text-align: left"),
-            fh.Td(f"{row.effort_d.score:.1f}", style="text-align: right"),
-            fh.Td(
-                f"{row.effort_d.grade}",
-                style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.effort_d.color}",
-            ),
-        ),
-        fh.Tr(
-            fh.Td("Composite Score", style="text-align: left"),
-            fh.Td(f"{row.composite_d.score:.1f}", style="text-align: right"),
-            fh.Td(
-                f"{row.composite_d.grade}",
-                style=f"text-align: center; color: var(--pico-muted-color); background-color: {row.composite_d.color}",
-            ),
-        ),
-    )
-
-    return (
-        fh.Table(
-            fh.Thead(t_head),
-            fh.Tbody(*t_body),
-        ),
-    )
+        )
+    return rows
 
 
-def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict:
+def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str]:
     _, messages, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
     if not transposed:
         return dict()
@@ -212,7 +124,5 @@ def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict:
                 "yaxis_title": radon_names[metric],
             },
         )
-
-        charts[metric] = fig.to_html().encode()
-
+        charts[metric] = fig.to_html()
     return charts

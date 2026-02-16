@@ -1,0 +1,19 @@
+<table class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left">Metric</th>
+      <th scope="col" style="text-align: right">Value</th>
+      <th scope="col" style="text-align: center">Grade</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ns_metric in level_d %}
+    <tr>
+      <td style="text-align: left">{{ ns_metric.name }}</td>
+      <td style="text-align: right">{{ "{:.1f}".format(ns_metric.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ ns_metric.color }}">{{ ns_metric.grade }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

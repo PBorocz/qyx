@@ -1,7 +1,6 @@
 """Common web rendering chunks."""
 
 from dataclasses import dataclass
-from fasthtml import common as fh
 
 from qyx.tools.base import Project, State
 
@@ -31,6 +30,24 @@ def get_project_selector() -> list[Option]:
             selected = True if last_project and project.name.lower() == last_project.lower() else False
             option = Option(value=str(project.id), display=project.name, selected=selected)
             options.append(option)
+
+    return options
+
+
+def get_analysis_selector() -> list[Option]:
+    """Return a form to allow selection over all analyses for the specified tool."""
+    # FIXME: Make this dynamic and thus tool specific (right now, specific to Radon only!!)
+    analyses = (
+        ("raw", "Raw Metrics"),
+        ("mi", "Maintainability Index"),
+        ("hal", "Halstead Complexity Measures"),
+        ("cc", "Cyclomatic Complexity"),
+    )
+    last_analysis = State.lookup("analysis")
+    options = []
+    for value, display in analyses:
+        selected = True if last_analysis and value.lower == last_analysis.lower() else False
+        options.append(Option(value=str(value), display=display, selected=selected))
 
     return options
 

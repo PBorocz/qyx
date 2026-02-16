@@ -1,0 +1,14 @@
+{% extends "base::_base.html" %}
+
+{% block content %}
+
+<h2>"radon" - Code Metrics</h2>
+
+{% include "base::_select_project.html" %}
+
+{% include "radon::fragments/_select_analysis.html" %}
+
+{# Primary div that'll be replaced dynamically by HTMX based on project selection above #}
+  <div id="page-body-content"></div>
+
+{% endblock %}

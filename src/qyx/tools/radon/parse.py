@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-from qyx.tools.radon import RadonCcEntityType
 from qyx.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 from qyx.tools.base import Scan
 
@@ -85,17 +84,17 @@ def parse_cc(scan: Scan, data: Any) -> int:
     for fn_, entities in json_.items():
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         for entity in entities:
-            try:
-                entity_type = RadonCcEntityType(entity["type"][0].upper())
-            except ValueError:
-                bad = entity["type"][0].upper()
-                log.error(f"Invalid/unexpected EntityType encountered: '{bad}', expecting one of 'C', 'M', or 'F'")
+            entity_type = entity["type"][0].upper()
+            if not RadonCc.entity_type_display(entity_type):
+                log.error(
+                    f"Invalid/unexpected EntityType encountered: '{entity_type}', expecting one of 'C', 'M', or 'F'",
+                )
                 continue
 
             row = RadonCc(
                 directory=fn_path.parent,
                 filename=fn_path.name,
-                entity_type=entity_type.value,
+                entity_type=entity_type,
                 entity_name=entity["name"],
                 line_start=entity["lineno"],
                 line_end=entity["endline"],

@@ -2,207 +2,115 @@
 
 import logging
 from argparse import Namespace
-from typing import Any
 
-from fasthtml import common as fh
+from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.radon.models import RadonHal
-from qyx.tools.radon.web_cc import cc_0, cc_1, cc_2, cc_3, cc_h
-from qyx.tools.radon.web_hal import hal_0, hal_1, hal_2, hal_3, hal_h
-from qyx.tools.radon.web_mi import mi_0, mi_1, mi_2, mi_h
+from qyx.tools.radon.web_cc import cc_0, cc_1, cc_2, cc_3, cc_d, cc_h
+from qyx.tools.radon.web_hal import hal_0, hal_1, hal_2, hal_3, hal_d, hal_h
+from qyx.tools.radon.web_mi import mi_0, mi_1, mi_2, mi_d, mi_h
 from qyx.tools.radon.web_raw import raw_0, raw_1, raw_2, raw_h
-from qyx.web import get_project_select
-from qyx.web.page import render_page
+from qyx.web import get_analysis_selector, get_project_selector
+from qyx.web.page import render_page, render_partial
 
-log = logging.getLogger("uvicorn")
+log = logging.getLogger(__name__)
 
 
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(request, name, config):
-    """Render the primary page layout for this tools display page."""
+def render(template: str = "radon::pages/main.html") -> str:
+    """Render the tool's primary page."""
     return render_page(
-        request,
-        name.title(),
-        name,
-        *render_selectors(request, "/partials/set_project/radon"),
-        fh.Div(id="page-body-content"),  # This Div will be updated as the project changes via HTMX!
+        "QYX-RADON",
+        template,
+        project_options=get_project_selector(),
+        analysis_options=get_analysis_selector(),
+        set_project="/partials/set_project/radon",
+        set_analysis="/partials/set_project/radon",
     )
 
 
-################################################################################################
-def render_content(args: Namespace, request, s_project_id: str = None, analysis: str = None):
+def render_content() -> str:
     """Render the content portion (ie. body) of the page."""
-    return (
-        *_render_current(args, request, s_project_id, analysis),
-        *_render_history(args, request, s_project_id, analysis),
-    )
+    args = request.app.args
 
+    # Get the arguments passed from the HTMX get context:
+    s_project_id = request.query.project
+    analysis = request.query.analysis.lower()
 
-def _render_current(args: Namespace, request, s_project_id: str = None, analysis: str = None):
-    """Render current status at 3 Levels."""
-    if not s_project_id:
-        return fh.Section()
-
+    # Find the project...
     project = Project.get(Project.id == int(s_project_id))
+    if not s_project_id or not project:
+        return render_partial("base::fragments/_no_project_yet.html")
+
+    # Find the most recent scan on behalf of this project...
     scan = Scan.get_most_recent(project, "radon", analysis)
     if not scan:
-        log.warning(f"Sorry, no Scan's performed yet for radon:{analysis}")
-        return fh.Section()
+        return render_partial("base::fragments/_no_scans_yet.html")
+
+    # Populate the return context with all the data and charts
+    # necessary to render the page's body:
+    context = Namespace()
+    context.level_0 = _query_level(args, "0", project, scan, analysis)  # NOTE: Some of these might return None
+    context.level_1 = _query_level(args, "1", project, scan, analysis)  # if the level is not applicable or
+    context.level_2 = _query_level(args, "2", project, scan, analysis)  # defined for the respective analysis,
+    context.level_3 = _query_level(args, "3", project, scan, analysis)  # and that's OK!
+    context.level_d = _query_level(args, "d", project, scan, analysis)
+    context.chart_h = _query_level(args, "h", project, scan, analysis)
+    context.as_of = scan.as_of_display(collapse_today=True)
+
+    # Remember what we just processed for next time through (used by
+    # the get_project/analysis_selector's above)
     State.update(args, project=project.name, analysis=analysis)
 
-    fh_sections = [
-        fh.H1("Current Status ", fh.Small(f"As Of {scan.as_of_display()}")),
-        fh.Details(fh.Summary("Summary"), name="details", open=True, *render_level(args, 0, scan)),
-        fh.Details(fh.Summary("By Directory"), name="details", *render_level(args, 1, scan)),
-        fh.Details(fh.Summary("By File"), name="details", *render_level(args, 2, scan)),
-    ]
-    if scan.analysis.lower() in ("cc", "hal"):
-        fh_sections.append(
-            fh.Details(fh.Summary("By Item"), name="details", *render_level(args, 3, scan)),
-        )
-    return fh.Section(*fh_sections, cls="bordered")
+    # Template to return is based on the particular analysis requested:
+    template: str = f"radon::{analysis}/fragments/body.html"
+
+    return render_partial(template, **context.__dict__)
 
 
-# fmt: off
-RENDER_METHODS = {
-    "cc" : ( cc_0,  cc_1,  cc_2,  cc_3),
-    "hal": (hal_0, hal_1, hal_2, hal_3),
-    "mi" : ( mi_0,  mi_1,  mi_2,  None),
-    "raw": (raw_0, raw_1, raw_2,  None),
-}
-# fmt: on
+def _query_level(args: Namespace, level: str, project: Project, scan: Scan, analysis: str) -> dict | None:
+    """Get data associated with the specified level for the given project and scan's analysis type."""
+    # FIXME: Using the level as an int IS A BIT OF A SHORTCUT! Revisit when we move level enum to non ints.
+    # Mapping between analysis & reporting level to data query method
+    query_methods_by_analysis = {
+        "cc": {
+            "0": cc_0,
+            "1": cc_1,
+            "2": cc_2,
+            "3": cc_3,
+            "d": cc_d,
+            "h": cc_h,
+        },
+        "hal": {
+            "0": hal_0,
+            "1": hal_1,
+            "2": hal_2,
+            "3": hal_3,
+            "d": hal_d,
+            "h": hal_h,
+        },
+        "mi": {
+            "0": mi_0,
+            "1": mi_1,
+            "2": mi_2,
+            "d": mi_d,
+            "h": mi_h,
+        },
+        "raw": {
+            "0": raw_0,
+            "1": raw_1,
+            "2": raw_2,
+            "h": raw_h,
+        },
+    }
+    if analysis not in query_methods_by_analysis:  # LBYL
+        return None
+    analysis_methods = query_methods_by_analysis[analysis]
 
+    if level not in analysis_methods:
+        return None
+    analysis_method = analysis_methods[level]
 
-def render_level(args: Namespace, level: int, scan: Scan) -> Any:
-    """Render the specified level for the given scan's analysis type."""
-    analysis = scan.analysis.lower()
-
-    if analysis not in RENDER_METHODS:
-        return fh.Section()
-
-    renderers = RENDER_METHODS[analysis]
-
-    if level >= len(renderers) or renderers[level] is None:
-        return fh.Section()
-
-    return renderers[level](args, scan)
-
-
-################################################################################################
-def _render_history(args: Namespace, request, s_project_id: str = None, analysis: str = None):
-    """Render History portion of the page."""
-    if not s_project_id:
-        return fh.Section()
-    if not analysis:
-        return fh.Section(fh.P("Sorry, no analysis selected yet"))
-
-    project = Project.get(Project.id == int(s_project_id))
-
-    match analysis.lower():
-        case "cc":
-            single = True
-            chart = cc_h(args, project)
-        case "hal":
-            single = False
-            charts = hal_h(args, project)
-        case "mi":
-            single = True
-            chart = mi_h(args, project)
-        case "raw":
-            single = True
-            chart = raw_h(args, project)
-        case _:
-            raise RuntimeError(f"Sorry, unrecognised {analysis=}")
-
-    if single:
-        return fh.Section(
-            fh.H1("History", style="margin-top: 1rem;"),
-            fh.Div(
-                fh.NotStr(chart.decode("utf-8")),
-                cls="bordered",
-            ),
-        )
-
-    # Halstead gets special treatment due to the number of metrics available:
-    fh_sections = [
-        fh.H1("History...", style="margin-top: 1rem;"),
-        fh.Form(
-            fh.Fieldset(
-                fh.Select(
-                    *[fh.Option(attr.display, value=attr.name) for attr in RadonHal.attrs()],
-                    onchange="showChart(this.value)",  # this.value/value "h1", "N1", "bugs", etc.
-                    style="max-width: 300px; margin-bottom: 2rem;",
-                ),
-            ),
-        ),
-        fh.Script("""
-            function showChart(metric) {
-                // Hide all charts
-                document.querySelectorAll('[id^="metric-"]').forEach(chart => {
-                    // console.log('Hiding:', chart.id);
-                    chart.style.display = 'none';
-                });
-
-                // Show selected chart
-                const chartId = 'metric-' + metric;
-                // console.log('Looking for:', chartId);
-
-                const selectedChart = document.getElementById(chartId);
-                // console.log('Found chart:', selectedChart);
-
-                if (selectedChart) {
-                    selectedChart.style.display = 'block';
-                }
-            }
-        """),
-    ]
-    for metric, chart in charts.items():
-        fh_sections.append(
-            fh.Div(
-                fh.NotStr(chart.decode("utf-8")),
-                id=f"metric-{metric}",
-                style=f"display: {'block' if metric == 'bugs' else 'none'};",
-            ),
-        )
-    return fh.Section(*fh_sections)
-
-
-################################################################################################
-# Selectors
-################################################################################################
-def render_selectors(request, hx_get: str):
-    ############################################################################################
-    # Get our (generic) project selector widget
-    ############################################################################################
-    fh_select_project = get_project_select(request, hx_get)
-
-    ############################################################################################
-    # Get radon-specific analysis selector
-    ############################################################################################
-    analyses = (
-        ("cc", "Cyclomatic Complexity"),
-        ("mi", "Maintainability Index"),
-        ("raw", "Raw Metrics"),
-        ("hal", "Halstead Complexity Measures"),
-    )
-    fh_select_analyses = [fh.Option(description, value=value) for value, description in analyses]
-
-    # And return our COMBINED selector form (ie. across both projects and analyses)
-    return fh.Form(
-        fh.Fieldset(
-            fh_select_project,
-            fh.Select(
-                *fh_select_analyses,
-                name="analysis",
-                aria_label="Select your Radon analysis...",
-                hx_get="/partials/set_project/radon",  # HTMX endpoint
-                hx_target="#page-body-content",  # Where to update
-                hx_swap="innerHTML",  # How to update
-                hx_trigger="load, change",  # Trigger on page load *AND* selection change
-                hx_include="[name='project']",  # Include project selector value
-            ),
-        ),
-    )
+    return analysis_method(args, project, scan)

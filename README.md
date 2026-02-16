@@ -9,7 +9,7 @@
 - **Multi-Tool Integration**: Aggregate metrics from tools like CLOC, Ruff, Radon, and custom analyzers.
 - **Persistent Storage**: SQLite database for historical tracking and trend analysis.
 - **CLI Interface**: Terminal output with detailed reports at multiple levels (Rich)
-- **Web Dashboard**: Interactive dashboard (FastHTML & HTMX).
+- **Web Dashboard**: Interactive dashboard (Bottle, Jinja2 & HTMX).
 - **Git Integration**: Analyze code across commit history
 - **Configurable Grading**: Define custom thresholds and scoring for all metrics
 - **Multi-Level Reporting**: Summary, directory, file, detailed, derived, and historical views
@@ -448,7 +448,7 @@ def render_cli(scan: Scan, level: int) -> None:
 
 # web.py - Web rendering
 def render_web(scan: Scan, level: int) -> FT:
-	# Render to FastHTML
+	# Render to html with templates.
 	pass
 ```
 
@@ -463,13 +463,14 @@ QYX uses Peewee ORM with SQLite3.
 
 **Tool-Specific Tables:**
 - `cloc` - Line counting
-- `ruff` - Linting violations
-- `radon_cc` - Cyclomatic complexity
-- `radon_mi` - Maintainability index
-- `radon_hal` - Halstead metrics
-- `radon_hal_function` - Per-function Halstead
-- `radon_raw` - Raw metrics
 - `fxtd` - Annotation tracking
+- `radon_cc` - Cyclomatic complexity
+- `radon_hal_function` - Per-function Halstead
+- `radon_hal` - Halstead metrics
+- `radon_mi` - Maintainability index
+- `radon_raw` - Raw metrics
+- `ruff` - Linting violations
+- `ty` - Type checks
 
 ### Poe Tasks
 
@@ -524,14 +525,14 @@ thresholds:
 
 QYX provides multiple reporting levels for different perspectives:
 
-| Level | Name      | Description                                            |
-|-------|-----------|--------------------------------------------------------|
-| 0     | Summary   | Project-level overview with overall metrics            |
-| 1     | Directory | Directory-level aggregation                            |
-| 2     | File      | File-level detail                                      |
-| 3     | Detail    | Deep detailed metrics (function-level where available) |
-| d     | Derived   | Composite scores, rates of change, trends              |
-| h     | History   | Historical trends with charts                          |
+| Level | Description                                            |
+|-------|--------------------------------------------------------|
+| 0     | Project-level single metric                            |
+| 1     | Next level, usually directory-level detail             |
+| 2     | Next level, usually file-level detail                 |
+| 3     | Deep detailed metrics (function-level where available) |
+| d     | Derived metrics/scores, eg. scoring                    |
+| h     | Historical trends with charts                          |
 
 ## Examples
 
@@ -607,12 +608,16 @@ Ensure external tools are installed:
 ```bash
 # Check if tools are available
 which cloc
-which ruff
 which radon
+which ruff
 
 # Install missing tools
 pip install ruff radon
 # Install cloc via package manager (brew, apt, etc.)
+
+uv tool install ty
+
+etc.
 ```
 
 ### Permission Issues
@@ -635,14 +640,11 @@ This is a proof-of-concept project. Contributions are welcome!
 - Additional tool integrations (pylint, mypy, bandit, etc.)
 - Export functionality (PDF reports, CSV data)
 - Comparison views (branch comparison, before/after)
-- Alerting and thresholds
 - CI/CD integration
-- Docker containerization
-- Multi-language support
 
 ## License
 
-[Add your license here]
+MIT License
 
 ## Author
 
@@ -650,12 +652,14 @@ Péter Böröcz
 
 ## Acknowledgments
 
-Built with:
+Happily built with:
 - [Peewee](http://docs.peewee-orm.com/) - Simple and expressive ORM
-- [FastHTML](https://fastht.ml/) - Modern Python web framework
 - [Rich](https://rich.readthedocs.io/) - Beautiful terminal output
+- [Bottle](https://bottlepy.org/docs/dev/index.html) -  WSGI micro web-framework
+- [Jinja](https://jinja.palletsprojects.com/en/stable/) - Templating engine
 - [HTMX](https://htmx.org/) - Dynamic web interactions
 - [Plotly](https://plotly.com/python/) - Elegant charts
+- [Claude](https://claude.ai/) - Coding support (<5% of the code base)
 
 ## Version
 

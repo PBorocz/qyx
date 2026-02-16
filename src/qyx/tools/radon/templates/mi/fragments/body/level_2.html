@@ -1,0 +1,21 @@
+<table id="level_2" class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left">Directory</th>
+      <th scope="col" style="text-align: left">Directory</th>
+      <th scope="col" style="text-align: right">Maintainability Index</th>
+      <th scope="col" style="text-align: center">Rank</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in level_2.rows %}
+    <tr>
+      <td style="text-align: left">{{ row.directory }}</td>
+      <td style="text-align: left">{{ row.filename }}</td>
+      <td style="text-align: right">{{ "{:.2f}".format(row.mi) }}</td>
+      <td style="text-align: center">{{ row.rank }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<script>new Tablesort(document.getElementById('level_2'));</script>

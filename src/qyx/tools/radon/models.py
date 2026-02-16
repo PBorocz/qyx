@@ -72,7 +72,8 @@ class RadonCc(BaseResultsModel):
     complexity    = IntegerField(help_text="Raw complexity score")
     # fmt: on
 
-    def get_rank(self, complexity: float) -> str:
+    @classmethod
+    def rank_display(cls, complexity: float) -> str:
         """Return the grade score (aka "rank") for the given complexity measure."""
         if complexity < 5.0:
             return "A"  # low - simple block
@@ -81,11 +82,17 @@ class RadonCc(BaseResultsModel):
         elif 10.0 <= complexity < 20.0:
             return "C"  # moderate - slightly complex block
         elif 20.0 <= complexity < 30.0:
-            return ReportLevel.DERIVED  # more than moderate - more complex block
+            return "D"  # more than moderate - more complex block
         elif 30.0 <= complexity < 40.0:
             return "E"  # high - complex block, alarming
         else:
             return "F"  # very high - error-prone, unstable block
+
+    @classmethod
+    def entity_type_display(cls, entity_type: str) -> str:
+        """Return the grade score (aka "rank") for the given complexity measure."""
+        plurals = dict(C="Classes", F="Functions", M="Methods")
+        return plurals.get(entity_type.upper(), None)
 
     class Meta:
         """Define peewee meta data."""
@@ -529,9 +536,9 @@ def query_mi(
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_mi_0(mi_scan: Scan):
+def _query_mi_0(scan: Scan):
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
-    raw_scan = Scan.get_most_recent(mi_scan.request.project, "radon", "raw")
+    raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
     query = (
         RadonMi.select(
             fn.SUM(RadonRaw.loc * RadonMi.mi).alias("weighted_sum"),
@@ -545,7 +552,7 @@ def _query_mi_0(mi_scan: Scan):
                 & (RadonMi.filename == RadonRaw.filename)
             ),
         )
-        .where(RadonMi.scan_id == mi_scan.id)
+        .where(RadonMi.scan_id == scan.id)
     )
     result = query.dicts().get()
     if result["total_loc"]:
@@ -553,8 +560,8 @@ def _query_mi_0(mi_scan: Scan):
     return None
 
 
-def _query_mi_1(mi_scan: Scan) -> Any:
-    raw_scan = Scan.get_most_recent(mi_scan.request.project, "radon", "raw")
+def _query_mi_1(scan: Scan) -> Any:
+    raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
     query = (
         RadonMi.select(
             RadonMi.directory,
@@ -569,13 +576,13 @@ def _query_mi_1(mi_scan: Scan) -> Any:
                 & (RadonMi.filename == RadonRaw.filename)
             ),
         )
-        .where(RadonMi.scan_id == mi_scan.id)
+        .where(RadonMi.scan_id == scan.id)
         .group_by(RadonMi.directory)
     )
     mi_by_directory = {
         row["directory"]: row["weighted_sum"] / row["total_loc"] for row in query.dicts() if row["total_loc"]
     }
-    mi_ = _query_mi_0(mi_scan)
+    mi_ = _query_mi_0(scan)
     return mi_, mi_by_directory
 
 
@@ -588,8 +595,8 @@ def _query_mi_2(scan: Scan) -> tuple:
 def _query_mi_h(project, last: int = 5) -> Any:
     assert project
 
-    mi_scans = get_scans_for_pta(project, tool="radon", analysis="mi", last=last)
-    mi_scan_ids = [scan.id for scan in mi_scans]
+    scans = get_scans_for_pta(project, tool="radon", analysis="mi", last=last)
+    scan_ids = [scan.id for scan in scans]
 
     # Alias for the RAW scan to make the query clearer
     rawscan = Scan.alias()
@@ -618,7 +625,7 @@ def _query_mi_h(project, last: int = 5) -> Any:
                 & (rawscan.analysis == "raw")
             ),
         )
-        .where(RadonMi.scan.in_(mi_scan_ids))
+        .where(RadonMi.scan.in_(scan_ids))
         .group_by(Scan.as_of)
         .order_by(Scan.as_of.desc())
     )
@@ -668,49 +675,81 @@ def query_cc(
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_cc_0(scan: Scan) -> Any:
-    return (
+def _query_cc_0(scan: Scan) -> list:
+    query = (
         RadonCc.select(
             RadonCc.entity_type.alias("entity_type"),
-            fn.AVG(RadonCc.complexity).alias("mean_complexity"),
+            fn.AVG(RadonCc.complexity).alias("complexity"),
         )
         .where(RadonCc.scan == scan)
         .group_by(RadonCc.entity_type)
         .order_by(fn.COUNT(RadonCc.id).desc())
     )
+    return_ = []
+    for row in query:
+        row.rank = RadonCc.rank_display(row.complexity)
+        row.entity_type = RadonCc.entity_type_display(row.entity_type)
+        return_.append(row)
+    return return_
 
 
 def _query_cc_1(scan: Scan) -> Any:
-    return (
+    query = (
         RadonCc.select(
             RadonCc.directory,
             RadonCc.entity_type,
-            fn.AVG(RadonCc.complexity).alias("mean_complexity"),
+            fn.AVG(RadonCc.complexity).alias("complexity"),
         )
         .where(RadonCc.scan == scan)
         .group_by(RadonCc.directory, RadonCc.entity_type)
         .order_by(RadonCc.directory, RadonCc.entity_type)
     )
+    return_ = []
+    for row in query:
+        row.rank = RadonCc.rank_display(row.complexity)
+        row.entity_type = RadonCc.entity_type_display(row.entity_type)
+        return_.append(row)
+    return return_
 
 
 def _query_cc_2(scan: Scan) -> Any:
-    return (
+    query = (
         RadonCc.select(
             RadonCc.directory,
             RadonCc.filename,
             RadonCc.entity_type,
-            fn.AVG(RadonCc.complexity).alias("mean_complexity"),
+            fn.AVG(RadonCc.complexity).alias("complexity"),
         )
         .where(RadonCc.scan == scan)
         .group_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_type)
         .order_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_type)
     )
+    return_ = []
+    for row in query:
+        row.rank = RadonCc.rank_display(row.complexity)
+        row.entity_type = RadonCc.entity_type_display(row.entity_type)
+        return_.append(row)
+    return return_
 
 
 def _query_cc_3(scan: Scan) -> Any:
-    return (
-        RadonCc.select().where(RadonCc.scan == scan).order_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_name)
+    query = (
+        RadonCc.select()
+        .where(
+            RadonCc.scan == scan,
+        )
+        .order_by(
+            RadonCc.directory,
+            RadonCc.filename,
+            RadonCc.entity_name,
+        )
     )
+    return_ = []
+    for row in query:
+        row.rank = RadonCc.rank_display(row.complexity)
+        row.entity_type = RadonCc.entity_type_display(row.entity_type)
+        return_.append(row)
+    return return_
 
 
 def _query_cc_h(project: Project, last: int = None) -> Any:
@@ -755,16 +794,14 @@ def _query_cc_d(args: Namespace, scan: Scan):
     # Standards reference:
     # - McCabe (1976)*: CC > 10 indicates high risk
     # - NIST          : CC > 15 is concerning, > 20 is dangerous
-    from qyx.tools.radon import RadonCcEntityType  # Circular import??
-
     results = _query_cc_0(scan)
     for result in results:
         threshold_type = (
             "tools.radon.cc.classes"
-            if result.entity_type.upper() == RadonCcEntityType.CLASS.value
+            if result.entity_type.upper() == "C"  # HARD-CODE!
             else "tools.radon.cc.callables"  # ie. (F)unctions and (M)ethods
         )
-        result.cc_d = score_metric(args, threshold_type, result.mean_complexity)
+        result.cc_d = score_metric(args, threshold_type, result.complexity)
 
     return results
 

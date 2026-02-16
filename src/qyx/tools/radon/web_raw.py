@@ -3,7 +3,6 @@
 from argparse import Namespace
 from datetime import datetime
 
-from fasthtml import common as fh
 import plotly.graph_objects as go
 
 from qyx.constants import ReportLevel
@@ -12,156 +11,16 @@ from qyx.tools.radon.models import query_raw
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
-def raw_0(args: Namespace, scan: Scan, project: Project = None):
-    row = query_raw(args, ReportLevel.SUMMARY, scan=scan)
-
-    t_head = fh.Tr(
-        fh.Th(
-            "SLOC",
-            scope="col",
-            style="text-align: center",
-        ),
-        fh.Th(
-            "Multi",
-            scope="col",
-            style="text-align: center",
-        ),
-        fh.Th(
-            "Comment",
-            scope="col",
-            style="text-align: center",
-        ),
-        fh.Th(
-            "Blank",
-            scope="col",
-            style="text-align: center",
-        ),
-        fh.Th(
-            fh.B("Total"),
-            scope="col",
-            style="text-align: center",
-        ),
-    )
-
-    t_body = fh.Tr(
-        fh.Td(
-            f"{row.sloc:,}",
-            " ",
-            fh.Small(f"({row.sloc_p:.1f}%)"),
-            style="text-align: center",
-        ),
-        fh.Td(
-            f"{row.multi:,}",
-            " ",
-            fh.Small(f"({row.multi_p:.1f}%)"),
-            style="text-align: center",
-        ),
-        fh.Td(
-            f"{row.comments:,}",
-            " ",
-            fh.Small(f"({row.comments_p:.1f}%)"),
-            style="text-align: center",
-        ),
-        fh.Td(
-            f"{row.blank:,}",
-            " ",
-            fh.Small(f"({row.blank_p:.1f}%)"),
-            style="text-align: center",
-        ),
-        fh.Td(
-            fh.B(f"{row.loc:,}"),
-            style="text-align: center",
-        ),
-    )
-
-    return (
-        fh.Table(
-            fh.Thead(t_head),
-            fh.Tbody(t_body),
-            id="raw_0",
-        ),
-        fh.Script("new Tablesort(document.getElementById('raw_0'));"),
-    )
+def raw_0(args: Namespace, project: Project, scan: Scan):
+    return dict(row=query_raw(args, ReportLevel.SUMMARY, scan=scan))
 
 
-def raw_1(args: Namespace, scan: Scan, project: Project = None):
-    rows, totals = query_raw(args, ReportLevel.DIRECTORY, scan)
-
-    # fmt: off
-    t_head = fh.Tr(
-        fh.Th("Directory" , scope="col", style="text-align: left"),
-        fh.Th("SLOC"      , scope="col", style="text-align: right"),
-        fh.Th("Comment"   , scope="col", style="text-align: right"),
-        fh.Th("Multi"     , scope="col", style="text-align: right"),
-        fh.Th("Blank"     , scope="col", style="text-align: right"),
-        fh.Th("Total"     , scope="col", style="text-align: right"),
-    )
-    # fmt: on
-
-    t_body = []
-    for row in rows:
-        # fmt: off
-        t_row = fh.Tr(
-            fh.Td(row.directory       , style="text-align: left"),
-            fh.Td(f"{row.sloc:,}"     , style="text-align: right"),
-            fh.Td(f"{row.comments:,}" , style="text-align: right"),
-            fh.Td(f"{row.multi:,}"    , style="text-align: right"),
-            fh.Td(f"{row.blank:,}"    , style="text-align: right"),
-            fh.Td(f"{row.loc:,}"      , style="text-align: right"),
-        )
-        # fmt: on
-        t_body.append(t_row)
-
-    return (
-        fh.Table(
-            fh.Thead(t_head),
-            fh.Tbody(*t_body),
-            fh.Tfoot(),
-            id="raw_1",
-        ),
-        fh.Script("new Tablesort(document.getElementById('raw_1'));"),
-    )
+def raw_1(args: Namespace, project: Project, scan: Scan):
+    return dict(rows=query_raw(args, ReportLevel.DIRECTORY, scan)[0])
 
 
-def raw_2(args: Namespace, scan: Scan, project: Project = None):
-    rows = query_raw(args, ReportLevel.FILE, scan)
-
-    # fmt: off
-    t_head = fh.Tr(
-        fh.Th("Directory" , scope="col", style="text-align: left"),
-        fh.Th("File"      , scope="col", style="text-align: left"),
-        fh.Th("SLOC"      , scope="col", style="text-align: right"),
-        fh.Th("Comment"   , scope="col", style="text-align: right"),
-        fh.Th("Multi"     , scope="col", style="text-align: right"),
-        fh.Th("Blank"     , scope="col", style="text-align: right"),
-        fh.Th("Total"     , scope="col", style="text-align: right"),
-    )
-    # fmt: on
-
-    t_body = []
-    for row in rows:
-        # fmt: off
-        t_row = fh.Tr(
-            fh.Td(row.directory       , style="text-align: left"),
-            fh.Td(row.filename        , style="text-align: left"),
-            fh.Td(f"{row.sloc:,}"     , style="text-align: right"),
-            fh.Td(f"{row.comments:,}" , style="text-align: right"),
-            fh.Td(f"{row.multi:,}"    , style="text-align: right"),
-            fh.Td(f"{row.blank:,}"    , style="text-align: right"),
-            fh.Td(f"{row.loc:,}"      , style="text-align: right"),
-        )
-        # fmt: on
-        t_body.append(t_row)
-
-    return (
-        fh.Table(
-            fh.Thead(t_head),
-            fh.Tbody(*t_body),
-            fh.Tfoot(),
-            id="raw_2",
-        ),
-        fh.Script("new Tablesort(document.getElementById('raw_2'));"),
-    )
+def raw_2(args: Namespace, project: Project, scan: Scan):
+    return dict(rows=query_raw(args, ReportLevel.FILE, scan))
 
 
 def raw_h(args: Namespace, project: Project, scan: Scan = None):
@@ -193,4 +52,4 @@ def raw_h(args: Namespace, project: Project, scan: Scan = None):
         },
     )
 
-    return fig.to_html().encode()
+    return fig.to_html()

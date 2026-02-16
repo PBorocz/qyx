@@ -20,22 +20,6 @@ class AnalysisType(str, Enum):
     # fmt: on
 
 
-class RadonCcEntityType(str, Enum):
-    """Radon's Cyclomatic Complexity Entity Types."""
-
-    # fmt: off
-    CLASS    = "C"
-    FUNCTION = "F"
-    METHOD   = "M"
-    # fmt: on
-
-    @property
-    def plural(self) -> str:
-        """Return the plural."""
-        plurals = dict(C="Classes", F="Functions", M="Methods")
-        return plurals.get(self.value.upper(), "-")
-
-
 # Define the various report levels available for the CLI and Web-based report rendering.
 # fmt: off
 CLI_LEVELS_BY_ANALYSIS = {

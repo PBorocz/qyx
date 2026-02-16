@@ -1,0 +1,17 @@
+<table id="level_1" class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left"  >Directory</th>
+      <th scope="col" style="text-align: left"  >Maintainability Index</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for directory, value in level_1.rows.items() %}
+    <tr>
+      <td style="text-align: left"  >{{ directory }}</td>
+      <td style="text-align: right" >{{ "{:.2f}".format(value) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<script>new Tablesort(document.getElementById('level_1'));</script>
