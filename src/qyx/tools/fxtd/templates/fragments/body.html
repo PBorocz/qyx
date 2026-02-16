@@ -1,0 +1,42 @@
+<section>
+
+  {% if level_0.grand_total %}
+
+    <details name="details" open>
+      <summary>Summary</summary>
+      {% include "fxtd::fragments/body/level_0.html" %}
+    </details>
+
+    <details name="details">
+      <summary>By Directory</summary>
+      {% include "fxtd::fragments/body/level_1.html" %}
+    </details>
+
+    <details name="details">
+      <summary>By File</summary>
+      {% include "fxtd::fragments/body/level_2.html" %}
+    </details>
+
+    <details name="details">
+      <summary>Derived Metrics</summary>
+      {% include "fxtd::fragments/body/level_d.html" %}
+    </details>
+
+  {% endif %}
+
+  {% if chart_h %}
+    <details name="details">
+      <summary>Trend</summary>
+      <div class="bordered">
+        {{ chart_h }}
+      </div>
+    </details>
+  {% endif %}
+
+
+
+</section>
+
+<hr />
+
+<h6>As Of {{ as_of }}</h6>

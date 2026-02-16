@@ -134,7 +134,7 @@ def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):
     """Calculate derived fxtd metrics."""
     if not (lines_of_code := get_loc(args, project)):
         log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have any LOC metrics yet!")
-        return None, None
+        return (), None
 
     score_by_type = _query_0(fxtd_scan)
     if score_by_type:  # Perfectly valid to not have any!
@@ -142,7 +142,7 @@ def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):
         composite_weighted_score = _composite_per_kloc(args, lines_of_code, score_by_type)
         return score_by_type, composite_weighted_score
     else:
-        return None, None
+        return (), None
 
 
 def _by_type_per_kloc(args: Namespace, lines_of_code: int, rows):
