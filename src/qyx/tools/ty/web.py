@@ -1,4 +1,4 @@
-"""Render web data obo running 'ruff' tool."""
+"""Render web data obo running 'ty' tool."""
 
 from argparse import Namespace
 from datetime import datetime
@@ -8,7 +8,7 @@ from bottle import request
 
 from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.ruff.models import query
+from qyx.tools.ty.models import query
 from qyx.web import get_project_selector
 from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
@@ -17,64 +17,69 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(template: str = "ruff::pages/main.html") -> str:
+def render(template: str = "ty::pages/main.html") -> str:
     """Render the primary page layout for this tools display page."""
     project_options = get_project_selector()
     return render_page(
-        "QYX-RUFF",
+        "QYX-TY",
         template,
         project_options=project_options,
-        set_project="/partials/set_project/ruff",
+        set_project="/partials/set_project/ty",
     )
 
 
 ################################################################################################
-def render_content(template: str = "ruff::fragments/body.html") -> str:
+def render_content(template: str = "ty::fragments/body.html") -> str:
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
     s_project_id = request.query.project
-    if not s_project_id:
-        render_partial(template)
-
     project = Project.get(Project.id == int(s_project_id))
-    scan = Scan.get_most_recent(project, "ruff", "ruff")
-    if not (project and scan):
-        render_partial(template)
+    if not s_project_id or not project:
+        return render_partial("base::fragments/_no_project_yet.html")
 
-    State.update(args, project=project.name, analysis="ruff")
+    scan = Scan.get_most_recent(project, "ty", "ty")
+    if not scan:
+        return render_partial("base::fragments/_no_scans_yet.html")
+
+    State.update(args, project=project.name, analysis="ty")
 
     # fmt: off
     context = Namespace()
     context.as_of   = scan.as_of_display(collapse_today=True)
-    context.level_0 = ruff_0(args, scan)
-    context.level_1 = ruff_1(args, scan)
-    context.level_2 = ruff_2(args, scan)
-    context.level_d = ruff_d(args, scan, project)
-    context.chart_h = ruff_h(args, project)
+    context.level_0 = ty_0(args, scan)
+    context.level_1 = ty_1(args, scan)
+    context.level_2 = ty_2(args, scan)
+    context.level_3 = ty_3(args, scan)
+    context.level_d = ty_d(args, scan, project)
+    context.chart_h = ty_h(args, project)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
 
-def ruff_0(args: Namespace, scan: Scan, **kwargs):
+def ty_0(args: Namespace, scan: Scan, **kwargs):
     return dict(row=query(args, ReportLevel.SUMMARY, scan=scan))
 
 
-def ruff_1(args: Namespace, scan: Scan, project: Project = None):
+def ty_1(args: Namespace, scan: Scan, project: Project = None):
     summary = query(args, ReportLevel.SUMMARY, scan=scan)
     results = query(args, ReportLevel.DIRECTORY, scan=scan)
     return dict(summary=summary, results=results)
 
 
-def ruff_2(args: Namespace, scan: Scan, project: Project = None):
+def ty_2(args: Namespace, scan: Scan, project: Project = None):
     return dict(rows=query(args, ReportLevel.FILE, scan=scan))
 
 
-def ruff_d(args: Namespace, scan: Scan, project: Project):
-    """Report on derived ruff metrics."""
+def ty_3(args: Namespace, scan: Scan, project: Project = None):
+    return dict(rows=query(args, ReportLevel.DETAIL, scan=scan))
+
+
+def ty_d(args: Namespace, scan: Scan, project: Project):
+    """Report on derived ty metrics."""
     return dict(row=query(args, ReportLevel.DERIVED, project=project, scan=scan))
 
 
-def ruff_h(args: Namespace, project: Project, scan: Scan = None):
+def ty_h(args: Namespace, project: Project, scan: Scan = None):
     """Render the history chart of number of issues over time."""
     _, messages, rows, _ = query(args, ReportLevel.HISTORY, project=project)
     if not rows:
@@ -88,11 +93,11 @@ def ruff_h(args: Namespace, project: Project, scan: Scan = None):
     for count in y_values:
         match count:
             case 0:
-                s_y_values.append("No Ruff Issues!")
+                s_y_values.append("No Ty Issues!")
             case 1:
-                s_y_values.append(f"{count} Ruff Issue")
+                s_y_values.append(f"{count} Ty Issue")
             case _:
-                s_y_values.append(f"{count} Ruff Issues")
+                s_y_values.append(f"{count} Ty Issues")
     labels = custom_labels("", messages, x_values, s_y_values)
 
     fig = go.Figure()
@@ -111,7 +116,7 @@ def ruff_h(args: Namespace, project: Project, scan: Scan = None):
     style_figure(
         fig,
         layout={
-            "yaxis_title": "Ruff Issues",
+            "yaxis_title": "Ty Issues",
         },
     )
 

@@ -15,9 +15,9 @@ command_line_defaults:
 renderers:
   web:
     dashboard:
-      tool_order: ["cloc", "ruff", "radon", "fxtd"]
+      tool_order: ["cloc", "ruff", "radon", "fxtd", "ty"]
     ui:
-      tool_order: ["cloc", "ruff", "radon", "fxtd"]
+      tool_order: ["cloc", "ruff", "radon", "fxtd", "ty"]
   cli:
     colors:
       positive: "red"

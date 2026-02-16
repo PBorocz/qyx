@@ -2,35 +2,33 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "cloc::fragments/body/summary.html" %}
+    {% include "ty::fragments/body/level_0.html" %}
+  </details>
+
+  <details name="details">
+    <summary>By Check</summary>
+    {% include "ty::fragments/body/level_1.html" %}
   </details>
 
   <details name="details">
     <summary>Directory</summary>
-    {% include "cloc::fragments/body/directory.html" %}
+    {% include "ty::fragments/body/level_2.html" %}
   </details>
 
   <details name="details">
     <summary>File</summary>
-    {% include "cloc::fragments/body/file.html" %}
+    {% include "ty::fragments/body/level_3.html" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "cloc::fragments/body/derived.html" %}
+    {% include "ty::fragments/body/level_d.html" %}
   </details>
 
   <details name="details">
     <summary>Trend</summary>
     <div class="bordered">
       {{ chart_h }}
-    </div>
-  </details>
-
-  <details name="details">
-    <summary>File Sizes</summary>
-    <div class="bordered">
-      {{ chart_f }}
     </div>
   </details>
 

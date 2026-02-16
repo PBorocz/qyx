@@ -66,7 +66,7 @@ def ty_2(args: Namespace, scan: Scan) -> None:
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Directory")
     table.add_column("Check")
-    table.add_column("Description")
+    table.add_column("Count")
     for row in rows:
         table.add_row(row.directory, row.check_name, f"{row.count:,d}")
     cli_console.print(table)
@@ -98,7 +98,7 @@ def ty_d(args: Namespace, project: Project, scan: Scan) -> None:
         )
     if row.weighted_violations_per_kloc:
         table.add_row(
-            "Weighted Ty Issues per kLOC",
+            "Weighted Ty Checks per kLOC",
             f"{row.weighted_violations_per_kloc.score:.0f}",
             f"{row.weighted_violations_per_kloc.grade}",
         )

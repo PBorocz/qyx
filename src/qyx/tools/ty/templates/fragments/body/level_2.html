@@ -1,0 +1,20 @@
+<table id="level_2" class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left">Directory</th>
+      <th scope="col" style="text-align: left">Check</th>
+      <th scope="col" style="text-align: left">Count</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in level_2.rows %}
+    <tr>
+      <td style="text-align: left">{{ row.directory }}</td>
+      <td style="text-align: left">{{ row.check_name }}</td>
+      <td style="text-align: left">{{ "{:,d}".format(row.count) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>new Tablesort(document.getElementById('level_2'));</script>

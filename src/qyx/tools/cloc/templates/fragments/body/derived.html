@@ -10,25 +10,25 @@
   <tbody>
     <tr>
       <td style="text-align: left">File Density</td>
-      <td style="text-align: center">{{ "{:.0f}".format(cloc_d.row.avg_lines_per_file.score) }}</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_d.row.avg_lines_per_file.color }}">
-        {{ cloc_d.row.avg_lines_per_file.grade }}
+      <td style="text-align: center">{{ "{:.0f}".format(level_d.row.avg_lines_per_file.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ level_d.row.avg_lines_per_file.color }}">
+        {{ level_d.row.avg_lines_per_file.grade }}
       </td>
       <td style="text-align: left"><small>Average LoC per File</small></td>
     </tr>
     <tr>
       <td style="text-align: left">Code Density</td>
-      <td style="text-align: center">{{ "{:.0f}".format(cloc_d.row.code_density.score) }}%</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_d.row.code_density.color }}">
-        {{ cloc_d.row.code_density.grade }}
+      <td style="text-align: center">{{ "{:.0f}".format(level_d.row.code_density.score) }}%</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ level_d.row.code_density.color }}">
+        {{ level_d.row.code_density.grade }}
       </td>
       <td style="text-align: left"><small>LOC / (LOC + Blanks)</small></td>
     </tr>
     <tr>
       <td style="text-align: left">Comment Ratio</td>
-      <td style="text-align: center">{{ "{:.0f}".format(cloc_d.row.comment_ratio.score) }}%</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_d.row.comment_ratio.color }}">
-        {{ cloc_d.row.comment_ratio.grade }}
+      <td style="text-align: center">{{ "{:.0f}".format(level_d.row.comment_ratio.score) }}%</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ level_d.row.comment_ratio.color }}">
+        {{ level_d.row.comment_ratio.grade }}
       </td>
       <td style="text-align: left"><small>Comments / (Comment + LOC)</small></td>
     </tr>

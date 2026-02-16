@@ -43,12 +43,12 @@ def render_content(template: str = "cloc::fragments/body.html"):
     # fmt: off
     context = Namespace()
     context.as_of   = scan.as_of_display(collapse_today=True)
-    context.cloc_0  = query(args, ReportLevel.SUMMARY, scan=scan)
-    context.cloc_1  = cloc_1(args, scan)
-    context.cloc_2  = cloc_2(args, scan)
-    context.cloc_d  = cloc_d(args, scan, project)
+    context.level_0 = query(args, ReportLevel.SUMMARY, scan=scan)
+    context.level_1 = cloc_1(args, scan)
+    context.level_2 = cloc_2(args, scan)
+    context.level_d = cloc_d(args, scan, project)
     context.chart_f = cloc_f(args, scan)
-    context.chart_t = cloc_h(args, project)
+    context.chart_h = cloc_h(args, project)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
