@@ -1,24 +1,15 @@
-<form>
-
-  <fieldset>
-
-    <select name="project"
-            aria-label="Select your project..."
-            hx-get={{ set_project }}       {# HTMX endpoint #}
-            hx-target="#page-body-content" {# Where to update #}
-            hx-swap="innerHTML"            {# What to update semantic #}
-            hx-trigger="load, change"      {# Trigger on page load *AND* selection change #}
-            hx-include="[name='analysis']" {# Include analysis selector value #}
-    >
-      {% for option in project_options %}
-        <option value="{{ option.value }}"
+<select name="project"
+        aria-label="Select your project..."
+        hx-get={{ set_project }}       {# HTMX endpoint #}
+        hx-target="#page-body-content" {# Where to update #}
+        hx-swap="innerHTML"            {# What to update semantic #}
+        hx-trigger="load, change"      {# Trigger on page load *AND* selection change #}
+        hx-include="[name='analysis']" {# Include analysis selector value #}
+>
+  {% for option in project_options %}
+  <option value="{{ option.value }}"
           {% if option.selected %}selected{% endif %}>
-          {{ option.display}}
-        </option>
-      {% endfor %}
-
-    </select>
-
-  </fieldset>
-
-</form>
+    {{ option.display}}
+  </option>
+  {% endfor %}
+</select>
