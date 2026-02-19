@@ -1,40 +1,17 @@
-"""CLI rendering obo 'radon' tool."""
+"""..."""
 
 import logging
 from argparse import Namespace
-from collections import defaultdict
-from typing import Callable
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel
-from qyx.tools.base import Project, Scan, ToolType
+from qyx.tools.base import Project, Scan
 from qyx.tools.radon.models import query_cc
-from qyx.tools.radon.models import query_hal, RadonHal
-from qyx.tools.radon.models import query_mi
-from qyx.tools.radon.models import query_raw
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
 
-def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -> None:
-    if not (scan := Scan.get_most_recent(project, "radon", analysis)):
-        log.info(f"Sorry, we haven't performed a '{analysis}' measurement yet for this project.")
-        return None
-
-    method: Callable = globals().get(f"{analysis}_{args.level.lower()}")  # Lookup from below..
-    if not method:
-        log.error(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
-        return
-    method(args, project=project, scan=scan)
-
-
-################################################################################################
-# View methods
-################################################################################################
-################################################################################
-# CC
-################################################################################
 def cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     rows = query_cc(args, ReportLevel.SUMMARY, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
@@ -149,11 +126,20 @@ def cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         table.add_row(*t_row)
 
     cli_console.print(table)
+"""..."""
+
+import logging
+from argparse import Namespace
+
+from qyx.cli import cli_console, cli_table
+from qyx.constants import ReportLevel
+from qyx.tools.base import Project, Scan
+from qyx.tools.radon.models import query_hal, RadonHal
+from qyx.utils import format_timestamp_headers
+
+log = logging.getLogger(__name__)
 
 
-################################################################################
-# HAL
-################################################################################
 def hal_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     row = query_hal(args, ReportLevel.SUMMARY, scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
@@ -264,11 +250,20 @@ def hal_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
         table.add_row(*t_row)
 
     cli_console.print(table)
+"""..."""
+
+import logging
+from argparse import Namespace
+
+from qyx.cli import cli_console, cli_table
+from qyx.constants import ReportLevel
+from qyx.tools.base import Project, Scan
+from qyx.tools.radon.models import query_mi
+from qyx.utils import format_timestamp_headers
+
+log = logging.getLogger(__name__)
 
 
-################################################################################
-# MI
-################################################################################
 def mi_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     mi_ = query_mi(args, ReportLevel.SUMMARY, scan)
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_header=False)
@@ -357,11 +352,22 @@ def mi_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_row(*row)
 
     cli_console.print(table)
+"""..."""
+
+import logging
+from argparse import Namespace
+from collections import defaultdict
+
+from qyx.cli import cli_console, cli_table
+from qyx.constants import ReportLevel
+from qyx.tools.base import Project, Scan
+from qyx.tools.radon.models import query_raw
+
+from qyx.utils import format_timestamp_headers
+
+log = logging.getLogger(__name__)
 
 
-################################################################################
-# RAW
-################################################################################
 def raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}")
     # fmt: off

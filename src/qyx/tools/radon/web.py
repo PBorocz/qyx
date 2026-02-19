@@ -2,16 +2,23 @@
 
 import logging
 from argparse import Namespace
+from datetime import datetime
 
 from bottle import request
 
+from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.radon.web_cc import cc_0, cc_1, cc_2, cc_3, cc_d, cc_h
-from qyx.tools.radon.web_hal import hal_0, hal_1, hal_2, hal_3, hal_d, hal_h
-from qyx.tools.radon.web_mi import mi_0, mi_1, mi_2, mi_d, mi_h
-from qyx.tools.radon.web_raw import raw_0, raw_1, raw_2, raw_h
+from qyx.tools.radon.models import RadonCc, query_cc
+from qyx.tools.radon.models import RadonHal, query_hal
+from qyx.tools.radon.models import query_mi
+from qyx.tools.radon.models import query_raw
 from qyx.web import get_analysis_selector, get_project_selector
 from qyx.web.page import render_page, render_partial
+
+import plotly.graph_objects as go
+
+from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
+
 
 log = logging.getLogger(__name__)
 
@@ -52,12 +59,12 @@ def render_content() -> str:
     # Populate the return context with all the data and charts
     # necessary to render the page's body:
     context = Namespace()
-    context.level_0 = _query_level(args, "0", project, scan, analysis)  # NOTE: Some of these might return None
-    context.level_1 = _query_level(args, "1", project, scan, analysis)  # if the level is not applicable or
-    context.level_2 = _query_level(args, "2", project, scan, analysis)  # defined for the respective analysis,
-    context.level_3 = _query_level(args, "3", project, scan, analysis)  # and that's OK!
-    context.level_d = _query_level(args, "d", project, scan, analysis)
-    context.chart_h = _query_level(args, "h", project, scan, analysis)
+    context.level_0 = _view_data_by_level(args, "0", project, scan, analysis)  # NOTE: Some of these might return None
+    context.level_1 = _view_data_by_level(args, "1", project, scan, analysis)  # if the level is not applicable or
+    context.level_2 = _view_data_by_level(args, "2", project, scan, analysis)  # defined for the respective analysis,
+    context.level_3 = _view_data_by_level(args, "3", project, scan, analysis)  # and that's OK!
+    context.level_d = _view_data_by_level(args, "d", project, scan, analysis)
+    context.chart_h = _view_data_by_level(args, "h", project, scan, analysis)
     context.as_of = scan.as_of_display(collapse_today=True)
 
     # Remember what we just processed for next time through (used by
@@ -70,47 +77,276 @@ def render_content() -> str:
     return render_partial(template, **context.__dict__)
 
 
-def _query_level(args: Namespace, level: str, project: Project, scan: Scan, analysis: str) -> dict | None:
-    """Get data associated with the specified level for the given project and scan's analysis type."""
-    # FIXME: Using the level as an int IS A BIT OF A SHORTCUT! Revisit when we move level enum to non ints.
-    # Mapping between analysis & reporting level to data query method
-    query_methods_by_analysis = {
-        "cc": {
-            "0": cc_0,
-            "1": cc_1,
-            "2": cc_2,
-            "3": cc_3,
-            "d": cc_d,
-            "h": cc_h,
-        },
-        "hal": {
-            "0": hal_0,
-            "1": hal_1,
-            "2": hal_2,
-            "3": hal_3,
-            "d": hal_d,
-            "h": hal_h,
-        },
-        "mi": {
-            "0": mi_0,
-            "1": mi_1,
-            "2": mi_2,
-            "d": mi_d,
-            "h": mi_h,
-        },
-        "raw": {
-            "0": raw_0,
-            "1": raw_1,
-            "2": raw_2,
-            "h": raw_h,
-        },
-    }
-    if analysis not in query_methods_by_analysis:  # LBYL
+def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Scan, analysis: str) -> dict | None:
+    """Dispatch to the appropriate view method to get data obo the specified level fand analysis."""
+    # First, lookup the method below based on the analysis and level requested.
+    view_method = globals().get(f"{analysis}_{level}")
+    if not view_method:
         return None
-    analysis_methods = query_methods_by_analysis[analysis]
+    return view_method(args, project, scan)
 
-    if level not in analysis_methods:
-        return None
-    analysis_method = analysis_methods[level]
 
-    return analysis_method(args, project, scan)
+################################################################################
+# CC
+################################################################################
+def cc_0(args: Namespace, project: Project, scan: Scan) -> dict:
+    return dict(rows=query_cc(args, ReportLevel.SUMMARY, scan=scan))
+
+
+def cc_1(args: Namespace, project: Project, scan: Scan) -> dict:
+    return dict(rows=query_cc(args, ReportLevel.DIRECTORY, scan=scan))
+
+
+def cc_2(args: Namespace, project: Project, scan: Scan) -> dict:
+    return dict(rows=query_cc(args, ReportLevel.FILE, scan=scan))
+
+
+def cc_3(args: Namespace, project: Project, scan: Scan) -> dict:
+    return dict(rows=query_cc(args, ReportLevel.DETAIL, scan=scan))
+
+
+def cc_d(args: Namespace, project: Project, scan: Scan) -> dict:
+    return dict(rows=query_cc(args, ReportLevel.DERIVED, project=project, scan=scan))
+
+
+def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
+    """Render our chart to display Radon CC information."""
+    _, messages, transposed, _ = query_cc(args, ReportLevel.HISTORY, project=project, last=None)
+
+    fig = go.Figure()
+    for i, entity_type in enumerate(("C", "F", "M")):  # HARD-CODE!
+        values_by_timestamp = transposed[entity_type]
+        x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
+        y_values = [round(value, 2) for value in values_by_timestamp.values()]
+        labels = custom_labels(f"({entity_type})", messages, x_values, y_values)
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                customdata=labels,
+                hovertemplate="%{customdata}",
+                line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                mode="lines+markers",
+                name=RadonCc.entity_type_display(entity_type),
+            ),
+        )
+
+    style_figure(fig, layout={"yaxis_title": "Cyclomatic Complexity"})
+
+    return fig.to_html()
+
+
+################################################################################
+# HAL
+################################################################################
+def hal_0(args: Namespace, project: Project, scan: Scan = None) -> list:
+    row = query_hal(args, ReportLevel.SUMMARY, scan=scan)
+    return_ = []
+    for attr in RadonHal.attrs():
+        value = Namespace(
+            metric=attr.display + " " + attr.calculation,
+            value=getattr(row, attr.name),
+        )
+        return_.append(value)
+    return return_
+
+
+def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
+    rows, _ = query_hal(args, ReportLevel.DIRECTORY, scan)
+    thead = [attr.display for attr in RadonHal.attrs()]
+    tbody = []
+    for row in rows:
+        tbody_row = Namespace(directory=row.directory, values=[])
+        for attr in RadonHal.attrs():
+            # Since these are aggregated to the directory level, all the attributes are Float!
+            tbody_row.values.append(getattr(row, attr.name))
+        tbody.append(tbody_row)
+
+    return dict(thead=thead, tbody=tbody)
+
+
+def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
+    rows, _ = query_hal(args, ReportLevel.FILE, scan)
+    thead = [attr.display for attr in RadonHal.attrs()]
+    tbody = []
+    for row in rows:
+        tbody_row = Namespace(directory_filename=f"{row.directory}/{row.filename}", values=[])
+        for attr in RadonHal.attrs():
+            if attr.type == "float":  # HARDCODE
+                s_value = f"{getattr(row, attr.name):.2f}"
+            elif attr.type == "int":  # HARDCODE
+                s_value = f"{getattr(row, attr.name):,d}"
+            tbody_row.values.append(s_value)
+        tbody.append(tbody_row)
+    return dict(thead=thead, tbody=tbody)
+
+
+def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
+    rows, _ = query_hal(args, ReportLevel.DETAIL, scan)
+    thead = [attr.display for attr in RadonHal.attrs()]
+    tbody = []
+    for row in rows:
+        tbody_row = Namespace(
+            directory_filename=f"{row.directory}/{row.filename}",
+            name=row.name,
+            values=[],
+        )
+        for attr in RadonHal.attrs():
+            if attr.type == "float":  # HARDCODE
+                s_value = f"{getattr(row, attr.name):.2f}"
+            elif attr.type == "int":  # HARDCODE
+                s_value = f"{getattr(row, attr.name):,d}"
+            tbody_row.values.append(s_value)
+        tbody.append(tbody_row)
+    return dict(thead=thead, tbody=tbody)
+
+
+def hal_d(args: Namespace, project: Project, scan: Scan) -> list[Namespace]:
+    metric_row = query_hal(args, ReportLevel.DERIVED, project=project, scan=scan)
+    rows = []
+    for name, attr in [
+        ("Mean Bugs per kLOC", "bugs_d"),
+        ("Mean Difficulty", "difficulty_d"),
+        ("Mean Effort per LOC", "effort_d"),
+        ("Composite Score", "composite_d"),
+    ]:
+        rows.append(
+            Namespace(
+                name=name,
+                score=getattr(metric_row, attr).score,
+                grade=getattr(metric_row, attr).grade,
+                color=getattr(metric_row, attr).color,
+            ),
+        )
+    return rows
+
+
+def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str]:
+    _, messages, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
+    if not transposed:
+        return dict()
+
+    # This is a bit unique in that we create a chart for EACH separate metric!
+    radon_names = {attr.name: attr.display for attr in RadonHal.attrs()}
+    charts = dict()
+    for metric, values_by_timestamp in transposed.items():
+        fig = go.Figure()
+        x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
+        y_values = [round(value, 2) for value in values_by_timestamp.values()]
+        labels = custom_labels(radon_names[metric], messages, x_values, y_values)
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                customdata=labels,
+                hovertemplate="%{customdata}",
+                line_color=SERIES_COLORS[0],
+                marker_color=SERIES_COLORS[0],
+                mode="lines+markers",
+                name=radon_names[metric],
+            ),
+        )
+        style_figure(
+            fig,
+            layout={
+                "yaxis_title": radon_names[metric],
+            },
+        )
+        charts[metric] = fig.to_html()
+    return charts
+
+
+################################################################################
+# MI
+################################################################################
+def mi_0(args: Namespace, project: Project, scan: Scan) -> dict[str, float | None]:
+    return dict(metric=query_mi(args, ReportLevel.SUMMARY, scan=scan))
+
+
+def mi_1(args: Namespace, project: Project, scan: Scan):
+    return dict(rows=query_mi(args, ReportLevel.DIRECTORY, scan)[1])
+
+
+def mi_2(args: Namespace, project: Project, scan: Scan):
+    return dict(rows=query_mi(args, ReportLevel.FILE, scan)[1])
+
+
+def mi_d(args: Namespace, project: Project, scan: Scan):
+    return dict(row=query_mi(args, ReportLevel.DERIVED, project=project, scan=scan))
+
+
+def mi_h(args: Namespace, project: Project, scan: Scan):
+    """Render the maintainability index chart."""
+    messages, rows, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
+    x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
+    y_values = [round(value, 2) for value in rows.values()]
+    labels = custom_labels("", messages, x_values, y_values)
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode="lines+markers",
+            marker_color=SERIES_COLORS[0],
+            line_color=SERIES_COLORS[0],
+            customdata=labels,
+            hovertemplate="%{customdata}",
+        ),
+    )
+    style_figure(
+        fig,
+        layout={
+            "yaxis_title": "Maintainability Index",
+        },
+    )
+    return fig.to_html()
+
+
+################################################################################
+# RAW
+################################################################################
+
+
+def raw_0(args: Namespace, project: Project, scan: Scan):
+    return dict(row=query_raw(args, ReportLevel.SUMMARY, scan=scan))
+
+
+def raw_1(args: Namespace, project: Project, scan: Scan):
+    return dict(rows=query_raw(args, ReportLevel.DIRECTORY, scan)[0])
+
+
+def raw_2(args: Namespace, project: Project, scan: Scan):
+    return dict(rows=query_raw(args, ReportLevel.FILE, scan))
+
+
+def raw_h(args: Namespace, project: Project, scan: Scan = None):
+    """Create chart obo all Raw metrics."""
+    _, messages, transposed, _, _ = query_raw(args, ReportLevel.HISTORY, project=project, last=None)
+
+    fig = go.Figure()
+    for i, (metric, dt_rows) in enumerate(list(transposed.items())):
+        x_values = [datetime.fromisoformat(ts_) for ts_ in dt_rows.keys()]
+        y_values = list(dt_rows.values())
+        labels = custom_labels(metric.upper(), messages, x_values, y_values)
+        fig.add_trace(
+            go.Scatter(
+                line_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                marker_color=SERIES_COLORS[i % len(SERIES_COLORS)],
+                mode="lines+markers",
+                name=metric.upper(),
+                x=x_values,
+                y=y_values,
+                customdata=labels,
+                hovertemplate="%{customdata}",
+            ),
+        )
+
+    style_figure(
+        fig,
+        layout={
+            "yaxis_title": "Number of Lines",
+        },
+    )
+
+    return fig.to_html()
