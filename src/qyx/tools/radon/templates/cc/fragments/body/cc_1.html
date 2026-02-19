@@ -1,25 +1,22 @@
-<table id="level_3" class="striped">
+<table id="level_1" class="striped">
   <thead>
     <tr>
       <th scope="col" style="text-align: left"  >Directory</th>
-      <th scope="col" style="text-align: left"  >File</th>
-      <th scope="col" style="text-align: left"  >Entity Name</th>
       <th scope="col" style="text-align: left"  >Entity Type</th>
       <th scope="col" style="text-align: right" >Complexity</th>
       <th scope="col" style="text-align: center">Rank</th>
     </tr>
   </thead>
   <tbody>
-    {% for row in level_3.rows %}
+    {% for row in cc_1.rows %}
     <tr>
       <td style="text-align: left"  >{{ row.directory                   }}</td>
-      <td style="text-align: left"  >{{ row.filename                    }}</td>
       <td style="text-align: left"  >{{ row.entity_type                 }}</td>
-      <td style="text-align: left"  >{{ row.entity_name                 }}</td>
       <td style="text-align: right" >{{ "{:.2f}".format(row.complexity) }}</td>
+      {# FIXME: Would be nice to have all row.ranks color-coded as we do on level_d! #}
       <td style="text-align: center">{{ row.rank                        }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
-<script>new Tablesort(document.getElementById('level_3'));</script>
+<script>new Tablesort(document.getElementById('level_1'));</script>

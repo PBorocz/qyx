@@ -27,34 +27,34 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "radon::hal/fragments/body/level_0.html" %}
+    {% include "radon::hal/fragments/body/hal_0.html" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "radon::hal/fragments/body/level_1.html" %}
+    {% include "radon::hal/fragments/body/hal_1.html" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "radon::hal/fragments/body/level_2.html" %}
+    {% include "radon::hal/fragments/body/hal_2.html" %}
   </details>
 
   <details name="details">
     <summary>By Entity</summary>
-    {% include "radon::hal/fragments/body/level_3.html" %}
+    {% include "radon::hal/fragments/body/hal_3.html" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "radon::hal/fragments/body/level_d.html" %}
+    {% include "radon::hal/fragments/body/hal_d.html" %}
   </details>
 
   <details name="details">
     <summary>Trends</summary>
     <section>
       <div class="chart-grid">
-        {% for chart in chart_h.values() %}
+        {% for chart in hal_h.values() %}
         <article class="chart-card">
           <div class="chart-placeholder">{{ chart }}</div>
         </article>
@@ -69,4 +69,4 @@
 
 <hr />
 
-<h6>As Of {{ as_of }}</h6>
+<h6>As Of {{ hal_as_of }}</h6>

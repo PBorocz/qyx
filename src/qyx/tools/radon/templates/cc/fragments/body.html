@@ -2,38 +2,36 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "radon::cc/fragments/body/level_0.html" %}
+    {% include "radon::cc/fragments/body/cc_0.html" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "radon::cc/fragments/body/level_1.html" %}
+    {% include "radon::cc/fragments/body/cc_1.html" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "radon::cc/fragments/body/level_2.html" %}
+    {% include "radon::cc/fragments/body/cc_2.html" %}
   </details>
 
   <details name="details">
     <summary>By Entity</summary>
-    {% include "radon::cc/fragments/body/level_3.html" %}
+    {% include "radon::cc/fragments/body/cc_3.html" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "radon::cc/fragments/body/level_d.html" %}
+    {% include "radon::cc/fragments/body/cc_d.html" %}
   </details>
 
   <details name="details">
     <summary>Trend</summary>
-    <div class="bordered">
-      {{ chart_h }}
-    </div>
+    <div class="bordered">{{ cc_h }}</div>
   </details>
 
 </section>
 
 <hr />
 
-<h6>As Of {{ as_of }}</h6>
+<h6>As Of {{ cc_as_of }}</h6>

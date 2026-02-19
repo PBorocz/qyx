@@ -2,31 +2,31 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "radon::mi/fragments/body/level_0.html" %}
+    {% include "radon::mi/fragments/body/mi_0.html" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "radon::mi/fragments/body/level_1.html" %}
+    {% include "radon::mi/fragments/body/mi_1.html" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "radon::mi/fragments/body/level_2.html" %}
+    {% include "radon::mi/fragments/body/mi_2.html" %}
   </details>
 
   <details name="details">
     <summary>Metrics Derived</summary>
-    {% include "radon::mi/fragments/body/level_d.html" %}
+    {% include "radon::mi/fragments/body/mi_d.html" %}
   </details>
 
   <details name="details">
     <summary>Trends</summary>
-    <div class="bordered">{{ chart_h }}</div>
+    <div class="bordered">{{ mi_h }}</div>
   </details>
 
 </section>
 
 <hr />
 
-<h6>As Of {{ as_of }}</h6>
+<h6>As Of {{ mi_as_of }}</h6>

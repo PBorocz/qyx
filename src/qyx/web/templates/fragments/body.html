@@ -1,0 +1,59 @@
+<style>
+ .dashboard-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+   gap: 1rem;
+ }
+
+ .dashboard-card {
+   background: var(--card-background-color);
+   border-radius: var(--border-radius);
+   padding: 1rem;
+   border: 1px solid var(--muted-border-color);
+ }
+
+ .dashboard-placeholder {
+   background: var(--code-background-color);
+   /* height: 400px; */
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border-radius: var(--border-radius);
+   color: var(--muted-color);
+ }
+
+ /* We want our "as of" dates embedded in our titles to be really smaller */
+ .as-of {
+   font-size: 0.7rem;
+ }
+
+
+</style>
+
+<section>
+  <div class="dashboard-grid">
+    {% for tool, analysis in analyses %}
+    <article class="dashboard-card">
+      <div>
+        {% if tool == analysis %}
+
+        <h4>{{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
+        {% include tool ~ "::fragments/body/level_0.html" %}
+        {% include tool ~ "::fragments/body/level_d.html" %}
+
+        {% else %}
+
+        <h4>{{ tool.upper() }} - {{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
+        {% include tool ~ "::" ~ analysis ~ "/fragments/body/" ~ analysis ~ "_0.html" %}
+        {% include tool ~ "::" ~ analysis ~ "/fragments/body/" ~ analysis ~ "_d.html" %}
+
+        {% endif %}
+
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+</section>
+
+<hr />

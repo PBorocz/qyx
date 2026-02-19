@@ -59,13 +59,15 @@ def render_content() -> str:
     # Populate the return context with all the data and charts
     # necessary to render the page's body:
     context = Namespace()
-    context.level_0 = _view_data_by_level(args, "0", project, scan, analysis)  # NOTE: Some of these might return None
-    context.level_1 = _view_data_by_level(args, "1", project, scan, analysis)  # if the level is not applicable or
-    context.level_2 = _view_data_by_level(args, "2", project, scan, analysis)  # defined for the respective analysis,
-    context.level_3 = _view_data_by_level(args, "3", project, scan, analysis)  # and that's OK!
-    context.level_d = _view_data_by_level(args, "d", project, scan, analysis)
-    context.chart_h = _view_data_by_level(args, "h", project, scan, analysis)
-    context.as_of = scan.as_of_display(collapse_today=True)
+    # NOTE: Some of these might return None if the level is not
+    # applicable or defined for the respective analysis, and that's OK!
+    setattr(context, f"{analysis}_as_of", scan.as_of_display(collapse_today=True))
+    setattr(context, f"{analysis}_0", _view_data_by_level(args, "0", project, scan, analysis))
+    setattr(context, f"{analysis}_1", _view_data_by_level(args, "1", project, scan, analysis))
+    setattr(context, f"{analysis}_2", _view_data_by_level(args, "2", project, scan, analysis))
+    setattr(context, f"{analysis}_3", _view_data_by_level(args, "3", project, scan, analysis))
+    setattr(context, f"{analysis}_d", _view_data_by_level(args, "d", project, scan, analysis))
+    setattr(context, f"{analysis}_h", _view_data_by_level(args, "h", project, scan, analysis))
 
     # Remember what we just processed for next time through (used by
     # the get_project/analysis_selector's above)
@@ -318,6 +320,11 @@ def raw_1(args: Namespace, project: Project, scan: Scan):
 
 def raw_2(args: Namespace, project: Project, scan: Scan):
     return dict(rows=query_raw(args, ReportLevel.FILE, scan))
+
+
+def raw_d(args: Namespace, project: Project, scan: Scan):
+    """Stub to make this analysis match others."""
+    return None
 
 
 def raw_h(args: Namespace, project: Project, scan: Scan = None):

@@ -32,9 +32,10 @@ def render(template: str = "ty::pages/main.html") -> str:
 def render_content(template: str = "ty::fragments/body.html") -> str:
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
+
     s_project_id = request.query.project
-    project = Project.get(Project.id == int(s_project_id))
-    if not s_project_id or not project:
+    project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
+    if not project:
         return render_partial("base::fragments/_no_project_yet.html")
 
     scan = Scan.get_most_recent(project, "ty", "ty")
@@ -45,41 +46,41 @@ def render_content(template: str = "ty::fragments/body.html") -> str:
 
     # fmt: off
     context = Namespace()
-    context.as_of   = scan.as_of_display(collapse_today=True)
-    context.level_0 = ty_0(args, scan)
-    context.level_1 = ty_1(args, scan)
-    context.level_2 = ty_2(args, scan)
-    context.level_3 = ty_3(args, scan)
-    context.level_d = ty_d(args, scan, project)
-    context.chart_h = ty_h(args, project)
+    context.ty_as_of = scan.as_of_display(collapse_today=True)
+    context.ty_0 = ty_0(args, project, scan)
+    context.ty_1 = ty_1(args, project, scan)
+    context.ty_2 = ty_2(args, project, scan)
+    context.ty_3 = ty_3(args, project, scan)
+    context.ty_d = ty_d(args, project, scan)
+    context.ty_h = ty_h(args, project, scan)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
 
-def ty_0(args: Namespace, scan: Scan, **kwargs):
+def ty_0(args: Namespace, project: Project, scan: Scan):
     return dict(row=query(args, ReportLevel.SUMMARY, scan=scan))
 
 
-def ty_1(args: Namespace, scan: Scan, project: Project = None):
+def ty_1(args: Namespace, project: Project, scan: Scan):
     summary = query(args, ReportLevel.SUMMARY, scan=scan)
     results = query(args, ReportLevel.DIRECTORY, scan=scan)
     return dict(summary=summary, results=results)
 
 
-def ty_2(args: Namespace, scan: Scan, project: Project = None):
+def ty_2(args: Namespace, project: Project, scan: Scan):
     return dict(rows=query(args, ReportLevel.FILE, scan=scan))
 
 
-def ty_3(args: Namespace, scan: Scan, project: Project = None):
+def ty_3(args: Namespace, project: Project, scan: Scan):
     return dict(rows=query(args, ReportLevel.DETAIL, scan=scan))
 
 
-def ty_d(args: Namespace, scan: Scan, project: Project):
+def ty_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ty metrics."""
     return dict(row=query(args, ReportLevel.DERIVED, project=project, scan=scan))
 
 
-def ty_h(args: Namespace, project: Project, scan: Scan = None):
+def ty_h(args: Namespace, project: Project, scan: Scan):
     """Render the history chart of number of issues over time."""
     _, messages, rows, _ = query(args, ReportLevel.HISTORY, project=project)
     if not rows:

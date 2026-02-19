@@ -29,48 +29,50 @@ def render(template: str = "cloc::pages/main.html") -> str:
 def render_content(template: str = "cloc::fragments/body.html"):
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
-    s_project_id = request.query.project
-    if not s_project_id:
-        # FIXME: Make this use the template that notifies of an empty project
-        render_partial(template)
 
-    project = Project.get(Project.id == int(s_project_id))
+    s_project_id = request.query.project
+    project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
+    if not project:
+        return render_partial("base::fragments/_no_project_yet.html")
+
     scan = Scan.get_most_recent(project, "cloc", "cloc")
-    if not (project and scan):
-        render_partial(template)
+    if not scan:
+        return render_partial("base::fragments/_no_scans_yet.html")
 
     State.update(args, project=project.name, analysis="cloc")
 
-    # fmt: off
     context = Namespace()
-    context.as_of   = scan.as_of_display(collapse_today=True)
-    context.level_0 = query(args, ReportLevel.SUMMARY, scan=scan)
-    context.level_1 = cloc_1(args, scan)
-    context.level_2 = cloc_2(args, scan)
-    context.level_d = cloc_d(args, scan, project)
-    context.chart_f = cloc_f(args, scan)
-    context.chart_h = cloc_h(args, project)
-    # fmt: on
+    context.cloc_as_of = scan.as_of_display(collapse_today=True)
+    context.cloc_0 = cloc_0(args, project, scan)
+    context.cloc_1 = cloc_1(args, project, scan)
+    context.cloc_2 = cloc_2(args, project, scan)
+    context.cloc_d = cloc_d(args, project, scan)
+    context.cloc_f = cloc_f(args, project, scan)
+    context.cloc_h = cloc_h(args, project, scan)
     return render_partial(template, **context.__dict__)
 
 
-def cloc_1(args: Namespace, scan: Scan, project: Project = None):
+def cloc_0(args: Namespace, project: Project, scan: Scan):
+    return query(args, ReportLevel.SUMMARY, scan=scan)
+
+
+def cloc_1(args: Namespace, project: Project, scan: Scan):
     return dict(
         grand_total=query(args, ReportLevel.SUMMARY, scan=scan),
         detail_rows=query(args, ReportLevel.DIRECTORY, scan=scan),
     )
 
 
-def cloc_2(args: Namespace, scan: Scan, project: Project = None):
+def cloc_2(args: Namespace, project: Project, scan: Scan):
     results, column_totals, grand_total = query(args, ReportLevel.FILE, scan=scan)
     return dict(results=results, column_totals=column_totals, grand_total=grand_total)
 
 
-def cloc_d(args: Namespace, scan: Scan, project: Project):
+def cloc_d(args: Namespace, project: Project, scan: Scan):
     return dict(row=query(args, ReportLevel.DERIVED, scan=scan))
 
 
-def cloc_f(args: Namespace, scan: Scan):
+def cloc_f(args: Namespace, project: Project, scan: Scan):
     # Get bucket definitions from configuration for coloring
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     histogram = query(args, "f", scan=scan)
@@ -107,7 +109,7 @@ def cloc_f(args: Namespace, scan: Scan):
     return fig.to_html()
 
 
-def cloc_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
+def cloc_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
     _, messages, rows, _, _, _, _ = query(args, ReportLevel.HISTORY, project=project)
     if not rows:
         return None

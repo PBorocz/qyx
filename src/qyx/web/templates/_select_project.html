@@ -7,9 +7,6 @@
         hx-include="[name='analysis']" {# Include analysis selector value #}
 >
   {% for option in project_options %}
-  <option value="{{ option.value }}"
-          {% if option.selected %}selected{% endif %}>
-    {{ option.display}}
-  </option>
+    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
   {% endfor %}
 </select>

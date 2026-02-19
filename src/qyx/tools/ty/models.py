@@ -177,7 +177,6 @@ def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result: Ty
         result.violations_per_kloc = None
         return result
 
-    log.debug(f"{lines_of_code=} {result.count=}")
     metric_value = (result.count / lines_of_code) * 1000
     result.violations_per_kloc = score_metric(args, "tools.ty.violations_per_kloc", metric_value)
     return result

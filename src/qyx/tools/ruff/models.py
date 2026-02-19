@@ -137,8 +137,7 @@ def _query_h(project: Project, last: int = None):
         value_2 = transposed.get(timestamps[-2])
         value_1 = transposed.get(timestamps[-1])
         if value_2 is not None and value_1 is not None:
-            if not (roc := rate_of_change_percentage(value_2, value_1)):
-                log.debug(f"{timestamps[-2]=}:{value_2=} {timestamps[-1]=}:{value_1=}")
+            roc = rate_of_change_percentage(value_2, value_1)
 
     return timestamps, messages, transposed, roc
 

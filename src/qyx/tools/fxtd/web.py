@@ -45,39 +45,39 @@ def render_content(template: str = "fxtd::fragments/body.html") -> str:
 
     # fmt: off
     context = Namespace()
-    context.as_of   = scan.as_of_display(collapse_today=True)
-    context.level_0 = fxtd_0(args, scan)
-    context.level_1 = fxtd_1(args, scan)
-    context.level_2 = fxtd_2(args, scan)
-    context.level_d = fxtd_d(args, scan, project)
-    context.chart_h = fxtd_h(args, project)
+    context.fxtd_as_of = scan.as_of_display(collapse_today=True)
+    context.fxtd_0 = fxtd_0(args, project, scan)
+    context.fxtd_1 = fxtd_1(args, project, scan)
+    context.fxtd_2 = fxtd_2(args, project, scan)
+    context.fxtd_d = fxtd_d(args, project, scan)
+    context.fxtd_h = fxtd_h(args, project, scan)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
 
-def fxtd_0(args: Namespace, scan: Scan, **kwargs):
+def fxtd_0(args: Namespace, project: Project, scan: Scan, **kwargs):
     results = query(args, ReportLevel.SUMMARY, scan=scan)
     grand_total = sum([result.count for result in results])
     return dict(results=results, grand_total=grand_total)
 
 
-def fxtd_1(args: Namespace, scan: Scan, project: Project = None):
+def fxtd_1(args: Namespace, project: Project, scan: Scan):
     results = query(args, ReportLevel.DIRECTORY, scan=scan)
     grand_total = sum([result.count for result in results])
     return dict(results=results, grand_total=grand_total)
 
 
-def fxtd_2(args: Namespace, scan: Scan, project: Project = None):
+def fxtd_2(args: Namespace, project: Project, scan: Scan):
     return dict(rows=query(args, ReportLevel.FILE, scan=scan))
 
 
-def fxtd_d(args: Namespace, scan: Scan, project: Project):
+def fxtd_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived fxtd metrics."""
     rows, composite = query(args, ReportLevel.DERIVED, project=project, scan=scan)
     return dict(rows=rows, composite=composite)
 
 
-def fxtd_h(args: Namespace, project: Project, scan: Scan = None) -> bytes | None:
+def fxtd_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
     timestamps, messages, transposed, rocs = query(args, ReportLevel.HISTORY, project=project)
     if not transposed:
         return None

@@ -7,7 +7,7 @@
     </tr>
   </thead>
   <tbody>
-    {% for result in level_1.results %}
+    {% for result in ruff_1.results %}
     <tr>
       <td style="text-align: left">{{ result.rule_code }}</td>
       <td style="text-align: right">{{ "{:,d}".format(result.count) }}</td>
@@ -15,11 +15,11 @@
     </tr>
     {% endfor %}
   </tbody>
-  {% if level_1.results %}
+  {% if ruff_1.results %}
   <tfoot>
     <tr>
       <td style="text-align: left">TOTAL</td>
-      <td style="text-align: right">{{ "{:,d}".format(level_1.summary.count) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(ruff_1.summary.count) }}</td>
       <td style="text-align: right"></td>
     </tr>
   </tfoot>

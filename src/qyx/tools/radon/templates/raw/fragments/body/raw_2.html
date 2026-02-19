@@ -1,7 +1,8 @@
-<table id="level_1" class="striped">
+<table id="level_2" class="striped">
   <thead>
     <tr>
-      <th scope="col" style="text-align: left"  >Directory</th>
+      <th scope="col" style="text-align: left" >Directory</th>
+      <th scope="col" style="text-align: left" >File</th>
       <th scope="col" style="text-align: right">SLOC</th>
       <th scope="col" style="text-align: right">Multi</th>
       <th scope="col" style="text-align: right">Comment</th>
@@ -10,9 +11,10 @@
     </tr>
   </thead>
   <tbody>
-    {% for row in level_1.rows %}
+    {% for row in raw_2.rows %}
     <tr>
       <td style="text-align: left" >{{ row.directory }}</td>
+      <td style="text-align: left" >{{ row.filename  }}</td>
       <td style="text-align: right">{{"{:,}".format(row.sloc)     }}</td>
       <td style="text-align: right">{{"{:,}".format(row.multi)    }}</td>
       <td style="text-align: right">{{"{:,}".format(row.comments) }}</td>
@@ -22,4 +24,4 @@
     {% endfor %}
   </tbody>
 </table>
-<script>new Tablesort(document.getElementById('level_1'));</script>
+<script>new Tablesort(document.getElementById('level_2'));</script>

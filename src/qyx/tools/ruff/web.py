@@ -32,49 +32,50 @@ def render(template: str = "ruff::pages/main.html") -> str:
 def render_content(template: str = "ruff::fragments/body.html") -> str:
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
-    s_project_id = request.query.project
-    if not s_project_id:
-        render_partial(template)
 
-    project = Project.get(Project.id == int(s_project_id))
+    s_project_id = request.query.project
+    project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
+    if not project:
+        return render_partial("base::fragments/_no_project_yet.html")
+
     scan = Scan.get_most_recent(project, "ruff", "ruff")
-    if not (project and scan):
-        render_partial(template)
+    if not scan:
+        return render_partial("base::fragments/_no_scans_yet.html")
 
     State.update(args, project=project.name, analysis="ruff")
 
     # fmt: off
     context = Namespace()
-    context.as_of   = scan.as_of_display(collapse_today=True)
-    context.level_0 = ruff_0(args, scan)
-    context.level_1 = ruff_1(args, scan)
-    context.level_2 = ruff_2(args, scan)
-    context.level_d = ruff_d(args, scan, project)
-    context.chart_h = ruff_h(args, project)
+    context.ruff_as_of = scan.as_of_display(collapse_today=True)
+    context.ruff_0 = ruff_0(args, project, scan)
+    context.ruff_1 = ruff_1(args, project, scan)
+    context.ruff_2 = ruff_2(args, project, scan)
+    context.ruff_d = ruff_d(args, project, scan)
+    context.ruff_h = ruff_h(args, project, scan)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
 
-def ruff_0(args: Namespace, scan: Scan, **kwargs):
+def ruff_0(args: Namespace, project: Project, scan: Scan):
     return dict(row=query(args, ReportLevel.SUMMARY, scan=scan))
 
 
-def ruff_1(args: Namespace, scan: Scan, project: Project = None):
+def ruff_1(args: Namespace, project: Project, scan: Scan):
     summary = query(args, ReportLevel.SUMMARY, scan=scan)
     results = query(args, ReportLevel.DIRECTORY, scan=scan)
     return dict(summary=summary, results=results)
 
 
-def ruff_2(args: Namespace, scan: Scan, project: Project = None):
+def ruff_2(args: Namespace, project: Project, scan: Scan):
     return dict(rows=query(args, ReportLevel.FILE, scan=scan))
 
 
-def ruff_d(args: Namespace, scan: Scan, project: Project):
+def ruff_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ruff metrics."""
     return dict(row=query(args, ReportLevel.DERIVED, project=project, scan=scan))
 
 
-def ruff_h(args: Namespace, project: Project, scan: Scan = None):
+def ruff_h(args: Namespace, project: Project, scan: Scan):
     """Render the history chart of number of issues over time."""
     _, messages, rows, _ = query(args, ReportLevel.HISTORY, project=project)
     if not rows:

@@ -7,21 +7,21 @@
     </tr>
   </thead>
   <tbody>
-    {% if level_d.row.violations_per_kloc.score %}
+    {% if ty_d.row.violations_per_kloc.score %}
     <tr>
       <td style="text-align: left">Ty Checks Encountered per kLOC</td>
-      <td style="text-align: center">{{ "{:.0f}".format(level_d.row.violations_per_kloc.score) }}</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ level_d.row.violations_per_kloc.color }}">
-        {{ level_d.row.violations_per_kloc.grade }}
+      <td style="text-align: center">{{ "{:.0f}".format(ty_d.row.violations_per_kloc.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ ty_d.row.violations_per_kloc.color }}">
+        {{ ty_d.row.violations_per_kloc.grade }}
       </td>
     </tr>
     {% endif %}
-    {% if level_d.row.weighted_violations_per_kloc.score %}
+    {% if ty_d.row.weighted_violations_per_kloc.score %}
     <tr>
       <td style="text-align: left">Weighted Ty Checks per kLOC</td>
-      <td style="text-align: center">{{ "{:.0f}".format(level_d.row.weighted_violations_per_kloc.score) }}</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ level_d.row.weighted_violations_per_kloc.color }}">
-        {{ level_d.row.weighted_violations_per_kloc.grade }}
+      <td style="text-align: center">{{ "{:.0f}".format(ty_d.row.weighted_violations_per_kloc.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ ty_d.row.weighted_violations_per_kloc.color }}">
+        {{ ty_d.row.weighted_violations_per_kloc.grade }}
       </td>
     </tr>
     {% endif %}

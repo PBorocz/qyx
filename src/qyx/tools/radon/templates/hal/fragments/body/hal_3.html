@@ -3,14 +3,14 @@
     <tr>
       <th scope="col" style="text-align: left">File</th>
       <th scope="col" style="text-align: left">Name</th>
-      {% for thead in level_3.thead %}
+      {% for thead in hal_3.thead %}
         <th scope="col" style="text-align: right">{{ thead }}</th>
       {% endfor %}
     </tr>
   </thead>
   <tbody>
     <tr>
-      {% for tbody in level_3.tbody %}
+      {% for tbody in hal_3.tbody %}
       <td style="text-align: left">{{ tbody.directory_filename }}</td>
       <td style="text-align: left">{{ tbody.name }}</td>
       {% for value in tbody.values %}

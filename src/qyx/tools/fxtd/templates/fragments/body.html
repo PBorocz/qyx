@@ -1,6 +1,6 @@
 <section>
 
-  {% if level_0.grand_total %}
+  {% if fxtd_0.grand_total %}
 
     <details name="details" open>
       <summary>Summary</summary>
@@ -24,11 +24,11 @@
 
   {% endif %}
 
-  {% if chart_h %}
+  {% if fxtd_h %}
     <details name="details">
       <summary>Trend</summary>
       <div class="bordered">
-        {{ chart_h }}
+        {{ fxtd_h }}
       </div>
     </details>
   {% endif %}
@@ -39,4 +39,4 @@
 
 <hr />
 
-<h6>As Of {{ as_of }}</h6>
+<h6>As Of {{ fxtd_as_of }}</h6>

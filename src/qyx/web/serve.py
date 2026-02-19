@@ -12,7 +12,7 @@ from bottle import Bottle
 from bottle import static_file
 from jinja2 import Environment, FileSystemLoader, PrefixLoader
 
-from qyx.web.home import render_page_home
+from qyx.web.home import render, render_content
 
 log = logging.getLogger(__name__)
 
@@ -23,12 +23,8 @@ def create_app(args):
     global app
     app = Bottle()
 
-    # paths = [str(Path(__file__).parent / "templates")]
-    # for tool_name, o_tool in args.tools.items():
-    #     paths.append(f"src/qyx/tools/{tool_name}/templates")
-    # args.jinja_env = Environment(loader=FileSystemLoader(paths), auto_reload=True)
-
     # Setup prefix-based templating based on both static and dynamic tool directories:
+    # (This gives us "name-space" control of templates, eg. "cloc::page/foo.html")
     loaders = dict(base=FileSystemLoader(str(Path(__file__).parent / "templates")))
     for tool_name, o_tool in args.tools.items():
         loaders[tool_name] = FileSystemLoader(f"src/qyx/tools/{tool_name}/templates")
@@ -37,7 +33,7 @@ def create_app(args):
         auto_reload=True,
     )
 
-    # Send our args into Bottle environment for availability across page renderers
+    # Send our args into Bottle environment for availability across page routes
     app.args = args
 
     return app
@@ -60,18 +56,25 @@ def serve(args: Namespace) -> None:
     ################################################################################
     app.route("/static/<filepath:path>")(serve_static)  # Love how easy THIS is!
     app.route("/about")(about)
-    app.route("/")(render_page_home)
+
+    # Home page
+    app.route("/")(render)
+    app.route("/partials/set_project/_main_")(render_content)
+
+    # Routes for each individual tool that has web rendering available
     for tool_name, o_tool in args.tools.items():
+        if not o_tool.render_web_module:  # Not every tool may have web reporting setup!
+            continue
+
+        # "Home" page for each tool:
         app.route(f"/{tool_name}")(o_tool.render_web_method)
-        if o_tool.render_web_module:  # Tools may not have web reporting setup yet!
-            try:
-                render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
-                app.route(f"/partials/set_project/{tool_name}")(render_content_method)
-            except AttributeError as exc:
-                log.error(f"Expected to find 'render_content' in {tool_name}'s web.py module! ({exc})")
-    if False:
-        for route in app.routes:
-            print(f"-{route.method:6s} {route.rule:30s} -> {route.callback.__module__}:{route.callback.__name__}")
+
+        try:
+            # HTMX callback page on a project (or analysis) change:
+            render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
+            app.route(f"/partials/set_project/{tool_name}")(render_content_method)
+        except AttributeError as exc:
+            log.error(f"Expected to find 'render_content' in {tool_name}'s web.py module! ({exc})")
 
     if args.browser:
 

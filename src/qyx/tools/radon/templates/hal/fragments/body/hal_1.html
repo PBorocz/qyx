@@ -2,14 +2,14 @@
   <thead>
     <tr>
       <th scope="col" style="text-align: left"  >Metric</th>
-      {% for thead in level_1.thead %}
+      {% for thead in hal_1.thead %}
         <th scope="col" style="text-align: right" >{{ thead }}</th>
       {% endfor %}
     </tr>
   </thead>
   <tbody>
     <tr>
-      {% for tbody in level_1.tbody %}
+      {% for tbody in hal_1.tbody %}
         <td style="text-align: left">{{ tbody.directory }}</td>
           {% for value in tbody.values %}
         <td style="text-align: right" >{{ "{:.2f}".format(value) }}</td>
