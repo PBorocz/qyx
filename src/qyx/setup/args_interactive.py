@@ -12,13 +12,11 @@ from qyx.utils import dt_to_display
 
 # fmt: off
 PROMPT_STYLE = Style([
-    ('pointer'     , 'fg:#00ff87 bold' ), # Selection pointer
-    ('highlighted' , 'fg:#00ff87'      ), # Highlighted choice
-    # ('qmark'       , 'fg:#00d7ff bold' ), # Question mark
-    # ('question'    , 'fg:#ffffff bold' ), # Question text
-    # ('answer'      , 'fg:#00ff87 bold' ), # Selected answer
-    # ('selected'    , 'fg:#00ff87'      ), # Selected (in checkbox)
-    # ('instruction' , 'fg:#888888'      ), # Instructions
+    # These seem to be the only ones worth spending time on (there are a lot more though)
+    ('highlighted' , 'bold'),
+    ('qmark'       , 'fg:#5f87af bold'),
+    ('separator'   , 'fg:#cccccc'),
+    ('question'    , 'fg:#5f87af bold'),
 ])
 # fmt: on
 
@@ -26,7 +24,7 @@ PROMPT_STYLE = Style([
 def get_args_interactively(args: Namespace, iter: int) -> Namespace:
     if not iter:
         # Only print title the first time through...
-        qprint("QYX → Code Quality Analysis Tool", style="bold italic fg:cyan")
+        qprint("QYX → Code Quality Analysis Tool", style="bold italic")  #  fg:darkblue")
 
     try:
         args.command = _select_main_command(args)
@@ -388,13 +386,14 @@ def _prompt_analysis(args: Namespace, message: str) -> str:
         o_tool = args.tools[tool]
         # Tools with a single analysis go out with just their analysis
         if len(o_tool.analyses) == 1:
-            choices.append(Choice(title=o_tool.analyses[o_tool.name], value=o_tool.name))
+            title = f"{o_tool.name:5s} - {o_tool.analyses[o_tool.name]}"
+            choices.append(Choice(title=title, value=o_tool.name))
 
         else:
             # For tools with multiple analyses, put an option out for each analysis and and "all" one
             for analysis, description in o_tool.analyses.items():
-                choice = Choice(f"{o_tool.name} - {description}", value=analysis)
-                choices.append(choice)
+                title = f"{o_tool.name:5s} - {description}"
+                choices.append(Choice(title, value=analysis))
             choices.append(Choice(title=f"{o_tool.name} - ALL", value=o_tool.name))
 
     # Final choice is a "global" all

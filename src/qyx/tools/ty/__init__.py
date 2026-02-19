@@ -28,7 +28,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="ty",
             name="ty",
-            analyses={AnalysisType.TY.value: "ty - TypeChecker"},
+            analyses={AnalysisType.TY.value: "TypeChecker"},
             models=dict(ty=(Ty,)),
             reports=dict(cli=cli, web=web),
             results_required=False,  # In this case,  Ty Scans without data ARE valid (albeit rare?)

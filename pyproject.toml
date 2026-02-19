@@ -12,6 +12,7 @@ dependencies = [
     "peewee>=3.18.3",
     "platformdirs>=4.5.1",
     "plotly>=6.5.2",
+    "pyyaml>=6.0.3",
     "questionary>=2.1.1",
     "rich>=14.2.0",
     "rich-argparse>=1.7.2",
@@ -44,7 +45,7 @@ verbosity = -1
 # Ingest examples:
 #-------------------------------------------------------------------------------
 # poe qyx ingest --name python-code-quality --path "."                                          --log-level debug
-# poe qyx ingest --name python-code-quality --path https://github.com/PBorocz/qyx.git            --log-level debug
+# poe qyx ingest --name python-code-quality --path https://github.com/PBorocz/qyx.git           --log-level debug
 # poe qyx ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
 #-------------------------------------------------------------------------------
 # Direct JSON ingestion examples
