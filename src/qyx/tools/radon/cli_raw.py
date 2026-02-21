@@ -14,7 +14,7 @@ from qyx.utils import format_timestamp_headers
 log = logging.getLogger(__name__)
 
 
-def raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
+def raw_0(args: Namespace, project: Project, scan: Scan) -> None:
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}")
     # fmt: off
     table.add_column("SLOC"    , justify="right")
@@ -23,7 +23,7 @@ def raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     table.add_column("Blank"   , justify="right")
     table.add_column("Total"   , justify="right")
     # fmt: on
-    row = query_raw(args, ReportLevel.SUMMARY, scan)
+    row = query_raw(args, ReportLevel.SUMMARY, project, scan)
     table.add_row(
         f"{row.sloc:,} ({row.sloc_p:.1f}%)",
         f"{row.comments:,} ({row.comments_p:.1f}%)",
@@ -34,8 +34,8 @@ def raw_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows, totals = query_raw(args, ReportLevel.DIRECTORY, scan)
+def raw_1(args: Namespace, project: Project, scan: Scan) -> None:
+    rows, totals = query_raw(args, ReportLevel.DIRECTORY, project, scan)
 
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}", show_footer=True)
     # fmt: off
@@ -58,8 +58,8 @@ def raw_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_raw(args, ReportLevel.FILE, scan)
+def raw_2(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query_raw(args, ReportLevel.FILE, project, scan)
     # Calculate grand totals
     totals = defaultdict(int)
     for row in rows:
@@ -89,8 +89,8 @@ def raw_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def raw_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, _, transposed, rocs, roc_gt = query_raw(args, ReportLevel.HISTORY, project=project, last=5)
+def raw_h(args: Namespace, project: Project, scan: Scan) -> None:
+    timestamps, _, transposed, rocs, roc_gt = query_raw(args, ReportLevel.HISTORY, project, None, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-RAW Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")

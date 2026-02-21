@@ -7,7 +7,7 @@ from bottle import request
 
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.cloc.web import cloc_0, cloc_d
-from qyx.tools.fxtd.web import fxtd_0, fxtd_d
+from qyx.tools.fxtd.web import fxtd_0
 from qyx.tools.radon.web import cc_0, cc_d
 from qyx.tools.radon.web import hal_0, hal_d
 from qyx.tools.radon.web import mi_0, mi_d
@@ -64,7 +64,7 @@ def render_content(template: str = "base::fragments/body.html"):
     scan_fxtd = Scan.get_most_recent(project, "fxtd", "fxtd")
     if scan_fxtd:
         context.fxtd_0 = fxtd_0(args, project, scan_fxtd)
-        context.fxtd_d = fxtd_d(args, project, scan_fxtd)
+        context.fxtd_d = None
         context.as_of_dates["fxtd"] = scan_fxtd.as_of_display(collapse_today=True)
 
     scan_ruff = Scan.get_most_recent(project, "ruff", "ruff")
@@ -94,7 +94,7 @@ def render_content(template: str = "base::fragments/body.html"):
     scan_mi = Scan.get_most_recent(project, "radon", "mi")
     if scan_mi:
         context.mi_0 = mi_0(args, project, scan_mi)
-        context.mi_d = mi_d(args, project, scan_mi)
+        context.mi_d = None
         context.as_of_dates["mi"] = scan_mi.as_of_display(collapse_today=True)
 
     scan_raw = Scan.get_most_recent(project, "radon", "raw")

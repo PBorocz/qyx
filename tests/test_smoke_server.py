@@ -7,10 +7,9 @@ from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 import pytest
-import uvicorn
 
 from qyx.tools.base import Project
-from qyx.web.serve import create_app, register
+from qyx.web.serve import create_app
 
 
 def is_port_in_use(port: int) -> bool:
@@ -47,29 +46,19 @@ def server_and_args(app_args, ingested_project):
         yield
         return
 
-    # Create args for your server (note: we don't need the app_args here!)
-    app_args.port = port
+    # Override whatever's the current defaults are
     app_args.browser = False
+    app_args.port = port
 
-    # Create the app
-    global app, rt
-    app, rt = create_app(app_args)
-    register(app_args, rt)
-
-    # Setup uvicorn
-    config = uvicorn.Config(
-        app=app,
-        host="0.0.0.0",
-        port=port,
-        log_level="warning",  # Less verbose for tests
-        access_log=True,
-        use_colors=True,
-        ws="websockets-sansio",  # Use this to avoid websockets.legacy deprecation (https://github.com/Kludex/uvicorn/discussions/2476)
-    )
-    server = uvicorn.Server(config)
+    # Create the (Bottle) app
+    app = create_app(app_args)
 
     # ...and run it a background thread (thanks Claude!)
-    thread = threading.Thread(target=server.run, daemon=True)
+    thread = threading.Thread(
+        target=run_bottle,
+        args=(app, port),
+        daemon=True,
+    )
     thread.start()
 
     health_url = f"{base_url}/health"
@@ -78,11 +67,22 @@ def server_and_args(app_args, ingested_project):
     print(f"\n↑ Test server successfully started ({port=})")
 
     time.sleep(1)
-    yield (server, app_args)
+    yield (app, app_args)
 
-    # Cleanup: shutdown server
+    # Cleanup: Bottle doesn't have a clean shutdown mechanism when run in thread
+    # The daemon thread will be killed when tests exit
     print(f"\n↓ Test server shut down ({port=})")
-    server.should_exit = True
+
+
+def run_bottle(app, port):
+    """Setup Bottle server in a background thread."""
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False,
+        quiet=True,  # Less verbose for tests
+        server="waitress",  # or 'paste', 'gunicorn', etc.
+    )
 
 
 def test_server(server_and_args, subtests, capsys, base_url="http://localhost:5012"):
@@ -92,10 +92,6 @@ def test_server(server_and_args, subtests, capsys, base_url="http://localhost:50
     renderers, here we only want/need to make sure that routing is working.
     """
     server, test_args = server_and_args
-    # urls = []
-    # for project in Project.select():
-    #     urls.append(f"{base_url}/{project.id}")
-    # urls.append(base_url)
 
     urls = []
     for o_tool in test_args.tools.values():

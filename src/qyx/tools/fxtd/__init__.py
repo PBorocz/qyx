@@ -22,10 +22,10 @@ class Configuration(ToolType):
         """..."""
         # fmt: off
         cli = dict(
-            fxtd = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            fxtd = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
         )
         web = dict(
-            fxtd = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            fxtd = (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
         )
         # fmt: on
         super(Configuration, self).__init__(

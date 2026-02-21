@@ -12,8 +12,8 @@ from qyx.utils import format_timestamp_headers
 log = logging.getLogger(__name__)
 
 
-def cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, ReportLevel.SUMMARY, scan)
+def cc_0(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query_cc(args, ReportLevel.SUMMARY, project, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")
@@ -27,8 +27,8 @@ def cc_0(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, ReportLevel.DIRECTORY, scan)
+def cc_1(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query_cc(args, ReportLevel.DIRECTORY, project, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Directory", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -44,8 +44,8 @@ def cc_1(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, ReportLevel.FILE, scan)
+def cc_2(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query_cc(args, ReportLevel.FILE, project, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -61,8 +61,8 @@ def cc_2(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def cc_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, ReportLevel.DETAIL, scan)
+def cc_3(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query_cc(args, ReportLevel.DETAIL, project, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Name", justify="left")
@@ -80,8 +80,8 @@ def cc_3(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def cc_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    rows = query_cc(args, ReportLevel.DERIVED, project=project, scan=scan)
+def cc_d(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query_cc(args, ReportLevel.DERIVED, project, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type", justify="left")
     table.add_column("Value", justify="right")
@@ -95,8 +95,8 @@ def cc_d(args: Namespace, project: Project = None, scan: Scan = None) -> None:
     cli_console.print(table)
 
 
-def cc_h(args: Namespace, project: Project = None, scan: Scan = None) -> None:
-    timestamps, _, transposed, roc = query_cc(args, ReportLevel.HISTORY, project=project, last=5)
+def cc_h(args: Namespace, project: Project, scan: Scan) -> None:
+    timestamps, _, transposed, roc = query_cc(args, ReportLevel.HISTORY, project, None, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-CC Results Over Time")
     table.add_column("Complexity", justify="left")

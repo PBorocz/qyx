@@ -17,16 +17,14 @@ def get_loc(args: Namespace, project: Project) -> int | None:
     cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
     if cloc_scan:
         result = query_cloc(args, ReportLevel.SUMMARY, scan=cloc_scan)
-        lines_of_code = result.lines_code
-    else:
-        radon_scan = Scan.get_most_recent(project, "radon", "raw")
-        if radon_scan:
-            result = query_raw(args, ReportLevel.SUMMARY, scan=radon_scan)
-            lines_of_code = result.sloc
-        else:
-            lines_of_code = None
+        return result.lines_code
 
-    return lines_of_code
+    radon_scan = Scan.get_most_recent(project, "radon", "raw")
+    if radon_scan:
+        result = query_raw(args, ReportLevel.SUMMARY, project, radon_scan)
+        return result.sloc
+
+    return None
 
 
 def get_scans_for_pta(project: Project, tool: str, analysis: str = None, last: int = None) -> ModelSelect:

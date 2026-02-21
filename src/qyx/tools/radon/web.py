@@ -82,8 +82,10 @@ def render_content() -> str:
 def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Scan, analysis: str) -> dict | None:
     """Dispatch to the appropriate view method to get data obo the specified level fand analysis."""
     # First, lookup the method below based on the analysis and level requested.
-    view_method = globals().get(f"{analysis}_{level}")
+    view_method_name = f"{analysis}_{level}"
+    view_method = globals().get(view_method_name)
     if not view_method:
+        log.warning(f"no method found, skipping {view_method_name=}")
         return None
     return view_method(args, project, scan)
 
@@ -92,28 +94,28 @@ def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Sca
 # CC
 ################################################################################
 def cc_0(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=query_cc(args, ReportLevel.SUMMARY, scan=scan))
+    return dict(rows=query_cc(args, ReportLevel.SUMMARY, project, scan))
 
 
 def cc_1(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=query_cc(args, ReportLevel.DIRECTORY, scan=scan))
+    return dict(rows=query_cc(args, ReportLevel.DIRECTORY, project, scan))
 
 
 def cc_2(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=query_cc(args, ReportLevel.FILE, scan=scan))
+    return dict(rows=query_cc(args, ReportLevel.FILE, project, scan))
 
 
 def cc_3(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=query_cc(args, ReportLevel.DETAIL, scan=scan))
+    return dict(rows=query_cc(args, ReportLevel.DETAIL, project, scan))
 
 
 def cc_d(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=query_cc(args, ReportLevel.DERIVED, project=project, scan=scan))
+    return dict(rows=query_cc(args, ReportLevel.DERIVED, project, scan))
 
 
 def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
     """Render our chart to display Radon CC information."""
-    _, messages, transposed, _ = query_cc(args, ReportLevel.HISTORY, project=project, last=None)
+    _, messages, transposed, _ = query_cc(args, ReportLevel.HISTORY, project, None, last=None)
 
     fig = go.Figure()
     for i, entity_type in enumerate(("C", "F", "M")):  # HARD-CODE!
@@ -143,7 +145,7 @@ def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
 # HAL
 ################################################################################
 def hal_0(args: Namespace, project: Project, scan: Scan = None) -> list:
-    row = query_hal(args, ReportLevel.SUMMARY, scan=scan)
+    row = query_hal(args, ReportLevel.SUMMARY, project, scan)
     return_ = []
     for attr in RadonHal.attrs():
         value = Namespace(
@@ -155,7 +157,7 @@ def hal_0(args: Namespace, project: Project, scan: Scan = None) -> list:
 
 
 def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
-    rows, _ = query_hal(args, ReportLevel.DIRECTORY, scan)
+    rows, _ = query_hal(args, ReportLevel.DIRECTORY, project, scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
     for row in rows:
@@ -169,7 +171,7 @@ def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
 
 
 def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
-    rows, _ = query_hal(args, ReportLevel.FILE, scan)
+    rows, _ = query_hal(args, ReportLevel.FILE, project, scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
     for row in rows:
@@ -185,7 +187,7 @@ def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
 
 
 def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
-    rows, _ = query_hal(args, ReportLevel.DETAIL, scan)
+    rows, _ = query_hal(args, ReportLevel.DETAIL, project, scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
     for row in rows:
@@ -205,7 +207,7 @@ def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
 
 
 def hal_d(args: Namespace, project: Project, scan: Scan) -> list[Namespace]:
-    metric_row = query_hal(args, ReportLevel.DERIVED, project=project, scan=scan)
+    metric_row = query_hal(args, ReportLevel.DERIVED, project, scan)
     rows = []
     for name, attr in [
         ("Mean Bugs per kLOC", "bugs_d"),
@@ -225,7 +227,7 @@ def hal_d(args: Namespace, project: Project, scan: Scan) -> list[Namespace]:
 
 
 def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str]:
-    _, messages, transposed, _ = query_hal(args, ReportLevel.HISTORY, project=project, last=None)
+    _, messages, transposed, _ = query_hal(args, ReportLevel.HISTORY, project, None, last=None)
     if not transposed:
         return dict()
 
@@ -263,24 +265,27 @@ def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str
 # MI
 ################################################################################
 def mi_0(args: Namespace, project: Project, scan: Scan) -> dict[str, float | None]:
-    return dict(metric=query_mi(args, ReportLevel.SUMMARY, scan=scan))
+    return dict(metric=query_mi(args, ReportLevel.SUMMARY, project, scan))
 
 
 def mi_1(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query_mi(args, ReportLevel.DIRECTORY, scan)[1])
+    _, rows = query_mi(args, ReportLevel.DIRECTORY, project, scan)
+    return dict(rows=rows)
 
 
 def mi_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query_mi(args, ReportLevel.FILE, scan)[1])
+    _, rows = query_mi(args, ReportLevel.FILE, project, scan)
+    return dict(rows=rows)
 
 
 def mi_d(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query_mi(args, ReportLevel.DERIVED, project=project, scan=scan))
+    """Stub to make this analysis match others."""
+    return None
 
 
 def mi_h(args: Namespace, project: Project, scan: Scan):
     """Render the maintainability index chart."""
-    messages, rows, roc = query_mi(args, ReportLevel.HISTORY, project=project, last=None)
+    messages, rows, roc = query_mi(args, ReportLevel.HISTORY, project, None, last=None)
     x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
     y_values = [round(value, 2) for value in rows.values()]
     labels = custom_labels("", messages, x_values, y_values)
@@ -311,15 +316,15 @@ def mi_h(args: Namespace, project: Project, scan: Scan):
 
 
 def raw_0(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query_raw(args, ReportLevel.SUMMARY, scan=scan))
+    return dict(row=query_raw(args, ReportLevel.SUMMARY, project, scan=scan))
 
 
 def raw_1(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query_raw(args, ReportLevel.DIRECTORY, scan)[0])
+    return dict(rows=query_raw(args, ReportLevel.DIRECTORY, project, scan)[0])
 
 
 def raw_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query_raw(args, ReportLevel.FILE, scan))
+    return dict(rows=query_raw(args, ReportLevel.FILE, project, scan))
 
 
 def raw_d(args: Namespace, project: Project, scan: Scan):
@@ -329,7 +334,7 @@ def raw_d(args: Namespace, project: Project, scan: Scan):
 
 def raw_h(args: Namespace, project: Project, scan: Scan = None):
     """Create chart obo all Raw metrics."""
-    _, messages, transposed, _, _ = query_raw(args, ReportLevel.HISTORY, project=project, last=None)
+    _, messages, transposed, _, _ = query_raw(args, ReportLevel.HISTORY, project, None, last=None)
 
     fig = go.Figure()
     for i, (metric, dt_rows) in enumerate(list(transposed.items())):

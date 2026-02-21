@@ -32,28 +32,21 @@ class Fxtd(BaseResultsModel):
         indexes = ((("scan", "directory", "filename", "line"), True),)
 
 
-def query(
-    args: Namespace,
-    level: str,
-    project: Project = None,
-    scan: Scan = None,
-    last: int = None,
-) -> Fxtd:
+def query(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Fxtd:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_0(scan)
+            return _query_0(args, project, scan)
         case ReportLevel.DIRECTORY:
             return _query_1(scan)
         case ReportLevel.FILE:
             return _query_2(scan)
-        case ReportLevel.DERIVED:
-            return _query_d(args, project, scan)
         case ReportLevel.HISTORY:
             return _query_h(project, last)
 
 
-def _query_0(scan: Scan):
-    return (
+def _query_0(args: Namespace, project: Project, scan: Scan):
+    """Calculate summary level fxtd metrics."""
+    rows_by_type = (
         Fxtd.select(
             Fxtd.type,
             fn.COUNT(Fxtd.id).alias("count"),
@@ -62,10 +55,30 @@ def _query_0(scan: Scan):
         .group_by(Fxtd.type)
         .order_by(fn.COUNT(Fxtd.id).desc())
     )
+    if not rows_by_type:  # Perfectly valid to not have any!
+        return (), None
+
+    grand_total = sum([row.count for row in rows_by_type])
+
+    if not (lines_of_code := get_loc(args, project)):
+        log.warning("Sorry, unable to calculate derived 'fxtd' metrics as we don't have any lines-of-code yet!")
+        return rows_by_type, grand_total, None
+
+    # Calculate score of entries per kLOC (sloc)"""
+    for row in rows_by_type:
+        metric_value = (row.count / lines_of_code) * 1000
+        row.metric = score_metric(args, "tools.fxtd.by_type_per_kloc", metric_value)
+
+    # Calculate *composite weighted* score of entries per kLOC (not including comments and blank lines)"""
+    weights = args.config.get("tools.fxtd.composite_weighted_per_kloc.weights")
+    weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows_by_type])
+    metric_value = (weighted_score / lines_of_code) * 1000
+    composite_weighted_score = score_metric(args, "tools.fxtd.composite_weighted_per_kloc", metric_value)
+    return rows_by_type, grand_total, composite_weighted_score
 
 
 def _query_1(scan: Scan):
-    return (
+    rows = (
         Fxtd.select(
             Fxtd.directory,
             Fxtd.type,
@@ -75,6 +88,8 @@ def _query_1(scan: Scan):
         .group_by(Fxtd.directory, Fxtd.type)
         .order_by(fn.COUNT(Fxtd.id).desc())
     )
+    grand_total = sum([row.count for row in rows])
+    return rows, grand_total
 
 
 def _query_2(scan: Scan):
@@ -128,34 +143,3 @@ def _query_h(project: Project, last: int = None):
                 rocs[type_] = rate_of_change_percentage(value_2, value_1)
 
     return timestamps, messages, transposed, rocs
-
-
-def _query_d(args: Namespace, project: Project, fxtd_scan: Scan):
-    """Calculate derived fxtd metrics."""
-    if not (lines_of_code := get_loc(args, project)):
-        log.warning("Sorry, unable to calculate derived Fxtd metrics as we don't have any LOC metrics yet!")
-        return (), None
-
-    score_by_type = _query_0(fxtd_scan)
-    if score_by_type:  # Perfectly valid to not have any!
-        score_by_type = _by_type_per_kloc(args, lines_of_code, score_by_type)
-        composite_weighted_score = _composite_per_kloc(args, lines_of_code, score_by_type)
-        return score_by_type, composite_weighted_score
-    else:
-        return (), None
-
-
-def _by_type_per_kloc(args: Namespace, lines_of_code: int, rows):
-    """Calculate score of FixMe issues for a particular "type" per thousand sloc."""
-    for row in rows:
-        metric_value = (row.count / lines_of_code) * 1000
-        row.fxtd_d = score_metric(args, "tools.fxtd.by_type_per_kloc", metric_value)
-    return rows
-
-
-def _composite_per_kloc(args: Namespace, lines_of_code: int, rows) -> Namespace:
-    """Calculate composite_weighted score of FixMe issues per thousand loc (not including comments and blank lines)."""
-    weights = args.config.get("tools.fxtd.composite_weighted_per_kloc.weights")
-    weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows])
-    metric_value = (weighted_score / lines_of_code) * 1000
-    return score_metric(args, "tools.fxtd.composite_weighted_per_kloc", metric_value)

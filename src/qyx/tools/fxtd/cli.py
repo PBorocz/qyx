@@ -23,34 +23,44 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
     match args.level.lower():
         case ReportLevel.SUMMARY:
-            fxtd_0(args, scan)
+            fxtd_0(args, project, scan)
         case ReportLevel.DIRECTORY:
-            fxtd_1(args, scan)
+            fxtd_1(args, project, scan)
         case ReportLevel.FILE:
-            fxtd_2(args, scan)
-        case ReportLevel.DERIVED:
-            fxtd_d(args, project, scan)
+            fxtd_2(args, project, scan)
         case ReportLevel.HISTORY:
             fxtd_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 
 
-def fxtd_0(args: Namespace, scan: Scan) -> None:
-    results = query(args, ReportLevel.SUMMARY, scan=scan)
-    grand_total = sum([result.count for result in results])
-    show_footer = True if results else False
-    table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=show_footer)
-    table.add_column("Type", footer="TOTAL")
-    table.add_column("Count", justify="center", footer=f"{grand_total:,}")
-    for result in results:
-        table.add_row(result.type, f"{result.count:,d}")
+def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
+    rows, grand_total, composite = query(args, ReportLevel.SUMMARY, project, scan)
+
+    table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=True)
+
+    if not rows:
+        table.add_row("Congratulations..No issues found!")
+        cli_console.print(table)
+        return
+
+    table.add_column("Type", justify="left", footer="Composite (weighted)")
+    table.add_column("Count", justify="right", footer=f"{grand_total:,d}")
+    table.add_column("Per kLOC", justify="right", footer=f"{composite.score:.2f}")
+    table.add_column("Grade", justify="center", footer=composite.grade)
+
+    for row in rows:
+        table.add_row(
+            f"{row.type}",
+            f"{row.count}",
+            f"{row.metric.score:.2f}",
+            f"{row.metric.grade}",
+        )
     cli_console.print(table)
 
 
-def fxtd_1(args: Namespace, scan: Scan) -> None:
-    results = query(args, ReportLevel.DIRECTORY, scan=scan)
-    grand_total = sum([result.count for result in results])
+def fxtd_1(args: Namespace, project: Project, scan: Scan) -> None:
+    results, grand_total = query(args, ReportLevel.DIRECTORY, project, scan)
     show_footer = True if results else False
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=show_footer)
@@ -62,8 +72,8 @@ def fxtd_1(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def fxtd_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, ReportLevel.FILE, scan=scan)
+def fxtd_2(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query(args, ReportLevel.FILE, project, scan)
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
     table.add_column("Type")
     table.add_column("File [line]")
@@ -73,37 +83,9 @@ def fxtd_2(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def fxtd_d(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, composite = query(args, ReportLevel.DERIVED, project=project, scan=scan)
-
-    table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
-
-    if not rows:
-        table.add_row("Congratulations..No issues found!")
-        cli_console.print(table)
-        return
-
-    table.add_column("Metric", justify="left")
-    table.add_column("Value", justify="right")
-    table.add_column("Grade", justify="center")
-
-    for row in rows:
-        table.add_row(
-            f"{row.type}'s per kLOC",
-            f"{row.fxtd_d.score:.2f}",
-            f"{row.fxtd_d.grade}",
-        )
-    table.add_row(
-        "Composite (weighted)",
-        f"{composite.score:.2f}",
-        composite.grade,
-    )
-    cli_console.print(table)
-
-
 def fxtd_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, transposed, rocs = query(args, ReportLevel.HISTORY, project=project, last=5)
+    timestamps, _, transposed, rocs = query(args, ReportLevel.HISTORY, project, None, last=5)
 
     timestamps_formatted = format_timestamp_headers(timestamps)
 

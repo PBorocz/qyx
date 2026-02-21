@@ -179,13 +179,7 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 # RAW
 ################################################################################################
-def query_raw(
-    args: Namespace,
-    level: str = ReportLevel.SUMMARY,
-    scan: Scan = None,
-    project: Project = None,
-    last: int = None,
-) -> Any:
+def query_raw(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
             return _query_raw_0(scan)
@@ -308,13 +302,7 @@ def _query_raw_h(project: Project, last: int = None) -> Any:
 ################################################################################################
 # HAL
 ################################################################################################
-def query_hal(
-    args: Namespace,
-    level: str = ReportLevel.SUMMARY,
-    scan: Scan = None,
-    project: Project = None,
-    last: int = None,
-) -> Any:
+def query_hal(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
             return _query_hal_0(scan)
@@ -514,29 +502,21 @@ def _query_hal_d(args: Namespace, project: Project, scan: Scan):
 ################################################################################################
 # MI
 ################################################################################################
-def query_mi(
-    args: Namespace,
-    level: str = ReportLevel.SUMMARY,
-    scan: Scan = None,
-    project: Project = None,
-    last: int = None,
-) -> Any:
+def query_mi(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
-            return _query_mi_0(scan)
+            return _query_mi_0(args, scan)
         case ReportLevel.DIRECTORY:
-            return _query_mi_1(scan)
+            return _query_mi_1(args, scan)
         case ReportLevel.FILE:
-            return _query_mi_2(scan)
-        case ReportLevel.DERIVED:
-            return _query_mi_d(args, scan)
+            return _query_mi_2(args, scan)
         case ReportLevel.HISTORY:
             return _query_mi_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
 
 
-def _query_mi_0(scan: Scan):
+def _query_mi_0(args: Namespace, scan: Scan):
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
     raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
     query = (
@@ -556,11 +536,12 @@ def _query_mi_0(scan: Scan):
     )
     result = query.dicts().get()
     if result["total_loc"]:
-        return result["weighted_sum"] / result["total_loc"]
-    return None
+        mi_ = result["weighted_sum"] / result["total_loc"]
+
+    return score_metric(args, "tools.radon.mi.mean", mi_)
 
 
-def _query_mi_1(scan: Scan) -> Any:
+def _query_mi_1(args, scan: Scan) -> Any:
     raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
     query = (
         RadonMi.select(
@@ -582,14 +563,14 @@ def _query_mi_1(scan: Scan) -> Any:
     mi_by_directory = {
         row["directory"]: row["weighted_sum"] / row["total_loc"] for row in query.dicts() if row["total_loc"]
     }
-    mi_ = _query_mi_0(scan)
-    return mi_, mi_by_directory
+    mi_metric = _query_mi_0(args, scan)
+    return mi_metric, mi_by_directory
 
 
-def _query_mi_2(scan: Scan) -> tuple:
+def _query_mi_2(args, scan: Scan) -> tuple:
     rows = RadonMi.select().where(RadonMi.scan == scan).order_by(RadonMi.mi.asc(), RadonMi.directory, RadonMi.filename)
-    mi_ = _query_mi_0(scan)
-    return mi_, rows
+    mi_metric = _query_mi_0(args, scan)
+    return mi_metric, rows
 
 
 def _query_mi_h(project, last: int = 5) -> Any:
@@ -642,22 +623,10 @@ def _query_mi_h(project, last: int = 5) -> Any:
     return messages, rows, roc
 
 
-def _query_mi_d(args: Namespace, scan: Scan):
-    """Calculate derived radon-mi metric(s)."""
-    mi_ = _query_mi_0(scan)
-    return score_metric(args, "tools.radon.mi.mean", mi_)
-
-
 ################################################################################################
 # CC
 ################################################################################################
-def query_cc(
-    args: Namespace,
-    level: str = ReportLevel.SUMMARY,
-    scan: Scan = None,
-    project: Project = None,
-    last: int = None,
-) -> Any:
+def query_cc(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
         case ReportLevel.SUMMARY:
             return _query_cc_0(scan)
