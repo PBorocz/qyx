@@ -4,7 +4,7 @@ import logging
 from argparse import Namespace
 
 from qyx.cli import cli_console, cli_table
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan
 from qyx.tools.radon.models import query_mi
 from qyx.utils import format_timestamp_headers
@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def mi_0(args: Namespace, project: Project, scan: Scan) -> None:
-    mi_, metric = query_mi(args, ReportLevel.SUMMARY, project, scan)
+    mi_, metric = query_mi(args, Rl.SUMMARY, project, scan)
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_header=False)
     table.add_column("Composite Maintainability Score (Weighted)", style="bold magenta")
     table.add_column(f"{mi_:.2f}", style="bold magenta")
@@ -22,7 +22,7 @@ def mi_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def mi_1(args: Namespace, project: Project, scan: Scan) -> None:
-    mi_metric, mi_by_directory = query_mi(args, ReportLevel.DIRECTORY, project, scan)
+    mi_metric, mi_by_directory = query_mi(args, Rl.DIRECTORY, project, scan)
     show_footer = True if mi_metric else False
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
@@ -37,7 +37,7 @@ def mi_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def mi_2(args: Namespace, project: Project, scan: Scan) -> None:
-    mi_metric, rows = query_mi(args, ReportLevel.FILE, project, scan)
+    mi_metric, rows = query_mi(args, Rl.FILE, project, scan)
     show_footer = True if mi_metric else False
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
@@ -56,7 +56,7 @@ def mi_2(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def mi_h(args: Namespace, project: Project, scan: Scan) -> None:
-    _, rows, roc = query_mi(args, ReportLevel.HISTORY, project, None, last=5)
+    _, rows, roc = query_mi(args, Rl.HISTORY, project, None, last=5)
     timestamps = list(rows.keys())
     timestamps_formatted = format_timestamp_headers(timestamps)
 

@@ -5,7 +5,7 @@ from argparse import Namespace
 
 from peewee import fn, CharField, IntegerField, JOIN
 
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import BaseResultsModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_pta
 from qyx.utils import rate_of_change_percentage
@@ -33,25 +33,19 @@ class Ty(BaseResultsModel):
         indexes = ((("scan", "directory", "filename", "fingerprint"), True),)
 
 
-def query(
-    args: Namespace,
-    level: str,
-    project: Project = None,
-    scan: Scan = None,
-    last: int = None,
-) -> Ty:
+def query(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Ty:
     match level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             return _query_0(scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             return _query_1(scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             return _query_2(scan)
-        case ReportLevel.DETAIL:
+        case Rl.GRANULAR:
             return _query_3(scan)
-        case ReportLevel.DERIVED:
+        case Rl.DERIVED:
             return _query_d(args, project, scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             return _query_h(project, last)
 
 

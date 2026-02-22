@@ -6,7 +6,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.fxtd.models import query
 from qyx.web import get_project_selector
@@ -55,21 +55,21 @@ def render_content(template: str = "fxtd::fragments/body.html") -> str:
 
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan):
-    rows, grand_total, composite = query(args, ReportLevel.SUMMARY, project, scan)
+    rows, grand_total, composite = query(args, Rl.SUMMARY, project, scan)
     return dict(rows=rows, grand_total=grand_total, composite=composite)
 
 
 def fxtd_1(args: Namespace, project: Project, scan: Scan):
-    results, grand_total = query(args, ReportLevel.DIRECTORY, project, scan)
+    results, grand_total = query(args, Rl.DIRECTORY, project, scan)
     return dict(results=results, grand_total=grand_total)
 
 
 def fxtd_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, ReportLevel.FILE, project, scan))
+    return dict(rows=query(args, Rl.FILE, project, scan))
 
 
 def fxtd_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
-    timestamps, messages, transposed, rocs = query(args, ReportLevel.HISTORY, project, None)
+    timestamps, messages, transposed, rocs = query(args, Rl.HISTORY, project, None)
     if not transposed:
         return None
 

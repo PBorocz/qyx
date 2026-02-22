@@ -1,11 +1,13 @@
 {% macro cell(value, percentage=None, bold=False, align="right") %}
 <td style="text-align: {{ align }}">
 
-  {% if bold %}<b>{% endif %} {{ "{:,d}".format(value) }} {% if bold %}</b>{% endif %}
+  {% if bold %}<b>{% endif %}
+  {{ "{:,d}".format(value) }}
+  {% if bold %}</b>{% endif %}
 
   {% if percentage is not none %}
     <small>({{ "%.1f"|format(percentage) }}%)</small>
-    {% endif %}
+  {% endif %}
 
 </td>
 {% endmacro %}

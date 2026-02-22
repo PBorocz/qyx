@@ -4,7 +4,8 @@ import argparse
 
 from rich_argparse import RichHelpFormatter
 
-from qyx.constants import ReportLevel, StatusLevel
+from qyx.constants import ReportLevel as Rl
+from qyx.constants import StatusLevel
 from qyx.setup.args_configuration import setup_configuration
 
 
@@ -116,7 +117,7 @@ def get_args_command_line():
     parser_report.add_argument(
         "-l",
         "--level",
-        default=defaults.get("report_level", ReportLevel.SUMMARY),
+        default=defaults.get("report_level", Rl.SUMMARY),
         help="Level to report on, eg. 0 (summary), 1 (directory), 2 (file), d (derived) or h (history).",
     )
 

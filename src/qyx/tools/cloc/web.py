@@ -6,9 +6,8 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.constants import ReportLevel
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.cloc.models import query
+from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_f, query_h
 from qyx.utils.scoring import find_grade
 from qyx.web import get_project_selector
 from qyx.web.page import render_page, render_partial
@@ -53,29 +52,29 @@ def render_content(template: str = "cloc::fragments/body.html"):
 
 
 def cloc_0(args: Namespace, project: Project, scan: Scan):
-    return query(args, ReportLevel.SUMMARY, scan=scan)
+    return query_0(scan)
 
 
 def cloc_1(args: Namespace, project: Project, scan: Scan):
     return dict(
-        grand_total=query(args, ReportLevel.SUMMARY, scan=scan),
-        detail_rows=query(args, ReportLevel.DIRECTORY, scan=scan),
+        grand_total=query_0(scan),
+        detail_rows=query_1(scan),
     )
 
 
 def cloc_2(args: Namespace, project: Project, scan: Scan):
-    results, column_totals, grand_total = query(args, ReportLevel.FILE, scan=scan)
+    results, column_totals, grand_total = query_2(scan)
     return dict(results=results, column_totals=column_totals, grand_total=grand_total)
 
 
 def cloc_d(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query(args, ReportLevel.DERIVED, scan=scan))
+    return dict(row=query_d(args, scan))
 
 
 def cloc_f(args: Namespace, project: Project, scan: Scan):
     # Get bucket definitions from configuration for coloring
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
-    histogram = query(args, "f", scan=scan)
+    histogram = query_f(args, scan)
 
     # Values to chart are a combination of the respective value AND the color
     # (which is based on the configurable bucket definitions)
@@ -110,7 +109,7 @@ def cloc_f(args: Namespace, project: Project, scan: Scan):
 
 
 def cloc_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
-    _, messages, rows, _, _, _, _ = query(args, ReportLevel.HISTORY, project=project)
+    _, messages, rows, _, _, _, _ = query_h(project)
     if not rows:
         return None
 

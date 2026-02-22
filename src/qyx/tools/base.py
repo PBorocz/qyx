@@ -12,7 +12,7 @@ from typing import Callable, Iterator, TypeAlias
 
 import peewee as pw
 
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.utils import dt_to_display, parse_path_arg
 
 
@@ -97,7 +97,7 @@ class AbstractToolConfiguration(ABC):
 
         return render_module, render_method
 
-    def iter_reports(self, interface: str) -> Iterator[str, ReportLevel]:
+    def iter_reports(self, interface: str) -> Iterator[str, Rl]:
         """Iterator over analysis available for the specified interface."""
         if interface not in self.reports:
             log.warning(f"Sorry, requesting reports for {interface=} that isn't defined for tool: '{self.name}'!")

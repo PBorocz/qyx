@@ -44,7 +44,7 @@ class ReportLevel(str, Enum):
     SUMMARY   = "0"
     DIRECTORY = "1"
     FILE      = "2"
-    DETAIL    = "3"
+    GRANULAR  = "3"
     DERIVED   = "d"
     HISTORY   = "h"
     # fmt: on
@@ -56,7 +56,7 @@ class ReportLevel(str, Enum):
             "0": "Summary",
             "1": "Directory",
             "2": "File",
-            "3": "Extended",
+            "3": "Granular",
             "d": "Derived",
             "h": "History",
         }

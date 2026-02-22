@@ -6,7 +6,9 @@ from argparse import Namespace
 from questionary import Separator, Style, Choice, confirm, path, select, text
 from questionary import print as qprint
 
-from qyx.constants import BaseModel, ReportLevel, StatusLevel
+from qyx.constants import BaseModel
+from qyx.constants import ReportLevel as Rl
+from qyx.constants import StatusLevel
 from qyx.tools.base import Project, Request, Scan, State
 from qyx.utils import dt_to_display
 
@@ -364,19 +366,19 @@ def _prompt_status_level() -> StatusLevel:
     return StatusLevel(value)
 
 
-def _prompt_report_level() -> ReportLevel:
-    choices = [Choice(title=level.description, value=level.value, shortcut_key=level.value) for level in ReportLevel]
+def _prompt_report_level() -> Rl:
+    choices = [Choice(title=level.description, value=level.value, shortcut_key=level.value) for level in Rl]
     # FIXME: Make the following work! (doesn't now as sentinel isn't in the Enum)
     # choices.append(Choice(title="─── All ───", value="*", shortcut_key="a"))  # SENTINEL!
     value = select(
         "Report Level:",
         choices=choices,
         style=PROMPT_STYLE,
-        default=ReportLevel.SUMMARY,
+        default=Rl.SUMMARY,
         use_indicator=True,
         use_shortcuts=True,
     ).unsafe_ask()
-    return ReportLevel(value)
+    return Rl(value)
 
 
 def _prompt_analysis(args: Namespace, message: str) -> str:

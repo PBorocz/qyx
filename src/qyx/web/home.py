@@ -43,16 +43,7 @@ def render_content(template: str = "base::fragments/body.html"):
     State.update(args, project=project.name)  # Remember for next instantiation!
 
     context = Namespace(as_of_dates={})
-    context.analyses = [
-        ("cloc", "cloc"),
-        ("fxtd", "fxtd"),
-        ("ruff", "ruff"),
-        ("ty", "ty"),
-        ("radon", "raw"),
-        ("radon", "cc"),
-        ("radon", "mi"),
-        ("radon", "hal"),
-    ]
+    context.analyses = []
 
     # cloc:
     scan_cloc = Scan.get_most_recent(project, "cloc", "cloc")
@@ -60,47 +51,55 @@ def render_content(template: str = "base::fragments/body.html"):
         context.cloc_0 = cloc_0(args, project, scan_cloc)
         context.cloc_d = cloc_d(args, project, scan_cloc)
         context.as_of_dates["cloc"] = scan_cloc.as_of_display(collapse_today=True)
+        context.analyses.append(("cloc", "cloc"))
 
     scan_fxtd = Scan.get_most_recent(project, "fxtd", "fxtd")
     if scan_fxtd:
         context.fxtd_0 = fxtd_0(args, project, scan_fxtd)
         context.fxtd_d = None
         context.as_of_dates["fxtd"] = scan_fxtd.as_of_display(collapse_today=True)
+        context.analyses.append(("fxtd", "fxtd"))
 
     scan_ruff = Scan.get_most_recent(project, "ruff", "ruff")
     if scan_ruff:
         context.ruff_0 = ruff_0(args, project, scan_ruff)
         context.ruff_d = ruff_d(args, project, scan_ruff)
         context.as_of_dates["ruff"] = scan_ruff.as_of_display(collapse_today=True)
+        context.analyses.append(("ruff", "ruff"))
 
     scan_ty = Scan.get_most_recent(project, "ty", "ty")
     if scan_ty:
         context.ty_0 = ty_0(args, project, scan_ty)
         context.ty_d = ty_d(args, project, scan_ty)
         context.as_of_dates["ty"] = scan_ty.as_of_display(collapse_today=True)
+        context.analyses.append(("ty", "ty"))
 
     scan_cc = Scan.get_most_recent(project, "radon", "cc")
     if scan_cc:
         context.cc_0 = cc_0(args, project, scan_cc)
         context.cc_d = cc_d(args, project, scan_cc)
         context.as_of_dates["cc"] = scan_cc.as_of_display(collapse_today=True)
+        context.analyses.append(("radon", "cc"))
 
     scan_hal = Scan.get_most_recent(project, "radon", "hal")
     if scan_hal:
         context.hal_0 = hal_0(args, project, scan_hal)
         context.hal_d = hal_d(args, project, scan_hal)
         context.as_of_dates["hal"] = scan_hal.as_of_display(collapse_today=True)
+        context.analyses.append(("radon", "hal"))
 
     scan_mi = Scan.get_most_recent(project, "radon", "mi")
     if scan_mi:
         context.mi_0 = mi_0(args, project, scan_mi)
         context.mi_d = None
         context.as_of_dates["mi"] = scan_mi.as_of_display(collapse_today=True)
+        context.analyses.append(("radon", "mi"))
 
     scan_raw = Scan.get_most_recent(project, "radon", "raw")
     if scan_raw:
         context.raw_0 = raw_0(args, project, scan_raw)
         context.raw_d = None
         context.as_of_dates["raw"] = scan_raw.as_of_display(collapse_today=True)
+        context.analyses.append(("radon", "raw"))
 
     return render_partial(template, **context.__dict__)

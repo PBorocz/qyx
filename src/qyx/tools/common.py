@@ -4,7 +4,7 @@ from argparse import Namespace
 
 from peewee import ModelSelect
 
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Request, Scan
 
 
@@ -16,12 +16,12 @@ def get_loc(args: Namespace, project: Project) -> int | None:
 
     cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
     if cloc_scan:
-        result = query_cloc(args, ReportLevel.SUMMARY, scan=cloc_scan)
+        result = query_cloc(args, Rl.SUMMARY, scan=cloc_scan)
         return result.lines_code
 
     radon_scan = Scan.get_most_recent(project, "radon", "raw")
     if radon_scan:
-        result = query_raw(args, ReportLevel.SUMMARY, project, radon_scan)
+        result = query_raw(args, Rl.SUMMARY, project, radon_scan)
         return result.sloc
 
     return None

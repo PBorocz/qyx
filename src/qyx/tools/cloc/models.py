@@ -8,7 +8,6 @@ from typing import Any
 
 from peewee import IntegerField, fn
 
-from qyx.constants import ReportLevel
 from qyx.tools.base import BaseResultsModel, Project, Scan
 from qyx.tools.common import get_scans_for_pta
 from qyx.utils import bucket, rate_of_change_percentage
@@ -35,29 +34,23 @@ class Cloc(BaseResultsModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-def query(
-    args: Namespace,
-    level: str = ReportLevel.SUMMARY,
-    project: Project = None,
-    scan: Scan = None,
-    last: int = None,
-) -> Any:
-    match level.lower():
-        case ReportLevel.SUMMARY:
-            return _query_0(scan)
-        case ReportLevel.DIRECTORY:
-            return _query_1(scan)
-        case ReportLevel.FILE:
-            return _query_2(scan)
-        case ReportLevel.DERIVED:
-            return _query_d(args, scan)
-        case "f":
-            return _query_f(args, scan)
-        case ReportLevel.HISTORY:
-            return _query_h(project, last)
+# def query(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
+#     match level.lower():
+#         case Rl.SUMMARY:
+#             return _query_0(scan)
+#         case Rl.DIRECTORY:
+#             return _query_1(scan)
+#         case Rl.FILE:
+#             return _query_2(scan)
+#         case Rl.DERIVED:
+#             return _query_d(args, scan)
+#         case "f":
+#             return _query_f(args, scan)
+#         case Rl.HISTORY:
+#             return _query_h(project, last)
 
 
-def _query_0(scan: Scan) -> Any:
+def query_0(scan: Scan) -> Any:
     row = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -87,8 +80,8 @@ def _query_0(scan: Scan) -> Any:
     return row
 
 
-def _query_1(scan: Scan) -> Any:
-    grand_total = _query_0(scan)
+def query_1(scan: Scan) -> Any:
+    grand_total = query_0(scan)
     rows = (
         Cloc.select(
             Cloc.directory,
@@ -112,7 +105,7 @@ def _query_1(scan: Scan) -> Any:
     return rows
 
 
-def _query_2(scan: Scan) -> [list[Cloc], dict[str, int], int]:
+def query_2(scan: Scan) -> [list[Cloc], dict[str, int], int]:
     rows = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename)
     column_totals = defaultdict(int)
     for row in rows:
@@ -131,7 +124,7 @@ def _query_2(scan: Scan) -> [list[Cloc], dict[str, int], int]:
     return rows, dict(column_totals), grand_total
 
 
-def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict, defaultdict]:
+def query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict, defaultdict]:
     scans = get_scans_for_pta(project, tool="cloc", last=last)
     query = (
         Cloc.select(
@@ -192,9 +185,9 @@ def _query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict
     return timestamps, messages, query, transposed, grand_totals, roc, adgs
 
 
-def _query_d(args: Namespace, scan: Scan) -> Any:
+def query_d(args: Namespace, scan: Scan) -> Any:
     """Calculate all 'derived' report values."""
-    row = _query_0(scan)
+    row = query_0(scan)
     if not row or not row.lines_code:
         return None
 
@@ -213,7 +206,7 @@ def _query_d(args: Namespace, scan: Scan) -> Any:
     return row
 
 
-def _query_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
+def query_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
     """Calculate histogram buckets over filesize."""
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     bucket_breaks = [level["min"] for level in buckets]

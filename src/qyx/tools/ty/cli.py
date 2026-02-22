@@ -4,7 +4,7 @@ import logging
 from argparse import Namespace
 
 from qyx.cli import cli_console, cli_table
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
 from qyx.tools.ty.models import query
 from qyx.utils import format_timestamp_headers
@@ -23,24 +23,24 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
     log.debug(f"{scan=}")
     match args.level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             ty_0(args, scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             ty_1(args, scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             ty_2(args, scan)
-        case ReportLevel.DETAIL:
+        case Rl.GRANULAR:
             ty_3(args, scan)
-        case ReportLevel.DERIVED:
+        case Rl.DERIVED:
             ty_d(args, project, scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             ty_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 
 
 def ty_0(args: Namespace, scan: Scan) -> None:
-    row = query(args, ReportLevel.SUMMARY, scan=scan)
+    row = query(args, Rl.SUMMARY, scan=scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -49,8 +49,8 @@ def ty_0(args: Namespace, scan: Scan) -> None:
 
 
 def ty_1(args: Namespace, scan: Scan) -> None:
-    summary = query(args, ReportLevel.SUMMARY, scan=scan)
-    results = query(args, ReportLevel.DIRECTORY, scan=scan)
+    summary = query(args, Rl.SUMMARY, scan=scan)
+    results = query(args, Rl.DIRECTORY, scan=scan)
     show_footer = True if results else False
     table = cli_table(title=f"TY @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Check", footer="TOTAL")
@@ -62,7 +62,7 @@ def ty_1(args: Namespace, scan: Scan) -> None:
 
 
 def ty_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, ReportLevel.FILE, scan=scan)
+    rows = query(args, Rl.FILE, scan=scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Directory")
     table.add_column("Check")
@@ -73,7 +73,7 @@ def ty_2(args: Namespace, scan: Scan) -> None:
 
 
 def ty_3(args: Namespace, scan: Scan) -> None:
-    rows = query(args, ReportLevel.DETAIL, scan=scan)
+    rows = query(args, Rl.GRANULAR, scan=scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("File")
     table.add_column("Check")
@@ -84,7 +84,7 @@ def ty_3(args: Namespace, scan: Scan) -> None:
 
 
 def ty_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query(args, ReportLevel.DERIVED, project=project, scan=scan)
+    row = query(args, Rl.DERIVED, project=project, scan=scan)
 
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")
@@ -105,10 +105,10 @@ def ty_d(args: Namespace, project: Project, scan: Scan) -> None:
     cli_console.print(table)
 
 
-# History at the ReportLevel.SUMMARY level...
+# History at the Rl.SUMMARY level...
 def ty_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, rows, roc = query(args, ReportLevel.HISTORY, project=project, last=5)
+    timestamps, _, rows, roc = query(args, Rl.HISTORY, project=project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################
@@ -145,8 +145,8 @@ def ty_h(args: Namespace, project: Project) -> None:
 # Still used??
 #
 # def _report_history(project: Project) -> None:
-#     """Report on the history of scans "across" at the ReportLevel.DIRECTORY level."""
-#     rows, messages, transposed, grand_totals = query(args, ReportLevel.HISTORY, project=project, last=5)
+#     """Report on the history of scans "across" at the Rl.DIRECTORY level."""
+#     rows, messages, transposed, grand_totals = query(args, Rl.HISTORY, project=project, last=5)
 #     ################################################################################################
 #     # Render the table
 #     ################################################################################################

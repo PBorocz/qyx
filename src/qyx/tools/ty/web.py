@@ -6,7 +6,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.ty.models import query
 from qyx.web import get_project_selector
@@ -58,31 +58,31 @@ def render_content(template: str = "ty::fragments/body.html") -> str:
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query(args, ReportLevel.SUMMARY, scan=scan))
+    return dict(row=query(args, Rl.SUMMARY, scan=scan))
 
 
 def ty_1(args: Namespace, project: Project, scan: Scan):
-    summary = query(args, ReportLevel.SUMMARY, scan=scan)
-    results = query(args, ReportLevel.DIRECTORY, scan=scan)
+    summary = query(args, Rl.SUMMARY, scan=scan)
+    results = query(args, Rl.DIRECTORY, scan=scan)
     return dict(summary=summary, results=results)
 
 
 def ty_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, ReportLevel.FILE, scan=scan))
+    return dict(rows=query(args, Rl.FILE, scan=scan))
 
 
 def ty_3(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, ReportLevel.DETAIL, scan=scan))
+    return dict(rows=query(args, Rl.GRANULAR, scan=scan))
 
 
 def ty_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ty metrics."""
-    return dict(row=query(args, ReportLevel.DERIVED, project=project, scan=scan))
+    return dict(row=query(args, Rl.DERIVED, project=project, scan=scan))
 
 
 def ty_h(args: Namespace, project: Project, scan: Scan):
     """Render the history chart of number of issues over time."""
-    _, messages, rows, _ = query(args, ReportLevel.HISTORY, project=project)
+    _, messages, rows, _ = query(args, Rl.HISTORY, project=project)
     if not rows:
         return None
 

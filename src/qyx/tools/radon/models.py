@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import BaseModel, BaseResultsModel, Project, Scan
 from qyx.tools.common import get_scans_for_pta
 from qyx.utils import rate_of_change_percentage
@@ -181,13 +181,13 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 def query_raw(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             return _query_raw_0(scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             return _query_raw_1(scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             return _query_raw_2(scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             return _query_raw_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
@@ -304,17 +304,17 @@ def _query_raw_h(project: Project, last: int = None) -> Any:
 ################################################################################################
 def query_hal(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             return _query_hal_0(scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             return _query_hal_1(scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             return _query_hal_2(scan)
-        case ReportLevel.DETAIL:
+        case Rl.GRANULAR:
             return _query_hal_3(scan)
-        case ReportLevel.DERIVED:
+        case Rl.DERIVED:
             return _query_hal_d(args, project, scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             return _query_hal_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level requested {level=}")
@@ -504,13 +504,13 @@ def _query_hal_d(args: Namespace, project: Project, scan: Scan):
 ################################################################################################
 def query_mi(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             return _query_mi_0(args, scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             return _query_mi_1(args, scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             return _query_mi_2(args, scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             return _query_mi_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")
@@ -628,17 +628,17 @@ def _query_mi_h(project, last: int = 5) -> Any:
 ################################################################################################
 def query_cc(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
     match level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             return _query_cc_0(scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             return _query_cc_1(scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             return _query_cc_2(scan)
-        case ReportLevel.DETAIL:
+        case Rl.GRANULAR:
             return _query_cc_3(scan)
-        case ReportLevel.DERIVED:
+        case Rl.DERIVED:
             return _query_cc_d(args, scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             return _query_cc_h(project, last)
         case _:
             raise RuntimeError(f"Sorry, invalid query level encountered! {level}")

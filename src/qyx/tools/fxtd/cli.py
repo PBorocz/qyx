@@ -4,7 +4,7 @@ import logging
 from argparse import Namespace
 
 from qyx.cli import cli_console, cli_table
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
 from qyx.tools.fxtd.models import query
 from qyx.utils import format_timestamp_headers
@@ -22,20 +22,20 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
         return None
 
     match args.level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             fxtd_0(args, project, scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             fxtd_1(args, project, scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             fxtd_2(args, project, scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             fxtd_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, grand_total, composite = query(args, ReportLevel.SUMMARY, project, scan)
+    rows, grand_total, composite = query(args, Rl.SUMMARY, project, scan)
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=True)
 
@@ -60,7 +60,7 @@ def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def fxtd_1(args: Namespace, project: Project, scan: Scan) -> None:
-    results, grand_total = query(args, ReportLevel.DIRECTORY, project, scan)
+    results, grand_total = query(args, Rl.DIRECTORY, project, scan)
     show_footer = True if results else False
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=show_footer)
@@ -73,7 +73,7 @@ def fxtd_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def fxtd_2(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query(args, ReportLevel.FILE, project, scan)
+    rows = query(args, Rl.FILE, project, scan)
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
     table.add_column("Type")
     table.add_column("File [line]")
@@ -85,7 +85,7 @@ def fxtd_2(args: Namespace, project: Project, scan: Scan) -> None:
 
 def fxtd_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, transposed, rocs = query(args, ReportLevel.HISTORY, project, None, last=5)
+    timestamps, _, transposed, rocs = query(args, Rl.HISTORY, project, None, last=5)
 
     timestamps_formatted = format_timestamp_headers(timestamps)
 

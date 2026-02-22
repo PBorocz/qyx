@@ -4,10 +4,10 @@ import logging
 from argparse import Namespace
 
 from qyx.cli import cli_console, cli_table
-from qyx.constants import ReportLevel
+from qyx.constants import ReportLevel as Rl
 from qyx.tools import format_int_or_percentage as fmt
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.cloc.models import query
+from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -23,22 +23,22 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
         return None
 
     match args.level.lower():
-        case ReportLevel.SUMMARY:
+        case Rl.SUMMARY:
             cloc_0(args, scan)
-        case ReportLevel.DIRECTORY:
+        case Rl.DIRECTORY:
             cloc_1(args, scan)
-        case ReportLevel.FILE:
+        case Rl.FILE:
             cloc_2(args, scan)
-        case ReportLevel.DERIVED:
+        case Rl.DERIVED:
             cloc_d(args, scan)
-        case ReportLevel.HISTORY:
+        case Rl.HISTORY:
             cloc_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
 
 
 def cloc_0(args: Namespace, scan: Scan) -> None:
-    result = query(args, ReportLevel.SUMMARY, scan=scan)
+    result = query_0(scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("LOC", justify="center")
     table.add_column("Comments", justify="center")
@@ -54,8 +54,8 @@ def cloc_0(args: Namespace, scan: Scan) -> None:
 
 
 def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
-    grand_total = query(args, ReportLevel.SUMMARY, scan=scan)
-    detail_rows = query(args, ReportLevel.DIRECTORY, scan=scan)
+    grand_total = query_0(scan)
+    rows_directory_level = query_1(scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
 
@@ -70,7 +70,7 @@ def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
     table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, False))
 
-    for result in detail_rows:
+    for result in rows_directory_level:
         table.add_row(
             result.directory,
             f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
@@ -82,7 +82,7 @@ def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
 
 def cloc_2(args: Namespace, scan: Scan) -> None:
-    rows, column_totals, grand_total = query(args, ReportLevel.FILE, scan=scan)
+    rows, column_totals, grand_total = query_2(scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
@@ -102,7 +102,7 @@ def cloc_2(args: Namespace, scan: Scan) -> None:
 
 
 def cloc_d(args: Namespace, scan: Scan) -> None:
-    row = query(args, ReportLevel.DERIVED, scan=scan)
+    row = query_d(args, scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("Metric")
@@ -131,13 +131,7 @@ def cloc_d(args: Namespace, scan: Scan) -> None:
 
 
 def cloc_h(args: Namespace, project: Project, scan: Scan) -> None:
-    timestamps, messages, rows, transposed, grand_totals, roc, adgs = query(
-        args,
-        ReportLevel.HISTORY,
-        project=project,
-        scan=scan,
-        last=5,
-    )
+    timestamps, messages, rows, transposed, grand_totals, roc, adgs = query_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)
