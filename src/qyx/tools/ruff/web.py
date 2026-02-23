@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.ruff.models import query_0, query_1, query_2, query_d, query_h
+from qyx.tools.ruff.models import query_0, query_1, query_2, query_h
 from qyx.web import get_project_selector
 from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
@@ -49,18 +49,17 @@ def render_content(template: str = "ruff::body.htmx") -> str:
     context.ruff_0 = ruff_0(args, project, scan)
     context.ruff_1 = ruff_1(args, project, scan)
     context.ruff_2 = ruff_2(args, project, scan)
-    context.ruff_d = ruff_d(args, project, scan)
     context.ruff_h = ruff_h(args, project, scan)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
 
 def ruff_0(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query_0(scan))
+    return dict(row=query_0(args, project, scan))
 
 
 def ruff_1(args: Namespace, project: Project, scan: Scan):
-    summary = query_0(scan)
+    summary = query_0(args, project, scan)
     results = query_1(scan)
     return dict(summary=summary, results=results)
 
@@ -71,7 +70,7 @@ def ruff_2(args: Namespace, project: Project, scan: Scan):
 
 def ruff_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ruff metrics."""
-    return dict(row=query_d(args, project, scan))
+    return None
 
 
 def ruff_h(args: Namespace, project: Project, scan: Scan):

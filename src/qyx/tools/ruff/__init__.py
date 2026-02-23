@@ -24,10 +24,10 @@ class Configuration(ToolType):
     def __init__(self):
         """..."""
         cli = {
-            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
         }
         web = {
-            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
         }
 
         super(Configuration, self).__init__(

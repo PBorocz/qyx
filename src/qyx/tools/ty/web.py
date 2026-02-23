@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_d, query_h
+from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_h
 from qyx.web import get_project_selector
 from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
@@ -50,14 +50,13 @@ def render_content(template: str = "ty::body.htmx") -> str:
     context.ty_1 = ty_1(args, project, scan)
     context.ty_2 = ty_2(args, project, scan)
     context.ty_3 = ty_3(args, project, scan)
-    context.ty_d = ty_d(args, project, scan)
     context.ty_h = ty_h(args, project, scan)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query_0(scan))
+    return dict(row=query_0(args, project, scan))
 
 
 def ty_1(args: Namespace, project: Project, scan: Scan):
@@ -74,9 +73,9 @@ def ty_3(args: Namespace, project: Project, scan: Scan):
     return dict(rows=query_3(scan))
 
 
-def ty_d(args: Namespace, project: Project, scan: Scan):
-    """Report on derived ty metrics."""
-    return dict(row=query_d(args, project, scan))
+# def ty_d(args: Namespace, project: Project, scan: Scan):
+#     """Report on derived ty metrics."""
+#     return dict(row=query_d(args, project, scan))
 
 
 def ty_h(args: Namespace, project: Project, scan: Scan):

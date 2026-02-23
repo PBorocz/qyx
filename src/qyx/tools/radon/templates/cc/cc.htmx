@@ -21,11 +21,6 @@
   </details>
 
   <details name="details">
-    <summary>Derived Metrics</summary>
-    {% include "radon::cc/cc_d.htmx" %}
-  </details>
-
-  <details name="details">
     <summary>Trend</summary>
     <div class="bordered">{{ cc_h }}</div>
   </details>

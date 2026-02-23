@@ -78,22 +78,21 @@ tools:
         - {min: 20, max: .inf, grade: "F", color: "#ef4444"}
     composite_weighted_per_kloc:
       weights:
-        FIXME: 3.0      # Critical - broken or needs immediate fix
-        XXX: 3.0        # Critical - danger/warning marker
-        HACK: 3.0       # Critical - temporary workaround
-        BUG: 3.0        # Critical - known bug
-        TODO: 2.0       # Normal - planned work
-        REFACTOR: 1.0   # Normal - planned improvement
-        NOTE: 0.5       # Low Priority - informational
-        OPTIMIZE: 0.5   # Low Priority - performance opportunity
-        IDEA: 0.5       # Low Priority - future consideration
+        FIXME: 3.0      # Important (broken or needs immediate fix?)
+        XXX: 3.0        # Important (danger/warning marker?)
+        HACK: 3.0       # Important (temporary workaround?)
+        BUG: 3.0        # Important (known bug?)
+        TODO: 2.0       # Normal    (planned work?)
+        REFACTOR: 1.0   # Normal    (planned improvement?)
+        NOTE: 0.5       # Low       (informational?)
+        OPTIMIZE: 0.5   # Low       (performance opportunity?)
+        IDEA: 0.5       # Low       (future consideration?)
       thresholds:
         - {min:  0, max:    2, grade: "A", color: "#22c55e"}
         - {min:  2, max:    5, grade: "B", color: "#84cc16"}
         - {min:  5, max:   10, grade: "C", color: "#eab308"}
         - {min: 10, max:   20, grade: "D", color: "#f97316"}
         - {min: 20, max: .inf, grade: "F", color: "#ef4444"}
-
   radon:
     run:
       command:
@@ -103,20 +102,25 @@ tools:
         - --json
         - "{absolute}"
     cc:
+    #
+    # Standards reference:
+    # - McCabe (1976)*: CC > 10 indicates high risk
+    # - NIST          : CC > 15 is concerning, > 20 is dangerous
+    #
       classes:
         thresholds:
-          - {min:   0, max:   20, grade: "A", color: "#22c55e"}
-          - {min:  20, max:   40, grade: "B", color: "#84cc16"}
-          - {min:  40, max:   80, grade: "C", color: "#eab308"}
-          - {min:  80, max:  150, grade: "D", color: "#f97316"}
-          - {min: 150, max: .inf, grade: "F", color: "#ef4444"}
+          - {min:  0, max:   10, grade: "A", color: "#22c55e"}
+          - {min: 10, max:   20, grade: "B", color: "#84cc16"}
+          - {min: 20, max:   30, grade: "C", color: "#eab308"}
+          - {min: 30, max:   40, grade: "D", color: "#f97316"}
+          - {min: 40, max: .inf, grade: "F", color: "#ef4444"}
       callables:
         thresholds:
-          - {min:   0, max:   20, grade: "A", color: "#22c55e"}
-          - {min:  20, max:   40, grade: "B", color: "#84cc16"}
-          - {min:  40, max:   80, grade: "C", color: "#eab308"}
-          - {min:  80, max:  150, grade: "D", color: "#f97316"}
-          - {min: 150, max: .inf, grade: "F", color: "#ef4444"}
+          - {min:  0, max:   10, grade: "A", color: "#22c55e"}
+          - {min: 10, max:   20, grade: "B", color: "#84cc16"}
+          - {min: 20, max:   30, grade: "C", color: "#eab308"}
+          - {min: 30, max:   40, grade: "D", color: "#f97316"}
+          - {min: 40, max: .inf, grade: "F", color: "#ef4444"}
     mi:
       mean:
         thresholds:

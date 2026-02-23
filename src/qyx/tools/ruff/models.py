@@ -31,8 +31,9 @@ class Ruff(BaseResultsModel):
         indexes = ((("scan", "directory", "filename", "line", "column", "rule_code"), True),)
 
 
-def query_0(scan: Scan):
-    return (
+def query_0(args: Namespace, project: Project, scan: Scan):
+    """Calculate summary ruff metrics."""
+    result = (
         Ruff.select(
             fn.COUNT(Ruff.id).alias("count"),
         )
@@ -41,6 +42,12 @@ def query_0(scan: Scan):
         )
         .first()
     )
+    if lines_of_code := get_loc(args, project):
+        result = _derived_violations_per_kloc(args, lines_of_code, result)
+        result = _derived_weighted_violations_per_kloc(args, lines_of_code, result, scan)
+    else:
+        log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have any LOC metrics yet!")
+    return result
 
 
 def query_1(scan: Scan):
@@ -119,18 +126,6 @@ def query_h(project: Project, last: int = None):
             roc = rate_of_change_percentage(value_2, value_1)
 
     return timestamps, messages, transposed, roc
-
-
-def query_d(args: Namespace, project: Project, scan: Scan):
-    """Calculate derived ruff metrics."""
-    if not (lines_of_code := get_loc(args, project)):
-        log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have any LOC metrics yet!")
-        return None, None
-
-    result = query_0(scan)
-    result = _derived_violations_per_kloc(args, lines_of_code, result)
-    result = _derived_weighted_violations_per_kloc(args, lines_of_code, result, scan)
-    return result
 
 
 def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result):

@@ -72,26 +72,19 @@ class RadonCc(BaseResultsModel):
     # fmt: on
 
     @classmethod
-    def rank_display(cls, complexity: float) -> str:
-        """Return the grade score (aka "rank") for the given complexity measure."""
-        if complexity < 5.0:
-            return "A"  # low - simple block
-        elif 5.0 <= complexity < 10.0:
-            return "B"  # low - well structured and stable block
-        elif 10.0 <= complexity < 20.0:
-            return "C"  # moderate - slightly complex block
-        elif 20.0 <= complexity < 30.0:
-            return "D"  # more than moderate - more complex block
-        elif 30.0 <= complexity < 40.0:
-            return "E"  # high - complex block, alarming
-        else:
-            return "F"  # very high - error-prone, unstable block
-
-    @classmethod
     def entity_type_display(cls, entity_type: str) -> str:
         """Return the grade score (aka "rank") for the given complexity measure."""
         plurals = dict(C="Classes", F="Functions", M="Methods")
         return plurals.get(entity_type.upper(), None)
+
+    @classmethod
+    def get_threshold_type(cls, entity_type: str) -> str:
+        """Return the appropriate threshold entry from the configuration file for the entity type."""
+        return (
+            "tools.radon.cc.classes"
+            if entity_type.upper() == "C"  # HARD-CODE!
+            else "tools.radon.cc.callables"
+        )
 
     class Meta:
         """Define peewee meta data."""
@@ -521,7 +514,15 @@ def query_mi_1(args, scan: Scan) -> Any:
 
 
 def query_mi_2(args, scan: Scan) -> tuple:
-    rows = RadonMi.select().where(RadonMi.scan == scan).order_by(RadonMi.mi.asc(), RadonMi.directory, RadonMi.filename)
+    rows = (
+        RadonMi.select()
+        .where(RadonMi.scan == scan)
+        .order_by(
+            RadonMi.mi.asc(),
+            RadonMi.directory,
+            RadonMi.filename,
+        )
+    )
     mi_metric = query_mi_0(args, scan)
     return mi_metric, rows
 
@@ -579,7 +580,8 @@ def query_mi_h(project, last: int = 5) -> Any:
 ################################################################################################
 # CC
 ################################################################################################
-def query_cc_0(scan: Scan) -> list:
+def query_cc_0(args: Namespace, scan: Scan):
+    """Calculate derived radon-cc metric(s)."""
     query = (
         RadonCc.select(
             RadonCc.entity_type.alias("entity_type"),
@@ -589,15 +591,25 @@ def query_cc_0(scan: Scan) -> list:
         .group_by(RadonCc.entity_type)
         .order_by(fn.COUNT(RadonCc.id).desc())
     )
-    return_ = []
+    results = []
     for row in query:
-        row.rank = RadonCc.rank_display(row.complexity)
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
-        return_.append(row)
-    return return_
+        _threshold_type = (
+            "tools.radon.cc.classes"  # Allow for different scoring on classes vs. functions/method callables
+            if row.entity_type.upper() == "C"  # HARD-CODE!
+            else "tools.radon.cc.callables"
+        )
+        row.metric = score_metric(
+            args,
+            RadonCc.get_threshold_type(row.entity_type),
+            row.complexity,
+        )
+        results.append(row)
+
+    return results
 
 
-def query_cc_1(scan: Scan) -> Any:
+def query_cc_1(args: Namespace, scan: Scan) -> Any:
     query = (
         RadonCc.select(
             RadonCc.directory,
@@ -610,13 +622,17 @@ def query_cc_1(scan: Scan) -> Any:
     )
     return_ = []
     for row in query:
-        row.rank = RadonCc.rank_display(row.complexity)
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
+        row.metric = score_metric(
+            args,
+            RadonCc.get_threshold_type(row.entity_type),
+            row.complexity,
+        )
         return_.append(row)
     return return_
 
 
-def query_cc_2(scan: Scan) -> Any:
+def query_cc_2(args: Namespace, scan: Scan) -> Any:
     query = (
         RadonCc.select(
             RadonCc.directory,
@@ -630,13 +646,17 @@ def query_cc_2(scan: Scan) -> Any:
     )
     return_ = []
     for row in query:
-        row.rank = RadonCc.rank_display(row.complexity)
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
+        row.metric = score_metric(
+            args,
+            RadonCc.get_threshold_type(row.entity_type),
+            row.complexity,
+        )
         return_.append(row)
     return return_
 
 
-def query_cc_3(scan: Scan) -> Any:
+def query_cc_3(args: Namespace, scan: Scan) -> Any:
     query = (
         RadonCc.select()
         .where(
@@ -650,27 +670,14 @@ def query_cc_3(scan: Scan) -> Any:
     )
     return_ = []
     for row in query:
-        row.rank = RadonCc.rank_display(row.complexity)
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
+        row.metric = score_metric(
+            args,
+            RadonCc.get_threshold_type(row.entity_type),
+            row.complexity,
+        )
         return_.append(row)
     return return_
-
-
-def query_cc_d(args: Namespace, scan: Scan):
-    """Calculate derived radon-cc metric(s)."""
-    # Standards reference:
-    # - McCabe (1976)*: CC > 10 indicates high risk
-    # - NIST          : CC > 15 is concerning, > 20 is dangerous
-    results = query_cc_0(scan)
-    for result in results:
-        threshold_type = (
-            "tools.radon.cc.classes"
-            if result.entity_type.upper() == "C"  # HARD-CODE!
-            else "tools.radon.cc.callables"  # ie. (F)unctions and (M)ethods
-        )
-        result.cc_d = score_metric(args, threshold_type, result.complexity)
-
-    return results
 
 
 def query_cc_h(project: Project, last: int = None) -> Any:

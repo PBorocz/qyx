@@ -6,7 +6,7 @@ from argparse import Namespace
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_d, query_h
+from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -31,8 +31,6 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             ty_2(args, project, scan)
         case Rl.GRANULAR:
             ty_3(args, project, scan)
-        case Rl.DERIVED:
-            ty_d(args, project, scan)
         case Rl.HISTORY:
             ty_h(args, project)
         case Rl.ALL:
@@ -40,23 +38,38 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             ty_1(args, project, scan)
             ty_2(args, project, scan)
             ty_3(args, project, scan)
-            ty_d(args, project, scan)
             ty_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query_0(scan)
-    table = cli_table(title=f"TY @ {scan.as_of_display()}", show_header=False)
-    table.add_column("_", style="bold magenta")
-    table.add_column("_", style="bold magenta")
-    table.add_row("Issues", f"{row.count:,d}")
+    row = query_0(args, project, scan)
+
+    table = cli_table(title=f"TY @ {scan.as_of_display()}")
+    table.add_column("Metric", justify="left")
+    table.add_column("Value", justify="right")
+    table.add_column("Grade", justify="center")
+
+    table.add_row("Ty Checks", f"{row.count:,d}", "-")
+
+    if row.violations_per_kloc:
+        table.add_row(
+            "Ty Checks Encountered per kLOC",
+            f"{row.violations_per_kloc.score:.0f}",
+            f"{row.violations_per_kloc.grade}",
+        )
+    if row.weighted_violations_per_kloc:
+        table.add_row(
+            "Weighted Ty Checks per kLOC",
+            f"{row.weighted_violations_per_kloc.score:.0f}",
+            f"{row.weighted_violations_per_kloc.grade}",
+        )
     cli_console.print(table)
 
 
 def ty_1(args: Namespace, project: Project, scan: Scan) -> None:
-    summary = query_0(scan)
+    summary = query_0(args, project, scan)
     results = query_1(scan)
     show_footer = True if results else False
     table = cli_table(title=f"TY @ {scan.as_of_display()}", show_footer=show_footer)
@@ -87,28 +100,6 @@ def ty_3(args: Namespace, project: Project, scan: Scan) -> None:
     table.add_column("Description")
     for row in rows:
         table.add_row(f"{row.directory}/{row.filename}", row.check_name, row.description)
-    cli_console.print(table)
-
-
-def ty_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query_d(args, project, scan)
-
-    table = cli_table(title=f"TY @ {scan.as_of_display()}")
-    table.add_column("Metric", justify="left")
-    table.add_column("Value", justify="right")
-    table.add_column("Grade", justify="center")
-    if row.violations_per_kloc:
-        table.add_row(
-            "Ty Checks Encountered per kLOC",
-            f"{row.violations_per_kloc.score:.0f}",
-            f"{row.violations_per_kloc.grade}",
-        )
-    if row.weighted_violations_per_kloc:
-        table.add_row(
-            "Weighted Ty Checks per kLOC",
-            f"{row.weighted_violations_per_kloc.score:.0f}",
-            f"{row.weighted_violations_per_kloc.grade}",
-        )
     cli_console.print(table)
 
 

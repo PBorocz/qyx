@@ -92,23 +92,23 @@ def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Sca
 # CC
 ################################################################################
 def cc_0(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_0(scan))
+    return dict(rows=rm.query_cc_0(args, scan))
 
 
 def cc_1(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_1(scan))
+    return dict(rows=rm.query_cc_1(args, scan))
 
 
 def cc_2(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_2(scan))
+    return dict(rows=rm.query_cc_2(args, scan))
 
 
 def cc_3(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_3(scan))
+    return dict(rows=rm.query_cc_3(args, scan))
 
 
 def cc_d(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_d(args, scan))
+    return None
 
 
 def cc_h(args: Namespace, project: Project, scan: Scan) -> str:

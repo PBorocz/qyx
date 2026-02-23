@@ -6,7 +6,7 @@ from argparse import Namespace
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.ruff.models import query_0, query_1, query_2, query_d, query_h
+from qyx.tools.ruff.models import query_0, query_1, query_2, query_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -24,36 +24,53 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
     log.debug(f"{scan=}")
     match args.level.lower():
         case Rl.SUMMARY:
-            ruff_0(args, scan)
+            ruff_0(args, project, scan)
         case Rl.DIRECTORY:
-            ruff_1(args, scan)
+            ruff_1(args, project, scan)
         case Rl.FILE:
             ruff_2(args, scan)
-        case Rl.DERIVED:
-            ruff_d(args, project, scan)
         case Rl.HISTORY:
             ruff_h(args, project)
         case Rl.ALL:
-            ruff_0(args, scan)
-            ruff_1(args, scan)
+            ruff_0(args, project, scan)
+            ruff_1(args, project, scan)
             ruff_2(args, scan)
-            ruff_d(args, project, scan)
             ruff_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 
 
-def ruff_0(args: Namespace, scan: Scan) -> None:
-    row = query_0(scan)
-    table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_header=False)
-    table.add_column("_", style="bold magenta")
-    table.add_column("_", style="bold magenta")
-    table.add_row("Issues", f"{row.count:,d}")
+def ruff_0(args: Namespace, project: Project, scan: Scan) -> None:
+    row = query_0(args, project, scan)
+    table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
+    # table.add_column("_", style="bold magenta")
+    # table.add_column("_", style="bold magenta")
+    # table.add_row("Issues", f"{row.count:,d}")
+    # cli_console.print(table)
+
+    table.add_column("Metric", justify="left")
+    table.add_column("Value", justify="right")
+    table.add_column("Grade", justify="center")
+
+    table.add_row("Raw Ruff Issues", f"{row.count:,d}", "-")
+
+    if row.violations_per_kloc:
+        table.add_row(
+            "Raw Ruff Issues per kLOC",
+            f"{row.violations_per_kloc.score:.0f}",
+            f"{row.violations_per_kloc.grade}",
+        )
+    if row.weighted_violations_per_kloc:
+        table.add_row(
+            "Weighted Ruff Issues per kLOC",
+            f"{row.weighted_violations_per_kloc.score:.0f}",
+            f"{row.weighted_violations_per_kloc.grade}",
+        )
     cli_console.print(table)
 
 
-def ruff_1(args: Namespace, scan: Scan) -> None:
-    summary = query_0(scan)
+def ruff_1(args: Namespace, project: Project, scan: Scan) -> None:
+    summary = query_0(args, project, scan)
     results = query_1(scan)
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
@@ -73,28 +90,6 @@ def ruff_2(args: Namespace, scan: Scan) -> None:
     table.add_column("Message")
     for row in rows:
         table.add_row(row.rule_code, f"{row.directory}/{row.filename} [{row.line}] ", row.message)
-    cli_console.print(table)
-
-
-def ruff_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query_d(args, project, scan)
-
-    table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
-    table.add_column("Metric", justify="left")
-    table.add_column("Value", justify="right")
-    table.add_column("Grade", justify="center")
-    if row.violations_per_kloc:
-        table.add_row(
-            "Raw Ruff Issues per kLOC",
-            f"{row.violations_per_kloc.score:.0f}",
-            f"{row.violations_per_kloc.grade}",
-        )
-    if row.weighted_violations_per_kloc:
-        table.add_row(
-            "Weighted Ruff Issues per kLOC",
-            f"{row.weighted_violations_per_kloc.score:.0f}",
-            f"{row.weighted_violations_per_kloc.grade}",
-        )
     cli_console.print(table)
 
 

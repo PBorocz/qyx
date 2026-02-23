@@ -19,10 +19,10 @@ class Configuration(ToolType):
     def __init__(self):
         """..."""
         cli = {
-            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.DERIVED, Rl.HISTORY),
+            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.HISTORY),
         }
         web = {
-            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.DERIVED, Rl.HISTORY),
+            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.HISTORY),
         }
 
         super(Configuration, self).__init__(

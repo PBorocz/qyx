@@ -10,10 +10,10 @@ from qyx.tools.cloc.web import cloc_0, cloc_d
 from qyx.tools.fxtd.web import fxtd_0
 from qyx.tools.radon.web import cc_0, cc_d
 from qyx.tools.radon.web import hal_0, hal_d
-from qyx.tools.radon.web import mi_0, mi_d
-from qyx.tools.radon.web import raw_0, raw_d
-from qyx.tools.ruff.web import ruff_0, ruff_d
-from qyx.tools.ty.web import ty_0, ty_d
+from qyx.tools.radon.web import mi_0
+from qyx.tools.radon.web import raw_0
+from qyx.tools.ruff.web import ruff_0
+from qyx.tools.ty.web import ty_0
 from qyx.web import get_project_selector
 from qyx.web.page import render_page, render_partial
 
@@ -63,14 +63,14 @@ def render_content(template: str = "base::fragments/body.html"):
     scan_ruff = Scan.get_most_recent(project, "ruff", "ruff")
     if scan_ruff:
         context.ruff_0 = ruff_0(args, project, scan_ruff)
-        context.ruff_d = ruff_d(args, project, scan_ruff)
+        context.ruff_d = None
         context.as_of_dates["ruff"] = scan_ruff.as_of_display(collapse_today=True)
         context.analyses.append(("ruff", "ruff"))
 
     scan_ty = Scan.get_most_recent(project, "ty", "ty")
     if scan_ty:
         context.ty_0 = ty_0(args, project, scan_ty)
-        context.ty_d = ty_d(args, project, scan_ty)
+        context.ty_d = None
         context.as_of_dates["ty"] = scan_ty.as_of_display(collapse_today=True)
         context.analyses.append(("ty", "ty"))
 

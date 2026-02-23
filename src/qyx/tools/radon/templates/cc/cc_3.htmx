@@ -6,7 +6,7 @@
       <th scope="col" style="text-align: left"  >Entity Name</th>
       <th scope="col" style="text-align: left"  >Entity Type</th>
       <th scope="col" style="text-align: right" >Complexity</th>
-      <th scope="col" style="text-align: center">Rank</th>
+      <th scope="col" style="text-align: center">Grade</th>
     </tr>
   </thead>
   <tbody>
@@ -17,7 +17,7 @@
       <td style="text-align: left"  >{{ row.entity_type                 }}</td>
       <td style="text-align: left"  >{{ row.entity_name                 }}</td>
       <td style="text-align: right" >{{ "{:.2f}".format(row.complexity) }}</td>
-      <td style="text-align: center">{{ row.rank                        }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ row.metric.color }}">{{ row.metric.grade }}
     </tr>
     {% endfor %}
   </tbody>

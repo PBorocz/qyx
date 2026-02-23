@@ -41,84 +41,70 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 # CC
 ################################################################################
 def cc_0(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = rm.query_cc_0(scan)
+    rows = rm.query_cc_0(args, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")
-    table.add_column("Rank", justify="center")
+    table.add_column("Grade", justify="center")
     for row in rows:
         table.add_row(
             row.entity_type,
-            f"{row.complexity:.2f}",
             row.rank,
+            f"{row.metric.score:.1f}",
+            row.metric.grade,
         )
     cli_console.print(table)
 
 
 def cc_1(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = rm.query_cc_1(scan)
+    rows = rm.query_cc_1(args, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Directory", justify="left")
     table.add_column("Entity Type", justify="left")
     table.add_column("Complexity", justify="right")
-    table.add_column("Rank", justify="center")
+    table.add_column("Grade", justify="center")
     for row in rows:
         table.add_row(
             row.directory,
             row.entity_type,
             f"{row.complexity:.2f}",
-            row.rank,
+            row.metric.grade,
         )
     cli_console.print(table)
 
 
 def cc_2(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = rm.query_cc_2(scan)
+    rows = rm.query_cc_2(args, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Type", justify="left")
     table.add_column("Complexity", justify="right")
-    table.add_column("Rank", justify="center")
+    table.add_column("Grade", justify="center")
     for row in rows:
         table.add_row(
             f"{row.directory}/{row.filename}",
             row.entity_type,
             f"{row.complexity:.2f}",
-            row.rank,
+            row.metric.grade,
         )
     cli_console.print(table)
 
 
 def cc_3(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = rm.query_cc_3(scan)
+    rows = rm.query_cc_3(args, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Name", justify="left")
     table.add_column("Entity Type", justify="left")
     table.add_column("Complexity", justify="right")
-    table.add_column("Rank", justify="center")
+    table.add_column("Grade", justify="center")
     for row in rows:
         table.add_row(
             f"{row.directory}/{row.filename}",
             row.entity_name,
             row.entity_type,
             f"{row.complexity:.2f}",
-            row.rank,
-        )
-    cli_console.print(table)
-
-
-def cc_d(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = rm.query_cc_d(args, scan)
-    table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
-    table.add_column("Entity Type", justify="left")
-    table.add_column("Value", justify="right")
-    table.add_column("Grade", justify="center")
-    for row in rows:
-        table.add_row(
-            f"{row.entity_type}",
-            f"{row.cc_d.score:.1f}",
-            row.cc_d.grade,
+            row.metric.grade,
         )
     cli_console.print(table)
 
