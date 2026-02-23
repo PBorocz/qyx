@@ -40,11 +40,14 @@ class StatusLevel(str, Enum):
 class ReportLevel(str, Enum):
     """Levels available for report command."""
 
+    # Note: we tie the "values" of this enum to actual method calls
+    # so be very careful renaming! for example: tools/radon/cli.py:20
+
     # fmt: off
     SUMMARY   = "0"
     DIRECTORY = "1"
     FILE      = "2"
-    GRANULAR  = "g"
+    GRANULAR  = "3"  # Primarily used for Radon @class/method/function level; other tools: TBD
     DERIVED   = "d"
     HISTORY   = "h"
     ALL       = "*"

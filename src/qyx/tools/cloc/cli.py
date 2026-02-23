@@ -33,6 +33,12 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             cloc_d(args, scan)
         case Rl.HISTORY:
             cloc_h(args, project, scan)
+        case Rl.ALL:
+            cloc_0(args, scan)
+            cloc_1(args, scan)
+            cloc_2(args, scan)
+            cloc_d(args, scan)
+            cloc_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
 

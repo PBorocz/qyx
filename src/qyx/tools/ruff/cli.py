@@ -33,6 +33,12 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             ruff_d(args, project, scan)
         case Rl.HISTORY:
             ruff_h(args, project)
+        case Rl.ALL:
+            ruff_0(args, scan)
+            ruff_1(args, scan)
+            ruff_2(args, scan)
+            ruff_d(args, project, scan)
+            ruff_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 

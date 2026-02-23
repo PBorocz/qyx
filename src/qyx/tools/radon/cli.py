@@ -22,11 +22,18 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
         log.info(f"Sorry, we haven't performed a '{analysis}' measurement yet for this project.")
         return None
 
-    method: Callable = globals().get(f"{analysis}_{args.level.lower()}")  # Lookup from below..
-    if not method:
-        log.error(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
-        return
-    method(args, project=project, scan=scan)
+    if args.level != Rl.ALL:
+        # We're only running a single report..
+        method: Callable = globals().get(f"{analysis}_{args.level.lower()}")  # Lookup from below..
+        if not method:
+            log.error(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
+            return
+        method(args, project=project, scan=scan)
+    else:
+        for rl_ in Rl:
+            method: Callable = globals().get(f"{analysis}_{rl_.value}")  # Lookup from below..
+            if method:
+                method(args, project=project, scan=scan)
 
 
 ################################################################################################

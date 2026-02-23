@@ -30,6 +30,11 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             fxtd_2(args, project, scan)
         case Rl.HISTORY:
             fxtd_h(args, project)
+        case Rl.ALL:
+            fxtd_0(args, project, scan)
+            fxtd_1(args, project, scan)
+            fxtd_2(args, project, scan)
+            fxtd_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 
