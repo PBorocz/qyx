@@ -5,7 +5,6 @@ from argparse import Namespace
 
 from peewee import fn, CharField, IntegerField, JOIN
 
-from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import BaseResultsModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_pta
 from qyx.utils import rate_of_change_percentage
@@ -32,27 +31,7 @@ class Ruff(BaseResultsModel):
         indexes = ((("scan", "directory", "filename", "line", "column", "rule_code"), True),)
 
 
-def query(
-    args: Namespace,
-    level: str,
-    project: Project = None,
-    scan: Scan = None,
-    last: int = None,
-) -> Ruff:
-    match level.lower():
-        case Rl.SUMMARY:
-            return _query_0(scan)
-        case Rl.DIRECTORY:
-            return _query_1(scan)
-        case Rl.FILE:
-            return _query_2(scan)
-        case Rl.DERIVED:
-            return _query_d(args, project, scan)
-        case Rl.HISTORY:
-            return _query_h(project, last)
-
-
-def _query_0(scan: Scan):
+def query_0(scan: Scan):
     return (
         Ruff.select(
             fn.COUNT(Ruff.id).alias("count"),
@@ -64,7 +43,7 @@ def _query_0(scan: Scan):
     )
 
 
-def _query_1(scan: Scan):
+def query_1(scan: Scan):
     from qyx.tools.ruff import get_ruff_rule_name
 
     query = (
@@ -90,7 +69,7 @@ def _query_1(scan: Scan):
     return rows
 
 
-def _query_2(scan: Scan):
+def query_2(scan: Scan):
     return (
         Ruff.select()
         .where(
@@ -104,7 +83,7 @@ def _query_2(scan: Scan):
     )
 
 
-def _query_h(project: Project, last: int = None):
+def query_h(project: Project, last: int = None):
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular
     # scan. We still want the timestamp back with a Ruff count of *0*.
@@ -142,13 +121,13 @@ def _query_h(project: Project, last: int = None):
     return timestamps, messages, transposed, roc
 
 
-def _query_d(args: Namespace, project: Project, scan: Scan):
+def query_d(args: Namespace, project: Project, scan: Scan):
     """Calculate derived ruff metrics."""
     if not (lines_of_code := get_loc(args, project)):
         log.warning("Sorry, unable to calculate derived Ruff metrics as we don't have any LOC metrics yet!")
         return None, None
 
-    result = _query_0(scan)
+    result = query_0(scan)
     result = _derived_violations_per_kloc(args, lines_of_code, result)
     result = _derived_weighted_violations_per_kloc(args, lines_of_code, result, scan)
     return result

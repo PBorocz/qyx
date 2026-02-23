@@ -6,9 +6,8 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.ty.models import query
+from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_d, query_h
 from qyx.web import get_project_selector
 from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
@@ -58,31 +57,31 @@ def render_content(template: str = "ty::body.htmx") -> str:
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query(args, Rl.SUMMARY, project, scan))
+    return dict(row=query_0(scan))
 
 
 def ty_1(args: Namespace, project: Project, scan: Scan):
-    summary = query(args, Rl.SUMMARY, project, scan)
-    results = query(args, Rl.DIRECTORY, project, scan)
+    summary = query_0(scan)
+    results = query_1(scan)
     return dict(summary=summary, results=results)
 
 
 def ty_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, Rl.FILE, project, scan))
+    return dict(rows=query_2(scan))
 
 
 def ty_3(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, Rl.GRANULAR, project, scan))
+    return dict(rows=query_3(scan))
 
 
 def ty_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ty metrics."""
-    return dict(row=query(args, Rl.DERIVED, project, scan))
+    return dict(row=query_d(args, project, scan))
 
 
 def ty_h(args: Namespace, project: Project, scan: Scan):
     """Render the history chart of number of issues over time."""
-    _, messages, rows, _ = query(args, Rl.HISTORY, project, None)
+    _, messages, rows, _ = query_h(project)
     if not rows:
         return None
 

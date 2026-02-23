@@ -6,7 +6,7 @@ from argparse import Namespace
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.ruff.models import query
+from qyx.tools.ruff.models import query_0, query_1, query_2, query_d, query_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def ruff_0(args: Namespace, scan: Scan) -> None:
-    row = query(args, Rl.SUMMARY, scan=scan)
+    row = query_0(scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -53,8 +53,8 @@ def ruff_0(args: Namespace, scan: Scan) -> None:
 
 
 def ruff_1(args: Namespace, scan: Scan) -> None:
-    summary = query(args, Rl.SUMMARY, scan=scan)
-    results = query(args, Rl.DIRECTORY, scan=scan)
+    summary = query_0(scan)
+    results = query_1(scan)
     show_footer = True if results else False
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Rule", footer="TOTAL")
@@ -66,7 +66,7 @@ def ruff_1(args: Namespace, scan: Scan) -> None:
 
 
 def ruff_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, Rl.FILE, scan=scan)
+    rows = query_2(scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule")
     table.add_column("File [line]")
@@ -77,7 +77,7 @@ def ruff_2(args: Namespace, scan: Scan) -> None:
 
 
 def ruff_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query(args, Rl.DERIVED, project=project, scan=scan)
+    row = query_d(args, project, scan)
 
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")
@@ -101,7 +101,7 @@ def ruff_d(args: Namespace, project: Project, scan: Scan) -> None:
 # History at the Rl.SUMMARY level...
 def ruff_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, rows, roc = query(args, Rl.HISTORY, project=project, last=5)
+    timestamps, _, rows, roc = query_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################

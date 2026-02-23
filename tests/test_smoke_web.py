@@ -1,13 +1,13 @@
 """..."""
 
-from argparse import Namespace
+import inspect
 
-import pytest
+from argparse import Namespace
 
 from qyx.tools.base import Scan
 
 
-def _get_test_cases(app_args, ingested_project):
+def _get_granular_view_cases(app_args, ingested_project):
     cases = []
     for o_tool in app_args.tools.values():
         for analysis, report_level in o_tool.iter_reports("web"):
@@ -35,15 +35,24 @@ def _get_test_cases(app_args, ingested_project):
     return cases
 
 
-def test_web_rendering_methods(app_args, ingested_project, subtests):
+def call_test_with_args(func, **kwargs):
+    """Call func with only the arguments it accepts from kwargs (thanks Claude ;-)."""
+    sig = inspect.signature(func)
+    valid_params = sig.parameters.keys()
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
+    return func(**filtered_kwargs)
+
+
+def test_web_views(app_args, ingested_project, subtests):
     """Test that each URL returns a valid HTTP status code."""
-    for case in _get_test_cases(app_args, ingested_project):
+    for case in _get_granular_view_cases(app_args, ingested_project):
         with subtests.test(case.msg):
             #
             # Run the test (running without error is our primary test!!)
             #
-            result = case.web_render_method(
-                app_args,
+            result = call_test_with_args(
+                case.web_render_method,
+                args=app_args,
                 project=ingested_project,
                 scan=case.scan,
             )
@@ -54,8 +63,10 @@ def test_web_rendering_methods(app_args, ingested_project, subtests):
             match result:
                 case None:
                     pass
+
                 case dict():
                     pass
+
                 case list():
                     # Only happens when return raw Namespaces
                     for foo in result:
@@ -64,22 +75,7 @@ def test_web_rendering_methods(app_args, ingested_project, subtests):
                 case str() as html:
                     assert html.startswith("<html>")
                     assert html.endswith("</html>")
-                # case bytes() as html:
-                #     print(f"Bytes? Unexpected return type: {type(result)}")
-                #     breakpoint()
-                #     assert html.startswith(b"<html>")
-                #     assert html.endswith(b"</html>")
-                # case tuple() as components if len(components) > 0:
-                #     print(f"tuple-1? Unexpected return type: {type(result)}")
-                #     breakpoint()
 
-                #     for component in components:
-                #         assert hasattr(component, "__ft__") or hasattr(component, "to_xml")
-                # case tuple():  # Empty tuple
-                #     print(f"tuple-2? Unexpected return type: {type(result)}")
-                #     breakpoint()
-
-                #     pass
                 case _:
                     if not hasattr(result, "__data__"):
                         print(f"Unexpected return type: {type(result)}")

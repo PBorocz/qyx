@@ -32,19 +32,7 @@ class Fxtd(BaseResultsModel):
         indexes = ((("scan", "directory", "filename", "line"), True),)
 
 
-def query(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Fxtd:
-    match level.lower():
-        case Rl.SUMMARY:
-            return _query_0(args, project, scan)
-        case Rl.DIRECTORY:
-            return _query_1(scan)
-        case Rl.FILE:
-            return _query_2(scan)
-        case Rl.HISTORY:
-            return _query_h(project, last)
-
-
-def _query_0(args: Namespace, project: Project, scan: Scan):
+def query_0(args: Namespace, project: Project, scan: Scan):
     """Calculate summary level fxtd metrics."""
     rows_by_type = (
         Fxtd.select(
@@ -77,7 +65,7 @@ def _query_0(args: Namespace, project: Project, scan: Scan):
     return rows_by_type, grand_total, composite_weighted_score
 
 
-def _query_1(scan: Scan):
+def query_1(scan: Scan):
     rows = (
         Fxtd.select(
             Fxtd.directory,
@@ -92,7 +80,7 @@ def _query_1(scan: Scan):
     return rows, grand_total
 
 
-def _query_2(scan: Scan):
+def query_2(scan: Scan):
     return (
         Fxtd.select()
         .where(Fxtd.scan == scan)
@@ -104,7 +92,7 @@ def _query_2(scan: Scan):
     )
 
 
-def _query_h(project: Project, last: int = None):
+def query_h(project: Project, last: int = None):
     scans = get_scans_for_pta(project, tool="fxtd", last=last)
     rows = (
         Scan.select(

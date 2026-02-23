@@ -38,14 +38,14 @@
         {% if tool == analysis %}
 
         <h4>{{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
-        {% include tool ~ "::fragments/body/level_0.html" %}
-        {% include tool ~ "::fragments/body/level_d.html" %}
+        {% include tool ~ "::level_0.htmx" %}
+        {% include tool ~ "::level_d.htmx" %}
 
         {% else %}
 
         <h4>{{ tool.upper() }} - {{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
-        {% include tool ~ "::" ~ analysis ~ "/fragments/body/" ~ analysis ~ "_0.html" %}
-        {% include tool ~ "::" ~ analysis ~ "/fragments/body/" ~ analysis ~ "_d.html" %}
+        {% include tool ~ "::" ~ analysis ~ "/" ~ analysis ~ "_0.htmx" %}
+        {% include tool ~ "::" ~ analysis ~ "/" ~ analysis ~ "_d.htmx" %}
 
         {% endif %}
 

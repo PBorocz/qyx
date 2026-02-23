@@ -4,7 +4,6 @@ from argparse import Namespace
 
 from peewee import ModelSelect
 
-from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Request, Scan
 
 
@@ -12,7 +11,7 @@ def get_loc(args: Namespace, project: Project) -> int | None:
     """Return the lines of code obo the specific Project (based on the most recent scans available)."""
     # We get LOC through either "cloc" and "Radon-Raw", try them both in order!
     from qyx.tools.cloc.models import query_0 as query_cloc_0
-    from qyx.tools.radon.models import query_raw
+    from qyx.tools.radon.models import query_raw_0
 
     cloc_scan = Scan.get_most_recent(project, "cloc", "cloc")
     if cloc_scan:
@@ -21,7 +20,7 @@ def get_loc(args: Namespace, project: Project) -> int | None:
 
     radon_scan = Scan.get_most_recent(project, "radon", "raw")
     if radon_scan:
-        result = query_raw(args, Rl.SUMMARY, project, radon_scan)
+        result = query_raw_0(radon_scan)
         return result.sloc
 
     return None

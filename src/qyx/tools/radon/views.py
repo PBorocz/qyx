@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def cc_0(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_cc(args, Rl.SUMMARY, project, scan)
+    rows = query_cc_0(scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type")
     table.add_column("Complexity", justify="right")
@@ -28,7 +28,7 @@ def cc_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def cc_1(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_cc(args, Rl.DIRECTORY, project, scan)
+    rows = query_cc_1(scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Directory", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -45,7 +45,7 @@ def cc_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def cc_2(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_cc(args, Rl.FILE, project, scan)
+    rows = query_cc_2(scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Type", justify="left")
@@ -62,7 +62,7 @@ def cc_2(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def cc_3(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_cc(args, Rl.GRANULAR, project, scan)
+    rows = query_cc_3(args, project, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("File", justify="left")
     table.add_column("Entity Name", justify="left")
@@ -81,7 +81,7 @@ def cc_3(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def cc_d(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_cc(args, Rl.DERIVED, project, scan)
+    rows = query_cc_d(args, project, scan)
     table = cli_table(title=f"RADON-CC @ {scan.as_of_display()}")
     table.add_column("Entity Type", justify="left")
     table.add_column("Value", justify="right")
@@ -96,7 +96,7 @@ def cc_d(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def cc_h(args: Namespace, project: Project, scan: Scan) -> None:
-    timestamps, _, transposed, roc = query_cc(args, Rl.HISTORY, project, None, last=5)
+    timestamps, _, transposed, roc = query_cc_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-CC Results Over Time")
     table.add_column("Complexity", justify="left")
@@ -143,7 +143,7 @@ log = logging.getLogger(__name__)
 
 
 def hal_0(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query_hal(args, Rl.SUMMARY, scan)
+    row = query_hal_0(args, scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     table.add_column("Metric")
     table.add_column("Value", justify="right")
@@ -153,7 +153,7 @@ def hal_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def hal_1(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, mean_means = query_hal(args, Rl.DIRECTORY, project, scan)
+    rows, mean_means = query_hal_1(scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="Mean")
     for attr in RadonHal.attrs():
@@ -167,7 +167,7 @@ def hal_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def hal_2(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, means = query_hal(args, Rl.FILE, project, scan)
+    rows, means = query_hal_2(scan)
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
@@ -186,7 +186,7 @@ def hal_2(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def hal_3(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, means = query_hal(args, Rl.GRANULAR, project, scan)
+    rows, means = query_hal_3(args, project, scan)
 
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", justify="left", footer="Mean")
@@ -206,7 +206,7 @@ def hal_3(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def hal_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query_hal(args, Rl.DERIVED, project, scan)
+    row = query_hal_d(args, project, scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     # fmt: off
     table.add_column("Metric" , justify="left")
@@ -221,7 +221,7 @@ def hal_d(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def hal_h(args: Namespace, project: Project, scan: Scan) -> None:
-    timestamps, _, transposed, rocs = query_hal(args, Rl.HISTORY, project, None, last=5)
+    timestamps, _, transposed, rocs = query_hal_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-HAL Results Over Time")
     table.add_column("Metric", justify="left")
@@ -269,7 +269,7 @@ log = logging.getLogger(__name__)
 
 
 def mi_0(args: Namespace, project: Project, scan: Scan) -> None:
-    mi_ = query_mi(args, Rl.SUMMARY, project, scan)
+    mi_ = query_mi_0(scan)
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -281,7 +281,7 @@ def mi_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def mi_1(args: Namespace, project: Project, scan: Scan) -> None:
-    mi_, mi_by_directory = query_mi(args, Rl.DIRECTORY, project, scan)
+    mi_, mi_by_directory = query_mi_1(scan)
     show_footer = True if mi_ else False
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
@@ -296,7 +296,7 @@ def mi_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def mi_2(args: Namespace, project: Project, scan: Scan) -> None:
-    mi_, rows = query_mi(args, Rl.FILE, project, scan)
+    mi_, rows = query_mi_2(scan)
     show_footer = True if mi_ else False
 
     table = cli_table(title=f"RADON-MI @ {scan.as_of_display()}", show_footer=show_footer)
@@ -315,7 +315,7 @@ def mi_2(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def mi_h(args: Namespace, project: Project, scan: Scan) -> None:
-    _, rows, roc = query_mi(args, Rl.HISTORY, project, None, last=5)
+    _, rows, roc = query_mi_h(project, last=5)
     timestamps = list(rows.keys())
     timestamps_formatted = format_timestamp_headers(timestamps)
 
@@ -369,7 +369,7 @@ def raw_0(args: Namespace, project: Project, scan: Scan) -> None:
     table.add_column("Blank"   , justify="right")
     table.add_column("Total"   , justify="right")
     # fmt: on
-    row = query_raw(args, Rl.SUMMARY, project, scan)
+    row = query_raw_0(scan)
     table.add_row(
         f"{row.sloc:,} ({row.sloc_p:.1f}%)",
         f"{row.comments:,} ({row.comments_p:.1f}%)",
@@ -381,7 +381,7 @@ def raw_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def raw_1(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, totals = query_raw(args, Rl.DIRECTORY, project, scan)
+    rows, totals = query_raw_1(scan)
 
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}", show_footer=True)
     # fmt: off
@@ -405,7 +405,7 @@ def raw_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def raw_2(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_raw(args, Rl.FILE, project, scan)
+    rows = query_raw_2(scan)
     # Calculate grand totals
     totals = defaultdict(int)
     for row in rows:
@@ -436,7 +436,7 @@ def raw_2(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def raw_h(args: Namespace, project: Project, scan: Scan) -> None:
-    timestamps, _, transposed, rocs, roc_gt = query_raw(args, Rl.HISTORY, project, None, last=5)
+    timestamps, _, transposed, rocs, roc_gt = query_raw_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     table = cli_table(title="RADON-RAW Results Over Time", show_footer=True)
     table.add_column("Metric", justify="left", footer="-")

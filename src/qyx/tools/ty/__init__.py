@@ -22,7 +22,7 @@ class Configuration(ToolType):
             AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.DERIVED, Rl.HISTORY),
         }
         web = {
-            # AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.DERIVED, Rl.HISTORY),
         }
 
         super(Configuration, self).__init__(

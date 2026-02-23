@@ -8,7 +8,7 @@ from bottle import request
 
 from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.fxtd.models import query
+from qyx.tools.fxtd.models import query_0, query_1, query_2, query_h
 from qyx.web import get_project_selector
 from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
@@ -47,29 +47,29 @@ def render_content(template: str = "fxtd::body.htmx") -> str:
     context = Namespace()
     context.fxtd_as_of = scan.as_of_display(collapse_today=True)
     context.fxtd_0 = fxtd_0(args, project, scan)
-    context.fxtd_1 = fxtd_1(args, project, scan)
-    context.fxtd_2 = fxtd_2(args, project, scan)
-    context.fxtd_h = fxtd_h(args, project, scan)
+    context.fxtd_1 = fxtd_1(scan)
+    context.fxtd_2 = fxtd_2(scan)
+    context.fxtd_h = fxtd_h(args, project)
     # fmt: on
     return render_partial(template, **context.__dict__)
 
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan):
-    rows, grand_total, composite = query(args, Rl.SUMMARY, project, scan)
+    rows, grand_total, composite = query_0(args, project, scan)
     return dict(rows=rows, grand_total=grand_total, composite=composite)
 
 
-def fxtd_1(args: Namespace, project: Project, scan: Scan):
-    results, grand_total = query(args, Rl.DIRECTORY, project, scan)
+def fxtd_1(scan: Scan):
+    results, grand_total = query_1(scan)
     return dict(results=results, grand_total=grand_total)
 
 
-def fxtd_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, Rl.FILE, project, scan))
+def fxtd_2(scan: Scan):
+    return dict(rows=query_2(scan))
 
 
-def fxtd_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
-    timestamps, messages, transposed, rocs = query(args, Rl.HISTORY, project, None)
+def fxtd_h(args: Namespace, project: Project) -> bytes | None:
+    timestamps, messages, transposed, rocs = query_h(project)
     if not transposed:
         return None
 
