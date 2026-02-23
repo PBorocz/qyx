@@ -27,27 +27,27 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "radon::hal/fragments/body/hal_0.html" %}
+    {% include "radon::hal/hal_0.htmx" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "radon::hal/fragments/body/hal_1.html" %}
+    {% include "radon::hal/hal_1.htmx" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "radon::hal/fragments/body/hal_2.html" %}
+    {% include "radon::hal/hal_2.htmx" %}
   </details>
 
   <details name="details">
     <summary>By Entity</summary>
-    {% include "radon::hal/fragments/body/hal_3.html" %}
+    {% include "radon::hal/hal_3.htmx" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "radon::hal/fragments/body/hal_d.html" %}
+    {% include "radon::hal/hal_d.htmx" %}
   </details>
 
   <details name="details">

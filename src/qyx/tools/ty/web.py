@@ -17,7 +17,7 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(template: str = "ty::pages/main.html") -> str:
+def render(template: str = "ty::page.html") -> str:
     """Render the primary page layout for this tools display page."""
     project_options = get_project_selector()
     return render_page(
@@ -29,7 +29,7 @@ def render(template: str = "ty::pages/main.html") -> str:
 
 
 ################################################################################################
-def render_content(template: str = "ty::fragments/body.html") -> str:
+def render_content(template: str = "ty::body.htmx") -> str:
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
 
@@ -58,31 +58,31 @@ def render_content(template: str = "ty::fragments/body.html") -> str:
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query(args, Rl.SUMMARY, scan=scan))
+    return dict(row=query(args, Rl.SUMMARY, project, scan))
 
 
 def ty_1(args: Namespace, project: Project, scan: Scan):
-    summary = query(args, Rl.SUMMARY, scan=scan)
-    results = query(args, Rl.DIRECTORY, scan=scan)
+    summary = query(args, Rl.SUMMARY, project, scan)
+    results = query(args, Rl.DIRECTORY, project, scan)
     return dict(summary=summary, results=results)
 
 
 def ty_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, Rl.FILE, scan=scan))
+    return dict(rows=query(args, Rl.FILE, project, scan))
 
 
 def ty_3(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query(args, Rl.GRANULAR, scan=scan))
+    return dict(rows=query(args, Rl.GRANULAR, project, scan))
 
 
 def ty_d(args: Namespace, project: Project, scan: Scan):
     """Report on derived ty metrics."""
-    return dict(row=query(args, Rl.DERIVED, project=project, scan=scan))
+    return dict(row=query(args, Rl.DERIVED, project, scan))
 
 
 def ty_h(args: Namespace, project: Project, scan: Scan):
     """Render the history chart of number of issues over time."""
-    _, messages, rows, _ = query(args, Rl.HISTORY, project=project)
+    _, messages, rows, _ = query(args, Rl.HISTORY, project, None)
     if not rows:
         return None
 

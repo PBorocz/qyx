@@ -367,9 +367,13 @@ def _prompt_status_level() -> StatusLevel:
 
 
 def _prompt_report_level() -> Rl:
-    choices = [Choice(title=level.description, value=level.value, shortcut_key=level.value) for level in Rl]
+    choices = [
+        Choice(title=level.description, value=level.value, shortcut_key=level.value)
+        for level in Rl
+        if level.value != "*"
+    ]
     # FIXME: Make the following work! (doesn't now as sentinel isn't in the Enum)
-    # choices.append(Choice(title="─── All ───", value="*", shortcut_key="a"))  # SENTINEL!
+    choices.append(Choice(title="─── All ───", value="*", shortcut_key="a"))  # SENTINEL!
     value = select(
         "Report Level:",
         choices=choices,

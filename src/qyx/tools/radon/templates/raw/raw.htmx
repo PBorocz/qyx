@@ -2,26 +2,26 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "radon::mi/fragments/body/mi_0.html" %}
+    {% include "radon::raw/raw_0.htmx" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "radon::mi/fragments/body/mi_1.html" %}
+    {% include "radon::raw/raw_1.htmx" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "radon::mi/fragments/body/mi_2.html" %}
+    {% include "radon::raw/raw_2.htmx" %}
   </details>
 
   <details name="details">
     <summary>Trends</summary>
-    <div class="bordered">{{ mi_h }}</div>
+    <div class="bordered">{{ raw_h }}</div>
   </details>
 
 </section>
 
 <hr />
 
-<h6>As Of {{ mi_as_of }}</h6>
+<h6>As Of {{ raw_as_of }}</h6>

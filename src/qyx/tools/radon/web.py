@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(template: str = "radon::pages/main.html") -> str:
+def render(template: str = "radon::page.html") -> str:
     """Render the tool's primary page."""
     return render_page(
         "QYX-RADON",
@@ -74,7 +74,7 @@ def render_content() -> str:
     State.update(args, project=project.name, analysis=analysis)
 
     # Template to return is based on the particular analysis requested:
-    template: str = f"radon::{analysis}/fragments/body.html"
+    template: str = f"radon::{analysis}/{analysis}.htmx"
 
     return render_partial(template, **context.__dict__)
 

@@ -24,23 +24,30 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
     log.debug(f"{scan=}")
     match args.level.lower():
         case Rl.SUMMARY:
-            ty_0(args, scan)
+            ty_0(args, project, scan)
         case Rl.DIRECTORY:
-            ty_1(args, scan)
+            ty_1(args, project, scan)
         case Rl.FILE:
-            ty_2(args, scan)
+            ty_2(args, project, scan)
         case Rl.GRANULAR:
-            ty_3(args, scan)
+            ty_3(args, project, scan)
         case Rl.DERIVED:
             ty_d(args, project, scan)
         case Rl.HISTORY:
+            ty_h(args, project)
+        case Rl.ALL:
+            ty_0(args, project, scan)
+            ty_1(args, project, scan)
+            ty_2(args, project, scan)
+            ty_3(args, project, scan)
+            ty_d(args, project, scan)
             ty_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
 
 
-def ty_0(args: Namespace, scan: Scan) -> None:
-    row = query(args, Rl.SUMMARY, scan=scan)
+def ty_0(args: Namespace, project: Project, scan: Scan) -> None:
+    row = query(args, Rl.SUMMARY, project, scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}", show_header=False)
     table.add_column("_", style="bold magenta")
     table.add_column("_", style="bold magenta")
@@ -48,9 +55,9 @@ def ty_0(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def ty_1(args: Namespace, scan: Scan) -> None:
-    summary = query(args, Rl.SUMMARY, scan=scan)
-    results = query(args, Rl.DIRECTORY, scan=scan)
+def ty_1(args: Namespace, project: Project, scan: Scan) -> None:
+    summary = query(args, Rl.SUMMARY, project, scan)
+    results = query(args, Rl.DIRECTORY, project, scan)
     show_footer = True if results else False
     table = cli_table(title=f"TY @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Check", footer="TOTAL")
@@ -61,8 +68,8 @@ def ty_1(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def ty_2(args: Namespace, scan: Scan) -> None:
-    rows = query(args, Rl.FILE, scan=scan)
+def ty_2(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query(args, Rl.FILE, project, scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Directory")
     table.add_column("Check")
@@ -72,8 +79,8 @@ def ty_2(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def ty_3(args: Namespace, scan: Scan) -> None:
-    rows = query(args, Rl.GRANULAR, scan=scan)
+def ty_3(args: Namespace, project: Project, scan: Scan) -> None:
+    rows = query(args, Rl.GRANULAR, project, scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("File")
     table.add_column("Check")
@@ -84,7 +91,7 @@ def ty_3(args: Namespace, scan: Scan) -> None:
 
 
 def ty_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query(args, Rl.DERIVED, project=project, scan=scan)
+    row = query(args, Rl.DERIVED, project, scan)
 
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")
@@ -108,7 +115,7 @@ def ty_d(args: Namespace, project: Project, scan: Scan) -> None:
 # History at the Rl.SUMMARY level...
 def ty_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, rows, roc = query(args, Rl.HISTORY, project=project, last=5)
+    timestamps, _, rows, roc = query(args, Rl.HISTORY, project, None, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
 
     ################################################################################################

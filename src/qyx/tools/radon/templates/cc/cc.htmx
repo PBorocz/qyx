@@ -2,27 +2,27 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "radon::cc/fragments/body/cc_0.html" %}
+    {% include "radon::cc/cc_0.htmx" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "radon::cc/fragments/body/cc_1.html" %}
+    {% include "radon::cc/cc_1.htmx" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "radon::cc/fragments/body/cc_2.html" %}
+    {% include "radon::cc/cc_2.htmx" %}
   </details>
 
   <details name="details">
     <summary>By Entity</summary>
-    {% include "radon::cc/fragments/body/cc_3.html" %}
+    {% include "radon::cc/cc_3.htmx" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "radon::cc/fragments/body/cc_d.html" %}
+    {% include "radon::cc/cc_d.htmx" %}
   </details>
 
   <details name="details">

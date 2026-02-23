@@ -34,22 +34,6 @@ class Cloc(BaseResultsModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-# def query(args: Namespace, level: str, project: Project, scan: Scan, last: int = None) -> Any:
-#     match level.lower():
-#         case Rl.SUMMARY:
-#             return _query_0(scan)
-#         case Rl.DIRECTORY:
-#             return _query_1(scan)
-#         case Rl.FILE:
-#             return _query_2(scan)
-#         case Rl.DERIVED:
-#             return _query_d(args, scan)
-#         case "f":
-#             return _query_f(args, scan)
-#         case Rl.HISTORY:
-#             return _query_h(project, last)
-
-
 def query_0(scan: Scan) -> Any:
     row = (
         Cloc.select(

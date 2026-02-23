@@ -4,17 +4,17 @@
 
     <details name="details" open>
       <summary>Summary</summary>
-      {% include "fxtd::fragments/body/level_0.html" %}
+      {% include "fxtd::level_0.htmx" %}
     </details>
 
     <details name="details">
       <summary>By Directory</summary>
-      {% include "fxtd::fragments/body/level_1.html" %}
+      {% include "fxtd::level_1.htmx" %}
     </details>
 
     <details name="details">
       <summary>By File</summary>
-      {% include "fxtd::fragments/body/level_2.html" %}
+      {% include "fxtd::level_2.htmx" %}
     </details>
 
   {% endif %}

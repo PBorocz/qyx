@@ -4,27 +4,27 @@
 
   <details name="details" open>
     <summary>Summary</summary>
-    {% include "ty::fragments/body/level_0.html" %}
+    {% include "ty::level_0.htmx" %}
   </details>
 
   <details name="details">
     <summary>By Check</summary>
-    {% include "ty::fragments/body/level_1.html" %}
+    {% include "ty::level_1.htmx" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "ty::fragments/body/level_2.html" %}
+    {% include "ty::level_2.htmx" %}
   </details>
 
   <details name="details">
     <summary>File</summary>
-    {% include "ty::fragments/body/level_3.html" %}
+    {% include "ty::level_3.htmx" %}
   </details>
 
   <details name="details">
     <summary>Derived Metrics</summary>
-    {% include "ty::fragments/body/level_d.html" %}
+    {% include "ty::level_d.htmx" %}
   </details>
 
   <details name="details">

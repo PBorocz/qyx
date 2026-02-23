@@ -44,9 +44,10 @@ class ReportLevel(str, Enum):
     SUMMARY   = "0"
     DIRECTORY = "1"
     FILE      = "2"
-    GRANULAR  = "3"
+    GRANULAR  = "g"
     DERIVED   = "d"
     HISTORY   = "h"
+    ALL       = "*"
     # fmt: on
 
     @property
@@ -59,6 +60,7 @@ class ReportLevel(str, Enum):
             "3": "Granular",
             "d": "Derived",
             "h": "History",
+            "*": "-All-",
         }
         return descriptions[self.value]
 

@@ -17,7 +17,7 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 # Page layout...
 ################################################################################################
-def render(template: str = "fxtd::pages/main.html") -> str:
+def render(template: str = "fxtd::page.html") -> str:
     """Render the primary page layout for this tools display page."""
     project_options = get_project_selector()
     return render_page(
@@ -29,7 +29,7 @@ def render(template: str = "fxtd::pages/main.html") -> str:
 
 
 ################################################################################################
-def render_content(template: str = "fxtd::fragments/body.html") -> str:
+def render_content(template: str = "fxtd::body.htmx") -> str:
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
     s_project_id = request.query.project

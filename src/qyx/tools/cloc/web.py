@@ -14,7 +14,7 @@ from qyx.web.page import render_page, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
-def render(template: str = "cloc::pages/main.html") -> str:
+def render(template: str = "cloc::page.html") -> str:
     """Render the tool's primary page."""
     project_options = get_project_selector()
     return render_page(
@@ -25,7 +25,7 @@ def render(template: str = "cloc::pages/main.html") -> str:
     )
 
 
-def render_content(template: str = "cloc::fragments/body.html"):
+def render_content(template: str = "cloc::body.htmx"):
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
 
