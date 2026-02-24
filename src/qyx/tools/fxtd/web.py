@@ -6,7 +6,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.constants import ReportLevel as Rl
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.fxtd.models import query_0, query_1, query_2, query_h
 from qyx.web import get_project_selector
@@ -54,7 +54,7 @@ def render_content(template: str = "fxtd::body.htmx") -> str:
     return render_partial(template, **context.__dict__)
 
 
-def fxtd_0(args: Namespace, project: Project, scan: Scan):
+def fxtd_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
     rows, grand_total, composite = query_0(args, project, scan)
     return dict(rows=rows, grand_total=grand_total, composite=composite)
 

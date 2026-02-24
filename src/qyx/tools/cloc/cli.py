@@ -5,6 +5,7 @@ from argparse import Namespace
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
+from qyx.constants import ViewContext as Vc
 from qyx.tools import format_int_or_percentage as fmt
 from qyx.tools.base import Project, Scan, ToolType
 from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_h

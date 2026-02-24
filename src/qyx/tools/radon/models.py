@@ -280,8 +280,8 @@ def query_raw_h(project: Project, last: int = None) -> Any:
 ################################################################################################
 # HAL
 ################################################################################################
-def query_hal_0(scan: Scan) -> Any:
-    return (
+def query_hal_0(args: Namespace, project: Project, scan: Scan) -> Any:
+    row = (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
             fn.AVG(RadonHal.h2).alias("h2"),
@@ -301,6 +301,31 @@ def query_hal_0(scan: Scan) -> Any:
         )
         .get()
     )
+    if not row:
+        return None
+
+    # Get SLOC values...
+    raw = query_raw_0(scan=Scan.get_most_recent(project, "radon", "raw"))
+
+    # Score Halstead effort per 1000 source lines of code.
+    metric_value = (row.bugs / raw.sloc) * 1000
+    row.bugs_d = score_metric(args, "tools.radon.hal.bugs", metric_value)
+
+    # Score Halstead effort per source line of code.
+    metric_value = row.effort / raw.sloc
+    row.effort_d = score_metric(args, "tools.radon.hal.effort", metric_value)
+
+    # Score Halstead difficulty metric.
+    row.difficulty_d = score_metric(args, "tools.radon.hal.difficulty", row.difficulty)
+
+    # Composite (after the above have been calculated!)
+    difficulty_score = max(0, 100 - (row.difficulty_d.score / 40) * 100)
+    bugs_score = max(0, 100 - (row.bugs_d.score / 1.0) * 100)
+    effort_score = max(0, 100 - (row.effort_d.score / 1000) * 100)
+    metric_value = bugs_score * 0.5 + difficulty_score * 0.3 + effort_score * 0.2
+    row.composite_d = score_metric(args, "tools.radon.hal.composite", metric_value)
+
+    return row
 
 
 def query_hal_1(scan: Scan) -> Any:
@@ -375,35 +400,6 @@ def query_hal_3(scan: Scan) -> Any:
         means[attr.name] = sum(values) / len(values) if values else None
 
     return rows, means
-
-
-def query_hal_d(args: Namespace, project: Project, scan: Scan):
-    """Calculate derived radon-hal metric(s)."""
-    raw = query_raw_0(scan=Scan.get_most_recent(project, "radon", "raw"))
-    row = query_hal_0(scan)
-
-    ################################################################################
-    # Calculate all HAL metrics
-    ################################################################################
-    # Score Halstead effort per 1000 source lines of code.
-    metric_value = (row.bugs / raw.sloc) * 1000
-    row.bugs_d = score_metric(args, "tools.radon.hal.bugs", metric_value)
-
-    # Score Halstead effort per source line of code.
-    metric_value = row.effort / raw.sloc
-    row.effort_d = score_metric(args, "tools.radon.hal.effort", metric_value)
-
-    # Score Halstead difficulty metric.
-    row.difficulty_d = score_metric(args, "tools.radon.hal.difficulty", row.difficulty)
-
-    # Composite (after the above have been calculated!)
-    difficulty_score = max(0, 100 - (row.difficulty_d.score / 40) * 100)
-    bugs_score = max(0, 100 - (row.bugs_d.score / 1.0) * 100)
-    effort_score = max(0, 100 - (row.effort_d.score / 1000) * 100)
-    metric_value = bugs_score * 0.5 + difficulty_score * 0.3 + effort_score * 0.2
-    row.composite_d = score_metric(args, "tools.radon.hal.composite", metric_value)
-
-    return row
 
 
 def query_hal_h(project: Project = None, last: int = 5) -> Any:

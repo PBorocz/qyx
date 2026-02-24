@@ -23,11 +23,6 @@
   </details>
 
   <details name="details">
-    <summary>Derived Metrics</summary>
-    {% include "ty::level_d.htmx" %}
-  </details>
-
-  <details name="details">
     <summary>Trend</summary>
     <div class="bordered">
       {{ ty_h }}

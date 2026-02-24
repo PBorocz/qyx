@@ -16,11 +16,6 @@
   </details>
 
   <details name="details">
-    <summary>Derived Metrics</summary>
-    {% include "cloc::level_d.htmx" %}
-  </details>
-
-  <details name="details">
     <summary>Trend</summary>
     <div class="bordered">{{ cloc_h }}</div>
   </details>

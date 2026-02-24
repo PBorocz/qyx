@@ -53,10 +53,12 @@ def query_0(scan: Scan) -> Any:
         row.lines_blank_p = (row.lines_blank / row.lines_total) * 100.0
         row.lines_code_p = (row.lines_code / row.lines_total) * 100.0
         row.lines_comment_p = (row.lines_comment / row.lines_total) * 100.0
+        row.lines_total_p = row.lines_blank_p + row.lines_code_p + row.lines_comment_p
     else:
         row.lines_blank_p = None
         row.lines_code_p = None
         row.lines_comment_p = None
+        row.lines_total_p = None
 
     # Find the number of files
     row.files_total = Cloc.select(fn.COUNT(Cloc.id).alias("files_total")).where(Cloc.scan == scan).get().files_total

@@ -3,13 +3,19 @@
     <tr>
       <th scope="col" style="text-align: left">Metric</th>
       <th scope="col" style="text-align: right">Value</th>
+      <th scope="col" style="text-align: center">Grade</th>
     </tr>
   </thead>
   <tbody>
     {% for row in hal_0 %}
     <tr>
       <td style="text-align: left">{{ row.metric }}</td>
-      <td style="text-align: right">{{ "{:.1f}".format(row.value) }}</td>
+      <td style="text-align: right">{{ "{:.2f}".format(row.score) }}</td>
+      {% if row.grade %}
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ row.color }}">{{ row.grade }}</td>
+      {% else %}
+      <td style="text-align: center">-</td>
+      {% endif %}
     </tr>
     {% endfor %}
   </tbody>

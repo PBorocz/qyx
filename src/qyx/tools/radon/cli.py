@@ -7,6 +7,7 @@ from typing import Callable
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import Project, Scan, ToolType
 from qyx.tools.radon import models as rm
 from qyx.tools.radon.models import RadonHal
@@ -146,13 +147,31 @@ def cc_h(args: Namespace, project: Project, scan: Scan) -> None:
 # HAL
 ################################################################################
 def hal_0(args: Namespace, project: Project, scan: Scan) -> None:
-    row = rm.query_hal_0(scan)
+    row = rm.query_hal_0(args, project, scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     table.add_column("Metric")
     table.add_column("Value", justify="right")
+    table.add_column("Grade", justify="center")
+
+    table.add_row("Composite Score", f"{row.composite_d.score:.1f}", row.composite_d.grade)
+    table.add_row("Mean Bugs per kLOC", f"{row.bugs_d.score:.1f}", row.bugs_d.grade)
+    table.add_row("Mean Effort per LOC", f"{row.effort_d.score:.1f}", row.effort_d.grade)
+    table.add_row("Mean Difficulty", f"{row.difficulty_d.score:.1f}", row.difficulty_d.grade)
+
     for attr in RadonHal.attrs():
         table.add_row(attr.display, f"{getattr(row, attr.name):.1f}")
     cli_console.print(table)
+
+
+# def hal_d(args: Namespace, project: Project, scan: Scan) -> None:
+#     row = rm.query_hal_d(args, project, scan)
+#     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
+#     # fmt: off
+#     table.add_column("Metric" , justify="left")
+#     table.add_column("Value"  , justify="right")
+#     table.add_column("Grade"  , justify="center")
+#     # fmt: on
+#     cli_console.print(table)
 
 
 def hal_1(args: Namespace, project: Project, scan: Scan) -> None:
@@ -205,21 +224,6 @@ def hal_3(args: Namespace, project: Project, scan: Scan) -> None:
                 value = f"{getattr(row, attr.name):,d}"
             t_row.append(value)
         table.add_row(*t_row)
-    cli_console.print(table)
-
-
-def hal_d(args: Namespace, project: Project, scan: Scan) -> None:
-    row = rm.query_hal_d(args, project, scan)
-    table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
-    # fmt: off
-    table.add_column("Metric" , justify="left")
-    table.add_column("Value"  , justify="right")
-    table.add_column("Grade"  , justify="center")
-    table.add_row("Mean Bugs per kLOC"  , f"{row.bugs_d.score:.1f}"      , row.bugs_d.grade)
-    table.add_row("Mean Difficulty"     , f"{row.difficulty_d.score:.1f}", row.difficulty_d.grade)
-    table.add_row("Mean Effort per LOC" , f"{row.effort_d.score:.1f}"    , row.effort_d.grade)
-    table.add_row("Composite Score"     , f"{row.composite_d.score:.1f}" , row.composite_d.grade)
-    # fmt: on
     cli_console.print(table)
 
 

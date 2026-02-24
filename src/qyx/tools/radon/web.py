@@ -6,6 +6,7 @@ from datetime import datetime
 
 from bottle import request
 
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.radon import models as rm
 from qyx.tools.radon.models import RadonCc
@@ -91,7 +92,7 @@ def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Sca
 ################################################################################
 # CC
 ################################################################################
-def cc_0(args: Namespace, project: Project, scan: Scan) -> dict:
+def cc_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict:
     return dict(rows=rm.query_cc_0(args, scan))
 
 
@@ -142,16 +143,34 @@ def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
 ################################################################################
 # HAL
 ################################################################################
-def hal_0(args: Namespace, project: Project, scan: Scan = None) -> list:
-    row = rm.query_hal_0(scan)
-    return_ = []
-    for attr in RadonHal.attrs():
-        value = Namespace(
-            metric=attr.display + " " + attr.calculation,
-            value=getattr(row, attr.name),
+def hal_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
+    row = rm.query_hal_0(args, project, scan)
+    rows = []
+    for metric, attr in [
+        ("Composite Score", "composite_d"),
+        ("Mean Bugs per kLOC", "bugs_d"),
+        ("Mean Difficulty", "difficulty_d"),
+        ("Mean Effort per LOC", "effort_d"),
+    ]:
+        rows.append(
+            Namespace(
+                metric=metric,
+                score=getattr(row, attr).score,
+                grade=getattr(row, attr).grade,
+                color=getattr(row, attr).color,
+            ),
         )
-        return_.append(value)
-    return return_
+    if context == Vc.TOOL_HOME:
+        # Only put the detailed values out for the tool home page, not the Dashboard.
+        for attr in RadonHal.attrs():
+            value = Namespace(
+                metric=attr.display + " " + attr.calculation,
+                score=getattr(row, attr.name),
+                grade="",
+                color="",
+            )
+            rows.append(value)
+    return rows
 
 
 def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
@@ -204,26 +223,6 @@ def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
     return dict(thead=thead, tbody=tbody)
 
 
-def hal_d(args: Namespace, project: Project, scan: Scan) -> list[Namespace]:
-    metric_row = rm.query_hal_d(args, project, scan)
-    rows = []
-    for name, attr in [
-        ("Mean Bugs per kLOC", "bugs_d"),
-        ("Mean Difficulty", "difficulty_d"),
-        ("Mean Effort per LOC", "effort_d"),
-        ("Composite Score", "composite_d"),
-    ]:
-        rows.append(
-            Namespace(
-                name=name,
-                score=getattr(metric_row, attr).score,
-                grade=getattr(metric_row, attr).grade,
-                color=getattr(metric_row, attr).color,
-            ),
-        )
-    return rows
-
-
 def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str]:
     _, messages, transposed, _ = rm.query_hal_h(project)
     if not transposed:
@@ -262,7 +261,7 @@ def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str
 ################################################################################
 # MI
 ################################################################################
-def mi_0(args: Namespace, project: Project, scan: Scan) -> dict[str, float | None]:
+def mi_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict[str, float | None]:
     return dict(metric=rm.query_mi_0(args, scan))
 
 
@@ -311,7 +310,7 @@ def mi_h(args: Namespace, project: Project, scan: Scan):
 ################################################################################
 # RAW
 ################################################################################
-def raw_0(args: Namespace, project: Project, scan: Scan):
+def raw_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
     return dict(row=rm.query_raw_0(scan))
 
 

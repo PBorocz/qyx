@@ -78,3 +78,12 @@ class LogLevel(str, Enum):
     ERROR    = "error"
     CRITICAL = "critical"
     # fmt: on
+
+
+class ViewContext(str, Enum):
+    """Describes the context we're calling a tool's "summary" view from."""
+
+    # fmt: off
+    DASHBOARD = "dashboard"
+    TOOL_HOME = "tool_home"
+    # fmt: on

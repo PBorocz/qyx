@@ -6,6 +6,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.ruff.models import query_0, query_1, query_2, query_h
 from qyx.web import get_project_selector
@@ -54,7 +55,7 @@ def render_content(template: str = "ruff::body.htmx") -> str:
     return render_partial(template, **context.__dict__)
 
 
-def ruff_0(args: Namespace, project: Project, scan: Scan):
+def ruff_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
     return dict(row=query_0(args, project, scan))
 
 

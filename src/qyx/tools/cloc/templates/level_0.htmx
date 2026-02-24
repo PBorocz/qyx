@@ -1,17 +1,3 @@
-{% macro cell(value, percentage=None, bold=False, align="right") %}
-<td style="text-align: {{ align }}">
-
-  {% if bold %}<b>{% endif %}
-  {{ "{:,d}".format(value) }}
-  {% if bold %}</b>{% endif %}
-
-  {% if percentage is not none %}
-    <small>({{ "%.1f"|format(percentage) }}%)</small>
-  {% endif %}
-
-</td>
-{% endmacro %}
-
 <table>
   <thead>
     <tr>
@@ -23,10 +9,16 @@
   </thead>
   <tbody>
     <tr>
-      {{ cell(cloc_0.lines_code   , cloc_0.lines_code_p   ) }}
-      {{ cell(cloc_0.lines_comment, cloc_0.lines_comment_p) }}
-      {{ cell(cloc_0.lines_blank  , cloc_0.lines_blank_p  ) }}
-      {{ cell(cloc_0.lines_total  , bold=True             ) }}
+      <td style="text-align: right">   {{ "{:,d}".format(cloc_0.lines_code)    }}</td>
+      <td style="text-align: right">   {{ "{:,d}".format(cloc_0.lines_comment) }}</td>
+      <td style="text-align: right">   {{ "{:,d}".format(cloc_0.lines_blank)   }}</td>
+      <td style="text-align: right"><b>{{ "{:,d}".format(cloc_0.lines_total)   }}</b></td>
+    </tr>
+    <tr>
+      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_code_p)    }}%</small></td>
+      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_comment_p) }}%</small></td>
+      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_blank_p)   }}%</small></td>
+      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_total_p)   }}%</small></td>
     </tr>
   </tbody>
 </table>

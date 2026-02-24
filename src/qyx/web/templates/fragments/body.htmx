@@ -37,15 +37,13 @@
       <div>
         {% if tool == analysis %}
 
-        <h4>{{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
-        {% include tool ~ "::level_0.htmx" %}
-        {% include tool ~ "::level_d.htmx" %}
+          <h4>{{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
+          {% include tool ~ "::level_0.htmx" %}
 
         {% else %}
 
-        <h4>{{ tool.upper() }} - {{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
-        {% include tool ~ "::" ~ analysis ~ "/" ~ analysis ~ "_0.htmx" %}
-        {% include tool ~ "::" ~ analysis ~ "/" ~ analysis ~ "_d.htmx" %}
+          <h4>{{ tool.upper() }} - {{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
+          {% include tool ~ "::" ~ analysis ~ "/" ~ analysis ~ "_0.htmx" %}
 
         {% endif %}
 

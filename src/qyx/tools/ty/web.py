@@ -6,6 +6,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_h
 from qyx.web import get_project_selector
@@ -55,7 +56,7 @@ def render_content(template: str = "ty::body.htmx") -> str:
     return render_partial(template, **context.__dict__)
 
 
-def ty_0(args: Namespace, project: Project, scan: Scan):
+def ty_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
     return dict(row=query_0(args, project, scan))
 
 
@@ -71,11 +72,6 @@ def ty_2(args: Namespace, project: Project, scan: Scan):
 
 def ty_3(args: Namespace, project: Project, scan: Scan):
     return dict(rows=query_3(scan))
-
-
-# def ty_d(args: Namespace, project: Project, scan: Scan):
-#     """Report on derived ty metrics."""
-#     return dict(row=query_d(args, project, scan))
 
 
 def ty_h(args: Namespace, project: Project, scan: Scan):
