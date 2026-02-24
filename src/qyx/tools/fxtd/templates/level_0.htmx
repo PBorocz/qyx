@@ -23,9 +23,9 @@
     <tr>
       <td style="text-align: left">Composite (weighted)</td>
       <td style="text-align: right">{{ "{:,d}".format(fxtd_0.grand_total) }}</td>
-      {% if fxtd_0.composite.score is defined %}
-      <td style="text-align: right">{{ "{:.2f}".format(fxtd_0.composite.score) }}</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ fxtd_0.composite.color }}">{{ fxtd_0.composite.grade }}</td>
+      {% if fxtd_0.metric_composite_weighted.score is defined %}
+      <td style="text-align: right">{{ "{:.2f}".format(fxtd_0.metric_composite_weighted.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ fxtd_0.metric_composite_weighted.color }}">{{ fxtd_0.metric_composite_weighted.grade }}</td>
       {% endif %}
     </tr>
   </tfoot>

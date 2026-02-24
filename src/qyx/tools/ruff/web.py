@@ -47,31 +47,12 @@ def render_content(template: str = "ruff::body.htmx") -> str:
     # fmt: off
     context = Namespace()
     context.ruff_as_of = scan.as_of_display(collapse_today=True)
-    context.ruff_0 = ruff_0(args, project, scan)
-    context.ruff_1 = ruff_1(args, project, scan)
-    context.ruff_2 = ruff_2(args, project, scan)
-    context.ruff_h = ruff_h(args, project, scan)
+    context.ruff_0 = query_0(args, project, scan)
+    context.ruff_1 = query_1(scan)
+    context.ruff_2 = query_2(scan)
+    context.ruff_h =  ruff_h(args, project, scan)
     # fmt: on
     return render_partial(template, **context.__dict__)
-
-
-def ruff_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
-    return dict(row=query_0(args, project, scan))
-
-
-def ruff_1(args: Namespace, project: Project, scan: Scan):
-    summary = query_0(args, project, scan)
-    results = query_1(scan)
-    return dict(summary=summary, results=results)
-
-
-def ruff_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query_2(scan))
-
-
-def ruff_d(args: Namespace, project: Project, scan: Scan):
-    """Report on derived ruff metrics."""
-    return None
 
 
 def ruff_h(args: Namespace, project: Project, scan: Scan):

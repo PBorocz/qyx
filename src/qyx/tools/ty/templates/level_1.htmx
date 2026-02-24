@@ -6,20 +6,13 @@
     </tr>
   </thead>
   <tbody>
-    {% for row in ty_1.results %}
+    {% for row in ty_1.rows %}
     <tr>
       <td style="text-align: left">{{ row.check_name }}</td>
       <td style="text-align: right">{{ "{:,d}".format(row.count) }}</td>
     </tr>
     {% endfor %}
   </tbody>
-  {% if ty_1.results %}
-  <tfoot>
-    <tr>
-      <td style="text-align: left">TOTAL</td>
-      <td style="text-align: right">{{ "{:,d}".format(ty_1.summary.count) }}</td>
-    </tr>
-  </tfoot>
-  {% endif %}
 </table>
+
 <script>new Tablesort(document.getElementById('level_1'));</script>

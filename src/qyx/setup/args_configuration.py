@@ -65,7 +65,7 @@ class Configuration:
 def setup_configuration(app_name: str = "qyx") -> tuple[ArgumentParser, list[str], Configuration]:
     configuration_parser = ArgumentParser(add_help=False)
     configuration_parser.add_argument("-c", "--config", type=Path)
-    config_args, remaining_args = configuration_parser.parse_known_args()  # Note method used here!
+    config_args, remaining_args = configuration_parser.parse_known_args()
 
     if config_args.config:
         configuration = Configuration(_load_config(config_args.config))

@@ -10,11 +10,18 @@
   </thead>
   <tbody>
     <tr>
-      <td style="text-align: center">{{"{:,d}".format(raw_0.row.sloc)     }} <small>{{ "{:.1f}".format(raw_0.row.sloc_p)     }}%</small></td>
-      <td style="text-align: center">{{"{:,d}".format(raw_0.row.multi)    }} <small>{{ "{:.1f}".format(raw_0.row.multi_p)    }}%</small></td>
-      <td style="text-align: center">{{"{:,d}".format(raw_0.row.comments) }} <small>{{ "{:.1f}".format(raw_0.row.comments_p) }}%</small></td>
-      <td style="text-align: center">{{"{:,d}".format(raw_0.row.blank)    }} <small>{{ "{:.1f}".format(raw_0.row.blank_p)    }}%</small></td>
-      <td style="text-align: center">{{"{:,d}".format(raw_0.row.loc)      }}</td>
+      <td style="text-align: center">{{ "{:,d}".format(raw_0.sloc)     }}</td>
+      <td style="text-align: center">{{ "{:,d}".format(raw_0.multi)    }}</td>
+      <td style="text-align: center">{{ "{:,d}".format(raw_0.comments) }}</td>
+      <td style="text-align: center">{{ "{:,d}".format(raw_0.blank)    }}</td>
+      <td style="text-align: center">{{ "{:,d}".format(raw_0.loc)      }}</td>
+    </tr>
+    <tr>
+      <td style="text-align: center"><small>{{ "{:.1f}".format(raw_0.sloc_p)     }}%</small></td>
+      <td style="text-align: center"><small>{{ "{:.1f}".format(raw_0.multi_p)    }}%</small></td>
+      <td style="text-align: center"><small>{{ "{:.1f}".format(raw_0.comments_p) }}%</small></td>
+      <td style="text-align: center"><small>{{ "{:.1f}".format(raw_0.blank_p)    }}%</small></td>
+      <td style="text-align: center"><small>{{ "{:.1f}".format(raw_0.loc_p)      }}%</small></td>
     </tr>
   </tbody>
 </table>

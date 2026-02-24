@@ -9,26 +9,26 @@
   <tbody>
     <tr>
       <td style="text-align: left">Ty Checks Encountered</td>
-      <td style="text-align: right">{{ "{:,d}".format(ty_0.row.count) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(ty_0.count) }}</td>
       <td style="text-align: center">-</td>
     </tr>
 
 
-    {% if ty_0.row.violations_per_kloc.score %}
+    {% if ty_0.violations_per_kloc.score %}
     <tr>
       <td style="text-align: left">Ty Checks Encountered per kLOC</td>
-      <td style="text-align: right">{{ "{:.0f}".format(ty_0.row.violations_per_kloc.score) }}</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ ty_0.row.violations_per_kloc.color }}">
-        {{ ty_0.row.violations_per_kloc.grade }}
+      <td style="text-align: right">{{ "{:.0f}".format(ty_0.violations_per_kloc.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ ty_0.violations_per_kloc.color }}">
+        {{ ty_0.violations_per_kloc.grade }}
       </td>
     </tr>
     {% endif %}
-    {% if ty_0.row.weighted_violations_per_kloc.score %}
+    {% if ty_0.weighted_violations_per_kloc.score %}
     <tr>
       <td style="text-align: left">Weighted Ty Checks per kLOC</td>
-      <td style="text-align: right">{{ "{:.0f}".format(ty_0.row.weighted_violations_per_kloc.score) }}</td>
-      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ ty_0.row.weighted_violations_per_kloc.color }}">
-        {{ ty_0.row.weighted_violations_per_kloc.grade }}
+      <td style="text-align: right">{{ "{:.0f}".format(ty_0.weighted_violations_per_kloc.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ ty_0.weighted_violations_per_kloc.color }}">
+        {{ ty_0.weighted_violations_per_kloc.grade }}
       </td>
     </tr>
     {% endif %}

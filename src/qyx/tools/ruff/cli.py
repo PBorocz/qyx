@@ -2,6 +2,7 @@
 
 import logging
 from argparse import Namespace
+from types import SimpleNamespace as Sns
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
@@ -41,7 +42,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def ruff_0(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query_0(args, project, scan)
+    result: Sns = query_0(args, project, scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     # table.add_column("_", style="bold magenta")
     # table.add_column("_", style="bold magenta")
@@ -52,43 +53,41 @@ def ruff_0(args: Namespace, project: Project, scan: Scan) -> None:
     table.add_column("Value", justify="right")
     table.add_column("Grade", justify="center")
 
-    table.add_row("Raw Ruff Issues", f"{row.count:,d}", "-")
+    table.add_row("Raw Ruff Issues", f"{result.count:,d}", "-")
 
-    if row.violations_per_kloc:
+    if result.violations_per_kloc:
         table.add_row(
             "Raw Ruff Issues per kLOC",
-            f"{row.violations_per_kloc.score:.0f}",
-            f"{row.violations_per_kloc.grade}",
+            f"{result.violations_per_kloc.score:.0f}",
+            f"{result.violations_per_kloc.grade}",
         )
-    if row.weighted_violations_per_kloc:
+    if result.weighted_violations_per_kloc:
         table.add_row(
             "Weighted Ruff Issues per kLOC",
-            f"{row.weighted_violations_per_kloc.score:.0f}",
-            f"{row.weighted_violations_per_kloc.grade}",
+            f"{result.weighted_violations_per_kloc.score:.0f}",
+            f"{result.weighted_violations_per_kloc.grade}",
         )
     cli_console.print(table)
 
 
 def ruff_1(args: Namespace, project: Project, scan: Scan) -> None:
-    summary = query_0(args, project, scan)
-    results = query_1(scan)
-    show_footer = True if results else False
-    table = cli_table(title=f"RUFF @ {scan.as_of_display()}", show_footer=show_footer)
+    result: Sns = query_1(scan)
+    table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule", footer="TOTAL")
-    table.add_column("Count", justify="right", footer=f"{summary.count:,}")
+    table.add_column("Count", justify="right")
     table.add_column("Message")
-    for result in results:
-        table.add_row(result.rule_code, f"{result.count:,d}", result.rule_name.title())
+    for row in result.rows:
+        table.add_row(row.rule_code, f"{row.count:,d}", row.rule_name.title())
     cli_console.print(table)
 
 
 def ruff_2(args: Namespace, scan: Scan) -> None:
-    rows = query_2(scan)
+    result: Sns = query_2(scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule")
     table.add_column("File [line]")
     table.add_column("Message")
-    for row in rows:
+    for row in result.rows:
         table.add_row(row.rule_code, f"{row.directory}/{row.filename} [{row.line}] ", row.message)
     cli_console.print(table)
 

@@ -2,6 +2,7 @@
 
 import logging
 from argparse import Namespace
+from types import SimpleNamespace as Sns
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
@@ -44,61 +45,58 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan) -> None:
-    row = query_0(args, project, scan)
+    result: Sns = query_0(args, project, scan)
 
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")
     table.add_column("Value", justify="right")
     table.add_column("Grade", justify="center")
 
-    table.add_row("Ty Checks", f"{row.count:,d}", "-")
+    table.add_row("Ty Checks", f"{result.count:,d}", "-")
 
-    if row.violations_per_kloc:
+    if result.violations_per_kloc:
         table.add_row(
             "Ty Checks Encountered per kLOC",
-            f"{row.violations_per_kloc.score:.0f}",
-            f"{row.violations_per_kloc.grade}",
+            f"{result.violations_per_kloc.score:.0f}",
+            f"{result.violations_per_kloc.grade}",
         )
-    if row.weighted_violations_per_kloc:
+    if result.weighted_violations_per_kloc:
         table.add_row(
             "Weighted Ty Checks per kLOC",
-            f"{row.weighted_violations_per_kloc.score:.0f}",
-            f"{row.weighted_violations_per_kloc.grade}",
+            f"{result.weighted_violations_per_kloc.score:.0f}",
+            f"{result.weighted_violations_per_kloc.grade}",
         )
     cli_console.print(table)
 
 
 def ty_1(args: Namespace, project: Project, scan: Scan) -> None:
-    summary = query_0(args, project, scan)
     results = query_1(scan)
-    show_footer = True if results else False
-    table = cli_table(title=f"TY @ {scan.as_of_display()}", show_footer=show_footer)
+    table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Check", footer="TOTAL")
-    table.add_column("Count", justify="right", footer=f"{summary.count:,}")
-    # table.add_column("Description")
-    for result in results:
-        table.add_row(result.check_name, f"{result.count:,d}")
+    table.add_column("Count", justify="right")
+    for row in results.rows:
+        table.add_row(row.check_name, f"{row.count:,d}")
     cli_console.print(table)
 
 
 def ty_2(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_2(scan)
+    results: Sns = query_2(scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Directory")
     table.add_column("Check")
     table.add_column("Count")
-    for row in rows:
+    for row in results.rows:
         table.add_row(row.directory, row.check_name, f"{row.count:,d}")
     cli_console.print(table)
 
 
 def ty_3(args: Namespace, project: Project, scan: Scan) -> None:
-    rows = query_3(scan)
+    results: Sns = query_3(scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("File")
     table.add_column("Check")
     table.add_column("Description")
-    for row in rows:
+    for row in results.rows:
         table.add_row(f"{row.directory}/{row.filename}", row.check_name, row.description)
     cli_console.print(table)
 

@@ -2,6 +2,7 @@
 
 import logging
 from argparse import Namespace
+from types import SimpleNamespace as Sns
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
@@ -40,21 +41,21 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
-    rows, grand_total, composite = query_0(args, project, scan)
+    result: Sns = query_0(args, project, scan)
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=True)
 
-    if not rows:
+    if not result.rows:
         table.add_row("Congratulations..No issues found!")
         cli_console.print(table)
         return
 
     table.add_column("Type", justify="left", footer="Composite (weighted)")
-    table.add_column("Count", justify="right", footer=f"{grand_total:,d}")
-    table.add_column("Per kLOC", justify="right", footer=f"{composite.score:.2f}")
-    table.add_column("Grade", justify="center", footer=composite.grade)
+    table.add_column("Count", justify="right", footer=f"{result.grand_total:,d}")
+    table.add_column("Per kLOC", justify="right", footer=f"{result.metric_composite_weighted.score:.2f}")
+    table.add_column("Grade", justify="center", footer=result.metric_composite_weighted.grade)
 
-    for row in rows:
+    for row in result.rows:
         table.add_row(
             f"{row.type}",
             f"{row.count}",
@@ -65,25 +66,25 @@ def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def fxtd_1(scan: Scan) -> None:
-    results, grand_total = query_1(scan)
+    results = query_1(scan)
     show_footer = True if results else False
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=show_footer)
     table.add_column("Type", footer="TOTAL")
     table.add_column("Directory", footer="")
-    table.add_column("Count", justify="center", footer=f"{grand_total:,}")
-    for result in results:
+    table.add_column("Count", justify="center", footer=f"{results.grand_total:,}")
+    for result in results.rows:
         table.add_row(result.type, result.directory, f"{result.count:,d}")
     cli_console.print(table)
 
 
 def fxtd_2(scan: Scan) -> None:
-    rows = query_2(scan)
+    results = query_2(scan)
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
     table.add_column("Type")
     table.add_column("File [line]")
     table.add_column("Message")
-    for row in rows:
+    for row in results.rows:
         table.add_row(row.type, f"{row.directory}/{row.filename} [{row.line}] ", row.message)
     cli_console.print(table)
 

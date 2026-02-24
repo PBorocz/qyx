@@ -2,12 +2,14 @@
 
 import logging
 from argparse import Namespace
+from types import SimpleNamespace as Sns
 
 from peewee import fn, CharField, IntegerField, JOIN
 
 from qyx.tools.base import BaseResultsModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_pta
 from qyx.utils import rate_of_change_percentage
+from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 log = logging.getLogger(__name__)
@@ -31,17 +33,18 @@ class Ruff(BaseResultsModel):
         indexes = ((("scan", "directory", "filename", "line", "column", "rule_code"), True),)
 
 
-def query_0(args: Namespace, project: Project, scan: Scan):
+@query_cache
+def query_0(args: Namespace, project: Project, scan: Scan) -> Sns:
     """Calculate summary ruff metrics."""
-    result = (
+    query = (
         Ruff.select(
             fn.COUNT(Ruff.id).alias("count"),
         )
-        .where(
-            Ruff.scan == scan,
-        )
+        .where(Ruff.scan == scan)
+        .dicts()
         .first()
     )
+    result: Sns = Sns(**query)
     if lines_of_code := get_loc(args, project):
         result = _derived_violations_per_kloc(args, lines_of_code, result)
         result = _derived_weighted_violations_per_kloc(args, lines_of_code, result, scan)
@@ -50,7 +53,8 @@ def query_0(args: Namespace, project: Project, scan: Scan):
     return result
 
 
-def query_1(scan: Scan):
+@query_cache
+def query_1(scan: Scan) -> Sns:
     from qyx.tools.ruff import get_ruff_rule_name
 
     query = (
@@ -67,17 +71,18 @@ def query_1(scan: Scan):
         .order_by(
             fn.COUNT(Ruff.id).desc(),
         )
+        .dicts()
     )
     # Add another attribute onto to each result for nicer reporting.
-    rows = []
-    for row in query:
+    rows = [Sns(**row_dict) for row_dict in query]
+    for row in rows:
         row.rule_name = get_ruff_rule_name(row.rule_code).title()
-        rows.append(row)
-    return rows
+    return Sns(rows=rows)
 
 
-def query_2(scan: Scan):
-    return (
+@query_cache
+def query_2(scan: Scan) -> Sns:
+    query = (
         Ruff.select()
         .where(
             Ruff.scan == scan,
@@ -87,9 +92,12 @@ def query_2(scan: Scan):
             Ruff.directory,
             Ruff.filename,
         )
+        .dicts()
     )
+    return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 
+@query_cache
 def query_h(project: Project, last: int = None):
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular
@@ -128,7 +136,7 @@ def query_h(project: Project, last: int = None):
     return timestamps, messages, transposed, roc
 
 
-def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result):
+def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result: Sns):
     """Calculate simple violations per thousand loc (not including comments and blank lines)."""
     if not lines_of_code or not result.count:
         result.violations_per_kloc = None
@@ -143,7 +151,7 @@ def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result):
     return result
 
 
-def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, result, scan: Scan):
+def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, result: Sns, scan: Scan):
     """Calculate *weighted* violations per thousand loc (not including comments and blank lines)."""
     violations_by_severity = __query_counts_by_rule_code_prefix(scan)
     if not lines_of_code or not violations_by_severity:

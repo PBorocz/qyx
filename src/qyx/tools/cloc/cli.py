@@ -2,10 +2,10 @@
 
 import logging
 from argparse import Namespace
+from types import SimpleNamespace as Sns
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
-from qyx.constants import ViewContext as Vc
 from qyx.tools import format_int_or_percentage as fmt
 from qyx.tools.base import Project, Scan, ToolType
 from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_h
@@ -25,26 +25,26 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
     match args.level.lower():
         case Rl.SUMMARY:
-            cloc_0(args, scan)
+            _render_0(args, scan)
         case Rl.DIRECTORY:
-            cloc_1(args, scan)
+            _render_1(args, scan)
         case Rl.FILE:
-            cloc_2(args, scan)
+            _render_2(args, scan)
         case Rl.DERIVED:
-            cloc_d(args, scan)
+            _render_d(args, scan)
         case Rl.HISTORY:
-            cloc_h(args, project, scan)
+            _render_h(args, project, scan)
         case Rl.ALL:
-            cloc_0(args, scan)
-            cloc_1(args, scan)
-            cloc_2(args, scan)
-            cloc_d(args, scan)
-            cloc_h(args, project, scan)
+            _render_0(args, scan)
+            _render_1(args, scan)
+            _render_2(args, scan)
+            _render_d(args, scan)
+            _render_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
 
 
-def cloc_0(args: Namespace, scan: Scan) -> None:
+def _render_0(args: Namespace, scan: Scan) -> None:
     result = query_0(scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("LOC", justify="center")
@@ -60,9 +60,8 @@ def cloc_0(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
-    grand_total = query_0(scan)
-    rows_directory_level = query_1(scan)
+def _render_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
+    grand_total: Sns = query_0(scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
 
@@ -77,7 +76,7 @@ def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
     table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, False))
 
-    for result in rows_directory_level:
+    for result in query_1(scan).rows:
         table.add_row(
             result.directory,
             f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
@@ -88,16 +87,16 @@ def cloc_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
     cli_console.print(table)
 
 
-def cloc_2(args: Namespace, scan: Scan) -> None:
-    rows, column_totals, grand_total = query_2(scan)
+def _render_2(args: Namespace, scan: Scan) -> None:
+    results: Sns = query_2(scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
-    table.add_column("LOC", justify="right", footer=fmt(column_totals["lines_code"], False))
-    table.add_column("Comments", justify="right", footer=fmt(column_totals["lines_comment"], False))
-    table.add_column("Blank", justify="right", footer=fmt(column_totals["lines_blank"], False))
-    table.add_column("TOTAL", justify="right", footer=fmt(grand_total, False))
-    for row in rows:
+    table.add_column("LOC", justify="right", footer=fmt(results.column_totals["lines_code"], False))
+    table.add_column("Comments", justify="right", footer=fmt(results.column_totals["lines_comment"], False))
+    table.add_column("Blank", justify="right", footer=fmt(results.column_totals["lines_blank"], False))
+    table.add_column("TOTAL", justify="right", footer=fmt(results.grand_total.lines_total, False))
+    for row in results.rows:
         table.add_row(
             f"{row.directory}/{row.filename}",
             fmt(row.lines_code, False),
@@ -108,8 +107,8 @@ def cloc_2(args: Namespace, scan: Scan) -> None:
     cli_console.print(table)
 
 
-def cloc_d(args: Namespace, scan: Scan) -> None:
-    row = query_d(args, scan)
+def _render_d(args: Namespace, scan: Scan) -> None:
+    result = query_d(args, scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("Metric")
@@ -118,26 +117,26 @@ def cloc_d(args: Namespace, scan: Scan) -> None:
     table.add_column("Explanation", justify="left")
     table.add_row(
         "File Density",
-        f"{row.avg_lines_per_file.score:.2f}",
-        row.avg_lines_per_file.grade,
+        f"{result.avg_lines_per_file.score:.2f}",
+        result.avg_lines_per_file.grade,
         "Average LOC per File",
     )
     table.add_row(
         "Code Density",
-        f"{row.code_density.score:.2f}",
-        row.code_density.grade,
+        f"{result.code_density.score:.2f}",
+        result.code_density.grade,
         "LOC / (LOC + Blanks)",
     )
     table.add_row(
         "Comment Ratio",
-        f"{row.comment_ratio.score:.2f}",
-        row.comment_ratio.grade,
+        f"{result.comment_ratio.score:.2f}",
+        result.comment_ratio.grade,
         "Comments / (Comment + LOC)",
     )
     cli_console.print(table)
 
 
-def cloc_h(args: Namespace, project: Project, scan: Scan) -> None:
+def _render_h(args: Namespace, project: Project, scan: Scan) -> None:
     timestamps, messages, rows, transposed, grand_totals, roc, adgs = query_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(timestamps)
     if len(timestamps) <= 20:

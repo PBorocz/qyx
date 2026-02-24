@@ -46,11 +46,6 @@
   </details>
 
   <details name="details">
-    <summary>Derived Metrics</summary>
-    {% include "radon::hal/hal_d.htmx" %}
-  </details>
-
-  <details name="details">
     <summary>Trends</summary>
     <section>
       <div class="chart-grid">

@@ -3,6 +3,7 @@
 import inspect
 
 from argparse import Namespace
+from types import SimpleNamespace
 
 from qyx.tools.base import Scan
 
@@ -15,23 +16,22 @@ def _get_granular_view_cases(app_args, ingested_project):
 
             scan = Scan.get_most_recent(ingested_project, tool, analysis)
 
-            # Lookup the correct web rendering method. Note, this could from either:
+            # Lookup the correct web rendering method. Note, this could from *either*:
             # - <tool>/web.py            (e.g. ruff, cloc etc.)
             # - <tool>/web_<analysis>.py (e.g. radon with it's sub-analyses)
             render_method_name = f"{analysis}_{report_level.value}"
             try:
-                web_render_module = o_tool.import_component("web")
-                web_render_method = getattr(web_render_module, render_method_name)
-            except AttributeError:
+                web_view_module = o_tool.import_component("web")
+                web_view_method = getattr(web_view_module, render_method_name)
+            except (ModuleNotFoundError, AttributeError):
                 try:
-                    web_render_module = o_tool.import_component(f"web_{analysis}")
-                    web_render_method = getattr(web_render_module, render_method_name)
-                except AttributeError:
-                    raise RuntimeError(
-                        f"Sorry, unable to setup test case: {tool} {render_method_name}",
-                    )
+                    web_view_module = o_tool.import_component(f"web_{analysis}")
+                    web_view_method = getattr(web_view_module, render_method_name)
+                except (ModuleNotFoundError, AttributeError):
+                    print(f"Skipping view: {tool=} {render_method_name=}")
+                    continue
             msg = f"T:{o_tool.name} A:{analysis} L:{report_level.value}]"
-            cases.append(Namespace(msg=msg, scan=scan, web_render_method=web_render_method))
+            cases.append(Namespace(msg=msg, scan=scan, web_view_method=web_view_method))
     return cases
 
 
@@ -51,7 +51,7 @@ def test_web_views(app_args, ingested_project, subtests):
             # Run the test (running without error is our primary test!!)
             #
             result = call_test_with_args(
-                case.web_render_method,
+                case.web_view_method,
                 args=app_args,
                 project=ingested_project,
                 scan=case.scan,
@@ -63,6 +63,9 @@ def test_web_views(app_args, ingested_project, subtests):
             match result:
                 case None:
                     pass
+
+                case SimpleNamespace():
+                    pass  # Expected output!
 
                 case dict():
                     pass

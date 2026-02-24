@@ -3,13 +3,15 @@
 import logging
 from argparse import Namespace
 from collections import defaultdict
+from types import SimpleNamespace as Sns
 
 from peewee import fn, CharField, IntegerField, JOIN
 
-from qyx.constants import ReportLevel as Rl
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import BaseResultsModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_pta
 from qyx.utils import rate_of_change_percentage
+from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 
@@ -32,9 +34,10 @@ class Fxtd(BaseResultsModel):
         indexes = ((("scan", "directory", "filename", "line"), True),)
 
 
-def query_0(args: Namespace, project: Project, scan: Scan):
+@query_cache
+def query_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary level fxtd metrics."""
-    rows_by_type = (
+    query = (
         Fxtd.select(
             Fxtd.type,
             fn.COUNT(Fxtd.id).alias("count"),
@@ -42,31 +45,34 @@ def query_0(args: Namespace, project: Project, scan: Scan):
         .where(Fxtd.scan == scan)
         .group_by(Fxtd.type)
         .order_by(fn.COUNT(Fxtd.id).desc())
+        .dicts()
     )
-    if not rows_by_type:  # Perfectly valid to not have any!
-        return (), None
+    if not query:  # Perfectly valid to not have any!
+        return Sns()
 
-    grand_total = sum([row.count for row in rows_by_type])
+    rows = [Sns(**row_dict) for row_dict in query]
+    grand_total = sum([row.count for row in rows])
 
     if not (lines_of_code := get_loc(args, project)):
         log.warning("Sorry, unable to calculate derived 'fxtd' metrics as we don't have any lines-of-code yet!")
-        return rows_by_type, grand_total, None
+        return Sns(rows=rows, grand_total=grand_total)
 
     # Calculate score of entries per kLOC (sloc)"""
-    for row in rows_by_type:
+    for row in rows:
         metric_value = (row.count / lines_of_code) * 1000
         row.metric = score_metric(args, "tools.fxtd.by_type_per_kloc", metric_value)
 
     # Calculate *composite weighted* score of entries per kLOC (not including comments and blank lines)"""
     weights = args.config.get("tools.fxtd.composite_weighted_per_kloc.weights")
-    weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows_by_type])
+    weighted_score = sum([row.count * weights.get(row.type.upper(), 1) for row in rows])
     metric_value = (weighted_score / lines_of_code) * 1000
-    composite_weighted_score = score_metric(args, "tools.fxtd.composite_weighted_per_kloc", metric_value)
-    return rows_by_type, grand_total, composite_weighted_score
+    metric_composite_weighted = score_metric(args, "tools.fxtd.composite_weighted_per_kloc", metric_value)
+    return Sns(rows=rows, grand_total=grand_total, metric_composite_weighted=metric_composite_weighted)
 
 
-def query_1(scan: Scan):
-    rows = (
+@query_cache
+def query_1(scan: Scan) -> Sns:
+    query = (
         Fxtd.select(
             Fxtd.directory,
             Fxtd.type,
@@ -75,13 +81,16 @@ def query_1(scan: Scan):
         .where(Fxtd.scan == scan)
         .group_by(Fxtd.directory, Fxtd.type)
         .order_by(fn.COUNT(Fxtd.id).desc())
+        .dicts()
     )
+    rows = [Sns(**row_dict) for row_dict in query]
     grand_total = sum([row.count for row in rows])
-    return rows, grand_total
+    return Sns(rows=rows, grand_total=grand_total)
 
 
-def query_2(scan: Scan):
-    return (
+@query_cache
+def query_2(scan: Scan) -> Sns:
+    query = (
         Fxtd.select()
         .where(Fxtd.scan == scan)
         .order_by(
@@ -89,9 +98,13 @@ def query_2(scan: Scan):
             Fxtd.filename,
             Fxtd.line,
         )
+        .dicts()
     )
+    rows = [Sns(**row_dict) for row_dict in query]
+    return Sns(rows=rows)
 
 
+@query_cache
 def query_h(project: Project, last: int = None):
     scans = get_scans_for_pta(project, tool="fxtd", last=last)
     rows = (

@@ -2,11 +2,11 @@
 
 from argparse import Namespace
 from datetime import datetime
+from types import SimpleNamespace as Sns
 
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.constants import ViewContext as Vc
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_f, query_h
 from qyx.utils.scoring import find_grade
@@ -43,33 +43,13 @@ def render_content(template: str = "cloc::body.htmx"):
 
     context = Namespace()
     context.cloc_as_of = scan.as_of_display(collapse_today=True)
-    context.cloc_0 = cloc_0(args, project, scan)
-    context.cloc_1 = cloc_1(args, project, scan)
-    context.cloc_2 = cloc_2(args, project, scan)
-    context.cloc_d = cloc_d(args, project, scan)
+    context.cloc_0 = query_0(scan)
+    context.cloc_1 = query_1(scan)
+    context.cloc_2 = query_2(scan)
+    context.cloc_d = query_d(args, scan)
     context.cloc_f = cloc_f(args, project, scan)
     context.cloc_h = cloc_h(args, project, scan)
     return render_partial(template, **context.__dict__)
-
-
-def cloc_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
-    return query_0(scan)
-
-
-def cloc_1(args: Namespace, project: Project, scan: Scan):
-    return dict(
-        grand_total=query_0(scan),
-        detail_rows=query_1(scan),
-    )
-
-
-def cloc_2(args: Namespace, project: Project, scan: Scan):
-    results, column_totals, grand_total = query_2(scan)
-    return dict(results=results, column_totals=column_totals, grand_total=grand_total)
-
-
-def cloc_d(args: Namespace, project: Project, scan: Scan):
-    return dict(row=query_d(args, scan))
 
 
 def cloc_f(args: Namespace, project: Project, scan: Scan):

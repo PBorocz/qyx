@@ -1,8 +1,8 @@
 """Run all the reports across all tool/analyses and levels."""
 
 import tempfile
-from pathlib import Path
 from argparse import Namespace
+from pathlib import Path
 
 import pytest
 

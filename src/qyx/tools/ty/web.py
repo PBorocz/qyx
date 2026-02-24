@@ -47,31 +47,13 @@ def render_content(template: str = "ty::body.htmx") -> str:
     # fmt: off
     context = Namespace()
     context.ty_as_of = scan.as_of_display(collapse_today=True)
-    context.ty_0 = ty_0(args, project, scan)
-    context.ty_1 = ty_1(args, project, scan)
-    context.ty_2 = ty_2(args, project, scan)
-    context.ty_3 = ty_3(args, project, scan)
+    context.ty_0 = query_0(args, project, scan)
+    context.ty_1 = query_1(scan)
+    context.ty_2 = query_2(scan)
+    context.ty_3 = query_3(scan)
     context.ty_h = ty_h(args, project, scan)
     # fmt: on
     return render_partial(template, **context.__dict__)
-
-
-def ty_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
-    return dict(row=query_0(args, project, scan))
-
-
-def ty_1(args: Namespace, project: Project, scan: Scan):
-    summary = query_0(scan)
-    results = query_1(scan)
-    return dict(summary=summary, results=results)
-
-
-def ty_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query_2(scan))
-
-
-def ty_3(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=query_3(scan))
 
 
 def ty_h(args: Namespace, project: Project, scan: Scan):

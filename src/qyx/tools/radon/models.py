@@ -4,6 +4,7 @@ import logging
 from argparse import Namespace
 from collections import defaultdict
 from dataclasses import dataclass
+from types import SimpleNamespace as Sns
 from typing import Any, Literal
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
@@ -11,6 +12,7 @@ from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 from qyx.tools.base import BaseModel, BaseResultsModel, Project, Scan
 from qyx.tools.common import get_scans_for_pta
 from qyx.utils import rate_of_change_percentage
+from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 
@@ -20,15 +22,15 @@ log = logging.getLogger(__name__)
 class RadonRaw(BaseResultsModel):
     """Radon "RAW" metric storage."""
 
-    # NOTE: LOC = SLOC + Multi + Comments + Blanks
+    # NOTE: LOC = Blanks + COmments + Multi + SingleComments + SLOC
     # fmt: off
     loc             = IntegerField(help_text="Lines of code")
-    sloc            = IntegerField(help_text="Source lines of code")
-    comments        = IntegerField(help_text="Comment lines")
-    multi           = IntegerField(help_text="Multi-line strings")
     blank           = IntegerField(help_text="Blank lines")
+    comments        = IntegerField(help_text="Comment lines")
     lloc            = IntegerField(help_text="Logical lines of code")
+    multi           = IntegerField(help_text="Multi-line strings")
     single_comments = IntegerField(help_text="Single-line comments")
+    sloc            = IntegerField(help_text="Source lines of code")
     # fmt: on
 
     class Meta:
@@ -171,32 +173,37 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 # RAW
 ################################################################################################
-def query_raw_0(scan: Scan) -> Any:
-    row = (
+@query_cache
+def query_raw_0(scan: Scan) -> Sns:
+    query = (
         RadonRaw.select(
             fn.SUM(RadonRaw.blank).alias("blank"),
             fn.SUM(RadonRaw.comments).alias("comments"),
-            fn.SUM(RadonRaw.loc).alias("loc"),
             fn.SUM(RadonRaw.multi).alias("multi"),
             fn.SUM(RadonRaw.sloc).alias("sloc"),
+            fn.SUM(RadonRaw.loc).alias("loc"),
         )
         .where(RadonRaw.scan == scan)
+        .dicts()
         .first()
     )
+    result: Sns = Sns(**query)
 
     # Convert to percentage of total:
     # fmt: off
-    row.blank_p    = (row.blank    / row.loc) * 100.0
-    row.comments_p = (row.comments / row.loc) * 100.0
-    row.multi_p    = (row.multi    / row.loc) * 100.0
-    row.sloc_p     = (row.sloc     / row.loc) * 100.0
+    result.blank_p    = (result.blank    / result.loc) * 100.0
+    result.comments_p = (result.comments / result.loc) * 100.0
+    result.multi_p    = (result.multi    / result.loc) * 100.0
+    result.sloc_p     = (result.sloc     / result.loc) * 100.0
+    result.loc_p      = result.blank_p + result.comments_p + result.multi_p + result.sloc_p
     # fmt: on
 
-    return row
+    return result
 
 
-def query_raw_1(scan: Scan) -> Any:
-    rows = (
+@query_cache
+def query_raw_1(scan: Scan) -> Sns:
+    query = (
         RadonRaw.select(
             RadonRaw.directory,
             fn.SUM(RadonRaw.blank).alias("blank"),
@@ -208,21 +215,41 @@ def query_raw_1(scan: Scan) -> Any:
         .where(RadonRaw.scan == scan)
         .group_by(RadonRaw.directory)
         .order_by(RadonRaw.directory)
+        .dicts()
     )
+    rows = [Sns(**row_dict) for row_dict in query]
 
     # Calculate totals
     totals = defaultdict(int)
     for row in rows:
         for attr_name in RadonRaw.attrs():
             totals[attr_name] += getattr(row, attr_name)
-    return rows, totals
+    return Sns(rows=rows, totals=totals)
 
 
-def query_raw_2(scan: Scan) -> Any:
-    return RadonRaw.select().where(RadonRaw.scan == scan).order_by(RadonRaw.directory, RadonRaw.filename)
+@query_cache
+def query_raw_2(scan: Scan) -> Sns:
+    query = (
+        RadonRaw.select()
+        .where(RadonRaw.scan == scan)
+        .order_by(
+            RadonRaw.directory,
+            RadonRaw.filename,
+        )
+        .dicts()
+    )
+    rows = [Sns(**row_dict) for row_dict in query]
+
+    # Calculate totals
+    totals = defaultdict(int)
+    for row in rows:
+        for attr_name in RadonRaw.attrs():
+            totals[attr_name] += getattr(row, attr_name)
+    return Sns(rows=rows, totals=totals)
 
 
-def query_raw_h(project: Project, last: int = None) -> Any:
+@query_cache
+def query_raw_h(project: Project, last: int = None) -> Sns:
     scans = get_scans_for_pta(project, tool="radon", analysis="raw", last=last)
     query = (
         RadonRaw.select(
@@ -274,14 +301,21 @@ def query_raw_h(project: Project, last: int = None) -> Any:
     else:
         roc_gt = 0.0
 
-    return timestamps, messages, transposed, rocs, roc_gt
+    return Sns(
+        timestamps=timestamps,
+        messages=messages,
+        transposed=transposed,
+        rocs=rocs,
+        roc_gt=roc_gt,
+    )
 
 
 ################################################################################################
 # HAL
 ################################################################################################
-def query_hal_0(args: Namespace, project: Project, scan: Scan) -> Any:
-    row = (
+@query_cache
+def query_hal_0(args: Namespace, project: Project, scan: Scan) -> Sns:
+    query = (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
             fn.AVG(RadonHal.h2).alias("h2"),
@@ -299,37 +333,40 @@ def query_hal_0(args: Namespace, project: Project, scan: Scan) -> Any:
         .where(
             RadonHal.scan == scan,
         )
+        .dicts()
         .get()
     )
-    if not row:
+    result: Sns = Sns(**query)
+    if not result:
         return None
 
     # Get SLOC values...
     raw = query_raw_0(scan=Scan.get_most_recent(project, "radon", "raw"))
 
     # Score Halstead effort per 1000 source lines of code.
-    metric_value = (row.bugs / raw.sloc) * 1000
-    row.bugs_d = score_metric(args, "tools.radon.hal.bugs", metric_value)
+    metric_value = (result.bugs / raw.sloc) * 1000
+    result.bugs_d = score_metric(args, "tools.radon.hal.bugs", metric_value)
 
     # Score Halstead effort per source line of code.
-    metric_value = row.effort / raw.sloc
-    row.effort_d = score_metric(args, "tools.radon.hal.effort", metric_value)
+    metric_value = result.effort / raw.sloc
+    result.effort_d = score_metric(args, "tools.radon.hal.effort", metric_value)
 
     # Score Halstead difficulty metric.
-    row.difficulty_d = score_metric(args, "tools.radon.hal.difficulty", row.difficulty)
+    result.difficulty_d = score_metric(args, "tools.radon.hal.difficulty", result.difficulty)
 
     # Composite (after the above have been calculated!)
-    difficulty_score = max(0, 100 - (row.difficulty_d.score / 40) * 100)
-    bugs_score = max(0, 100 - (row.bugs_d.score / 1.0) * 100)
-    effort_score = max(0, 100 - (row.effort_d.score / 1000) * 100)
+    difficulty_score = max(0, 100 - (result.difficulty_d.score / 40) * 100)
+    bugs_score = max(0, 100 - (result.bugs_d.score / 1.0) * 100)
+    effort_score = max(0, 100 - (result.effort_d.score / 1000) * 100)
     metric_value = bugs_score * 0.5 + difficulty_score * 0.3 + effort_score * 0.2
-    row.composite_d = score_metric(args, "tools.radon.hal.composite", metric_value)
+    result.composite_d = score_metric(args, "tools.radon.hal.composite", metric_value)
 
-    return row
+    return result
 
 
-def query_hal_1(scan: Scan) -> Any:
-    rows = (
+@query_cache
+def query_hal_1(scan: Scan) -> Sns:
+    query = (
         RadonHal.select(
             RadonHal.directory,
             fn.AVG(RadonHal.h1).alias("h1"),
@@ -348,29 +385,43 @@ def query_hal_1(scan: Scan) -> Any:
         .group_by(RadonHal.directory)
         .where(RadonHal.scan == scan)
         .order_by(RadonHal.directory)
+        .dicts()
     )
+    rows = [Sns(**row_dict) for row_dict in query]
+
     # Calculate mean of the means
     mean_means = {}
     for attr in RadonHal.attrs():
         values = [getattr(row, attr.name) for row in rows]
         mean_means[attr.name] = sum(values) / len(values) if values else None
 
-    return rows, mean_means
+    return Sns(rows=rows, mean_means=mean_means)
 
 
-def query_hal_2(scan: Scan) -> Any:
-    rows = RadonHal.select().where(RadonHal.scan == scan).order_by(RadonHal.directory, RadonHal.filename)
+@query_cache
+def query_hal_2(scan: Scan) -> Sns:
+    query = (
+        RadonHal.select()
+        .where(RadonHal.scan == scan)
+        .order_by(
+            RadonHal.directory,
+            RadonHal.filename,
+        )
+        .dicts()
+    )
+    rows = [Sns(**row_dict) for row_dict in query]
 
     # Calculate means
     means = {}
     for attr in RadonHal.attrs():
         values = [getattr(row, attr.name) for row in rows]
         means[attr.name] = sum(values) / len(values) if values else None
-    return rows, means
+    return Sns(rows=rows, means=means)
 
 
-def query_hal_3(scan: Scan) -> Any:
-    rows = (
+@query_cache
+def query_hal_3(scan: Scan) -> Sns:
+    query = (
         RadonHalFunction.select(
             RadonHal.directory,
             RadonHal.filename,
@@ -391,18 +442,21 @@ def query_hal_3(scan: Scan) -> Any:
         .join(RadonHal)
         .where(RadonHal.scan == scan)
         .order_by(RadonHal.directory, RadonHal.filename, RadonHalFunction.name)
-        .objects()
+        .dicts()
     )
+    rows = [Sns(**row_dict) for row_dict in query]
+
     # Calculate mean metric values
     means = {}
     for attr in RadonHal.attrs():
         values = [getattr(row, attr.name) for row in rows]
         means[attr.name] = sum(values) / len(values) if values else None
 
-    return rows, means
+    return Sns(rows=rows, means=means)
 
 
-def query_hal_h(project: Project = None, last: int = 5) -> Any:
+@query_cache
+def query_hal_h(project: Project = None, last: int = 5) -> Sns:
     scans = get_scans_for_pta(project, tool="radon", analysis="hal", last=last)
     query = (
         RadonHal.select(
@@ -452,13 +506,14 @@ def query_hal_h(project: Project = None, last: int = 5) -> Any:
         else:
             rocs[attr] = 0.00
 
-    return timestamps, messages, transposed, rocs
+    return Sns(timestamps=timestamps, messages=messages, transposed=transposed, rocs=rocs)
 
 
 ################################################################################################
 # MI
 ################################################################################################
-def query_mi_0(args: Namespace, scan: Scan):
+@query_cache
+def query_mi_0(args: Namespace, scan: Scan) -> Sns:
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
     raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
     query = (
@@ -480,10 +535,12 @@ def query_mi_0(args: Namespace, scan: Scan):
     if result["total_loc"]:
         mi_ = result["weighted_sum"] / result["total_loc"]
 
-    return score_metric(args, "tools.radon.mi.mean", mi_)
+    return Sns(mi_metric=score_metric(args, "tools.radon.mi.mean", mi_))
 
 
-def query_mi_1(args, scan: Scan) -> Any:
+@query_cache
+def query_mi_1(args, scan: Scan) -> Sns:
+    mi_metric = query_mi_0(args, scan).mi_metric
     raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
     query = (
         RadonMi.select(
@@ -501,29 +558,36 @@ def query_mi_1(args, scan: Scan) -> Any:
         )
         .where(RadonMi.scan_id == scan.id)
         .group_by(RadonMi.directory)
+        .order_by(RadonMi.directory)
     )
-    mi_by_directory = {
-        row["directory"]: row["weighted_sum"] / row["total_loc"] for row in query.dicts() if row["total_loc"]
-    }
-    mi_metric = query_mi_0(args, scan)
-    return mi_metric, mi_by_directory
+    mi_by_directory = {}
+    for row in query.dicts():
+        if row["total_loc"]:
+            mi_ = row["weighted_sum"] / row["total_loc"]
+            mi_by_directory[row["directory"]] = score_metric(args, "tools.radon.mi.mean", mi_)
+    return Sns(mi_by_directory=mi_by_directory, mi_metric=mi_metric)
 
 
-def query_mi_2(args, scan: Scan) -> tuple:
-    rows = (
+@query_cache
+def query_mi_2(args, scan: Scan) -> Sns:
+    mi_metric = query_mi_0(args, scan).mi_metric
+    query = (
         RadonMi.select()
         .where(RadonMi.scan == scan)
         .order_by(
-            RadonMi.mi.asc(),
             RadonMi.directory,
             RadonMi.filename,
         )
+        .dicts()
     )
-    mi_metric = query_mi_0(args, scan)
-    return mi_metric, rows
+    rows = [Sns(**row_dict) for row_dict in query]
+    for row in rows:
+        row.metric = score_metric(args, "tools.radon.mi.mean", row.mi)
+    return Sns(rows=rows, mi_metric=mi_metric)
 
 
-def query_mi_h(project, last: int = 5) -> Any:
+@query_cache
+def query_mi_h(project, last: int = 5) -> Sns:
     assert project
 
     scans = get_scans_for_pta(project, tool="radon", analysis="mi", last=last)
@@ -570,13 +634,14 @@ def query_mi_h(project, last: int = 5) -> Any:
         ts_penultimate, ts_last = sorted(timestamps)[-2:]
         roc = rate_of_change_percentage(rows[ts_penultimate], rows[ts_last])
 
-    return messages, rows, roc
+    return Sns(messages=messages, rows=rows, roc=roc)
 
 
 ################################################################################################
 # CC
 ################################################################################################
-def query_cc_0(args: Namespace, scan: Scan):
+@query_cache
+def query_cc_0(args: Namespace, scan: Scan) -> Sns:
     """Calculate derived radon-cc metric(s)."""
     query = (
         RadonCc.select(
@@ -587,7 +652,7 @@ def query_cc_0(args: Namespace, scan: Scan):
         .group_by(RadonCc.entity_type)
         .order_by(fn.COUNT(RadonCc.id).desc())
     )
-    results = []
+    rows = []
     for row in query:
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
         _threshold_type = (
@@ -600,12 +665,13 @@ def query_cc_0(args: Namespace, scan: Scan):
             RadonCc.get_threshold_type(row.entity_type),
             row.complexity,
         )
-        results.append(row)
+        rows.append(row)
 
-    return results
+    return Sns(rows=rows)
 
 
-def query_cc_1(args: Namespace, scan: Scan) -> Any:
+@query_cache
+def query_cc_1(args: Namespace, scan: Scan) -> Sns:
     query = (
         RadonCc.select(
             RadonCc.directory,
@@ -616,7 +682,7 @@ def query_cc_1(args: Namespace, scan: Scan) -> Any:
         .group_by(RadonCc.directory, RadonCc.entity_type)
         .order_by(RadonCc.directory, RadonCc.entity_type)
     )
-    return_ = []
+    rows = []
     for row in query:
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
         row.metric = score_metric(
@@ -624,11 +690,12 @@ def query_cc_1(args: Namespace, scan: Scan) -> Any:
             RadonCc.get_threshold_type(row.entity_type),
             row.complexity,
         )
-        return_.append(row)
-    return return_
+        rows.append(row)
+    return Sns(rows=rows)
 
 
-def query_cc_2(args: Namespace, scan: Scan) -> Any:
+@query_cache
+def query_cc_2(args: Namespace, scan: Scan) -> Sns:
     query = (
         RadonCc.select(
             RadonCc.directory,
@@ -640,7 +707,7 @@ def query_cc_2(args: Namespace, scan: Scan) -> Any:
         .group_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_type)
         .order_by(RadonCc.directory, RadonCc.filename, RadonCc.entity_type)
     )
-    return_ = []
+    rows = []
     for row in query:
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
         row.metric = score_metric(
@@ -648,11 +715,12 @@ def query_cc_2(args: Namespace, scan: Scan) -> Any:
             RadonCc.get_threshold_type(row.entity_type),
             row.complexity,
         )
-        return_.append(row)
-    return return_
+        rows.append(row)
+    return Sns(rows=rows)
 
 
-def query_cc_3(args: Namespace, scan: Scan) -> Any:
+@query_cache
+def query_cc_3(args: Namespace, scan: Scan) -> Sns:
     query = (
         RadonCc.select()
         .where(
@@ -664,7 +732,7 @@ def query_cc_3(args: Namespace, scan: Scan) -> Any:
             RadonCc.entity_name,
         )
     )
-    return_ = []
+    rows = []
     for row in query:
         row.entity_type = RadonCc.entity_type_display(row.entity_type)
         row.metric = score_metric(
@@ -672,11 +740,12 @@ def query_cc_3(args: Namespace, scan: Scan) -> Any:
             RadonCc.get_threshold_type(row.entity_type),
             row.complexity,
         )
-        return_.append(row)
-    return return_
+        rows.append(row)
+    return Sns(rows=rows)
 
 
-def query_cc_h(project: Project, last: int = None) -> Any:
+@query_cache
+def query_cc_h(project: Project, last: int = None) -> Sns:
     scans = get_scans_for_pta(project, tool="radon", analysis="cc", last=last)
     query = (
         RadonCc.select(
@@ -710,7 +779,7 @@ def query_cc_h(project: Project, last: int = None) -> Any:
                 values_by_timestamp[timestamps[-1]],
             )
 
-    return timestamps, messages, transposed, rocs
+    return Sns(timestamps=timestamps, messages=messages, transposed=transposed, rocs=rocs)
 
 
 ################################################################################################

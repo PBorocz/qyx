@@ -65,7 +65,7 @@ def render_content() -> str:
     setattr(context, f"{analysis}_1", _view_data_by_level(args, "1", project, scan, analysis))
     setattr(context, f"{analysis}_2", _view_data_by_level(args, "2", project, scan, analysis))
     setattr(context, f"{analysis}_3", _view_data_by_level(args, "3", project, scan, analysis))
-    setattr(context, f"{analysis}_d", _view_data_by_level(args, "d", project, scan, analysis))
+    # setattr(context, f"{analysis}_d", _view_data_by_level(args, "d", project, scan, analysis))
     setattr(context, f"{analysis}_h", _view_data_by_level(args, "h", project, scan, analysis))
 
     # Remember what we just processed for next time through (used by
@@ -84,7 +84,8 @@ def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Sca
     view_method_name = f"{analysis}_{level}"
     view_method = globals().get(view_method_name)
     if not view_method:
-        log.warning(f"no method found, skipping {view_method_name=}")
+        # Note even worth warning about as it's expected.
+        # log.warning(f"no method found, skipping {view_method_name=}")
         return None
     return view_method(args, project, scan)
 
@@ -93,35 +94,31 @@ def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Sca
 # CC
 ################################################################################
 def cc_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict:
-    return dict(rows=rm.query_cc_0(args, scan))
+    return rm.query_cc_0(args, scan)
 
 
 def cc_1(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_1(args, scan))
+    return rm.query_cc_1(args, scan)
 
 
 def cc_2(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_2(args, scan))
+    return rm.query_cc_2(args, scan)
 
 
 def cc_3(args: Namespace, project: Project, scan: Scan) -> dict:
-    return dict(rows=rm.query_cc_3(args, scan))
-
-
-def cc_d(args: Namespace, project: Project, scan: Scan) -> dict:
-    return None
+    return rm.query_cc_3(args, scan)
 
 
 def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
     """Render our chart to display Radon CC information."""
-    _, messages, transposed, _ = rm.query_cc_h(project)
+    result = rm.query_cc_h(project)
 
     fig = go.Figure()
     for i, entity_type in enumerate(("C", "F", "M")):  # HARD-CODE!
-        values_by_timestamp = transposed[entity_type]
+        values_by_timestamp = result.transposed[entity_type]
         x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
         y_values = [round(value, 2) for value in values_by_timestamp.values()]
-        labels = custom_labels(f"({entity_type})", messages, x_values, y_values)
+        labels = custom_labels(f"({entity_type})", result.messages, x_values, y_values)
         fig.add_trace(
             go.Scatter(
                 x=x_values,
@@ -144,7 +141,7 @@ def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
 # HAL
 ################################################################################
 def hal_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
-    row = rm.query_hal_0(args, project, scan)
+    result = rm.query_hal_0(args, project, scan)
     rows = []
     for metric, attr in [
         ("Composite Score", "composite_d"),
@@ -155,9 +152,9 @@ def hal_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_H
         rows.append(
             Namespace(
                 metric=metric,
-                score=getattr(row, attr).score,
-                grade=getattr(row, attr).grade,
-                color=getattr(row, attr).color,
+                score=getattr(result, attr).score,
+                grade=getattr(result, attr).grade,
+                color=getattr(result, attr).color,
             ),
         )
     if context == Vc.TOOL_HOME:
@@ -165,7 +162,7 @@ def hal_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_H
         for attr in RadonHal.attrs():
             value = Namespace(
                 metric=attr.display + " " + attr.calculation,
-                score=getattr(row, attr.name),
+                score=getattr(result, attr.name),
                 grade="",
                 color="",
             )
@@ -174,10 +171,10 @@ def hal_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_H
 
 
 def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
-    rows, _ = rm.query_hal_1(scan)
+    result = rm.query_hal_1(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
-    for row in rows:
+    for row in result.rows:
         tbody_row = Namespace(directory=row.directory, values=[])
         for attr in RadonHal.attrs():
             # Since these are aggregated to the directory level, all the attributes are Float!
@@ -188,10 +185,10 @@ def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
 
 
 def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
-    rows, _ = rm.query_hal_2(scan)
+    result = rm.query_hal_2(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
-    for row in rows:
+    for row in result.rows:
         tbody_row = Namespace(directory_filename=f"{row.directory}/{row.filename}", values=[])
         for attr in RadonHal.attrs():
             if attr.type == "float":  # HARDCODE
@@ -204,10 +201,10 @@ def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
 
 
 def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
-    rows, _ = rm.query_hal_3(scan)
+    result = rm.query_hal_3(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
-    for row in rows:
+    for row in result.rows:
         tbody_row = Namespace(
             directory_filename=f"{row.directory}/{row.filename}",
             name=row.name,
@@ -224,18 +221,18 @@ def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
 
 
 def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str]:
-    _, messages, transposed, _ = rm.query_hal_h(project)
-    if not transposed:
+    result = rm.query_hal_h(project)
+    if not result.transposed:
         return dict()
 
     # This is a bit unique in that we create a chart for EACH separate metric!
     radon_names = {attr.name: attr.display for attr in RadonHal.attrs()}
     charts = dict()
-    for metric, values_by_timestamp in transposed.items():
+    for metric, values_by_timestamp in result.transposed.items():
         fig = go.Figure()
         x_values = [datetime.fromisoformat(ts_) for ts_ in values_by_timestamp.keys()]
         y_values = [round(value, 2) for value in values_by_timestamp.values()]
-        labels = custom_labels(radon_names[metric], messages, x_values, y_values)
+        labels = custom_labels(radon_names[metric], result.messages, x_values, y_values)
         fig.add_trace(
             go.Scatter(
                 x=x_values,
@@ -262,30 +259,23 @@ def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str
 # MI
 ################################################################################
 def mi_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict[str, float | None]:
-    return dict(metric=rm.query_mi_0(args, scan))
+    return rm.query_mi_0(args, scan)
 
 
 def mi_1(args: Namespace, project: Project, scan: Scan):
-    _, rows = rm.query_mi_1(args, scan)
-    return dict(rows=rows)
+    return rm.query_mi_1(args, scan)
 
 
 def mi_2(args: Namespace, project: Project, scan: Scan):
-    _, rows = rm.query_mi_2(args, scan)
-    return dict(rows=rows)
-
-
-def mi_d(args: Namespace, project: Project, scan: Scan):
-    """Stub to make this analysis match others."""
-    return None
+    return rm.query_mi_2(args, scan)
 
 
 def mi_h(args: Namespace, project: Project, scan: Scan):
     """Render the maintainability index chart."""
-    messages, rows, roc = rm.query_mi_h(project)
-    x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
-    y_values = [round(value, 2) for value in rows.values()]
-    labels = custom_labels("", messages, x_values, y_values)
+    result = rm.query_mi_h(project)
+    x_values = [datetime.fromisoformat(ts_) for ts_ in result.rows.keys()]
+    y_values = [round(value, 2) for value in result.rows.values()]
+    labels = custom_labels("", result.messages, x_values, y_values)
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
@@ -311,31 +301,26 @@ def mi_h(args: Namespace, project: Project, scan: Scan):
 # RAW
 ################################################################################
 def raw_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
-    return dict(row=rm.query_raw_0(scan))
+    return rm.query_raw_0(scan)
 
 
 def raw_1(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=rm.query_raw_1(scan)[0])
+    return rm.query_raw_1(scan)
 
 
 def raw_2(args: Namespace, project: Project, scan: Scan):
-    return dict(rows=rm.query_raw_2(scan))
-
-
-def raw_d(args: Namespace, project: Project, scan: Scan):
-    """Stub to make this analysis match others."""
-    return None
+    return rm.query_raw_2(scan)
 
 
 def raw_h(args: Namespace, project: Project, scan: Scan = None):
     """Create chart obo all Raw metrics."""
-    _, messages, transposed, _, _ = rm.query_raw_h(project)
+    result = rm.query_raw_h(project)
 
     fig = go.Figure()
-    for i, (metric, dt_rows) in enumerate(list(transposed.items())):
+    for i, (metric, dt_rows) in enumerate(list(result.transposed.items())):
         x_values = [datetime.fromisoformat(ts_) for ts_ in dt_rows.keys()]
         y_values = list(dt_rows.values())
-        labels = custom_labels(metric.upper(), messages, x_values, y_values)
+        labels = custom_labels(metric.upper(), result.messages, x_values, y_values)
         fig.add_trace(
             go.Scatter(
                 line_color=SERIES_COLORS[i % len(SERIES_COLORS)],

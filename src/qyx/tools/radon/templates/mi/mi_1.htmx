@@ -2,14 +2,16 @@
   <thead>
     <tr>
       <th scope="col" style="text-align: left"  >Directory</th>
-      <th scope="col" style="text-align: left"  >Maintainability Index</th>
+      <th scope="col" style="text-align: right" >Maintainability Index</th>
+      <th scope="col" style="text-align: center">Grade</th>
     </tr>
   </thead>
   <tbody>
-    {% for directory, value in mi_1.rows.items() %}
+    {% for directory, metric in mi_1.mi_by_directory.items() %}
     <tr>
       <td style="text-align: left"  >{{ directory }}</td>
-      <td style="text-align: right" >{{ "{:.2f}".format(value) }}</td>
+      <td style="text-align: right">{{ "{:.1f}".format(metric.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ metric.color }}">{{ metric.grade }}
     </tr>
     {% endfor %}
   </tbody>

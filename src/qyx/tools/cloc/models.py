@@ -4,13 +4,14 @@ import logging
 from argparse import Namespace
 from collections import defaultdict
 from datetime import datetime
-from typing import Any
+from types import SimpleNamespace as Sns
 
 from peewee import IntegerField, fn
 
 from qyx.tools.base import BaseResultsModel, Project, Scan
 from qyx.tools.common import get_scans_for_pta
 from qyx.utils import bucket, rate_of_change_percentage
+from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 
@@ -34,8 +35,9 @@ class Cloc(BaseResultsModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-def query_0(scan: Scan) -> Any:
-    row = (
+@query_cache
+def query_0(scan: Scan) -> Sns:
+    query = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
             fn.SUM(Cloc.lines_code).alias("lines_code"),
@@ -45,30 +47,33 @@ def query_0(scan: Scan) -> Any:
             ),
         )
         .where(Cloc.scan == scan)
+        .dicts()
         .get()
     )
+    result: Sns = Sns(**query)
 
     # Convert to percentage of total:
-    if row.lines_total:
-        row.lines_blank_p = (row.lines_blank / row.lines_total) * 100.0
-        row.lines_code_p = (row.lines_code / row.lines_total) * 100.0
-        row.lines_comment_p = (row.lines_comment / row.lines_total) * 100.0
-        row.lines_total_p = row.lines_blank_p + row.lines_code_p + row.lines_comment_p
+    if result.lines_total:
+        result.lines_blank_p = (result.lines_blank / result.lines_total) * 100.0
+        result.lines_code_p = (result.lines_code / result.lines_total) * 100.0
+        result.lines_comment_p = (result.lines_comment / result.lines_total) * 100.0
+        result.lines_total_p = result.lines_blank_p + result.lines_code_p + result.lines_comment_p
     else:
-        row.lines_blank_p = None
-        row.lines_code_p = None
-        row.lines_comment_p = None
-        row.lines_total_p = None
+        result.lines_blank_p = None
+        result.lines_code_p = None
+        result.lines_comment_p = None
+        result.lines_total_p = None
 
     # Find the number of files
-    row.files_total = Cloc.select(fn.COUNT(Cloc.id).alias("files_total")).where(Cloc.scan == scan).get().files_total
+    result.files_total = Cloc.select(fn.COUNT(Cloc.id).alias("files_total")).where(Cloc.scan == scan).get().files_total
 
-    return row
+    return result
 
 
-def query_1(scan: Scan) -> Any:
-    grand_total = query_0(scan)
-    rows = (
+@query_cache
+def query_1(scan: Scan) -> Sns:
+    grand_total: Sns = query_0(scan)
+    query = (
         Cloc.select(
             Cloc.directory,
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -81,35 +86,49 @@ def query_1(scan: Scan) -> Any:
         .where(Cloc.scan == scan)
         .group_by(Cloc.directory)
         .order_by(Cloc.directory)
+        .dicts()
     )
+    rows = [Sns(**row_dict) for row_dict in query]
+
     # Convert to percentage of total:
     for row in rows:
         row.lines_code_p = (row.lines_code / grand_total.lines_code) * 100.0
         row.lines_blank_p = (row.lines_blank / grand_total.lines_blank) * 100.0
         row.lines_comment_p = (row.lines_comment / grand_total.lines_comment) * 100.0
         row.lines_total_p = (row.lines_total / grand_total.lines_total) * 100.0
-    return rows
+    return Sns(rows=rows, grand_total=grand_total)
 
 
-def query_2(scan: Scan) -> [list[Cloc], dict[str, int], int]:
-    rows = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename)
+@query_cache
+def query_2(scan: Scan) -> Sns:
+    grand_total: Sns = query_0(scan)
+
+    query = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename).dicts()
+    rows = [Sns(**row_dict) for row_dict in query]
+
+    # Calculate the total for each column/attribute:
     column_totals = defaultdict(int)
     for row in rows:
         column_totals["lines_blank"] += row.lines_blank
         column_totals["lines_comment"] += row.lines_comment
         column_totals["lines_code"] += row.lines_code
         row.lines_total = row.lines_blank + row.lines_comment + row.lines_code
-    grand_total = sum(list(column_totals.values()))
 
+    # Convert to percentage of total:
     for row in rows:
         row.lines_code_p = (row.lines_code / column_totals["lines_code"]) * 100.0
         row.lines_comment_p = (row.lines_comment / column_totals["lines_blank"]) * 100.0
         row.lines_blank_p = (row.lines_blank / column_totals["lines_code"]) * 100.0
-        row.lines_total_p = (row.lines_total / grand_total) * 100.0
+        row.lines_total_p = (row.lines_total / grand_total.lines_total) * 100.0
 
-    return rows, dict(column_totals), grand_total
+    return Sns(
+        rows=rows,
+        column_totals=dict(column_totals),
+        grand_total=grand_total,
+    )
 
 
+@query_cache
 def query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict, defaultdict]:
     scans = get_scans_for_pta(project, tool="cloc", last=last)
     query = (
@@ -171,36 +190,37 @@ def query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict,
     return timestamps, messages, query, transposed, grand_totals, roc, adgs
 
 
-def query_d(args: Namespace, scan: Scan) -> Any:
+@query_cache
+def query_d(args: Namespace, scan: Scan) -> Sns:
     """Calculate all 'derived' report values."""
-    row = query_0(scan)
-    if not row or not row.lines_code:
+    result = query_0(scan)
+    if not result or not result.lines_code:
         return None
 
     # Calculate the "Code Density"
-    metric_value = (row.lines_code / (row.lines_code + row.lines_blank)) * 100.0
-    row.code_density = score_metric(args, "tools.cloc.code_density", metric_value)
+    metric_value = (result.lines_code / (result.lines_code + result.lines_blank)) * 100.0
+    result.code_density = score_metric(args, "tools.cloc.code_density", metric_value)
 
     # Calculate the "Comment Ratio"
-    metric_value = row.lines_comment / (row.lines_code + row.lines_comment) * 100.0
-    row.comment_ratio = score_metric(args, "tools.cloc.comment_ratio", metric_value)
+    metric_value = result.lines_comment / (result.lines_code + result.lines_comment) * 100.0
+    result.comment_ratio = score_metric(args, "tools.cloc.comment_ratio", metric_value)
 
     # Calculate average lines per file
-    metric_value = int(row.lines_code / row.files_total)
-    row.avg_lines_per_file = score_metric(args, "tools.cloc.avg_lines_per_file", metric_value)
+    metric_value = int(result.lines_code / result.files_total)
+    result.avg_lines_per_file = score_metric(args, "tools.cloc.avg_lines_per_file", metric_value)
 
-    return row
+    return result
 
 
+@query_cache
 def query_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
     """Calculate histogram buckets over filesize."""
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     bucket_breaks = [level["min"] for level in buckets]
 
     # Calculate file density histogram
-    file_sizes = [
-        row.lines_code + row.lines_comment + row.lines_blank for row in Cloc.select().where(Cloc.scan == scan)
-    ]
+    query = Cloc.select().where(Cloc.scan == scan)
+    file_sizes = [row.lines_code + row.lines_comment + row.lines_blank for row in query]
     histogram_by_file_size = bucket(file_sizes, bucket_breaks, as_percentage=True)
 
     return histogram_by_file_size

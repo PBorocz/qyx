@@ -1,33 +1,33 @@
 """User state management/persistence."""
 
 import logging
-from argparse import Namespace
+from types import SimpleNamespace as Sns
 
 log = logging.getLogger(__name__)
 
 
-def score_metric(args: Namespace, metric_path: str, value: float) -> Namespace:
+def score_metric(args: Sns, metric_path: str, value: float) -> Sns:
     """Score a metric value according to configured thresholds.
 
     Returns:
-        Namespace with score, grade, and color
+        Sns with score, grade, and color
     """
     metric_config = args.config.get(metric_path)
     if not metric_config:
         # Fallback to default if not configured
         log.warning(f"Sorry, couldn't find a scoring configuration for {metric_path=}!")
-        return Namespace(score=value, grade="?", color="#6b7280")
+        return Sns(score=value, grade="?", color="#6b7280")
 
     if "thresholds" not in metric_config:
         log.warning(f"Sorry, couldn't find a 'thresholds' section in {metric_path=}!")
-        return Namespace(score=value, grade="?", color="#6b7280")
+        return Sns(score=value, grade="?", color="#6b7280")
 
     grade, color = find_grade(value, metric_config["thresholds"])
 
     if grade == "?":
         log.warning(f"Configuration issue? Unable to map {value=} to a value metric grading bucket: {metric_path=}")
 
-    return Namespace(score=value, grade=grade, color=color)
+    return Sns(score=value, grade=grade, color=color)
 
 
 def find_grade(value: float, thresholds: list[dict]) -> tuple[str, str]:

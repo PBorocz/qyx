@@ -1,7 +1,7 @@
 <table id="level_1" class="striped">
   <thead>
     <tr>
-      <th scope="col" style="text-align: left"  >Directory</th>
+      <th scope="col" style="text-align: left" >Directory</th>
       <th scope="col" style="text-align: right">SLOC</th>
       <th scope="col" style="text-align: right">Multi</th>
       <th scope="col" style="text-align: right">Comment</th>
@@ -12,7 +12,7 @@
   <tbody>
     {% for row in raw_1.rows %}
     <tr>
-      <td style="text-align: left" >{{ row.directory }}</td>
+      <td style="text-align: left" >{{ row.directory              }}</td>
       <td style="text-align: right">{{"{:,}".format(row.sloc)     }}</td>
       <td style="text-align: right">{{"{:,}".format(row.multi)    }}</td>
       <td style="text-align: right">{{"{:,}".format(row.comments) }}</td>
