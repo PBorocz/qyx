@@ -91,29 +91,29 @@ def fxtd_2(scan: Scan) -> None:
 
 def fxtd_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, transposed, rocs = query_h(project, last=5)
+    result = query_h(project, last=5)
 
-    timestamps_formatted = format_timestamp_headers(timestamps)
+    timestamps_formatted = format_timestamp_headers(result.timestamps)
 
     ################################################################################################
     # Render the table
     ################################################################################################
     table = cli_table(title="FXTD Results Over Time")
     table.add_column("-")
-    for timestamp in sorted(timestamps):
+    for timestamp in sorted(result.timestamps):
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta")
 
     colors = args.config.get("renderers.cli.colors")
-    for entity_type, values in transposed.items():
+    for entity_type, values in result.transposed.items():
         t_row = [entity_type]
-        for timestamp in sorted(timestamps):
+        for timestamp in sorted(result.timestamps):
             if timestamp in values:
                 t_row.append(f"{values[timestamp]:,d}")
             else:
                 t_row.append("")
 
-        roc = rocs.get(entity_type, 0)
+        roc = result.rocs.get(entity_type, 0)
         if roc > 0.01:
             color = colors["positive"]
         elif roc < -0.01:

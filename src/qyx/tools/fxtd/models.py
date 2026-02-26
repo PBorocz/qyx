@@ -9,7 +9,7 @@ from peewee import fn, CharField, IntegerField, JOIN
 
 from qyx.constants import ViewContext as Vc
 from qyx.tools.base import BaseResultsModel, Project, Scan
-from qyx.tools.common import get_loc, get_scans_for_pta
+from qyx.tools.common import get_loc, get_scans_for_project_analysis
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -105,8 +105,8 @@ def query_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_h(project: Project, last: int = None):
-    scans = get_scans_for_pta(project, tool="fxtd", last=last)
+def query_h(project: Project, last: int = None) -> Sns:
+    scans = get_scans_for_project_analysis(project, "fxtd", last=last)
     rows = (
         Scan.select(
             Scan.as_of.alias("timestamp"),
@@ -143,4 +143,4 @@ def query_h(project: Project, last: int = None):
             if value_2 is not None and value_1 is not None:
                 rocs[type_] = rate_of_change_percentage(value_2, value_1)
 
-    return timestamps, messages, transposed, rocs
+    return Sns(timestamps=timestamps, messages=messages, transposed=transposed, rocs=rocs)

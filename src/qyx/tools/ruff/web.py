@@ -57,12 +57,12 @@ def render_content(template: str = "ruff::body.htmx") -> str:
 
 def ruff_h(args: Namespace, project: Project, scan: Scan):
     """Render the history chart of number of issues over time."""
-    _, messages, rows, _ = query_h(project)
-    if not rows:
+    result = query_h(project)
+    if not result.transposed:
         return None
 
-    x_values = [datetime.fromisoformat(ts_) for ts_ in rows.keys()]
-    y_values = list(rows.values())
+    x_values = [datetime.fromisoformat(ts_) for ts_ in result.transposed.keys()]
+    y_values = list(result.transposed.values())
 
     # Create custom hover labels
     s_y_values = []
@@ -74,7 +74,7 @@ def ruff_h(args: Namespace, project: Project, scan: Scan):
                 s_y_values.append(f"{count} Ruff Issue")
             case _:
                 s_y_values.append(f"{count} Ruff Issues")
-    labels = custom_labels("", messages, x_values, s_y_values)
+    labels = custom_labels("", result.messages, x_values, s_y_values)
 
     fig = go.Figure()
     fig.add_trace(

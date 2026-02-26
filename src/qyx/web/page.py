@@ -10,10 +10,17 @@ def render_page(title: str, template: str, **context) -> str:
         {"name": tool_name, "description": tool_name.title()}
         for tool_name in request.app.args.config.get("renderers.web.ui.tool_order")
     ]
-    template = request.app.args.jinja_env.get_template(template)
-    return template.render(**context)
+    return _render_template(template, **context)
 
 
 def render_partial(template: str, **context) -> str:
-    """Render the specified page template using the context provided."""
+    """Render the specified *partial* page template using the context provided."""
+    if not template.endswith("htmx"):
+        print("Warning: partial template doesn't end with htmx!")
+    return _render_template(template, **context)
+
+
+def _render_template(template: str, **context) -> str:
+    """Lowest level, render the template provided using the context provided."""
+    context["current_path"] = request.path  # Pass back for Navbar management.
     return request.app.args.jinja_env.get_template(template).render(**context)

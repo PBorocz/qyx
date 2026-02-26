@@ -146,6 +146,11 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
             value="clean",
             shortcut_key="c",
         ),
+        Choice(
+            title="Display information about internal db cache",
+            value="cache_info",
+            shortcut_key="z",
+        ),
     ]
 
     args.admin_command = select(
@@ -160,6 +165,8 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
         case "delete":
             args = _prompt_admin_command_delete(args)
         case "clean":
+            pass  # No arguments required here!
+        case "cache_info":
             pass  # No arguments required here!
     return args
 

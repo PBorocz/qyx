@@ -8,8 +8,9 @@ from types import SimpleNamespace as Sns
 
 from peewee import IntegerField, fn
 
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import BaseResultsModel, Project, Scan
-from qyx.tools.common import get_scans_for_pta
+from qyx.tools.common import get_scans_for_project_analysis
 from qyx.utils import bucket, rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -36,7 +37,7 @@ class Cloc(BaseResultsModel):
 
 
 @query_cache
-def query_0(scan: Scan) -> Sns:
+def query_0(scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -129,8 +130,8 @@ def query_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict, defaultdict]:
-    scans = get_scans_for_pta(project, tool="cloc", last=last)
+def query_h(project: Project, last: int = None) -> Sns:
+    scans = get_scans_for_project_analysis(project, "cloc", last=last)
     query = (
         Cloc.select(
             Scan.as_of.alias("timestamp"),
@@ -187,7 +188,15 @@ def query_h(project: Project, last: int = None) -> tuple[list[str], defaultdict,
         adgs["total_blank"  ] = (query[-1].total_blank   - query[0].total_blank  ) / days
         # fmt: on
 
-    return timestamps, messages, query, transposed, grand_totals, roc, adgs
+    return Sns(
+        timestamps=timestamps,
+        messages=messages,
+        rows=query,
+        transposed=transposed,
+        grand_totals=grand_totals,
+        roc=roc,
+        adgs=adgs,
+    )
 
 
 @query_cache

@@ -104,15 +104,15 @@ def ty_3(args: Namespace, project: Project, scan: Scan) -> None:
 # History at the Rl.SUMMARY level...
 def ty_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, rows, roc = query_h(project, last=5)
-    timestamps_formatted = format_timestamp_headers(timestamps)
+    result = query_h(project, last=5)
+    timestamps_formatted = format_timestamp_headers(result.timestamps)
 
     ################################################################################################
     # Render the table
     ################################################################################################
     table = cli_table(title="TY Results Over Time")
     table.add_column("-")
-    for timestamp in sorted(timestamps):
+    for timestamp in sorted(result.timestamps):
         table.add_column(
             timestamps_formatted[timestamp],
             justify="right",
@@ -120,49 +120,18 @@ def ty_h(args: Namespace, project: Project) -> None:
     table.add_column("Delta")
 
     row = ["Checks"]
-    for timestamp in sorted(timestamps):
-        row.append(str(rows[timestamp]))
+    for timestamp in sorted(result.timestamps):
+        row.append(str(result.transposed[timestamp]))
 
     colors = args.config.get("renderers.cli.colors")
     color = colors["neutral"]
-    if roc:
-        if roc > 0.01:
+    if result.roc:
+        if result.roc > 0.01:
             color = colors["positive"]
-        elif roc < -0.01:
+        elif result.roc < -0.01:
             color = colors["negative"]
-        row.append(f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]")
+        row.append(f"[{color}][bold]{result.roc:+.2f}%[/bold][/{color}]")
 
     table.add_row(*row)
 
     cli_console.print(table)
-
-
-#
-# Still used??
-#
-# def _report_history(project: Project) -> None:
-#     """Report on the history of scans "across" at the Rl.DIRECTORY level."""
-#     rows, messages, transposed, grand_totals = query(args, Rl.HISTORY, project=project, last=5)
-#     ################################################################################################
-#     # Render the table
-#     ################################################################################################
-#     table = cli_table(title="TY Results Over Time", show_footer=True)
-#     table.add_column("Rule", justify="left", footer="TOTAL")
-#     table.add_column("Message", justify="left", footer="")
-#     timestamps = list({row.timestamp for row in rows})
-#     timestamps_formatted = format_timestamp_headers(timestamps)
-#     for timestamp in sorted(timestamps):
-#         table.add_column(
-#             timestamps_formatted[timestamp],
-#             justify="right",
-#             footer=str(grand_totals[timestamp]),
-#             footer_style="bold cyan",
-#         )
-
-#     for check_name, dt_rows in transposed.items():
-#         row = [check_name, messages[check_name]]
-#         for timestamp in sorted(timestamps):
-#             row.append(str(dt_rows[timestamp]))
-#         table.add_row(*row)
-
-#     cli_console.print(table)

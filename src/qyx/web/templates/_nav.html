@@ -1,8 +1,10 @@
 <nav>
   <ul>
-    <li><a href="/" aria-current="page">QYX</a></li>
+    <li><a href="/" {% if current_path == '/' %}aria-current="page"{% endif %}>QYX</a></li>
     {% for tool in navbar %}
-    <li><a href="/{{ tool.name }}">{{ tool.description }}</a></li>
+    <li>
+      <a href="/{{ tool.name }}" {% if current_path == '/' + tool.name %}aria-current="page"{% endif %}> {{ tool.description }}</a>
+    </li>
     {% endfor %}
   </ul>
 </nav>

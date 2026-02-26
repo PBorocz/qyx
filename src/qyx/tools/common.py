@@ -26,17 +26,19 @@ def get_loc(args: Namespace, project: Project) -> int | None:
     return None
 
 
-def get_scans_for_pta(project: Project, tool: str, analysis: str = None, last: int = None) -> ModelSelect:
-    """Return the most recent scans for the selected project, tool and (maybe) analysis."""
-    where = [
-        Request.project == project,
-        Scan.tool == tool,
-    ]
-    if analysis is not None:
-        where.append(Scan.analysis == analysis)
-
-    scans = Scan.select().where(*where).join(Request).order_by(Scan.as_of.desc())
-
+def get_scans_for_project_analysis(project: Project, analysis: str, last: int = None) -> ModelSelect:
+    """Return the most recent scans for the selected project and analysis."""
+    scans = (
+        Scan.select()
+        .where(
+            Request.project == project,
+            Scan.analysis == analysis,
+        )
+        .join(Request)
+        .order_by(
+            Scan.as_of.desc(),  # IMPORTANT as we use a simple slice below to limit!
+        )
+    )
     if last:
         scans = scans.limit(last)
 

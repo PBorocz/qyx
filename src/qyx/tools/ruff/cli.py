@@ -95,15 +95,15 @@ def ruff_2(args: Namespace, scan: Scan) -> None:
 # History at the Rl.SUMMARY level...
 def ruff_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    timestamps, _, rows, roc = query_h(project, last=5)
-    timestamps_formatted = format_timestamp_headers(timestamps)
+    result = query_h(project, last=5)
+    timestamps_formatted = format_timestamp_headers(result.timestamps)
 
     ################################################################################################
     # Render the table
     ################################################################################################
     table = cli_table(title="RUFF Results Over Time")
     table.add_column("-")
-    for timestamp in sorted(timestamps):
+    for timestamp in sorted(result.timestamps):
         table.add_column(
             timestamps_formatted[timestamp],
             justify="right",
@@ -111,17 +111,17 @@ def ruff_h(args: Namespace, project: Project) -> None:
     table.add_column("Delta")
 
     row = ["Issues"]
-    for timestamp in sorted(timestamps):
-        row.append(str(rows[timestamp]))
+    for timestamp in sorted(result.timestamps):
+        row.append(str(result.transposed[timestamp]))
 
     colors = args.config.get("renderers.cli.colors")
     color = colors["neutral"]
-    if roc:
-        if roc > 0.01:
+    if result.roc:
+        if result.roc > 0.01:
             color = colors["positive"]
-        elif roc < -0.01:
+        elif result.roc < -0.01:
             color = colors["negative"]
-        row.append(f"[{color}][bold]{roc:+.2f}%[/bold][/{color}]")
+        row.append(f"[{color}][bold]{result.roc:+.2f}%[/bold][/{color}]")
 
     table.add_row(*row)
 

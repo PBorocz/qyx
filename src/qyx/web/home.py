@@ -1,7 +1,7 @@
 """Render the "home"/summary page."""
 
 import logging
-from argparse import Namespace
+from types import SimpleNamespace as Sns
 
 from bottle import request
 
@@ -43,7 +43,7 @@ def render_content(template: str = "base::fragments/body.htmx"):
 
     State.update(args, project=project.name)  # Remember for next instantiation!
 
-    context = Namespace(as_of_dates={})
+    context = Sns(as_of_dates={})
     context.analyses = []
 
     # FIXME: Can we make the following a bit more dynamic?

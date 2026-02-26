@@ -54,18 +54,18 @@ def render_content(template: str = "fxtd::body.htmx") -> str:
 
 
 def fxtd_h(args: Namespace, project: Project) -> bytes | None:
-    timestamps, messages, transposed, rocs = query_h(project)
-    if not transposed:
+    result = query_h(project)
+    if not result.transposed:
         return None
 
     fig = go.Figure()
-    for i, metric in enumerate(list(transposed.keys())):
-        dt_values = transposed[metric]
+    for i, metric in enumerate(list(result.transposed.keys())):
+        dt_values = result.transposed[metric]
         x_values = [datetime.fromisoformat(ts_) for ts_ in dt_values.keys()]
         y_values = list(dt_values.values())
 
         # We want custom hover labels based on the respective git messages
-        labels = custom_labels(metric, messages, x_values, y_values)
+        labels = custom_labels(metric, result.messages, x_values, y_values)
 
         fig.add_trace(
             go.Scatter(

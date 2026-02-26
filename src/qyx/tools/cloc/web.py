@@ -90,8 +90,8 @@ def cloc_f(args: Namespace, project: Project, scan: Scan):
 
 
 def cloc_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
-    _, messages, rows, _, _, _, _ = query_h(project)
-    if not rows:
+    result = query_h(project)
+    if not result.rows:
         return None
 
     metric_titles = (
@@ -101,11 +101,11 @@ def cloc_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
     )
     fig = go.Figure()
     for i, (metric, title) in enumerate(metric_titles):
-        x_values = [datetime.fromisoformat(row.timestamp) for row in rows]
-        y_values = [getattr(row, metric) for row in rows]
+        x_values = [datetime.fromisoformat(row.timestamp) for row in result.rows]
+        y_values = [getattr(row, metric) for row in result.rows]
 
         # We want custom hover labels based on the respective git messages
-        labels = custom_labels(title, messages, x_values, y_values)
+        labels = custom_labels(title, result.messages, x_values, y_values)
 
         # Add a series for each specific metric
         fig.add_trace(

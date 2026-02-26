@@ -59,7 +59,7 @@ def rate_of_change_percentage(old_value: int | float, new_value: int | float) ->
     return ((new_value - old_value) / old_value) * 100
 
 
-def format_timestamp_headers(timestamps) -> dict[datetime, str]:
+def format_timestamp_headers(timestamps: list[str]) -> dict[datetime, str]:
     """Format timestamp headers based on distribution across days/times..
 
     Args:
@@ -73,7 +73,7 @@ def format_timestamp_headers(timestamps) -> dict[datetime, str]:
         return datetime.fromisoformat(s_dt).astimezone()
 
     if not timestamps:
-        return []
+        return {}
 
     # Group timestamps by date
     dates_to_times = defaultdict(list)

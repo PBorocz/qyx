@@ -10,7 +10,7 @@ from typing import Any, Literal
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
 from qyx.tools.base import BaseModel, BaseResultsModel, Project, Scan
-from qyx.tools.common import get_scans_for_pta
+from qyx.tools.common import get_scans_for_project_analysis
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -250,7 +250,7 @@ def query_raw_2(scan: Scan) -> Sns:
 
 @query_cache
 def query_raw_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_pta(project, tool="radon", analysis="raw", last=last)
+    scans = get_scans_for_project_analysis(project, "raw", last=last)
     query = (
         RadonRaw.select(
             Scan.as_of.alias("timestamp"),
@@ -457,7 +457,7 @@ def query_hal_3(scan: Scan) -> Sns:
 
 @query_cache
 def query_hal_h(project: Project = None, last: int = 5) -> Sns:
-    scans = get_scans_for_pta(project, tool="radon", analysis="hal", last=last)
+    scans = get_scans_for_project_analysis(project, "hal", last=last)
     query = (
         RadonHal.select(
             Scan.as_of.alias("timestamp"),
@@ -590,7 +590,7 @@ def query_mi_2(args, scan: Scan) -> Sns:
 def query_mi_h(project, last: int = 5) -> Sns:
     assert project
 
-    scans = get_scans_for_pta(project, tool="radon", analysis="mi", last=last)
+    scans = get_scans_for_project_analysis(project, "mi", last=last)
     scan_ids = [scan.id for scan in scans]
 
     # Alias for the RAW scan to make the query clearer
@@ -746,7 +746,7 @@ def query_cc_3(args: Namespace, scan: Scan) -> Sns:
 
 @query_cache
 def query_cc_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_pta(project, tool="radon", analysis="cc", last=last)
+    scans = get_scans_for_project_analysis(project, "cc", last=last)
     query = (
         RadonCc.select(
             Scan.as_of.alias("timestamp"),
