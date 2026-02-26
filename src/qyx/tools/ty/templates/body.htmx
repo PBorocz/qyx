@@ -2,10 +2,7 @@
 
 <section>
 
-  <details name="details" open>
-    <summary>Summary</summary>
-    {% include "ty::level_0.htmx" %}
-  </details>
+  {% include "ty::level_0.htmx" %}
 
   <details name="details">
     <summary>By Check</summary>

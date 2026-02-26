@@ -1,9 +1,7 @@
 <section>
 
-  <details name="details" open>
-    <summary>Summary</summary>
-    {% include "cloc::level_0.htmx" %}
-  </details>
+  <summary>Summary</summary>
+  {% include "cloc::level_0.htmx" %}
 
   <details name="details">
     <summary>By Directory</summary>

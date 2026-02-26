@@ -5,7 +5,7 @@ from argparse import Namespace
 from collections import defaultdict
 from dataclasses import dataclass
 from types import SimpleNamespace as Sns
-from typing import Any, Literal
+from typing import Literal
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
@@ -456,7 +456,7 @@ def query_hal_3(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_hal_h(project: Project = None, last: int = 5) -> Sns:
+def query_hal_h(project: Project = None, last: int = None) -> Sns:
     scans = get_scans_for_project_analysis(project, "hal", last=last)
     query = (
         RadonHal.select(
@@ -587,7 +587,7 @@ def query_mi_2(args, scan: Scan) -> Sns:
 
 
 @query_cache
-def query_mi_h(project, last: int = 5) -> Sns:
+def query_mi_h(project, last: int = None) -> Sns:
     assert project
 
     scans = get_scans_for_project_analysis(project, "mi", last=last)

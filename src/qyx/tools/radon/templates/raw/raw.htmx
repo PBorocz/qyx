@@ -1,9 +1,7 @@
 <section>
 
-  <details name="details" open>
-    <summary>Summary</summary>
-    {% include "radon::raw/raw_0.htmx" %}
-  </details>
+  <summary>Summary</summary>
+  {% include "radon::raw/raw_0.htmx" %}
 
   <details name="details">
     <summary>By Directory</summary>

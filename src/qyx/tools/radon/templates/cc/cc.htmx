@@ -1,9 +1,7 @@
 <section>
 
-  <details name="details" open>
-    <summary>Summary</summary>
-    {% include "radon::cc/cc_0.htmx" %}
-  </details>
+  <summary>Summary</summary>
+  {% include "radon::cc/cc_0.htmx" %}
 
   <details name="details">
     <summary>By Directory</summary>
@@ -21,7 +19,7 @@
   </details>
 
   <details name="details">
-    <summary>Trend</summary>
+    <summary>Trends</summary>
     <div class="bordered">{{ cc_h }}</div>
   </details>
 

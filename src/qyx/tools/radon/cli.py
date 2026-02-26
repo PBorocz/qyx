@@ -2,7 +2,6 @@
 
 import logging
 from argparse import Namespace
-from collections import defaultdict
 from typing import Callable
 from types import SimpleNamespace as Sns
 
@@ -414,7 +413,9 @@ def raw_h(args: Namespace, project: Project, scan: Scan) -> None:
     table.add_column("Metric", justify="left", footer="-")
     for timestamp in sorted(result.timestamps):
         table.add_column(
-            timestamps_formatted[timestamp], justify="right", footer=f"{result.transposed['loc'][timestamp]:,d}"
+            timestamps_formatted[timestamp],
+            justify="right",
+            footer=f"{result.transposed['loc'][timestamp]:,d}",
         )
     table.add_column("Delta", footer=f"{result.roc_gt:.2f}%")
 

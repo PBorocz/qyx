@@ -1,9 +1,7 @@
 <section>
 
-  <details name="details" open>
-    <summary>Summary</summary>
-    {% include "radon::mi/mi_0.htmx" %}
-  </details>
+  <summary>Summary</summary>
+  {% include "radon::mi/mi_0.htmx" %}
 
   <details name="details">
     <summary>By Directory</summary>
@@ -16,7 +14,7 @@
   </details>
 
   <details name="details">
-    <summary>Trends</summary>
+    <summary>Trend</summary>
     <div class="bordered">{{ mi_h }}</div>
   </details>
 

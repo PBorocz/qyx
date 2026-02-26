@@ -2,30 +2,28 @@
 
   {% if fxtd_0.grand_total %}
 
-    <details name="details" open>
-      <summary>Summary</summary>
-      {% include "fxtd::level_0.htmx" %}
-    </details>
+  <summary>Summary</summary>
+  {% include "fxtd::level_0.htmx" %}
 
-    <details name="details">
-      <summary>By Directory</summary>
-      {% include "fxtd::level_1.htmx" %}
-    </details>
+  <details name="details">
+    <summary>By Directory</summary>
+    {% include "fxtd::level_1.htmx" %}
+  </details>
 
-    <details name="details">
-      <summary>By File</summary>
-      {% include "fxtd::level_2.htmx" %}
-    </details>
+  <details name="details">
+    <summary>By File</summary>
+    {% include "fxtd::level_2.htmx" %}
+  </details>
 
   {% endif %}
 
   {% if fxtd_h %}
-    <details name="details">
-      <summary>Trend</summary>
-      <div class="bordered">
-        {{ fxtd_h }}
-      </div>
-    </details>
+  <details name="details">
+    <summary>Trends</summary>
+    <div class="bordered">
+      {{ fxtd_h }}
+    </div>
+  </details>
   {% endif %}
 
 </section>

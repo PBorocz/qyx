@@ -11,7 +11,6 @@ from qyx.constants import ReportLevel as Rl
 from qyx.constants import StatusLevel
 from qyx.tools.base import Project, Request, Scan, State
 from qyx.utils import dt_to_display
-from qyx.utils.caching import query_cache
 
 # fmt: off
 PROMPT_STYLE = Style([

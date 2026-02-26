@@ -2,7 +2,6 @@
 
 from argparse import Namespace
 from datetime import datetime
-from types import SimpleNamespace as Sns
 
 import plotly.graph_objects as go
 from bottle import request
@@ -140,7 +139,8 @@ def cloc_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
 #     <tr>
 #       <td style="text-align: left">File Density</td>
 #       <td style="text-align: center">{{ "{:.0f}".format(cloc_0.row.avg_lines_per_file.score) }}</td>
-#       <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_0.row.avg_lines_per_file.color }}">
+#       <td style="text-align: center; color: var(--pico-muted-color);
+#                  background-color: {{ cloc_0.row.avg_lines_per_file.color }}">
 #         {{ cloc_0.row.avg_lines_per_file.grade }}
 #       </td>
 #       <td style="text-align: left"><small>Average LoC per File</small></td>
@@ -148,7 +148,8 @@ def cloc_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
 #     <tr>
 #       <td style="text-align: left">Code Density</td>
 #       <td style="text-align: center">{{ "{:.0f}".format(cloc_0.row.code_density.score) }}%</td>
-#       <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_0.row.code_density.color }}">
+#       <td style="text-align: center; color: var(--pico-muted-color);
+#                  background-color: {{ cloc_0.row.code_density.color }}">
 #         {{ cloc_0.row.code_density.grade }}
 #       </td>
 #       <td style="text-align: left"><small>LOC / (LOC + Blanks)</small></td>
@@ -156,7 +157,8 @@ def cloc_h(args: Namespace, project: Project, scan: Scan) -> bytes | None:
 #     <tr>
 #       <td style="text-align: left">Comment Ratio</td>
 #       <td style="text-align: center">{{ "{:.0f}".format(cloc_0.row.comment_ratio.score) }}%</td>
-#       <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_0.row.comment_ratio.color }}">
+#       <td style="text-align: center; color: var(--pico-muted-color);
+#                  background-color: {{ cloc_0.row.comment_ratio.color }}">
 #         {{ cloc_0.row.comment_ratio.grade }}
 #       </td>
 #       <td style="text-align: left"><small>Comments / (Comment + LOC)</small></td>

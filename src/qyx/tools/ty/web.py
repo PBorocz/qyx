@@ -6,7 +6,6 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.constants import ViewContext as Vc
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_h
 from qyx.web import get_project_selector
