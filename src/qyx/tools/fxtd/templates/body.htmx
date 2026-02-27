@@ -2,7 +2,6 @@
 
   {% if fxtd_0.grand_total %}
 
-  <summary>Summary</summary>
   {% include "fxtd::level_0.htmx" %}
 
   <details name="details">

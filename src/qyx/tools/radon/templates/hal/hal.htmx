@@ -25,7 +25,6 @@
 
 <section>
 
-  <summary>Summary</summary>
   {% include "radon::hal/hal_0.htmx" %}
 
   <details name="details">

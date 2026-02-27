@@ -22,18 +22,19 @@ from qyx.web.page import render_page, render_partial
 log = logging.getLogger(__name__)
 
 
-def render():
+def dashboard_page(template: str = "base::pages/dashboard.html"):
+    """Render the home/summary/Dashboard page."""
     project_options = get_project_selector()
     return render_page(
         "QYX Home",
-        "base::pages/dashboard.html",
+        template,
         project_options=project_options,
         set_project="/partials/set_project/_main_",
     )
 
 
-def render_content(template: str = "base::fragments/body.htmx"):
-    """Render the home/summary page."""
+def dashboard_change_project(template: str = "base::fragments/dashboard.htmx"):
+    """Supply the body portion of the Dashboard page on a project update."""
     args = request.app.args
 
     s_project_id = request.query.project

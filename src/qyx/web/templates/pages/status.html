@@ -1,0 +1,32 @@
+{% extends "base::_base.html" %}
+
+{% block content %}
+
+<h1>Project Status</h1>
+
+<table class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left">Date</th>
+      <th scope="col" style="text-align: left">Message</th>
+      <th scope="col" style="text-align: right">CLOC</th>
+      <th scope="col" style="text-align: right">TY</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td style="text-align: left" >{{ row.date    }}</td>
+      <td style="text-align: left" >{{ row.message }}</td>
+      <td style="text-align: right">{{ row.cloc   }}</td>
+      <td style="text-align: right">{{ row.ty   }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
+
+{% block footer %}
+  {# include "base::home/_footer.html" #}
+{% endblock %}

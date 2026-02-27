@@ -48,6 +48,7 @@ def render_content(template: str = "cloc::body.htmx"):
     context.cloc_d = query_d(args, scan)
     context.cloc_f = cloc_f(args, project, scan)
     context.cloc_h = cloc_h(args, project, scan)
+
     return render_partial(template, **context.__dict__)
 
 

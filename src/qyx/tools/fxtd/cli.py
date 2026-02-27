@@ -42,13 +42,11 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
     result: Sns = query_0(args, project, scan)
+    if not result.rows:
+        cli_console.print("[yellow]Congratulations! No issues found.[/yellow]")
+        return
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=True)
-
-    if not result.rows:
-        table.add_row("Congratulations..No issues found!")
-        cli_console.print(table)
-        return
 
     table.add_column("Type", justify="left", footer="Composite (weighted)")
     table.add_column("Count", justify="right", footer=f"{result.grand_total:,d}")

@@ -7,6 +7,8 @@
   {% include "base::_select_project.html" %}
 
   {# Primary div that'll be replaced dynamically by HTMX based on project selection above #}
-  <div id="page-body-content"></div>
+  <div id="page-body-content">
+    <p aria-busy="true">&nbsp;</p>
+  </div>
 
 {% endblock %}

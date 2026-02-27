@@ -1,9 +1,9 @@
- @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
 
 :root {
   --pico-primary-background: #faf7f4;
-  --pico-font-size: 80%;
-  --pico-font-family: 'Inter', sans-serif;
+  --pico-font-size: 75%;
+  --pico-font-family: 'Roboto', sans-serif;
   --pico-primary: #2563eb;
   --pico-primary-hover: #1d4ed8;
 }
@@ -17,6 +17,16 @@ details summary {
 summary {
   font-size: 1.0rem;
   font-weight: bold;
+}
+
+/* Custom heading spacing */
+h1 {
+  # margin-bottom: 1rem;
+}
+
+h2 {
+  margin-bottom: 0.75rem;
+  color: #6c757d;
 }
 
 /* Make tables more compact */
@@ -33,24 +43,22 @@ table th {
 
 /* Style the navbar differently */
 nav {
+  font-size: 1.25rem;
   background-color: #f8f9fa;
-  border-bottom: 2px solid #e9ecef;
+  border-bottom: 2.0px solid #e9ecef;
+}
+
+/* Ensure that the admin menu entries don't get cut-off */
+nav details.dropdown ul {
+  font-size: 0.9rem;
+  right: 0;
+  left: auto;
 }
 
 /* Make charts responsive */
 svg {
   max-width: 100%;
   height: auto;
-}
-
-/* Custom heading spacing */
-h1 {
-  # margin-bottom: 1rem;
-}
-
-h2 {
-  margin-bottom: 0.75rem;
-  color: #6c757d;
 }
 
 /* Our simple "section" container (ie. border) */
@@ -85,3 +93,21 @@ h2 {
 [aria-current="page"] {
     font-weight: bold !important;
 }
+
+/* HTMX Loading indicator */
+/* #hx-loading-indicator { */
+/*     display: none; */
+/*     position: fixed; */
+/*     top: 50%; */
+/*     left: 50%; */
+/*     transform: translate(-50%, -50%); */
+/*     padding: 1rem 2rem; */
+/*     background: var(--primary); */
+/*     color: red; */
+/*     border-radius: var(--border-radius); */
+/*     z-index: 9999; */
+/* } */
+
+/* #hx-loading-indicator.htmx-request { */
+/*     display: block; */
+/* } */

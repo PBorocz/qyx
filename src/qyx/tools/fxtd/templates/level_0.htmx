@@ -1,3 +1,4 @@
+{% if fxtd_0.rows %}
 <table>
   <thead>
     <tr>
@@ -31,3 +32,9 @@
   </tfoot>
 
 </table>
+
+{% else %}
+
+<h6>Congratulations..NO Fixme/ToDo... issues!</h6>
+
+{% endif %}

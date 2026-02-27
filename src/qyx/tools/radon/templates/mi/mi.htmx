@@ -1,6 +1,5 @@
 <section>
 
-  <summary>Summary</summary>
   {% include "radon::mi/mi_0.htmx" %}
 
   <details name="details">

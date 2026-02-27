@@ -48,7 +48,7 @@ def query_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL
         .dicts()
     )
     if not query:  # Perfectly valid to not have any!
-        return Sns()
+        return Sns(rows=[])
 
     rows = [Sns(**row_dict) for row_dict in query]
     grand_total = sum([row.count for row in rows])

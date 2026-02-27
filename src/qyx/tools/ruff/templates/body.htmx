@@ -2,7 +2,6 @@
 
 <section>
 
-  <summary>Summary</summary>
   {% include "ruff::level_0.htmx" %}
 
   <details name="details">

@@ -1,6 +1,5 @@
 <section>
 
-  <summary>Summary</summary>
   {% include "radon::raw/raw_0.htmx" %}
 
   <details name="details">

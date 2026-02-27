@@ -12,15 +12,13 @@ from bottle import Bottle
 from bottle import static_file
 from jinja2 import Environment, FileSystemLoader, PrefixLoader
 
-from qyx.web.home import render, render_content
+from qyx.web.admin.status import status_page
+from qyx.web.dashboard import dashboard_page, dashboard_change_project
 
 log = logging.getLogger(__name__)
 
-app = None
-
 
 def create_app(args):
-    global app
     app = Bottle()
 
     # Setup prefix-based templating based on both static and dynamic tool directories:
@@ -52,16 +50,21 @@ def serve(args: Namespace) -> None:
     app = create_app(args)
 
     ################################################################################
-    # Register routes (first static and then dynamic ones)
+    # Static routes
     ################################################################################
     app.route("/static/<filepath:path>")(serve_static)  # Love how easy THIS is!
-    app.route("/about")(about)
+    app.route("/admin/about")(about)
 
-    # Home page
-    app.route("/")(render)
-    app.route("/partials/set_project/_main_")(render_content)
+    # Home/Dashboard page
+    app.route("/")(dashboard_page)
+    app.route("/partials/set_project/_main_")(dashboard_change_project)
 
-    # Routes for each individual tool that has web rendering available
+    # Admin - Project Status
+    app.route("/admin/status")(status_page)
+
+    ################################################################################
+    # Dynamic routes for each individual tool that has web rendering available
+    ################################################################################
     for tool_name, o_tool in args.tools.items():
         if not o_tool.render_web_module:  # Not every tool may have web reporting setup!
             continue
@@ -77,59 +80,21 @@ def serve(args: Namespace) -> None:
             log.error(f"Expected to find 'render_content' in {tool_name}'s web.py module! ({exc})")
 
     if args.browser:
-
-        def __open_browser():
-            """Start browser (using a background thread)."""
-            log.info(f"Starting browser to https://localhost/{int(args.port)}")
-            time.sleep(1)  # Wait for browser to start-up
-            webbrowser.open(f"http://localhost:{args.port}")
-            threading.Thread(target=__open_browser, daemon=True).start()
-
-        __open_browser()
+        _open_browser()
 
     ################################################################################
     # Start us up!
     ################################################################################
     log.info(f"Starting server at https://localhost/{int(args.port)}")
-    app.run(
-        host="localhost",
-        port=int(args.port),
-        debug=True,
-        reloader=True,
-    )
+    app.run(host="localhost", port=int(args.port), debug=True, reloader=True)
 
 
-# def serve(args: Namespace) -> None:
-#     """Run our web server."""
-#     # Create our application and route instances..
-#     global app, rt
-#     app, rt = create_app(args)
-
-#     # Register routes..
-#     register(args, rt)
-
-#     # And start us up!
-#     if args.browser:
-
-#         def __open_browser():
-#             """Start browser (ultimately in a background thread)."""
-#             log.info(f"Starting browser to https://localhost/{int(args.port)}")
-#             time.sleep(1)  # Wait for server to start
-#             webbrowser.open(f"http://localhost:{args.port}")
-#             threading.Thread(target=__open_browser, daemon=True).start()
-
-#         __open_browser()
-
-#     log.info(f"Starting server at https://localhost/{int(args.port)}")
-#     uvicorn.run(
-#         app,
-#         host="0.0.0.0",
-#         port=int(args.port),
-#         log_level="debug",
-#         access_log=True,
-#         use_colors=True,
-#         # reload=True,
-#     )
+def _open_browser(args: Namespace):
+    """Start browser (using a background thread)."""
+    log.info(f"Starting browser to https://localhost/{int(args.port)}")
+    time.sleep(1)  # Wait for browser to start-up
+    webbrowser.open(f"http://localhost:{args.port}")
+    threading.Thread(target=_open_browser, daemon=True).start()
 
 
 # This is only necessary to diagnose issues when running server from within CLI.
@@ -146,28 +111,3 @@ if __name__ == "__main__":
     setup_tools(args)
     setup_sqlite(args)
     serve(args)
-
-
-# @rt
-# def index() -> Any:
-#     return page()
-
-
-# @rt
-# def modules(project: int = None) -> Any:
-#     return partial_module_selector(project)
-
-
-# @rt
-# def runs(project: int = None, module: str = "") -> Any:
-#     return partial_run_selector(project, module)
-
-
-# @rt
-# def reports(project: str, module: str, run_id: int) -> Any:
-#     return partial_report_selector(project, module, run_id)
-
-
-# @rt
-# def query(project: int, module: str, run_id: int, report: str) -> Any:
-#     return partial_do_report(project, module, run_id, report)

@@ -50,7 +50,6 @@ def scan_tree_summary(args: Namespace, request, scans_for_request, scan_tree):
         counts[scan.analysis_display()] += 1
     for s_analysis, count in sorted(counts.items()):
         s_scan = f"[cyan]{s_analysis}[/cyan] → [green]{count:,d}[/green] scans"
-        ta_tree.add(s_scan)
 
     return scan_tree
 

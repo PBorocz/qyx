@@ -1,6 +1,5 @@
 <section>
 
-  <summary>Summary</summary>
   {% include "cloc::level_0.htmx" %}
 
   <details name="details">
