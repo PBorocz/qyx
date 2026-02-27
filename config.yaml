@@ -313,6 +313,7 @@ tools:
           - ambiguous-protocol-member
           - super-call-in-named-tuple-method
           - zero-stepsize-in-slice
+          - unknown-rule
         low:
           - unused-ignore-comment
           - unused-type-ignore-comment

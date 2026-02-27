@@ -394,9 +394,7 @@ def _prompt_report_level() -> Rl:
 
 def _prompt_analysis(args: Namespace, message: str) -> str:
     choices = []
-    names = [o_tool.name for o_tool in args.tools.values()]
-    for tool in sorted(names):
-        o_tool = args.tools[tool]
+    for o_tool in args.tools.tools():
         # Tools with a single analysis go out with just their analysis
         if len(o_tool.analyses) == 1:
             title = f"{o_tool.name:5s} - {o_tool.analyses[o_tool.name]}"

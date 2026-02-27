@@ -35,7 +35,7 @@ def render_content(template: str = "ruff::body.htmx") -> str:
     s_project_id = request.query.project
     project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
     if not project:
-        return render_partial("base::fragments/_no_project_yet.htmx")
+        return render_partial("base::fragments/_no_projects_yet.htmx")
 
     scan = Scan.get_most_recent(project, "ruff", "ruff")
     if not scan:

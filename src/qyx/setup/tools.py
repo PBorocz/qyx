@@ -8,7 +8,7 @@ from pathlib import Path
 from types import ModuleType
 
 from qyx.constants import ConfigurationError
-from qyx.tools.base import ToolType
+from qyx.tools.base import Tools, ToolType
 
 log = logging.getLogger(__name__)
 
@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 ################################################################################################
 # "Setup" logic for dynamically identifying available modules and their respective configurations
 ################################################################################################
-def setup_tools(args: Namespace) -> dict:
-    """Introspect our tools directory to dynamically discover modules defined at run-time."""
-    tools: dict = {}
+def setup_tools(args: Namespace) -> Tools:
+    """Introspect our tools directory to dynamically discover tool modules defined right now!."""
+    o_tools: dict = Tools()
 
     # Iterate over /app/tools and get handles to each module
     tools_dir: Path = Path("src/qyx/tools")
@@ -57,10 +57,10 @@ def setup_tools(args: Namespace) -> dict:
             ################################################################################
             # Good to use!
             ################################################################################
-            tools[tool_name] = o_tool
+            o_tools[tool_name] = o_tool
 
-    log.debug(f"{len(tools)} tools available: {', '.join(tools.keys())}")
-    args.tools = tools
+    log.debug(f"{len(o_tools)} tools available: {o_tools.display_names()}")
+    args.tools = o_tools
 
 
 def validate_tool(args: Namespace, o_tool: ToolType) -> list[str] | None:

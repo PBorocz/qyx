@@ -89,7 +89,7 @@ def _delete_orphaned_scans(args: Namespace) -> None:
             Scan.delete().where(Scan.id.in_(scan_ids_to_delete)).execute()
             log.debug(f"- Cleaned up {len(scan_ids_to_delete)} orphaned Scan(s)")
 
-    for o_tool in args.tools.values():
+    for o_tool in args.tools.tools():
         log.debug("#" * 40)
         log.debug(f"Cleanup {o_tool.name=}")
         if o_tool.results_required:

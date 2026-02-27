@@ -32,7 +32,7 @@ def setup_sqlite(args: Namespace) -> None:
 
     # Make sure our models have tables defined for 'em!
     models = [Project, Request, Scan, State]  # Base models first...
-    for o_tool in args.tools.values():  # Followed by tool-specific storage models
+    for o_tool in args.tools.tools():  # Followed by tool-specific storage models
         for tool_peewee_classes in o_tool.models.values():
             for tool_peewee_class in tool_peewee_classes:
                 models.append(tool_peewee_class)

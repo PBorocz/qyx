@@ -34,7 +34,7 @@ def render_content(template: str = "fxtd::body.htmx") -> str:
     s_project_id = request.query.project
     project = Project.get(Project.id == int(s_project_id))
     if not s_project_id or not project:
-        return render_partial("base::fragments/_no_project_yet.htmx")
+        return render_partial("base::fragments/_no_projects_yet.htmx")
 
     scan = Scan.get_most_recent(project, "fxtd", "fxtd")
     if not (project and scan):

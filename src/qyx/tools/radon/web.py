@@ -48,7 +48,7 @@ def render_content() -> str:
     # Find the project...
     project = Project.get(Project.id == int(s_project_id))
     if not s_project_id or not project:
-        return render_partial("base::fragments/_no_project_yet.htmx")
+        return render_partial("base::fragments/_no_projects_yet.htmx")
 
     # Find the most recent scan on behalf of this project...
     scan = Scan.get_most_recent(project, "radon", analysis)

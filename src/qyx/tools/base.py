@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 
 
 ################################################################################################
+# "Tool" data models
+################################################################################################
 class AbstractToolConfiguration(ABC):
     """Defines all the semantics of a code quality tool (aka module) supported by this package."""
 
@@ -107,6 +109,37 @@ class AbstractToolConfiguration(ABC):
 
 
 ToolType: TypeAlias = AbstractToolConfiguration
+
+
+class Tools(dict):
+    """Tools are essentially a dict with some convenience methods."""
+
+    def display_names(self) -> str:
+        """Return a nice comma-delimited list of tool names available."""
+        return ", ".join(self.names())
+
+    def names(self) -> list[str]:
+        """Return the list of tools available, sorted alphabetically."""
+        return sorted(self.keys())
+
+    def tools(self) -> list[ToolType]:
+        """Return all the tools, sorted alphabetically by tool name."""
+        return [self[tool] for tool in self.names()]
+
+    def analyses(self) -> list[str]:
+        """Return all the analyses available across all tools defined.."""
+        analyses = list()
+        for o_tool in self.names():
+            analyses.extend(o_tool.analyses.keys())
+        return analyses
+
+    def tools_analyses(self) -> list[tuple[ToolType, str]]:
+        """Return all list of tool & analysis pairs."""
+        return_ = list()
+        for o_tool in self.tools():
+            for analysis in o_tool.analyses:
+                return_.append((o_tool, analysis))
+        return return_
 
 
 ################################################################################################

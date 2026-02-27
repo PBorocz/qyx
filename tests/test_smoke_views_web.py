@@ -10,7 +10,7 @@ from qyx.tools.base import Scan
 
 def _get_granular_view_cases(app_args, ingested_project):
     cases = []
-    for o_tool in app_args.tools.values():
+    for o_tool in app_args.tools.tools():
         for analysis, report_level in o_tool.iter_reports("web"):
             tool = o_tool.name
 

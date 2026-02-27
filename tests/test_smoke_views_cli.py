@@ -23,7 +23,7 @@ def test_status(app_args, ingested_project, capsys):
 def test_cli_rendering_methods(app_args, ingested_project, subtests, capsys):
     """Test all tool CLI rendering methods across analyses and levels."""
     cases = []
-    for o_tool in app_args.tools.values():
+    for o_tool in app_args.tools.tools():
         for analysis, report_level in o_tool.iter_reports("cli"):
             msg = f"T:{o_tool.name} A:{analysis} L:{report_level.value}]"
             cases.append(Namespace(msg=msg, o_tool=o_tool, analysis=analysis, level=report_level))

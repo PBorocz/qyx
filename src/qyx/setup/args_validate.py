@@ -77,12 +77,12 @@ def _validate_report(args: Namespace) -> list[str]:
 def _validate_analysis(args: Namespace) -> list[str]:
     """Is the analysis argument valid agains the list of all analyses in all tools?"""
     # First, check for raw analysis names only..
-    analyses = [analysis for o_tool in args.tools.values() for analysis in o_tool.analyses.keys()]
+    analyses = args.tools.analyses()
     if args.analysis.lower() in analyses:
         return []
 
     # arg isn't an analysis, only other option is that of a multi-analysis tool:
-    multi_tool_names = [o_tool.name for o_tool in args.tools.values() if len(o_tool.analyses) != 1]
+    multi_tool_names = [o_tool.name for o_tool in args.tools.tools() if len(o_tool.analyses) != 1]
     if args.analysis.lower() in multi_tool_names:
         return []
 

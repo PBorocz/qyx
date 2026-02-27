@@ -182,7 +182,14 @@ def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, r
 
     weighted_scores = []
     for check_and_count in checks_by_check_name.rows:  # eg. "invalid-parameter-default" & 50
-        category = category_by_checkname[check_and_count.check_name]  # eg. medium
+        try:
+            category = category_by_checkname[check_and_count.check_name]  # eg. medium
+        except KeyError:
+            log.error(
+                f"Sorry, unable to categorise ty check type of {check_and_count.check_name}, "
+                "check your configuration file!"
+            )
+            continue
         weight = weights_by_category[category]  # eg. 3.0
         score = check_and_count.count * weight  # eg. 150.0
         weighted_scores.append(score)

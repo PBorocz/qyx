@@ -24,8 +24,8 @@ def create_app(args):
     # Setup prefix-based templating based on both static and dynamic tool directories:
     # (This gives us "name-space" control of templates, eg. "cloc::page/foo.html")
     loaders = dict(base=FileSystemLoader(str(Path(__file__).parent / "templates")))
-    for tool_name, o_tool in args.tools.items():
-        loaders[tool_name] = FileSystemLoader(f"src/qyx/tools/{tool_name}/templates")
+    for o_tool in args.tools.tools():
+        loaders[o_tool.name] = FileSystemLoader(f"src/qyx/tools/{o_tool.name}/templates")
     args.jinja_env = Environment(
         loader=PrefixLoader(loaders, delimiter="::"),
         auto_reload=True,
@@ -65,19 +65,19 @@ def serve(args: Namespace) -> None:
     ################################################################################
     # Dynamic routes for each individual tool that has web rendering available
     ################################################################################
-    for tool_name, o_tool in args.tools.items():
+    for o_tool in args.tools.tools():
         if not o_tool.render_web_module:  # Not every tool may have web reporting setup!
             continue
 
         # "Home" page for each tool:
-        app.route(f"/{tool_name}")(o_tool.render_web_method)
+        app.route(f"/{o_tool.name}")(o_tool.render_web_method)
 
         try:
             # HTMX callback page on a project (or analysis) change:
             render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
-            app.route(f"/partials/set_project/{tool_name}")(render_content_method)
+            app.route(f"/partials/set_project/{o_tool.name}")(render_content_method)
         except AttributeError as exc:
-            log.error(f"Expected to find 'render_content' in {tool_name}'s web.py module! ({exc})")
+            log.error(f"Expected to find 'render_content' in {o_tool.name}'s web.py module! ({exc})")
 
     if args.browser:
         _open_browser()
