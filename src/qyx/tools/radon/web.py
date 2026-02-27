@@ -30,7 +30,7 @@ def render(template: str = "radon::page.html") -> str:
     return render_page(
         "QYX-RADON",
         template,
-        project_options=get_project_selector(),
+        project_options=get_project_selector(["cc", "hal", "mi", "raw"]),
         analysis_options=get_analysis_selector(),
         set_project="/partials/set_project/radon",
         set_analysis="/partials/set_project/radon",
@@ -48,12 +48,12 @@ def render_content() -> str:
     # Find the project...
     project = Project.get(Project.id == int(s_project_id))
     if not s_project_id or not project:
-        return render_partial("base::fragments/_no_project_yet.html")
+        return render_partial("base::fragments/_no_project_yet.htmx")
 
     # Find the most recent scan on behalf of this project...
     scan = Scan.get_most_recent(project, "radon", analysis)
     if not scan:
-        return render_partial("base::fragments/_no_scans_yet.html")
+        return render_partial("base::fragments/_no_scans_yet.htmx")
 
     # Populate the return context with all the data and charts
     # necessary to render the page's body:

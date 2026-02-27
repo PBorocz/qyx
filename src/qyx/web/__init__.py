@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from qyx.tools.base import Project, State
+from qyx.tools.base import Project, Request, Scan, State
 
 
 @dataclass(frozen=True)
@@ -14,9 +14,18 @@ class Option:
     selected: bool = False
 
 
-def get_project_selector() -> list[Option]:
-    """Return a form to allow selection over all projects."""
-    projects = Project.select().order_by(Project.name)
+def get_project_selector(analysis: str | list[str] = None) -> list[Option] | None:
+    """Return a form to allow selection over all projects available for the specified analysis."""
+    projects = Project.select().join(Request).join(Scan).distinct().order_by(Project.name)
+    if analysis:
+        if isinstance(analysis, str):
+            projects = projects.where(Scan.analysis == analysis)
+        else:
+            projects = projects.where(Scan.analysis.in_(analysis))
+
+    # Convert our project(s) into selector options
+    if len(projects) == 0:
+        return None
 
     # Convert our project(s) into selector options
     if len(projects) == 1:

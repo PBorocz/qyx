@@ -6,20 +6,13 @@ from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 from platformdirs import user_cache_dir
+from types import SimpleNamespace as Sns
 from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
 
-# <2026-02-08 Sun> Not used anymore (we don't store git hash on non-git scans)
-# def get_git_commit_hash() -> str:
-#     try:
-#         result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
-#         return result.stdout.strip()
-#     except subprocess.CalledProcessError:
-#         return "unknown"  # Not in git repo or git not available
 
-
-def get_git_commits(git_repo: str) -> tuple[Path, list[str]]:
+def get_git_commits(git_repo: str) -> tuple[Path, list[Sns]]:
     """Setup the git repository (cloning if necessary) and get the list of commit revisions."""
     repo_path = _get_repo_cache_dir(git_repo)
 
@@ -41,9 +34,14 @@ def get_git_commits(git_repo: str) -> tuple[Path, list[str]]:
             capture_output=True,
         )
 
-    # Given the repo, find all commit revisions associated all revisions:
-    commits: list[str] = _get_commits(repo_path)
-    log.debug(f"{repo_path} has {len(commits)} commits")
+    # Given the repo, find *all* commit revisions that have occurred
+    commits: list[Sns] = _get_commits(repo_path)
+    log.debug(f"{repo_path} has {len(commits):,d} actual commits")
+
+    # Apply date-based filtering before we return (future enhancement to support other algorithms here?)
+    commits = filter_commits_by_daily_sampling(commits)
+    log.debug(f"{repo_path} has {len(commits):,d} commits after sampling")
+
     return repo_path, commits
 
 
@@ -88,46 +86,32 @@ def _get_commits(repo_path: Path) -> list[tuple[str, str, str]]:
     )
     commits = []
     for line in result.stdout.strip().split("\n"):
-        hash_val, s_date, message = line.split("|")
+        hash_val, s_date, message = line.split("|")[0:3]
         utc_date = datetime.fromtimestamp(int(s_date), tz=timezone.utc)
-        commits.append((hash_val, utc_date, message))
+        commits.append(Sns(hash_val=hash_val, utc_date=utc_date, message=message))
     return commits
 
 
-def enumerate_skip(items: list, skip: int) -> list[tuple[int, any]]:
-    """Enumerate with skipping, but always include first and last items.
-
-    Args:
-        items: List to enumerate
-        skip: Take every Nth item (skip=1 means all items, skip=2 means every other, etc.)
-
-    Returns:
-        List of tuples (index, item) where index maintains sequential numbering
-    """
-    n = len(items)
-
-    if n == 0:
+def filter_commits_by_daily_sampling(commits: list[Sns]) -> list[Sns]:
+    """Sample git commits to take only the latest commit per calendar day."""
+    # This algorithm works best for my style of development, specifically:
+    # - A flurry of activity over a few days (many intraday commits), followed by
+    # - Long periods of sporadic commits.
+    # We don't need to analyse each intraday commit but still want the sporadic ones,
+    # thus, below we take the *last* commit for each calendar day that has a commit.
+    if not commits:
         return []
 
-    if n == 1:
-        return [(0, items[0])]
+    # Sort by date, newest first
+    sorted_commits = sorted(commits, key=lambda c: c.utc_date, reverse=True)
 
-    # Track which indices we'll include
-    indices = set()
+    seen_days = set()
+    return_: list[Sns] = []
 
-    # Always include first
-    indices.add(0)
+    for commit in sorted_commits:
+        day = commit.utc_date.date()
+        if day not in seen_days:
+            return_.append(commit)
+            seen_days.add(day)
 
-    # Always include last
-    indices.add(n - 1)
-
-    # Add every skip-th item
-    for i in range(0, n, skip):
-        indices.add(i)
-
-    # Build result in order
-    result = []
-    for i in sorted(indices):
-        result.append((i, items[i]))
-
-    return result
+    return return_

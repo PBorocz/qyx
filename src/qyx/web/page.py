@@ -4,7 +4,7 @@ from bottle import request
 
 
 def render_page(title: str, template: str, **context) -> str:
-    """Render the specified page template using the context provided."""
+    """Render the specified *FULL* page template using the context provided."""
     context["title"] = title
     context["navbar"] = [
         {"name": tool_name, "description": tool_name.title()}
@@ -14,9 +14,7 @@ def render_page(title: str, template: str, **context) -> str:
 
 
 def render_partial(template: str, **context) -> str:
-    """Render the specified *partial* page template using the context provided."""
-    if not template.endswith("htmx"):
-        print("Warning: partial template doesn't end with htmx!")
+    """Render the specified *PARTIAL* page template (usually a .htmx one) using the context provided."""
     return _render_template(template, **context)
 
 

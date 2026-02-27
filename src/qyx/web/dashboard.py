@@ -40,7 +40,7 @@ def dashboard_change_project(template: str = "base::fragments/dashboard.htmx"):
     s_project_id = request.query.project
     project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
     if not project:
-        return render_partial("base::fragments/_no_project_yet.html")
+        return render_partial("base::fragments/_no_project_yet.htmx")
 
     State.update(args, project=project.name)  # Remember for next instantiation!
 

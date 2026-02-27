@@ -18,7 +18,7 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 def render(template: str = "ty::page.html") -> str:
     """Render the primary page layout for this tools display page."""
-    project_options = get_project_selector()
+    project_options = get_project_selector("ty")
     return render_page(
         "QYX-TY",
         template,
@@ -35,11 +35,11 @@ def render_content(template: str = "ty::body.htmx") -> str:
     s_project_id = request.query.project
     project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
     if not project:
-        return render_partial("base::fragments/_no_project_yet.html")
+        return render_partial("base::fragments/_no_project_yet.htmx")
 
     scan = Scan.get_most_recent(project, "ty", "ty")
     if not scan:
-        return render_partial("base::fragments/_no_scans_yet.html")
+        return render_partial("base::fragments/_no_scans_yet.htmx")
 
     State.update(args, project=project.name, analysis="ty")
 

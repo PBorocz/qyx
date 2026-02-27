@@ -37,7 +37,7 @@ def status_page(template: str = "base::pages/status.html") -> str:
 #     s_project_id = bottle_request.query.project
 #     project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
 #     if not project:
-#         return render_partial("base::fragments/_no_project_yet.html")
+#         return render_partial("base::fragments/_no_project_yet.htmx")
 
 # context = Sns(rows=[])
 # for request in Request.select().where(Request.project == project):
@@ -59,7 +59,7 @@ def status_page(template: str = "base::pages/status.html") -> str:
 
 # scan = Scan.get_most_recent(project, "ty", "ty")
 # if not scan:
-#     return render_partial("base::fragments/_no_scans_yet.html")
+#     return render_partial("base::fragments/_no_scans_yet.htmx")
 
 # State.update(args, project=project.name, analysis="ty")
 

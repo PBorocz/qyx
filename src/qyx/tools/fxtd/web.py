@@ -18,7 +18,7 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 def render(template: str = "fxtd::page.html") -> str:
     """Render the primary page layout for this tools display page."""
-    project_options = get_project_selector()
+    project_options = get_project_selector("fxtd")
     return render_page(
         "QYX-FXTD",
         template,
@@ -34,11 +34,11 @@ def render_content(template: str = "fxtd::body.htmx") -> str:
     s_project_id = request.query.project
     project = Project.get(Project.id == int(s_project_id))
     if not s_project_id or not project:
-        return render_partial("base::fragments/_no_project_yet.html")
+        return render_partial("base::fragments/_no_project_yet.htmx")
 
     scan = Scan.get_most_recent(project, "fxtd", "fxtd")
     if not (project and scan):
-        return render_partial("base::fragments/_no_scans_yet.html")
+        return render_partial("base::fragments/_no_scans_yet.htmx")
 
     State.update(args, project=project.name, analysis="fxtd")
 

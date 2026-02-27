@@ -7,6 +7,7 @@ from argparse import Namespace
 from collections import defaultdict
 from datetime import datetime, UTC
 from pathlib import Path
+from types import SimpleNamespace as Sns
 from typing import Any, Callable, Iterator
 
 from rich import print as rprint
@@ -67,27 +68,15 @@ def ingest(args: Namespace) -> None:
         rprint("[cyan]Nothing done![/cyan]")
 
 
-def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Namespace]:
+def iter_scan_requests(args: Namespace, request: Request) -> Iterator[Sns]:
     """Iterate over ingest request(s) to perform, abstracting out git vs. direct file sources."""
     if request.is_git:
         repo_path, commits = get_git_commits(request.arg_normalised)
-        for hash, date, message in commits:
-            yield Namespace(
-                as_git=True,
-                cwd=repo_path,
-                as_of=date,
-                hash=hash,
-                message=message,
-            )
+        for commit in commits:
+            yield Sns(as_git=True, cwd=repo_path, as_of=commit.utc_date, hash=commit.hash_val, message=commit.message)
     else:
         as_of = datetime.now(UTC).replace(microsecond=0)
-        yield Namespace(
-            as_git=False,
-            cwd=Path(request.arg_normalised),
-            as_of=as_of,
-            hash=None,
-            message=None,
-        )
+        yield Sns(as_git=False, cwd=Path(request.arg_normalised), as_of=as_of, hash=None, message=None)
 
 
 def _ingest_analysis(
@@ -95,7 +84,7 @@ def _ingest_analysis(
     request: Request,
     o_tool: ToolType,
     analysis: str,
-    scan_request: Namespace,
+    scan_request: Sns,
 ) -> int:
     """Do the specified analysis for respective tool, running the respective command, parsing and saving results!."""
     # Create the scan on whose behalf the results will be stored.
@@ -126,7 +115,7 @@ def _run_tool(
     request: Request,
     o_tool: ToolType,
     analysis: str,
-    scan_request: Namespace,
+    scan_request: Sns,
 ) -> Any:
     """Return the results associated with the tool/analysis, either from stdin or by running the respective tool."""
     if args.stdin:
@@ -172,18 +161,16 @@ def _run_tool(
     return datum
 
 
-def _get_git_hashes(request: Request) -> dict:
+def _get_git_hashes(request: Request) -> dict[tuple[str, str], str]:
     """Return the git hashes already performed for each tool/analysis combination."""
     return_ = defaultdict(list)
     for row in Scan.select().where(Scan.request == request):
         return_[(row.tool, row.analysis)].append(row.git_commit_hash)
-    count = sum(len(hashes) for hashes in return_.values())
-    log.debug(f"Read {count:,d} git hashes for request '{request.arg_normalised}' [{request.id}]")
     return dict(return_)
 
 
 def _is_git_commit_already_ingested(
-    git_hashes: dict,
+    git_hashes: dict[tuple[str, str], str],
     o_tool: ToolType,
     analysis: str,
     git_hash: str,
