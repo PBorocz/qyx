@@ -2,14 +2,14 @@
 
 from argparse import Namespace
 from datetime import datetime
+from types import SimpleNamespace as Sns
 
 import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
 from qyx.tools.fxtd.models import query_0, query_1, query_2, query_h
-from qyx.web import get_project_selector
-from qyx.web.page import render_page, render_partial
+from qyx.web.page import generic_render, generic_render_scans, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
@@ -18,41 +18,41 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 def render(template: str = "fxtd::page.html") -> str:
     """Render the primary page layout for this tools display page."""
-    project_options = get_project_selector("fxtd")
-    return render_page(
-        "QYX-FXTD",
-        template,
-        project_options=project_options,
-        set_project="/partials/set_project/fxtd",
-    )
+    return generic_render("fxtd", template, get_content)
 
 
-################################################################################################
+def render_scans(template: str = "base::_select_scan.cascading.html") -> str:
+    """Render the scan select widget based on a new project selection."""
+    return generic_render_scans("fxtd")
+
+
 def render_content(template: str = "fxtd::body.htmx") -> str:
     """Render the content portion (ie. body) of the page."""
-    args = request.app.args
-    s_project_id = request.query.project
-    project = Project.get(Project.id == int(s_project_id))
-    if not s_project_id or not project:
-        return render_partial("base::fragments/_no_projects_yet.htmx")
-
-    scan = Scan.get_most_recent(project, "fxtd", "fxtd")
-    if not (project and scan):
-        return render_partial("base::fragments/_no_scans_yet.htmx")
-
-    State.update(args, project=project.name, analysis="fxtd")
-
-    # fmt: off
-    context = Namespace()
-    context.fxtd_as_of = scan.as_of_display(collapse_today=True)
-    context.fxtd_0 = query_0(args, project, scan)
-    context.fxtd_1 = query_1(scan)
-    context.fxtd_2 = query_2(scan)
-    context.fxtd_h = fxtd_h(args, project)
-    # fmt: on
+    s_scan_id = request.query.scan
+    scan = Scan.get_or_none(Scan.id == int(s_scan_id)) if s_scan_id else None
+    if not scan:
+        return render_partial("base::_no_scans_yet.htmx")
+    context = get_content(scan)
     return render_partial(template, **context.__dict__)
 
 
+################################################################################################
+def get_content(scan: Scan) -> Sns:
+    """Populate our tool's home page to the specified scan."""
+    args = request.app.args
+
+    State.update(args, project=scan.request.project.name, analysis="fxtd")
+
+    context = Namespace()
+    context.fxtd_as_of = scan.as_of_display(collapse_today=True)
+    context.fxtd_0 = query_0(args, scan)
+    context.fxtd_1 = query_1(scan)
+    context.fxtd_2 = query_2(scan)
+    context.fxtd_h = fxtd_h(args, scan.request.project)
+    return context
+
+
+################################################################################################
 def fxtd_h(args: Namespace, project: Project) -> bytes | None:
     result = query_h(project)
     if not result.transposed:

@@ -1,10 +1,10 @@
 <select name="project"
         aria-label="Select your project..."
-        hx-get={{ set_project }}       {# HTMX endpoint #}
-        hx-target="#page-body-content" {# Where to update #}
-        hx-swap="innerHTML"            {# What/when to update semantic #}
-        hx-trigger="load, change"      {# Trigger on page load *AND* selection change #}
-        hx-include="[name='analysis']" {# Include analysis selector value #}
+        hx-get={{ set_project }}                      {# HTMX endpoint #}
+        hx-target="#page-body-content"                {# Where to update #}
+        hx-swap="innerHTML"                           {# What/when to update semantic #}
+        hx-trigger="change"                           {# Trigger on selection change only #}
+        hx-include="[name='analysis'], [name='scan']" {# Include analysis selector value #}
         hx-on:htmx:before-request="document.getElementById('page-body-content').innerHTML = '<p aria-busy=true>Loading...</p>'"
 >
   {% for option in project_options %}

@@ -35,7 +35,7 @@ class Fxtd(BaseResultsModel):
 
 
 @query_cache
-def query_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary level fxtd metrics."""
     query = (
         Fxtd.select(
@@ -53,7 +53,7 @@ def query_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL
     rows = [Sns(**row_dict) for row_dict in query]
     grand_total = sum([row.count for row in rows])
 
-    if not (lines_of_code := get_loc(args, project)):
+    if not (lines_of_code := get_loc(args, scan.request.project)):
         log.warning("Sorry, unable to calculate derived 'fxtd' metrics as we don't have any lines-of-code yet!")
         return Sns(rows=rows, grand_total=grand_total)
 

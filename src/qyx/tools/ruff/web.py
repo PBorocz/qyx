@@ -6,10 +6,9 @@ from datetime import datetime
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.tools.base import Project, Scan, State
+from qyx.tools.base import Scan, State
 from qyx.tools.ruff.models import query_0, query_1, query_2, query_h
-from qyx.web import get_project_selector
-from qyx.web.page import render_page, render_partial
+from qyx.web.page import generic_render, generic_render_scans, render_partial
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
@@ -18,45 +17,44 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 def render(template: str = "ruff::page.html") -> str:
     """Render the primary page layout for this tools display page."""
-    project_options = get_project_selector("ruff")
-    return render_page(
-        "QYX-RUFF",
-        template,
-        project_options=project_options,
-        set_project="/partials/set_project/ruff",
-    )
+    return generic_render("ruff", template, get_content)
 
 
-################################################################################################
+def render_scans(template: str = "base::_select_scan.cascading.html") -> str:
+    """Render the scan select widget based on a new project selection."""
+    return generic_render_scans("ruff")
+
+
 def render_content(template: str = "ruff::body.htmx") -> str:
     """Render the content portion (ie. body) of the page."""
-    args = request.app.args
-
-    s_project_id = request.query.project
-    project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
-    if not project:
-        return render_partial("base::fragments/_no_projects_yet.htmx")
-
-    scan = Scan.get_most_recent(project, "ruff", "ruff")
+    s_scan_id = request.query.scan
+    scan = Scan.get_or_none(Scan.id == int(s_scan_id)) if s_scan_id else None
     if not scan:
-        return render_partial("base::fragments/_no_scans_yet.htmx")
-
-    State.update(args, project=project.name, analysis="ruff")
-
-    # fmt: off
-    context = Namespace()
-    context.ruff_as_of = scan.as_of_display(collapse_today=True)
-    context.ruff_0 = query_0(args, project, scan)
-    context.ruff_1 = query_1(scan)
-    context.ruff_2 = query_2(scan)
-    context.ruff_h =  ruff_h(args, project, scan)
-    # fmt: on
+        return render_partial("base::_no_scans_yet.htmx")
+    context = get_content(scan)
     return render_partial(template, **context.__dict__)
 
 
-def ruff_h(args: Namespace, project: Project, scan: Scan):
+################################################################################################
+def get_content(scan: Scan) -> str:
+    """Render the content portion (ie. body) of the page."""
+    args = request.app.args
+
+    State.update(args, project=scan.request.project.name, analysis="ruff")
+
+    context = Namespace()
+    context.ruff_as_of = scan.as_of_display(collapse_today=True)
+    context.ruff_0 = query_0(args, scan)
+    context.ruff_1 = query_1(scan)
+    context.ruff_2 = query_2(scan)
+    context.ruff_h = ruff_h(args, scan)
+    return context
+
+
+################################################################################################
+def ruff_h(args: Namespace, scan: Scan):
     """Render the history chart of number of issues over time."""
-    result = query_h(project)
+    result = query_h(scan.request.project)
     if not result.transposed:
         return None
 

@@ -1,6 +1,7 @@
-{% if ruff_0 %}
+<div id="page-body-content">
+  {% if ruff_0 %}
 
-<section>
+  <section>
 
   {% include "ruff::level_0.htmx" %}
 
@@ -19,14 +20,16 @@
     <div class="bordered">{{ ruff_h }}</div>
   </details>
 
-</section>
+  </section>
 
-<hr />
+  <hr />
 
-<h6>As Of {{ ruff_as_of }}</h6>
+  <h6>As Of {{ ruff_as_of }}</h6>
 
-{% else %}
+  {% else %}
 
-<p>Congratulations!...NO ruff issues found.</p>
+  <p>Congratulations!...NO ruff issues found.</p>
 
-{% endif %}
+  {% endif %}
+
+</div>

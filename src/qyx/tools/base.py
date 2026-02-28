@@ -119,7 +119,7 @@ class Tools(dict):
         return ", ".join(self.names())
 
     def names(self) -> list[str]:
-        """Return the list of tools available, sorted alphabetically."""
+        """Return the list of tool names, sorted alphabetically."""
         return sorted(self.keys())
 
     def tools(self) -> list[ToolType]:
@@ -129,7 +129,7 @@ class Tools(dict):
     def analyses(self) -> list[str]:
         """Return all the analyses available across all tools defined.."""
         analyses = list()
-        for o_tool in self.names():
+        for o_tool in self.tools():
             analyses.extend(o_tool.analyses.keys())
         return analyses
 

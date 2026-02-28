@@ -36,7 +36,7 @@ class Ty(BaseResultsModel):
 
 
 @query_cache
-def query_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Ty.select(
             fn.COUNT(Ty.id).alias("count"),
@@ -47,7 +47,7 @@ def query_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL
     )
     result: Sns = Sns(**query)
 
-    if lines_of_code := get_loc(args, project):
+    if lines_of_code := get_loc(args, scan.request.project):
         result = _derived_violations_per_kloc(args, lines_of_code, result)
         result = _derived_weighted_violations_per_kloc(args, lines_of_code, result, scan)
     else:

@@ -14,8 +14,8 @@ class Option:
     selected: bool = False
 
 
-def get_project_selector(analysis: str | list[str] = None) -> list[Option] | None:
-    """Return a form to allow selection over all projects available for the specified analysis."""
+def get_project_selector(analysis: str | list[str] = None) -> tuple[list[Option], Project | None]:
+    """Return a form to allow selection over all projects that have every had a scan for the specified analysis."""
     projects = Project.select().join(Request).join(Scan).distinct().order_by(Project.name)
     if analysis:
         if isinstance(analysis, str):
@@ -23,24 +23,110 @@ def get_project_selector(analysis: str | list[str] = None) -> list[Option] | Non
         else:
             projects = projects.where(Scan.analysis.in_(analysis))
 
-    # Convert our project(s) into selector options
+    ################################################################################
+    # Case 1: No projects found! (very unusual case)
+    ################################################################################
     if len(projects) == 0:
-        return None
+        return ([], None)
 
-    # Convert our project(s) into selector options
+    ################################################################################
+    # Case 2: Just a single project available.
+    ################################################################################
     if len(projects) == 1:
         project = projects[0]
         options = [Option(value=str(project.id), display=project.name, selected=True)]
+        return options, project
 
-    elif len(projects) > 1:
-        options = [Option(display="Project...", value="")]
-        last_project = State.lookup("project")
+    ################################################################################
+    # Case 3: Multiple projects case...
+    ################################################################################
+    options = [Option(display="Project...", value="")]
+    last_project = State.lookup("project")
+
+    # First pass: lookup the last_project (also to handle the case if it's disappeared!)
+    selected_project = None
+    if last_project:
         for project in projects:
-            selected = True if last_project and project.name.lower() == last_project.lower() else False
-            option = Option(value=str(project.id), display=project.name, selected=selected)
-            options.append(option)
+            if last_project.lower() == project.name.lower():
+                selected_project = project
+                break
 
-    return options
+    # If no match found (or no last_project), default to first
+    if selected_project is None:
+        selected_project = projects[0]
+
+    # Build options with correct selection
+    for project in projects:
+        selected = project == selected_project
+        options.append(Option(value=str(project.id), display=project.name, selected=selected))
+
+    return options, selected_project
+
+
+def get_scan_selector(project: Project, analysis: str | list[str] = None) -> tuple[list[Option], Scan | None]:
+    """Return a form to allow selection over all scans available for the specified analysis."""
+    l_analyses = [analysis] if isinstance(analysis, str) else analysis
+    scans = (
+        Scan.select()
+        .join(Request)
+        .join(Project)
+        .where(
+            Request.project == project,
+            Scan.analysis.in_(l_analyses),
+        )
+        .distinct()
+        .order_by(
+            Scan.as_of.desc(),
+        )
+    )
+
+    ################################################################################
+    # Case 1: No scans found for the project!
+    ################################################################################
+    if len(scans) == 0:
+        return ([], None)
+
+    ################################################################################
+    # Case 2: Only a single scan found for the project
+    ################################################################################
+    if len(scans) == 1:
+        scan = scans[0]
+        if scan.git_commit_message:
+            display = f"{scan.as_of_display()} - {scan.git_commit_message}"
+        else:
+            display = f"{scan.as_of_display()}"
+        option = Option(value=str(scan.id), display=display, selected=True)
+        return ([option], scan)
+
+    ################################################################################
+    # Case 3: *Multiple* scans found for the project (normal case)
+    ################################################################################
+    options = [Option(display="Scan...", value="")]
+    last_scan = State.lookup("scan")
+    selected_scan = None
+
+    # First pass: lookup the last_scan (also to handle the case if it's disappeared!)
+    selected_scan = None
+    if last_scan:
+        for scan in scans:
+            if int(last_scan) == scan.id:
+                selected_scan = scan
+                break
+
+    # If no match found (or no last_scan), default to first
+    if selected_scan is None:
+        selected_scan = scans[0]
+
+    # Build options with correct selection
+    for scan in scans:
+        selected = scan == selected_scan
+        if scan.git_commit_message:
+            display = f"{scan.as_of_display()} - {scan.git_commit_message}"
+        else:
+            display = f"{scan.as_of_display()}"
+        options.append(Option(value=str(scan.id), display=display, selected=selected))
+
+    return options, selected_scan
 
 
 def get_analysis_selector() -> list[Option]:
@@ -59,51 +145,3 @@ def get_analysis_selector() -> list[Option]:
         options.append(Option(value=str(value), display=display, selected=selected))
 
     return options
-
-
-def render_project_selector(request, hx_get: str):
-    return None
-    # """Return a form to allow selection over all projects."""
-    # fh_select = get_project_select(request, hx_get)
-    # return fh.Form(fh.Fieldset(fh_select))
-
-
-def get_project_select(request, hx_get: str):
-    """Return a select widget with options across all projects, reflecting state."""
-    return None
-
-    #     We keep this separate as some tools will want to create their own "composite"
-    #     Form Fieldset (e.g. Radon) and this allows them to work while simpler tools
-    #     can use the complete Form above.
-
-
-#     projects = Project.select().order_by(Project.name)
-#     if not projects:
-#         return None
-
-#     # Convert our project(s) into selector items..
-#     elif len(projects) > 1:
-#         last_project = State.lookup("project")
-#         fh_select_items = [fh.Option("Project...", value="")]
-#         for project in projects:
-#             option_kwargs = dict(value=str(project.id))
-#             if last_project and project.name.lower() == last_project.lower():
-#                 option_kwargs["selected"] = True
-#             fh_select_items.append(
-#                 fh.Option(project.name, **option_kwargs),
-#             )
-
-#     elif len(projects) == 1:
-#         project = projects[0]
-#         fh_select_items = [fh.Option(project.name, value=str(project.id), selected=True)]
-
-#     return fh.Select(
-#         *fh_select_items,
-#         name="project",
-#         aria_label="Select your project...",
-#         hx_get=hx_get,  # HTMX endpoint
-#         hx_target="#page-body-content",  # Where to update
-#         hx_swap="innerHTML",  # How to update
-#         hx_trigger="load, change",  # Trigger on page load *AND* selection change
-#         hx_include="[name='analysis']",  # Include analysis selector value
-#     )

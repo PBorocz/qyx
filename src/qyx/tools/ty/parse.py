@@ -12,7 +12,6 @@ from qyx.tools.ty.models import Ty
 def parse(scan: Scan, data: Any) -> int:
     def _json_to_row(ty_result: dict) -> Ty:
         fn_path = Path(ty_result["location"]["path"])
-        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         return Ty(
             directory=fn_path.parent,
             filename=fn_path.name,

@@ -69,15 +69,12 @@ def serve(args: Namespace) -> None:
         if not o_tool.render_web_module:  # Not every tool may have web reporting setup!
             continue
 
-        # "Home" page for each tool:
-        app.route(f"/{o_tool.name}")(o_tool.render_web_method)
-
-        try:
-            # HTMX callback page on a project (or analysis) change:
-            render_content_method: Callable = getattr(o_tool.render_web_module, "render_content")
-            app.route(f"/partials/set_project/{o_tool.name}")(render_content_method)
-        except AttributeError as exc:
-            log.error(f"Expected to find 'render_content' in {o_tool.name}'s web.py module! ({exc})")
+        # For those that do, we setup a set of url paths and associated methods to render
+        for path, method in (("", "render"), ("/scans", "render_scans"), ("/content", "render_content")):
+            try:
+                app.route(f"/{o_tool.name}{path}")(getattr(o_tool.render_web_module, method))
+            except AttributeError as exc:
+                log.error(f"Expected to find {method=} in {o_tool.name}'s web.py module! ({exc})")
 
     if args.browser:
         _open_browser()

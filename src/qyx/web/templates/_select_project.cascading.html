@@ -1,0 +1,11 @@
+<select name="project"
+        aria-label="Select your project..."
+        hx-trigger="change"          {# Trigger on selection change only #}
+        hx-get={{ hx_get_scans }}    {# HTMX endpoint to update scans (or body) based on a new project selection #}
+        hx-swap="outerHTML"          {# How to update on response #}
+        hx-target="#div-select-scan" {# What to update on response #}
+>
+  {% for option in project_options %}
+  <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
+  {% endfor %}
+</select>

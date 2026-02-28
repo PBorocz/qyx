@@ -1,6 +1,7 @@
-{% if ty_0 %}
+<div id="page-body-content">
+  {% if ty_0 %}
 
-<section>
+  <section>
 
   {% include "ty::level_0.htmx" %}
 
@@ -26,14 +27,16 @@
     </div>
   </details>
 
-</section>
+  </section>
 
-<hr />
+  <hr />
 
-<h6>As Of {{ ty_as_of }}</h6>
+  <h6>As Of {{ ty_as_of }}</h6>
 
-{% else %}
+  {% else %}
 
-<p>Congratulations!...NO ty issues found.</p>
+  <p>Congratulations!...NO Ty issues found.</p>
 
-{% endif %}
+  {% endif %}
+
+</div>

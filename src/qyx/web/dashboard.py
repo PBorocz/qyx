@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 def dashboard_page(template: str = "base::pages/dashboard.html"):
     """Render the home/summary/Dashboard page."""
-    project_options = get_project_selector()
+    project_options, _ = get_project_selector()
     return render_page(
         "QYX Home",
         template,
@@ -33,14 +33,14 @@ def dashboard_page(template: str = "base::pages/dashboard.html"):
     )
 
 
-def dashboard_change_project(template: str = "base::fragments/dashboard.htmx"):
+def dashboard_change_project(template: str = "base::dashboard.htmx"):
     """Supply the body portion of the Dashboard page on a project update."""
     args = request.app.args
 
     s_project_id = request.query.project
     project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
     if not project:
-        return render_partial("base::fragments/_no_projects_yet.htmx")
+        return render_partial("base::_no_projects_yet.htmx")
 
     State.update(args, project=project.name)  # Remember for next instantiation!
 

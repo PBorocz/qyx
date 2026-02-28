@@ -1,0 +1,13 @@
+<select name="scan"
+        aria-label="Select your scan..."
+        hx-get={{ set_scan }}                            {# HTMX endpoint #}
+        hx-target="#page-body-content"                   {# Where to update #}
+        hx-swap="innerHTML"                              {# What/when to update semantic #}
+        hx-trigger="change"                              {# Trigger on page load *AND* selection change only #}
+        hx-include="[name='analysis'], [name='project']" {# Include analysis selector value #}
+        hx-on:htmx:before-request="document.getElementById('page-body-content').innerHTML = '<p aria-busy=true>Loading...</p>'"
+>
+  {% for option in scan_options %}
+    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
+  {% endfor %}
+</select>

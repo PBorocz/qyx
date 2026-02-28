@@ -1,32 +1,39 @@
-<section>
+<div id="page-body-content">
+  {% if fxtd_0 %}
 
-  {% if fxtd_0.grand_total %}
+  <section>
 
-  {% include "fxtd::level_0.htmx" %}
+    {% include "fxtd::level_0.htmx" %}
 
-  <details name="details">
-    <summary>By Directory</summary>
-    {% include "fxtd::level_1.htmx" %}
-  </details>
+    <details name="details">
+      <summary>By Directory</summary>
+      {% include "fxtd::level_1.htmx" %}
+    </details>
 
-  <details name="details">
-    <summary>By File</summary>
-    {% include "fxtd::level_2.htmx" %}
-  </details>
+    <details name="details">
+      <summary>By File</summary>
+      {% include "fxtd::level_2.htmx" %}
+    </details>
+
+    {% if fxtd_h %}
+    <details name="details">
+      <summary>Trends</summary>
+      <div class="bordered">
+        {{ fxtd_h }}
+      </div>
+    </details>
+    {% endif %}
+
+  </section>
+
+  <hr />
+
+  <h6>As Of {{ fxtd_as_of }}</h6>
+
+  {% else %}
+
+  <p>Congratulations!...NO Fixme/Todo.. issues found.</p>
 
   {% endif %}
 
-  {% if fxtd_h %}
-  <details name="details">
-    <summary>Trends</summary>
-    <div class="bordered">
-      {{ fxtd_h }}
-    </div>
-  </details>
-  {% endif %}
-
-</section>
-
-<hr />
-
-<h6>As Of {{ fxtd_as_of }}</h6>
+</div>

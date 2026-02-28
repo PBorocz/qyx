@@ -1,4 +1,7 @@
-<section>
+<div id="page-body-content">
+  {% if cloc_0 %}
+
+  <section>
 
   {% include "cloc::level_0.htmx" %}
 
@@ -22,8 +25,16 @@
     <div class="bordered">{{ cloc_f }}</div>
   </details>
 
-</section>
+  </section>
 
-<hr />
+  <hr />
 
-<h6>As Of {{ cloc_as_of }}</h6>
+  <h6>As Of {{ cloc_as_of }}</h6>
+
+{% else %}
+
+  <p>Sorry, no CLOC results yet.</p>
+
+{% endif %}
+
+</div>
