@@ -1,11 +1,13 @@
-<select name="project"
-        aria-label="Select your project..."
-        hx-trigger="change"          {# Trigger on selection change only #}
-        hx-get={{ hx_get_scans }}    {# HTMX endpoint to update scans (or body) based on a new project selection #}
-        hx-swap="outerHTML"          {# How to update on response #}
-        hx-target="#div-select-scan" {# What to update on response #}
->
-  {% for option in project_options %}
-  <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
-  {% endfor %}
-</select>
+<div id="div_select_project">
+  <select name="project"
+          aria-label="Select project..."
+          hx-get="{{ hx_change_project_url }}"      {# HTMX endpoint to update body (or analyses) based on a new project selection #}
+          hx-target="{{ hx_change_project_target}}" {# What to update on response #}
+          hx-swap="innerHTML"                       {# How to update on response #}
+          hx-on:htmx:before-request="document.getElementById('div_body_content').innerHTML = '<p aria-busy=true>Loading...</p>'"
+  >
+    {% for option in project_options %}
+      <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
+    {% endfor %}
+  </select>
+</div>

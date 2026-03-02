@@ -1,18 +1,17 @@
-<div id="page-body-content">
-  {% if cloc_0 %}
+{% if cloc_0 %}
 
-  <section>
+<section>
 
-  {% include "cloc::level_0.htmx" %}
+  {% include "cloc::level_0.html" %}
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "cloc::level_1.htmx" %}
+    {% include "cloc::level_1.html" %}
   </details>
 
   <details name="details">
     <summary>By File</summary>
-    {% include "cloc::level_2.htmx" %}
+    {% include "cloc::level_2.html" %}
   </details>
 
   <details name="details">
@@ -25,16 +24,14 @@
     <div class="bordered">{{ cloc_f }}</div>
   </details>
 
-  </section>
+</section>
 
-  <hr />
+<hr />
 
-  <h6>As Of {{ cloc_as_of }}</h6>
+<h6>As Of {{ cloc_as_of }}</h6>
 
 {% else %}
 
-  <p>Sorry, no CLOC results yet.</p>
+<p>Sorry, no CLOC results yet.</p>
 
 {% endif %}
-
-</div>

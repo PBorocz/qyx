@@ -1,0 +1,32 @@
+{% if ruff_0 %}
+
+<section>
+
+  {% include "ruff::level_0.html" %}
+
+  <details name="details">
+    <summary>By Directory</summary>
+    {% include "ruff::level_1.html" %}
+  </details>
+
+  <details name="details">
+    <summary>By File</summary>
+    {% include "ruff::level_2.html" %}
+  </details>
+
+  <details name="details">
+    <summary>Trend</summary>
+    <div class="bordered">{{ ruff_h }}</div>
+  </details>
+
+</section>
+
+<hr />
+
+<h6>As Of {{ ruff_as_of }}</h6>
+
+{% else %}
+
+<p>Congratulations!...NO ruff issues found.</p>
+
+{% endif %}

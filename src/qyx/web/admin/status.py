@@ -30,14 +30,14 @@ def status_page(template: str = "base::pages/status.html") -> str:
 
 
 ################################################################################################
-# def status_change_project(template: str = "base::fragments/status.htmx") -> str:
+# def status_change_project(template: str = "base::fragments/status.html") -> str:
 #     """Render the content portion (ie. body) of the page."""
 #     args = bottle_request.app.args
 
 #     s_project_id = bottle_request.query.project
 #     project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
 #     if not project:
-#         return render_partial("base::_no_projects_yet.htmx")
+#         return render_partial("base::_no_projects_yet.html")
 
 # context = Sns(rows=[])
 # for request in Request.select().where(Request.project == project):
@@ -59,7 +59,7 @@ def status_page(template: str = "base::pages/status.html") -> str:
 
 # scan = Scan.get_most_recent(project, "ty", "ty")
 # if not scan:
-#     return render_partial("base::_no_scans_yet.htmx")
+#     return render_partial("base::_no_scans_yet.html")
 
 # State.update(args, project=project.name, analysis="ty")
 

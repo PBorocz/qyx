@@ -69,12 +69,24 @@ def serve(args: Namespace) -> None:
         if not o_tool.render_web_module:  # Not every tool may have web reporting setup!
             continue
 
-        # For those that do, we setup a set of url paths and associated methods to render
-        for path, method in (("", "render"), ("/scans", "render_scans"), ("/content", "render_content")):
-            try:
-                app.route(f"/{o_tool.name}{path}")(getattr(o_tool.render_web_module, method))
-            except AttributeError as exc:
-                log.error(f"Expected to find {method=} in {o_tool.name}'s web.py module! ({exc})")
+        # For tools with a "single" analysis:
+        # ===================================
+        # /<tool>          - home page - FULL page render
+        # /<tool>/content  - change in which project is selected, show new body content (partial HTML
+        #
+        # For tools with a "multiple" analyses:
+        # =====================================
+        # /<tool>          - home page - FULL page render
+        # /<tool>/analysis - change in which project is selected,
+        #                    cascade to update analysis widget *AND* update body(partial HTML
+        # /<tool>/content  - change in which analysis is selected, show new body content (partial HTML.
+        #
+        paths_and_methods = [("", "view"), ("/content", "view_content")]
+        if len(o_tool.analyses) > 1:
+            paths_and_methods.append(("/analysis", "view_analyses"))
+
+        for path, method in paths_and_methods:
+            _register_route(app, o_tool, path, method)
 
     if args.browser:
         _open_browser()
@@ -82,8 +94,21 @@ def serve(args: Namespace) -> None:
     ################################################################################
     # Start us up!
     ################################################################################
-    log.info(f"Starting server at https://localhost/{int(args.port)}")
-    app.run(host="localhost", port=int(args.port), debug=True, reloader=True)
+    app.run(host="localhost", port=int(args.port), debug=True, reloader=False)
+
+
+def _register_route(app, o_tool, path, method) -> bool:
+    try:
+        method = getattr(o_tool.render_web_module, method)
+    except AttributeError as exc:
+        log.error(f"Tool '{o_tool.name}' missing method '{method}' in web.py module")
+        log.debug(f"Full error: {exc}")
+        return False
+
+    route = f"/{o_tool.name}{path}"
+    app.route(route)(method)
+    log.debug(f"serve.py: Registered {route=} to {method=}")
+    return True
 
 
 def _open_browser(args: Namespace):

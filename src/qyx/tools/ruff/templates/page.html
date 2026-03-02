@@ -4,13 +4,10 @@
 
 <h2>"ruff check" - Linter</h2>
 
-<form>
-  <fieldset class="grid">
-    {% include "base::_select_project.cascading.html" %}
-    {% include "base::_select_scan.cascading.html" %}
-  </fieldset>
-</form>
+{% include "base::_select_project.cascading.html" %}
 
-{% include "ruff::body.htmx" %}
+<div id="div_body_content">
+  {% include "ruff::ruff.html" %}
+</div>
 
 {% endblock %}

@@ -15,8 +15,7 @@ from qyx.tools.radon.web import mi_0
 from qyx.tools.radon.web import raw_0
 from qyx.tools.ruff.models import query_0 as query_ruff_0
 from qyx.tools.ty.models import query_0 as query_ty_0
-from qyx.web import get_project_selector
-from qyx.web.page import render_page, render_partial
+from qyx.web.page import get_project_selector, render_page, render_template
 
 
 log = logging.getLogger(__name__)
@@ -33,14 +32,14 @@ def dashboard_page(template: str = "base::pages/dashboard.html"):
     )
 
 
-def dashboard_change_project(template: str = "base::dashboard.htmx"):
+def dashboard_change_project(template: str = "base::dashboard.html"):
     """Supply the body portion of the Dashboard page on a project update."""
     args = request.app.args
 
     s_project_id = request.query.project
     project = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
     if not project:
-        return render_partial("base::_no_projects_yet.htmx")
+        return render_template("base::_no_projects_yet.html")
 
     State.update(args, project=project.name)  # Remember for next instantiation!
 

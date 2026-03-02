@@ -3,16 +3,16 @@
 import logging
 from argparse import Namespace
 from datetime import datetime
+from types import SimpleNamespace as Sns
 
 from bottle import request
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import Project, Scan, State
+from qyx.tools.base import Scan
 from qyx.tools.radon import models as rm
 from qyx.tools.radon.models import RadonCc
 from qyx.tools.radon.models import RadonHal
-from qyx.web import get_analysis_selector, get_project_selector
-from qyx.web.page import render_page, render_partial
+from qyx.web.page import render, render_analyses, render_content
 
 import plotly.graph_objects as go
 
@@ -23,96 +23,81 @@ log = logging.getLogger(__name__)
 
 
 ################################################################################################
-# Page layout...
+# Routing/View methods
 ################################################################################################
-def render(template: str = "radon::page.html") -> str:
-    """Render the tool's primary page."""
-    return render_page(
-        "QYX-RADON",
-        template,
-        project_options,
-        _=get_project_selector(["cc", "hal", "mi", "raw"]),
-        analysis_options=get_analysis_selector(),
-        set_project="/partials/set_project/radon",
-        set_analysis="/partials/set_project/radon",
-    )
+def view(template: str = "radon::page.html") -> str:
+    """View callback to render the entire tool page: project selector, analysis selector and body content."""
+    return render("radon", ("cc", "hal", "mi", "raw"), template, get_content)
 
 
-def render_content() -> str:
-    """Render the content portion (ie. body) of the page."""
+def view_analyses() -> str:
+    """View callback when project changes to render BOTH update analysis selector *AND* update body on an OOB basis."""
+    print(f"{request.query.project=}", flush=True)
+    project: str = request.query.project
+    return render_analyses("radon", project, get_content)
+
+
+def view_content() -> str:
+    """View callback for when a new analysis is selected, just need to update the body content directly."""
+    print(f"{request.query.project=}", flush=True)
+    print(f"{request.query.analysis=}", flush=True)
+    project: str = request.query.project
+    analysis: str = request.query.analysis.lower()
+    return render_content("radon", project, analysis, get_content)
+
+
+################################################################################################
+def get_content(scan: Scan) -> Sns:
+    """Populate our tool's home page data based on the specified scan."""
     args = request.app.args
 
-    # Get the arguments passed from the HTMX get context:
-    s_project_id = request.query.project
-    analysis = request.query.analysis.lower()
+    if scan.git_commit_message:
+        display = f"{scan.as_of_display(collapse_today=True)} - {scan.git_commit_message}"
+    else:
+        display = f"{scan.as_of_display(collapse_today=True)}"
 
-    # Find the project...
-    project = Project.get(Project.id == int(s_project_id))
-    if not s_project_id or not project:
-        return render_partial("base::_no_projects_yet.htmx")
-
-    # Find the most recent scan on behalf of this project...
-    scan = Scan.get_most_recent(project, "radon", analysis)
-    if not scan:
-        return render_partial("base::_no_scans_yet.htmx")
-
-    # Populate the return context with all the data and charts
-    # necessary to render the page's body:
-    context = Namespace()
-    # NOTE: Some of these might return None if the level is not
-    # applicable or defined for the respective analysis, and that's OK!
-    setattr(context, f"{analysis}_as_of", scan.as_of_display(collapse_today=True))
-    setattr(context, f"{analysis}_0", _view_data_by_level(args, "0", project, scan, analysis))
-    setattr(context, f"{analysis}_1", _view_data_by_level(args, "1", project, scan, analysis))
-    setattr(context, f"{analysis}_2", _view_data_by_level(args, "2", project, scan, analysis))
-    setattr(context, f"{analysis}_3", _view_data_by_level(args, "3", project, scan, analysis))
-    # setattr(context, f"{analysis}_d", _view_data_by_level(args, "d", project, scan, analysis))
-    setattr(context, f"{analysis}_h", _view_data_by_level(args, "h", project, scan, analysis))
-
-    # Remember what we just processed for next time through (used by
-    # the get_project/analysis_selector's above)
-    State.update(args, project=project.name, analysis=analysis)
-
-    # Template to return is based on the particular analysis requested:
-    template: str = f"radon::{analysis}/{analysis}.htmx"
-
-    return render_partial(template, **context.__dict__)
+    context = Sns(tool=scan.tool, analysis=scan.analysis)
+    setattr(context, f"{scan.analysis}_as_of", display)
+    setattr(context, f"{scan.analysis}_0", _get_content_by_level(args, "0", scan))
+    setattr(context, f"{scan.analysis}_1", _get_content_by_level(args, "1", scan))
+    setattr(context, f"{scan.analysis}_2", _get_content_by_level(args, "2", scan))
+    setattr(context, f"{scan.analysis}_3", _get_content_by_level(args, "3", scan))
+    setattr(context, f"{scan.analysis}_h", _get_content_by_level(args, "h", scan))
+    return context
 
 
-def _view_data_by_level(args: Namespace, level: str, project: Project, scan: Scan, analysis: str) -> dict | None:
+def _get_content_by_level(args: Namespace, level: str, scan: Scan) -> dict | Sns | None:
     """Dispatch to the appropriate view method to get data obo the specified level fand analysis."""
     # First, lookup the method below based on the analysis and level requested.
-    view_method_name = f"{analysis}_{level}"
+    view_method_name = f"{scan.analysis}_{level}"
     view_method = globals().get(view_method_name)
-    if not view_method:
-        # Note even worth warning about as it's expected.
-        # log.warning(f"no method found, skipping {view_method_name=}")
-        return None
-    return view_method(args, project, scan)
+    if view_method:
+        return view_method(args, scan)
+    return None
 
 
 ################################################################################
 # CC
 ################################################################################
-def cc_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict:
+def cc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict:
     return rm.query_cc_0(args, scan)
 
 
-def cc_1(args: Namespace, project: Project, scan: Scan) -> dict:
+def cc_1(args: Namespace, scan: Scan) -> dict:
     return rm.query_cc_1(args, scan)
 
 
-def cc_2(args: Namespace, project: Project, scan: Scan) -> dict:
+def cc_2(args: Namespace, scan: Scan) -> dict:
     return rm.query_cc_2(args, scan)
 
 
-def cc_3(args: Namespace, project: Project, scan: Scan) -> dict:
+def cc_3(args: Namespace, scan: Scan) -> dict:
     return rm.query_cc_3(args, scan)
 
 
-def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
+def cc_h(args: Namespace, scan: Scan) -> str:
     """Render our chart to display Radon CC information."""
-    result = rm.query_cc_h(project)
+    result = rm.query_cc_h(scan.request.project)
 
     fig = go.Figure()
     for i, entity_type in enumerate(("C", "F", "M")):  # HARD-CODE!
@@ -141,8 +126,8 @@ def cc_h(args: Namespace, project: Project, scan: Scan) -> str:
 ################################################################################
 # HAL
 ################################################################################
-def hal_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
-    result = rm.query_hal_0(args, project, scan)
+def hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
+    result = rm.query_hal_0(args, scan.request.project, scan)
     rows = []
     for metric, attr in [
         ("Composite Score", "composite_d"),
@@ -171,7 +156,7 @@ def hal_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_H
     return rows
 
 
-def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
+def hal_1(args: Namespace, scan: Scan = None) -> dict:
     result = rm.query_hal_1(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
@@ -185,7 +170,7 @@ def hal_1(args: Namespace, project: Project, scan: Scan = None) -> dict:
     return dict(thead=thead, tbody=tbody)
 
 
-def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
+def hal_2(args: Namespace, scan: Scan = None) -> dict:
     result = rm.query_hal_2(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
@@ -201,7 +186,7 @@ def hal_2(args: Namespace, project: Project, scan: Scan = None) -> dict:
     return dict(thead=thead, tbody=tbody)
 
 
-def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
+def hal_3(args: Namespace, scan: Scan = None) -> dict:
     result = rm.query_hal_3(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
@@ -221,8 +206,8 @@ def hal_3(args: Namespace, project: Project, scan: Scan = None) -> dict:
     return dict(thead=thead, tbody=tbody)
 
 
-def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str]:
-    result = rm.query_hal_h(project)
+def hal_h(args: Namespace, scan: Scan = None) -> dict[str, str]:
+    result = rm.query_hal_h(scan.request.project)
     if not result.transposed:
         return dict()
 
@@ -253,27 +238,28 @@ def hal_h(args: Namespace, project: Project, scan: Scan = None) -> dict[str, str
             },
         )
         charts[metric] = fig.to_html()
+        break  # FIXME!
     return charts
 
 
 ################################################################################
 # MI
 ################################################################################
-def mi_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict[str, float | None]:
+def mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict[str, float | None]:
     return rm.query_mi_0(args, scan)
 
 
-def mi_1(args: Namespace, project: Project, scan: Scan):
+def mi_1(args: Namespace, scan: Scan):
     return rm.query_mi_1(args, scan)
 
 
-def mi_2(args: Namespace, project: Project, scan: Scan):
+def mi_2(args: Namespace, scan: Scan):
     return rm.query_mi_2(args, scan)
 
 
-def mi_h(args: Namespace, project: Project, scan: Scan):
+def mi_h(args: Namespace, scan: Scan):
     """Render the maintainability index chart."""
-    result = rm.query_mi_h(project)
+    result = rm.query_mi_h(scan.request.project)
     x_values = [datetime.fromisoformat(ts_) for ts_ in result.rows.keys()]
     y_values = [round(value, 2) for value in result.rows.values()]
     labels = custom_labels("", result.messages, x_values, y_values)
@@ -301,21 +287,21 @@ def mi_h(args: Namespace, project: Project, scan: Scan):
 ################################################################################
 # RAW
 ################################################################################
-def raw_0(args: Namespace, project: Project, scan: Scan, context: Vc = Vc.TOOL_HOME):
+def raw_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME):
     return rm.query_raw_0(scan)
 
 
-def raw_1(args: Namespace, project: Project, scan: Scan):
+def raw_1(args: Namespace, scan: Scan):
     return rm.query_raw_1(scan)
 
 
-def raw_2(args: Namespace, project: Project, scan: Scan):
+def raw_2(args: Namespace, scan: Scan):
     return rm.query_raw_2(scan)
 
 
-def raw_h(args: Namespace, project: Project, scan: Scan = None):
+def raw_h(args: Namespace, scan: Scan = None):
     """Create chart obo all Raw metrics."""
-    result = rm.query_raw_h(project)
+    result = rm.query_raw_h(scan.request.project)
 
     fig = go.Figure()
     for i, (metric, dt_rows) in enumerate(list(result.transposed.items())):

@@ -4,13 +4,10 @@
 
 <h2>"ty" - Type Checker</h2>
 
-<form>
-  <fieldset class="grid">
-    {% include "base::_select_project.cascading.html" %}
-    {% include "base::_select_scan.cascading.html" %}
-  </fieldset>
-</form>
+{% include "base::_select_project.cascading.html" %}
 
-{% include "ty::body.htmx" %}
+<div id="div_body_content">
+  {% include "ty::ty.html" %}
+</div>
 
 {% endblock %}

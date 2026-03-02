@@ -1,23 +1,22 @@
-<div id="page-body-content">
-  {% if ty_0 %}
+{% if ty_0 %}
 
-  <section>
+<section>
 
-  {% include "ty::level_0.htmx" %}
+  {% include "ty::level_0.html" %}
 
   <details name="details">
     <summary>By Check</summary>
-    {% include "ty::level_1.htmx" %}
+    {% include "ty::level_1.html" %}
   </details>
 
   <details name="details">
     <summary>By Directory</summary>
-    {% include "ty::level_2.htmx" %}
+    {% include "ty::level_2.html" %}
   </details>
 
   <details name="details">
     <summary>File</summary>
-    {% include "ty::level_3.htmx" %}
+    {% include "ty::level_3.html" %}
   </details>
 
   <details name="details">
@@ -27,16 +26,14 @@
     </div>
   </details>
 
-  </section>
+</section>
 
-  <hr />
+<hr />
 
-  <h6>As Of {{ ty_as_of }}</h6>
+<h6>As Of {{ ty_as_of }}</h6>
 
-  {% else %}
+{% else %}
 
-  <p>Congratulations!...NO Ty issues found.</p>
+<p>Congratulations!...NO Ty issues found.</p>
 
-  {% endif %}
-
-</div>
+{% endif %}

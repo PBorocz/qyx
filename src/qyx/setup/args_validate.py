@@ -28,6 +28,7 @@ def validate_args(args: Namespace) -> bool:
         for issue in issues:
             rprint(f"• {issue}")
         return False
+
     return True
 
 

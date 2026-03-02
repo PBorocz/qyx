@@ -2,56 +2,47 @@
 
 from argparse import Namespace
 from datetime import datetime
+from types import SimpleNamespace as Sns
 
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.tools.base import Scan, State
+from qyx.tools.base import Project, Scan, State
 from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_f, query_h
 from qyx.utils.scoring import find_grade
-from qyx.web.page import generic_render, generic_render_scans, render_partial
+from qyx.web.page import render, render_content
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
 ################################################################################################
-# Page layout...
+# Routing/View methods
 ################################################################################################
-def render(template: str = "cloc::page.html") -> str:
-    """Render the primary page layout for this tools display page."""
-    return generic_render("cloc", template, get_content)
+def view(template: str = "cloc::page.html") -> str:
+    """View callback to render the entire tool page: project selector, analysis selector and body content."""
+    return render("cloc", "cloc", template, get_content)
 
 
-def render_scans(template: str = "base::_select_scan.cascading.html") -> str:
-    """Render the scan select widget based on a new project selection."""
-    return generic_render_scans("cloc")
-
-
-def render_content(template: str = "cloc::body.htmx"):
-    s_scan_id = request.query.scan
-    scan = Scan.get_or_none(Scan.id == int(s_scan_id)) if s_scan_id else None
-    if not scan:
-        return render_partial("base::_no_scans_yet.htmx")
-    context = get_content(scan)
-    return render_partial(template, **context.__dict__)
+def view_content() -> str:
+    """View callback for when a new analysis is selected, just need to update the body content directly."""
+    project: str = request.query.project
+    print("view_content", flush=True)
+    return render_content("cloc", project, "cloc", get_content)
 
 
 ################################################################################################
-def get_content(scan: Scan):
+def get_content(scan: Scan) -> Sns:
     """Populate our tool's home page to the specified scan."""
-    State.update(
-        request.app.args,
-        project=scan.request.project.name,
-        analysis="cloc",
-    )
+    args = request.app.args
+    State.update(args, project=scan.request.project.name, analysis=scan.analysis)
 
     context = Namespace()
     context.cloc_as_of = scan.as_of_display(collapse_today=True)
     context.cloc_0 = query_0(scan)
     context.cloc_1 = query_1(scan)
     context.cloc_2 = query_2(scan)
-    context.cloc_d = query_d(request.app.args, scan)
-    context.cloc_f = cloc_f(request.app.args, scan)
-    context.cloc_h = cloc_h(request.app.args, scan)
+    context.cloc_d = query_d(args, scan)
+    context.cloc_f = cloc_f(args, scan)
+    context.cloc_h = cloc_h(args, scan.request.project)
     return context
 
 
@@ -93,8 +84,8 @@ def cloc_f(args: Namespace, scan: Scan):
     return fig.to_html()
 
 
-def cloc_h(args: Namespace, scan: Scan) -> bytes | None:
-    result = query_h(scan.request.project)
+def cloc_h(args: Namespace, project: Project) -> bytes | None:
+    result = query_h(project)
     if not result.rows:
         return None
 
