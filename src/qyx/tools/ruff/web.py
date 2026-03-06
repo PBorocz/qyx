@@ -2,12 +2,13 @@
 
 from argparse import Namespace
 from datetime import datetime
+from types import SimpleNamespace as Sns
 
 import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.ruff.models import query_0, query_1, query_2, query_h
+from qyx.tools.ruff.models import query_ruff_0, query_ruff_1, query_ruff_2, query_ruff_h
 from qyx.web.page import render, render_content
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
@@ -37,9 +38,9 @@ def get_content(scan: Scan) -> str:
 
     context = Sns()
     context.ruff_as_of = scan.as_of_display(collapse_today=True)
-    context.ruff_0 = query_0(args, scan)
-    context.ruff_1 = query_1(scan)
-    context.ruff_2 = query_2(scan)
+    context.ruff_0 = query_ruff_0(args, scan)
+    context.ruff_1 = query_ruff_1(scan)
+    context.ruff_2 = query_ruff_2(scan)
     context.ruff_h = ruff_h(args, scan.request.project)
     return context
 
@@ -47,7 +48,7 @@ def get_content(scan: Scan) -> str:
 ################################################################################################
 def ruff_h(args: Namespace, project: Project):
     """Render the history chart of number of issues over time."""
-    result = query_h(project)
+    result = query_ruff_h(project)
     if not result.transposed:
         return None
 

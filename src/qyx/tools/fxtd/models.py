@@ -35,7 +35,7 @@ class Fxtd(BaseResultsModel):
 
 
 @query_cache
-def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_fxtd_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary level fxtd metrics."""
     query = (
         Fxtd.select(
@@ -71,7 +71,7 @@ def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
 
 
 @query_cache
-def query_1(scan: Scan) -> Sns:
+def query_fxtd_1(scan: Scan) -> Sns:
     query = (
         Fxtd.select(
             Fxtd.directory,
@@ -89,7 +89,7 @@ def query_1(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_2(scan: Scan) -> Sns:
+def query_fxtd_2(scan: Scan) -> Sns:
     query = (
         Fxtd.select()
         .where(Fxtd.scan == scan)
@@ -105,7 +105,7 @@ def query_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_h(project: Project, last: int = None) -> Sns:
+def query_fxtd_h(project: Project, last: int = None) -> Sns:
     scans = get_scans_for_project_analysis(project, "fxtd", last=last)
     rows = (
         Scan.select(

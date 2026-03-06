@@ -37,27 +37,42 @@ class Configuration:
         # Primarily, we're checking that any tools mentioned are VALID against the tools we have defined."""
         error_encountered = False
 
-        # Dashboard layout..
-        for tool_name in self.get("renderers.web.dashboard.tool_order", ()):
-            if tool_name not in args.tools:
-                msg = f"Sorry, encountered {tool_name=} in 'renderers.web.dashboard.tool_order' "
-                +"section that isn't available!"
-                log.error(msg)
-                error_encountered = True
-
-        # UI layout..
-        for tool_name in self.get("renderers.web.ui.tool_order", ()):
-            if tool_name not in args.tools:
-                msg = f"Sorry, encountered {tool_name=} in 'renderers.web.ui.tool_order' "
-                +"section that isn't available!"
-                log.error(msg)
-                error_encountered = True
-
-        # Tool definitions
+        # Tool definitions themselves..
         for tool_name in self.get("tools", ()):
             if tool_name not in args.tools:
                 log.error(f"Sorry, encountered {tool_name=} in 'tools' section that isn't available!")
                 error_encountered = True
+
+        # Navbar layout of tool names..
+        for tool_name in self.get("renderers.web.nav.tool_order", ()):
+            if tool_name not in args.tools:
+                msg = f"Sorry, encountered {tool_name=} in 'renderers.web.nav.tool_order' "
+                +"section that isn't available!"
+                log.error(msg)
+                error_encountered = True
+
+        # Dashboard layout of analyses..
+        for tool_analysis in self.get("renderers.web.dashboard.analysis_order", ()):
+            try:
+                (tool, analysis) = tool_analysis.split(":")
+            except ValueError:
+                msg = f"Sorry, encountered {tool_analysis=} in 'renderers.web.dashboard.analysis_order' "
+                +"section that isn't correctly formatted, should be '<tool>:<analysis>'!"
+                log.error(msg)
+                error_encountered = True
+
+            if tool not in args.tools:
+                msg = f"Sorry, encountered {tool=} in 'renderers.web.dashboard.analysis_order' "
+                +"section that isn't available!"
+                log.error(msg)
+                error_encountered = True
+            else:
+                o_tool = args.tools[tool]
+                analyses = [anl.lower() for anl in o_tool.analyses]
+                if analysis.lower() not in analyses:
+                    msg = f"Sorry, encountered {analysis=} in 'renderers.web.dashboard.analysis_order' section that isn't defined for {tool=}!"
+                    log.error(msg)
+                    error_encountered = True
 
         return not error_encountered
 

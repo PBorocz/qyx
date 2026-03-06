@@ -4,7 +4,18 @@
 
   <h1>Meta-code Quality - Project Summary</h1>
 
-  {% include "base::_select_project.html" %}
+  <select name="project"
+          aria-label="Select project..."
+          hx-trigger="load,change"       {# Trigger this on both page load and project selector change #}
+          hx-get="/content"              {# HTMX endpoint to update body (or analyses) based on a new project selection #}
+          hx-target="#div_body_content"  {# What to update on response #}
+          hx-swap="innerHTML"            {# How to update on response #}
+          hx-on:htmx:before-request="document.getElementById('div_body_content').innerHTML = '<p aria-busy=true>Loading...</p>'"
+  >
+    {% for option in project_options %}
+    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
+    {% endfor %}
+  </select>
 
   {# Primary div that'll be replaced dynamically by HTMX based on project selection above #}
   <div id="div_body_content">

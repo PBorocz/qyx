@@ -8,7 +8,7 @@ from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools import format_int_or_percentage as fmt
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_h
+from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_d, query_cloc_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def _render_0(args: Namespace, scan: Scan) -> None:
-    result = query_0(scan)
+    result = query_cloc_0(scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("LOC", justify="center")
     table.add_column("Comments", justify="center")
@@ -61,7 +61,7 @@ def _render_0(args: Namespace, scan: Scan) -> None:
 
 
 def _render_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
-    grand_total: Sns = query_0(scan)
+    grand_total: Sns = query_cloc_0(scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
 
@@ -76,7 +76,7 @@ def _render_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
     table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, False))
 
-    for result in query_1(scan).rows:
+    for result in query_cloc_1(scan).rows:
         table.add_row(
             result.directory,
             f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
@@ -88,7 +88,7 @@ def _render_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
 
 def _render_2(args: Namespace, scan: Scan) -> None:
-    results: Sns = query_2(scan)
+    results: Sns = query_cloc_2(scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")
@@ -108,7 +108,7 @@ def _render_2(args: Namespace, scan: Scan) -> None:
 
 
 def _render_d(args: Namespace, scan: Scan) -> None:
-    result = query_d(args, scan)
+    result = query_cloc_d(args, scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("Metric")
@@ -137,7 +137,7 @@ def _render_d(args: Namespace, scan: Scan) -> None:
 
 
 def _render_h(args: Namespace, project: Project, scan: Scan) -> None:
-    result = query_h(project, last=5)
+    result = query_cloc_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(result.timestamps)
     if len(result.timestamps) <= 20:
         table = cli_table(title="CLOC Results Over Time", show_footer=True)

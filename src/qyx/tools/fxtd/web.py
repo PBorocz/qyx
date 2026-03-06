@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.fxtd.models import query_0, query_1, query_2, query_h
+from qyx.tools.fxtd.models import query_fxtd_0, query_fxtd_1, query_fxtd_2, query_fxtd_h
 from qyx.web.page import render, render_content
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
@@ -38,16 +38,16 @@ def get_content(scan: Scan) -> Sns:
 
     context = Sns()
     context.fxtd_as_of = scan.as_of_display(collapse_today=True)
-    context.fxtd_0 = query_0(args, scan)
-    context.fxtd_1 = query_1(scan)
-    context.fxtd_2 = query_2(scan)
+    context.fxtd_0 = query_fxtd_0(args, scan)
+    context.fxtd_1 = query_fxtd_1(scan)
+    context.fxtd_2 = query_fxtd_2(scan)
     context.fxtd_h = fxtd_h(args, scan.request.project)
     return context
 
 
 ################################################################################################
 def fxtd_h(args: Namespace, project: Project) -> bytes | None:
-    result = query_h(project)
+    result = query_fxtd_h(project)
     if not result.transposed:
         return None
 

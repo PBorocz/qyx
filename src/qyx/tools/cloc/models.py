@@ -37,7 +37,7 @@ class Cloc(BaseResultsModel):
 
 
 @query_cache
-def query_0(scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_cloc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -72,8 +72,8 @@ def query_0(scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
 
 
 @query_cache
-def query_1(scan: Scan) -> Sns:
-    grand_total: Sns = query_0(scan)
+def query_cloc_1(scan: Scan) -> Sns:
+    grand_total: Sns = query_cloc_0(scan)
     query = (
         Cloc.select(
             Cloc.directory,
@@ -101,8 +101,8 @@ def query_1(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_2(scan: Scan) -> Sns:
-    grand_total: Sns = query_0(scan)
+def query_cloc_2(scan: Scan) -> Sns:
+    grand_total: Sns = query_cloc_0(scan)
 
     query = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename).dicts()
     rows = [Sns(**row_dict) for row_dict in query]
@@ -130,7 +130,7 @@ def query_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_h(project: Project, last: int = None) -> Sns:
+def query_cloc_h(project: Project, last: int = None) -> Sns:
     scans = get_scans_for_project_analysis(project, "cloc", last=last)
     query = (
         Cloc.select(
@@ -200,9 +200,9 @@ def query_h(project: Project, last: int = None) -> Sns:
 
 
 @query_cache
-def query_d(args: Namespace, scan: Scan) -> Sns:
+def query_cloc_d(args: Namespace, scan: Scan) -> Sns:
     """Calculate all 'derived' report values."""
-    result = query_0(scan)
+    result = query_cloc_0(scan)
     if not result or not result.lines_code:
         return None
 
@@ -222,7 +222,7 @@ def query_d(args: Namespace, scan: Scan) -> Sns:
 
 
 @query_cache
-def query_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
+def query_cloc_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
     """Calculate histogram buckets over filesize."""
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     bucket_breaks = [level["min"] for level in buckets]

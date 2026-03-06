@@ -36,7 +36,7 @@ class Ty(BaseResultsModel):
 
 
 @query_cache
-def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_ty_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Ty.select(
             fn.COUNT(Ty.id).alias("count"),
@@ -57,7 +57,7 @@ def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
 
 
 @query_cache
-def query_1(scan: Scan) -> Sns:
+def query_ty_1(scan: Scan) -> Sns:
     query = (
         Ty.select(
             Ty.check_name,
@@ -78,7 +78,7 @@ def query_1(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_2(scan: Scan):
+def query_ty_2(scan: Scan):
     query = (
         Ty.select(
             Ty.check_name,
@@ -101,7 +101,7 @@ def query_2(scan: Scan):
 
 
 @query_cache
-def query_3(scan: Scan) -> Sns:
+def query_ty_3(scan: Scan) -> Sns:
     query = (
         Ty.select()
         .where(
@@ -118,7 +118,7 @@ def query_3(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_h(project: Project, last: int = None) -> Sns:
+def query_ty_h(project: Project, last: int = None) -> Sns:
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ty table.
     # We do this as there are valid cases when there are NO Ty table
     # entries for a particular scan. We still want the timestamp back
@@ -171,7 +171,7 @@ def _derived_violations_per_kloc(args: Namespace, lines_of_code: int, result: Sn
 
 def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, result: Sns, scan: Scan) -> Sns:
     """Calculate *weighted* violations per thousand loc (not including comments and blank lines)."""
-    checks_by_check_name = query_1(scan)
+    checks_by_check_name = query_ty_1(scan)
     if not lines_of_code or not checks_by_check_name.rows:
         result.weighted_violations_per_kloc = None
         return result

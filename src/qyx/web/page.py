@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 ################################################################################################
-def render(tool: ToolType, analysis_s: str | tuple[str], template: str, content_method: Callable) -> str:
+def render(tool: ToolType, template: str, content_method: Callable) -> str:
     """Render the primary page layout for this tools display page."""
     project_options, project = get_project_selector(tool)
     if not project:
@@ -100,7 +100,7 @@ def render_page(title: str, template: str, **context) -> str:
     context["title"] = title
     context["navbar"] = [
         {"name": tool_name, "description": tool_name.title()}
-        for tool_name in request.app.args.config.get("renderers.web.ui.tool_order")
+        for tool_name in request.app.args.config.get("renderers.web.nav.tool_order")
     ]
     context["current_path"] = request.path  # Pass back for Navbar management.
     return render_template(template, **context)

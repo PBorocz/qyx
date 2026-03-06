@@ -7,7 +7,7 @@ from types import SimpleNamespace as Sns
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_h
+from qyx.tools.ty.models import query_ty_0, query_ty_1, query_ty_2, query_ty_3, query_ty_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = query_0(args, project, scan)
+    result: Sns = query_ty_0(args, project, scan)
 
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")
@@ -70,7 +70,7 @@ def ty_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def ty_1(args: Namespace, project: Project, scan: Scan) -> None:
-    results = query_1(scan)
+    results = query_ty_1(scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Check", footer="TOTAL")
     table.add_column("Count", justify="right")
@@ -80,7 +80,7 @@ def ty_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def ty_2(args: Namespace, project: Project, scan: Scan) -> None:
-    results: Sns = query_2(scan)
+    results: Sns = query_ty_2(scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Directory")
     table.add_column("Check")
@@ -91,7 +91,7 @@ def ty_2(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def ty_3(args: Namespace, project: Project, scan: Scan) -> None:
-    results: Sns = query_3(scan)
+    results: Sns = query_ty_3(scan)
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("File")
     table.add_column("Check")
@@ -104,7 +104,7 @@ def ty_3(args: Namespace, project: Project, scan: Scan) -> None:
 # History at the Rl.SUMMARY level...
 def ty_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    result = query_h(project, last=5)
+    result = query_ty_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(result.timestamps)
 
     ################################################################################################

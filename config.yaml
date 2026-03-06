@@ -14,10 +14,13 @@ command_line_defaults:
 
 renderers:
   web:
+    nav:
+      # Order of tools on the main nav bar.
+      tool_order: ["cloc", "ruff", "radon", "fxtd", "ty"]
     dashboard:
-      tool_order: ["cloc", "ruff", "radon", "fxtd", "ty"]
-    ui:
-      tool_order: ["cloc", "ruff", "radon", "fxtd", "ty"]
+      # Order of summaries on the main/dashboard/home page
+      analysis_order: ["cloc:cloc", "fxtd:fxtd", "ruff:ruff", "ty:ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw"]
+
   cli:
     colors:
       positive: "red"

@@ -7,7 +7,7 @@ from types import SimpleNamespace as Sns
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.fxtd.models import query_0, query_1, query_2, query_h
+from qyx.tools.fxtd.models import query_fxtd_0, query_fxtd_1, query_fxtd_2, query_fxtd_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = query_0(args, project, scan)
+    result: Sns = query_fxtd_0(args, project, scan)
     if not result.rows:
         cli_console.print("[yellow]Congratulations! No issues found.[/yellow]")
         return
@@ -64,7 +64,7 @@ def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def fxtd_1(scan: Scan) -> None:
-    results = query_1(scan)
+    results = query_fxtd_1(scan)
     show_footer = True if results else False
 
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}", show_footer=show_footer)
@@ -77,7 +77,7 @@ def fxtd_1(scan: Scan) -> None:
 
 
 def fxtd_2(scan: Scan) -> None:
-    results = query_2(scan)
+    results = query_fxtd_2(scan)
     table = cli_table(title=f"FXTD @ {scan.as_of_display()}")
     table.add_column("Type")
     table.add_column("File [line]")
@@ -89,7 +89,7 @@ def fxtd_2(scan: Scan) -> None:
 
 def fxtd_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    result = query_h(project, last=5)
+    result = query_fxtd_h(project, last=5)
 
     timestamps_formatted = format_timestamp_headers(result.timestamps)
 

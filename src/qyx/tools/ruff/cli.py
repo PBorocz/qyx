@@ -7,7 +7,7 @@ from types import SimpleNamespace as Sns
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.ruff.models import query_0, query_1, query_2, query_h
+from qyx.tools.ruff.models import query_ruff_0, query_ruff_1, query_ruff_2, query_ruff_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def ruff_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = query_0(args, project, scan)
+    result: Sns = query_ruff_0(args, project, scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     # table.add_column("_", style="bold magenta")
     # table.add_column("_", style="bold magenta")
@@ -71,7 +71,7 @@ def ruff_0(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def ruff_1(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = query_1(scan)
+    result: Sns = query_ruff_1(scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule", footer="TOTAL")
     table.add_column("Count", justify="right")
@@ -82,7 +82,7 @@ def ruff_1(args: Namespace, project: Project, scan: Scan) -> None:
 
 
 def ruff_2(args: Namespace, scan: Scan) -> None:
-    result: Sns = query_2(scan)
+    result: Sns = query_ruff_2(scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     table.add_column("Rule")
     table.add_column("File [line]")
@@ -95,7 +95,7 @@ def ruff_2(args: Namespace, scan: Scan) -> None:
 # History at the Rl.SUMMARY level...
 def ruff_h(args: Namespace, project: Project) -> None:
     """Report on the history of scans "across"."""
-    result = query_h(project, last=5)
+    result = query_ruff_h(project, last=5)
     timestamps_formatted = format_timestamp_headers(result.timestamps)
 
     ################################################################################################

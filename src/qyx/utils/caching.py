@@ -32,7 +32,7 @@ def query_cache(func: F) -> F:
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
 
-        # Build cache key from project.id and/or scan.id
+        # Build cache key from project.id *AND/OR* scan.id
         key_parts = []
 
         project = bound_args.arguments.get("project")

@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.cloc.models import query_0, query_1, query_2, query_d, query_f, query_h
+from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_d, query_cloc_f, query_cloc_h
 from qyx.utils.scoring import find_grade
 from qyx.web.page import render, render_content
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
@@ -38,10 +38,10 @@ def get_content(scan: Scan) -> Sns:
 
     context = Sns()
     context.cloc_as_of = scan.as_of_display(collapse_today=True)
-    context.cloc_0 = query_0(scan)
-    context.cloc_1 = query_1(scan)
-    context.cloc_2 = query_2(scan)
-    context.cloc_d = query_d(args, scan)
+    context.cloc_0 = query_cloc_0(scan)
+    context.cloc_1 = query_cloc_1(scan)
+    context.cloc_2 = query_cloc_2(scan)
+    context.cloc_d = query_cloc_d(args, scan)
     context.cloc_f = cloc_f(args, scan)
     context.cloc_h = cloc_h(args, scan.request.project)
     return context
@@ -51,7 +51,7 @@ def get_content(scan: Scan) -> Sns:
 def cloc_f(args: Namespace, scan: Scan):
     # Get bucket definitions from configuration for coloring
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
-    histogram = query_f(args, scan)
+    histogram = query_cloc_f(args, scan)
 
     # Values to chart are a combination of the respective value AND the color
     # (which is based on the configurable bucket definitions)
@@ -86,7 +86,7 @@ def cloc_f(args: Namespace, scan: Scan):
 
 
 def cloc_h(args: Namespace, project: Project) -> bytes | None:
-    result = query_h(project)
+    result = query_cloc_h(project)
     if not result.rows:
         return None
 

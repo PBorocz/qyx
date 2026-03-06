@@ -9,6 +9,7 @@ from typing import Literal
 
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
+from qyx.constants import ViewContext as Vc
 from qyx.tools.base import BaseModel, BaseResultsModel, Project, Scan
 from qyx.tools.common import get_scans_for_project_analysis
 from qyx.utils import rate_of_change_percentage
@@ -174,7 +175,7 @@ class RadonHalFunction(BaseModel):
 # RAW
 ################################################################################################
 @query_cache
-def query_raw_0(scan: Scan) -> Sns:
+def query_raw_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         RadonRaw.select(
             fn.SUM(RadonRaw.blank).alias("blank"),
@@ -314,7 +315,7 @@ def query_raw_h(project: Project, last: int = None) -> Sns:
 # HAL
 ################################################################################################
 @query_cache
-def query_hal_0(args: Namespace, project: Project, scan: Scan) -> Sns:
+def query_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
@@ -340,8 +341,11 @@ def query_hal_0(args: Namespace, project: Project, scan: Scan) -> Sns:
     if not result:
         return None
 
+    ################################################################################
+    # Calculate "derived" metrics based on the raws ones above.
+    ################################################################################
     # Get SLOC values...
-    raw = query_raw_0(scan=Scan.get_most_recent(project, "radon", "raw"))
+    raw = query_raw_0(args, scan=Scan.get_most_recent(scan.request.project, "radon", "raw"))
 
     # Score Halstead effort per 1000 source lines of code.
     metric_value = (result.bugs / raw.sloc) * 1000
@@ -513,7 +517,7 @@ def query_hal_h(project: Project = None, last: int = None) -> Sns:
 # MI
 ################################################################################################
 @query_cache
-def query_mi_0(args: Namespace, scan: Scan) -> Sns:
+def query_mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
     raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
     query = (
@@ -641,7 +645,7 @@ def query_mi_h(project, last: int = None) -> Sns:
 # CC
 ################################################################################################
 @query_cache
-def query_cc_0(args: Namespace, scan: Scan) -> Sns:
+def query_cc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate derived radon-cc metric(s)."""
     query = (
         RadonCc.select(

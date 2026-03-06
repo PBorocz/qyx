@@ -146,7 +146,7 @@ def cc_h(args: Namespace, project: Project, scan: Scan) -> None:
 # HAL
 ################################################################################
 def hal_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result = rm.query_hal_0(args, project, scan)
+    result = rm.query_hal_0(args, scan)
     table = cli_table(title=f"RADON-HAL @ {scan.as_of_display()}")
     table.add_column("Metric")
     table.add_column("Value", justify="right")

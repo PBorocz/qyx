@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.ty.models import query_0, query_1, query_2, query_3, query_h
+from qyx.tools.ty.models import query_ty_0, query_ty_1, query_ty_2, query_ty_3, query_ty_h
 from qyx.web.page import render, render_content
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
@@ -38,10 +38,10 @@ def get_content(scan: Scan) -> Sns:
 
     context = Sns()
     context.ty_as_of = scan.as_of_display(collapse_today=True)
-    context.ty_0 = query_0(args, scan)
-    context.ty_1 = query_1(scan)
-    context.ty_2 = query_2(scan)
-    context.ty_3 = query_3(scan)
+    context.ty_0 = query_ty_0(args, scan)
+    context.ty_1 = query_ty_1(scan)
+    context.ty_2 = query_ty_2(scan)
+    context.ty_3 = query_ty_3(scan)
     context.ty_h = ty_h(args, scan.request.project)
     return context
 
@@ -49,7 +49,7 @@ def get_content(scan: Scan) -> Sns:
 ################################################################################################
 def ty_h(args: Namespace, project: Project):
     """Render the history chart of number of issues over time."""
-    result = query_h(project)
+    result = query_ty_h(project)
     if not result.transposed:
         return None
 

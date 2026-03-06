@@ -35,7 +35,7 @@ class Ruff(BaseResultsModel):
 
 
 @query_cache
-def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_ruff_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary ruff metrics."""
     query = (
         Ruff.select(
@@ -55,7 +55,7 @@ def query_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
 
 
 @query_cache
-def query_1(scan: Scan) -> Sns:
+def query_ruff_1(scan: Scan) -> Sns:
     from qyx.tools.ruff import get_ruff_rule_name
 
     query = (
@@ -82,7 +82,7 @@ def query_1(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_2(scan: Scan) -> Sns:
+def query_ruff_2(scan: Scan) -> Sns:
     query = (
         Ruff.select()
         .where(
@@ -99,7 +99,7 @@ def query_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_h(project: Project, last: int = None) -> Sns:
+def query_ruff_h(project: Project, last: int = None) -> Sns:
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular
     # scan. We still want the timestamp back with a Ruff count of *0*.

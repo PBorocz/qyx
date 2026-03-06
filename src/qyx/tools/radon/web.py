@@ -127,7 +127,7 @@ def cc_h(args: Namespace, scan: Scan) -> str:
 # HAL
 ################################################################################
 def hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
-    result = rm.query_hal_0(args, scan.request.project, scan)
+    result = rm.query_hal_0(args, scan)
     rows = []
     for metric, attr in [
         ("Composite Score", "composite_d"),
@@ -287,7 +287,7 @@ def mi_h(args: Namespace, scan: Scan):
 # RAW
 ################################################################################
 def raw_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME):
-    return rm.query_raw_0(scan)
+    return rm.query_raw_0(args, scan)
 
 
 def raw_1(args: Namespace, scan: Scan):
