@@ -6,14 +6,13 @@ import time
 import webbrowser
 from argparse import Namespace
 from pathlib import Path
-from typing import Callable
 
 from bottle import Bottle
 from bottle import static_file
 from jinja2 import Environment, FileSystemLoader, PrefixLoader
 
 from qyx.web.admin.status import status_page
-from qyx.web.dashboard import dashboard_page, dashboard_change_project
+from qyx.web.dashboard import dashboard_view, dashboard_view_content
 
 log = logging.getLogger(__name__)
 
@@ -56,8 +55,8 @@ def serve(args: Namespace) -> None:
     app.route("/admin/about")(about)
 
     # Home/Dashboard page
-    app.route("/")(dashboard_page)
-    app.route("/partials/set_project/_main_")(dashboard_change_project)
+    app.route("/")(dashboard_view)
+    app.route("/content")(dashboard_view_content)
 
     # Admin - Project Status
     app.route("/admin/status")(status_page)
@@ -94,7 +93,7 @@ def serve(args: Namespace) -> None:
     ################################################################################
     # Start us up!
     ################################################################################
-    app.run(host="localhost", port=int(args.port), debug=True, reloader=False)
+    app.run(host="localhost", port=int(args.port), debug=True, reloader=True)
 
 
 def _register_route(app, o_tool, path, method) -> bool:

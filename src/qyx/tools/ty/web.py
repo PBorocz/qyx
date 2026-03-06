@@ -18,14 +18,15 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 def view(template: str = "ty::page.html") -> str:
     """View callback to render the entire tool page: project selector, analysis selector and body content."""
-    return render("ty", "ty", template, get_content)
+    o_tool = request.app.args.tools["ty"]
+    return render(o_tool, template, get_content)
 
 
 def view_content() -> str:
     """View callback for when a new analysis is selected, just need to update the body content directly."""
+    o_tool = request.app.args.tools["ty"]
     project: str = request.query.project
-    print("view_content", flush=True)
-    return render_content("ty", project, "ty", get_content)
+    return render_content(project, o_tool, "ty", get_content)
 
 
 ################################################################################################

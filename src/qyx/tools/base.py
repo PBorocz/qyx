@@ -29,7 +29,7 @@ class AbstractToolConfiguration(ABC):
         self,
         module: str,
         name: str,
-        analyses: list[str],
+        analyses: dict[str, str],
         models: dict[str, BaseModel],
         reports: dict,
         **kwargs,
@@ -43,8 +43,8 @@ class AbstractToolConfiguration(ABC):
         # called "foo" in a directory called "foobar")
         self.name: str = name
 
-        # Analyses supported by the tool
-        self.analyses: list[str] = analyses
+        # Analyses supported by the tool, short value (eg. "mi") -> long description (eg. "Maintainability Index")
+        self.analyses: dict[str, str] = analyses
 
         # Peewee storage model(s) used by analysis (usually a single
         # one per analysis but could be multiple, see RadonHal for example)

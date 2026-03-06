@@ -27,23 +27,23 @@ log = logging.getLogger(__name__)
 ################################################################################################
 def view(template: str = "radon::page.html") -> str:
     """View callback to render the entire tool page: project selector, analysis selector and body content."""
-    return render("radon", ("cc", "hal", "mi", "raw"), template, get_content)
+    o_tool = request.app.args.tools["radon"]
+    return render(o_tool, template, get_content)
 
 
 def view_analyses() -> str:
     """View callback when project changes to render BOTH update analysis selector *AND* update body on an OOB basis."""
-    print(f"{request.query.project=}", flush=True)
+    o_tool = request.app.args.tools["radon"]
     project: str = request.query.project
-    return render_analyses("radon", project, get_content)
+    return render_analyses(o_tool, project, get_content)
 
 
 def view_content() -> str:
     """View callback for when a new analysis is selected, just need to update the body content directly."""
-    print(f"{request.query.project=}", flush=True)
-    print(f"{request.query.analysis=}", flush=True)
+    o_tool = request.app.args.tools["radon"]
     project: str = request.query.project
     analysis: str = request.query.analysis.lower()
-    return render_content("radon", project, analysis, get_content)
+    return render_content(project, o_tool, analysis, get_content)
 
 
 ################################################################################################
@@ -136,7 +136,7 @@ def hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
         ("Mean Effort per LOC", "effort_d"),
     ]:
         rows.append(
-            Namespace(
+            Sns(
                 metric=metric,
                 score=getattr(result, attr).score,
                 grade=getattr(result, attr).grade,
@@ -146,7 +146,7 @@ def hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
     if context == Vc.TOOL_HOME:
         # Only put the detailed values out for the tool home page, not the Dashboard.
         for attr in RadonHal.attrs():
-            value = Namespace(
+            value = Sns(
                 metric=attr.display + " " + attr.calculation,
                 score=getattr(result, attr.name),
                 grade="",
@@ -161,7 +161,7 @@ def hal_1(args: Namespace, scan: Scan = None) -> dict:
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
     for row in result.rows:
-        tbody_row = Namespace(directory=row.directory, values=[])
+        tbody_row = Sns(directory=row.directory, values=[])
         for attr in RadonHal.attrs():
             # Since these are aggregated to the directory level, all the attributes are Float!
             tbody_row.values.append(getattr(row, attr.name))
@@ -175,7 +175,7 @@ def hal_2(args: Namespace, scan: Scan = None) -> dict:
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
     for row in result.rows:
-        tbody_row = Namespace(directory_filename=f"{row.directory}/{row.filename}", values=[])
+        tbody_row = Sns(directory_filename=f"{row.directory}/{row.filename}", values=[])
         for attr in RadonHal.attrs():
             if attr.type == "float":  # HARDCODE
                 s_value = f"{getattr(row, attr.name):.2f}"
@@ -191,7 +191,7 @@ def hal_3(args: Namespace, scan: Scan = None) -> dict:
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
     for row in result.rows:
-        tbody_row = Namespace(
+        tbody_row = Sns(
             directory_filename=f"{row.directory}/{row.filename}",
             name=row.name,
             values=[],
@@ -238,7 +238,6 @@ def hal_h(args: Namespace, scan: Scan = None) -> dict[str, str]:
             },
         )
         charts[metric] = fig.to_html()
-        break  # FIXME!
     return charts
 
 

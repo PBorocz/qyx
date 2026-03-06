@@ -19,14 +19,15 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 ################################################################################################
 def view(template: str = "cloc::page.html") -> str:
     """View callback to render the entire tool page: project selector, analysis selector and body content."""
-    return render("cloc", "cloc", template, get_content)
+    o_tool = request.app.args.tools["cloc"]
+    return render(o_tool, template, get_content)
 
 
 def view_content() -> str:
     """View callback for when a new analysis is selected, just need to update the body content directly."""
+    o_tool = request.app.args.tools["cloc"]
     project: str = request.query.project
-    print("view_content", flush=True)
-    return render_content("cloc", project, "cloc", get_content)
+    return render_content(project, o_tool, "cloc", get_content)
 
 
 ################################################################################################
@@ -35,7 +36,7 @@ def get_content(scan: Scan) -> Sns:
     args = request.app.args
     State.update(args, project=scan.request.project.name, analysis=scan.analysis)
 
-    context = Namespace()
+    context = Sns()
     context.cloc_as_of = scan.as_of_display(collapse_today=True)
     context.cloc_0 = query_0(scan)
     context.cloc_1 = query_1(scan)

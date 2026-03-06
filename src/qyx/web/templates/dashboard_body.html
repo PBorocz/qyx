@@ -43,7 +43,7 @@
         {% else %}
 
           <h4>{{ tool.upper() }} - {{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
-          {% include tool ~ "::" ~ analysis ~ "/" ~ analysis ~ "_0.html" %}
+          {% include tool ~ "::" ~ analysis ~ "_0.html" %}
 
         {% endif %}
 
