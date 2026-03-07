@@ -68,6 +68,18 @@ def query_cloc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns
     # Find the number of files
     result.files_total = Cloc.select(fn.COUNT(Cloc.id).alias("files_total")).where(Cloc.scan == scan).get().files_total
 
+    # Calculate the "Code Density"
+    metric_value = (result.lines_code / (result.lines_code + result.lines_blank)) * 100.0
+    result.code_density = score_metric(args, "tools.cloc.code_density", metric_value)
+
+    # Calculate the "Comment Ratio"
+    metric_value = result.lines_comment / (result.lines_code + result.lines_comment) * 100.0
+    result.comment_ratio = score_metric(args, "tools.cloc.comment_ratio", metric_value)
+
+    # Calculate average lines per file
+    metric_value = int(result.lines_code / result.files_total)
+    result.avg_lines_per_file = score_metric(args, "tools.cloc.avg_lines_per_file", metric_value)
+
     return result
 
 
@@ -197,28 +209,6 @@ def query_cloc_h(project: Project, last: int = None) -> Sns:
         roc=roc,
         adgs=adgs,
     )
-
-
-@query_cache
-def query_cloc_d(args: Namespace, scan: Scan) -> Sns:
-    """Calculate all 'derived' report values."""
-    result = query_cloc_0(args, scan)
-    if not result or not result.lines_code:
-        return None
-
-    # Calculate the "Code Density"
-    metric_value = (result.lines_code / (result.lines_code + result.lines_blank)) * 100.0
-    result.code_density = score_metric(args, "tools.cloc.code_density", metric_value)
-
-    # Calculate the "Comment Ratio"
-    metric_value = result.lines_comment / (result.lines_code + result.lines_comment) * 100.0
-    result.comment_ratio = score_metric(args, "tools.cloc.comment_ratio", metric_value)
-
-    # Calculate average lines per file
-    metric_value = int(result.lines_code / result.files_total)
-    result.avg_lines_per_file = score_metric(args, "tools.cloc.avg_lines_per_file", metric_value)
-
-    return result
 
 
 @query_cache

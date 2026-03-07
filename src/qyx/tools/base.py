@@ -12,7 +12,7 @@ from typing import Callable, Iterator, TypeAlias
 
 import peewee as pw
 
-from qyx.constants import ReportLevel as Rl
+from qyx.constants import ALL_ITEMS, ReportLevel as Rl
 from qyx.utils import dt_to_display, parse_path_arg
 
 
@@ -215,7 +215,7 @@ class Project(BaseModel):
     @classmethod
     def iter_from_args(cls, args: Namespace) -> Iterator[Project]:
         """Iterate over all projects based on args.name."""
-        if args.name == "*":  # SENTINEL!
+        if args.name == ALL_ITEMS:
             for project in cls:
                 yield project
         else:

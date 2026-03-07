@@ -5,7 +5,7 @@ from argparse import Namespace
 from rich.tree import Tree
 from rich import print
 
-from qyx.constants import StatusLevel
+from qyx.constants import ALL_ITEMS, StatusLevel
 from qyx.tools.base import Project, Request, Scan
 from qyx.utils import dt_to_display
 
@@ -15,7 +15,7 @@ def status(args: Namespace) -> None:
     tree = Tree("QYX Status")
 
     projects = Project.select()
-    if args.name and args.name != "*":
+    if args.name and args.name != ALL_ITEMS:
         projects = projects.where(Project.name == args.name)
 
     for project in projects:

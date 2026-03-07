@@ -1,24 +1,66 @@
 <table>
   <thead>
     <tr>
-      <th scope="col" style="text-align: center">LOC</th>
-      <th scope="col" style="text-align: center">Comments</th>
-      <th scope="col" style="text-align: center">Blanks</th>
-      <th scope="col" style="text-align: center">TOTAL</th>
+      <th scope="col" style="text-align: left">Metric</th>
+      <th scope="col" style="text-align: right">Value</th>
+      <th scope="col" style="text-align: center">Grade</th>
+      <th scope="col" style="text-align: left">Info</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td style="text-align: right">   {{ "{:,d}".format(cloc_0.lines_code)    }}</td>
-      <td style="text-align: right">   {{ "{:,d}".format(cloc_0.lines_comment) }}</td>
-      <td style="text-align: right">   {{ "{:,d}".format(cloc_0.lines_blank)   }}</td>
-      <td style="text-align: right"><b>{{ "{:,d}".format(cloc_0.lines_total)   }}</b></td>
+      <td style="text-align: left">Lines of Code</td>
+      <td style="text-align: right">{{ "{:,d}".format(cloc_0.lines_code) }}</td>
+      <td></td>
+      <td style="text-align: left"><small>{{ "%.1f"|format(cloc_0.lines_code_p) }}%</small></td>
     </tr>
+
     <tr>
-      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_code_p)    }}%</small></td>
-      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_comment_p) }}%</small></td>
-      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_blank_p)   }}%</small></td>
-      <td style="text-align: right"><small>{{ "%.1f"|format(cloc_0.lines_total_p)   }}%</small></td>
+      <td style="text-align: left">Comments</td>
+      <td style="text-align: right">{{ "{:,d}".format(cloc_0.lines_comment) }}</td>
+      <td></td>
+      <td style="text-align: left"><small>{{ "%.1f"|format(cloc_0.lines_comment_p) }}%</small></td>
     </tr>
+
+    <tr>
+      <td style="text-align: left">Blanks</td>
+      <td style="text-align: right">{{ "{:,d}".format(cloc_0.lines_blank) }}</td>
+      <td></td>
+      <td style="text-align: left"><small>{{ "%.1f"|format(cloc_0.lines_blank_p) }}%</small></td>
+    </tr>
+
+    {% if cloc_0.avg_lines_per_file.grade %}
+    <tr>
+      <td style="text-align: left">File Density</td>
+      <td style="text-align: right">{{ "{:.0f}".format(cloc_0.avg_lines_per_file.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_0.avg_lines_per_file.color }}">
+        {{ cloc_0.avg_lines_per_file.grade }}
+      </td>
+      <td style="text-align: left"><small>Average LOC per File</small></td>
+    </tr>
+    {% endif %}
+
+    {% cloc_0.code_density.grade %}
+    <tr>
+      <td style="text-align: left">Code Density</td>
+      <td style="text-align: right">{{ "{:.0f}".format(cloc_0.code_density.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_0.code_density.color }}">
+        {{ cloc_0.code_density.grade }}
+      </td>
+      <td style="text-align: left"><small>LOC / (LOC + Blanks)</small></td>
+    </tr>
+    {% endif %}
+
+    {% cloc_0.comment_ratio.grade %}
+    <tr>
+      <td style="text-align: left">Code Density</td>
+      <td style="text-align: right">{{ "{:.0f}".format(cloc_0.comment_ratio.score) }}</td>
+      <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ cloc_0.comment_ratio.color }}">
+        {{ cloc_0.comment_ratio.grade }}
+      </td>
+      <td style="text-align: left"><small>Comments / (Comments + LOC)</small></td>
+    </tr>
+    {% endif %}
+
   </tbody>
 </table>

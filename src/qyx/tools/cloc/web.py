@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from bottle import request
 
 from qyx.tools.base import Project, Scan, State
-from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_d, query_cloc_f, query_cloc_h
+from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_f, query_cloc_h
 from qyx.utils.scoring import find_grade
 from qyx.web.page import render, render_content
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
@@ -41,7 +41,6 @@ def get_content(scan: Scan) -> Sns:
     context.cloc_0 = query_cloc_0(args, scan)
     context.cloc_1 = query_cloc_1(args, scan)
     context.cloc_2 = query_cloc_2(args, scan)
-    context.cloc_d = query_cloc_d(args, scan)
     context.cloc_f = view_cloc_f(args, scan)
     context.cloc_h = view_cloc_h(args, scan.request.project)
     return context
@@ -120,45 +119,3 @@ def view_cloc_h(args: Namespace, project: Project) -> bytes | None:
     style_figure(fig, layout={"yaxis_title": "Lines"})
 
     return fig.to_html()
-
-
-# FIXME: Add these back in!!
-# <table class="striped">
-#   <thead>
-#     <tr>
-#       <th scope="col" style="text-align: left">Metric</th>
-#       <th scope="col" style="text-align: center">Value</th>
-#       <th scope="col" style="text-align: center">Grade</th>
-#       <th scope="col" style="text-align: left"><small>Explanation</small></th>
-#     </tr>
-#   </thead>
-#   <tbody>
-#     <tr>
-#       <td style="text-align: left">File Density</td>
-#       <td style="text-align: center">{{ "{:.0f}".format(cloc_0.row.avg_lines_per_file.score) }}</td>
-#       <td style="text-align: center; color: var(--pico-muted-color);
-#                  background-color: {{ cloc_0.row.avg_lines_per_file.color }}">
-#         {{ cloc_0.row.avg_lines_per_file.grade }}
-#       </td>
-#       <td style="text-align: left"><small>Average LoC per File</small></td>
-#     </tr>
-#     <tr>
-#       <td style="text-align: left">Code Density</td>
-#       <td style="text-align: center">{{ "{:.0f}".format(cloc_0.row.code_density.score) }}%</td>
-#       <td style="text-align: center; color: var(--pico-muted-color);
-#                  background-color: {{ cloc_0.row.code_density.color }}">
-#         {{ cloc_0.row.code_density.grade }}
-#       </td>
-#       <td style="text-align: left"><small>LOC / (LOC + Blanks)</small></td>
-#     </tr>
-#     <tr>
-#       <td style="text-align: left">Comment Ratio</td>
-#       <td style="text-align: center">{{ "{:.0f}".format(cloc_0.row.comment_ratio.score) }}%</td>
-#       <td style="text-align: center; color: var(--pico-muted-color);
-#                  background-color: {{ cloc_0.row.comment_ratio.color }}">
-#         {{ cloc_0.row.comment_ratio.grade }}
-#       </td>
-#       <td style="text-align: left"><small>Comments / (Comment + LOC)</small></td>
-#     </tr>
-#   </tbody>
-# </table>

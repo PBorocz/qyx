@@ -122,9 +122,6 @@ qyx report --name myproject --level 2
 # Detailed metrics
 qyx report --name myproject --level 3
 
-# Derived metrics (composite scores, rates)
-qyx report --name myproject --level d
-
 # Historical trends with charts
 qyx report --name myproject --level h
 ```
@@ -531,7 +528,6 @@ QYX provides multiple reporting levels for different perspectives:
 | 1     | Next level, usually directory-level detail             |
 | 2     | Next level, usually file-level detail                 |
 | 3     | Deep detailed metrics (function-level where available) |
-| d     | Derived metrics/scores, eg. scoring                    |
 | h     | Historical trends with charts                          |
 
 ## Examples

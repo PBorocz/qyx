@@ -4,6 +4,7 @@ import argparse
 
 from rich_argparse import RichHelpFormatter
 
+from qyx.constants import ALL_ITEMS
 from qyx.constants import ReportLevel as Rl
 from qyx.constants import StatusLevel
 from qyx.setup.args_configuration import setup_configuration
@@ -50,7 +51,7 @@ def get_args_command_line():
     parser_status.add_argument(
         "-n",
         "--name",
-        default="*",  # SENTINEL!
+        default=ALL_ITEMS,
         help="Project name, if not specified, defaults to ALL projects.",
     )
     parser_status.add_argument(
@@ -83,7 +84,7 @@ def get_args_command_line():
         "-a",
         "--analysis",
         dest="analysis",
-        default="*",  # SENTINEL!
+        default=ALL_ITEMS,
         help="Analysis to ingest, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
     )
     parser_ingest.add_argument(
@@ -104,21 +105,21 @@ def get_args_command_line():
     parser_report.add_argument(
         "-n",
         "--name",
-        default="*",  # SENTINEL!
+        default=ALL_ITEMS,
         help="Project name, if not specified, will be determined from path.",
     )
     parser_report.add_argument(
         "-a",
         "--analysis",
         dest="analysis",
-        default="*",  # SENTINEL!
+        default=ALL_ITEMS,
         help="Analysis to run, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
     )
     parser_report.add_argument(
         "-l",
         "--level",
         default=defaults.get("report_level", Rl.SUMMARY),
-        help="Level to report on, eg. 0 (summary), 1 (directory), 2 (file), d (derived) or h (history).",
+        help="Level to report on, eg. 0 (summary), 1 (directory), 2 (file), 3 (granular), h (history).",
     )
 
     ################################################################################

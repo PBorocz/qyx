@@ -8,7 +8,7 @@ from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools import format_int_or_percentage as fmt
 from qyx.tools.base import Project, Scan, ToolType
-from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_d, query_cloc_h
+from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
@@ -30,15 +30,12 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             _render_1(args, scan)
         case Rl.FILE:
             _render_2(args, scan)
-        case Rl.DERIVED:
-            _render_d(args, scan)
         case Rl.HISTORY:
             _render_h(args, project, scan)
         case Rl.ALL:
             _render_0(args, scan)
             _render_1(args, scan)
             _render_2(args, scan)
-            _render_d(args, scan)
             _render_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
@@ -47,15 +44,46 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 def _render_0(args: Namespace, scan: Scan) -> None:
     result = query_cloc_0(args, scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
-    table.add_column("LOC", justify="center")
-    table.add_column("Comments", justify="center")
-    table.add_column("Blanks", justify="center")
-    table.add_column("TOTAL", justify="center")
+    table.add_column("Metric", justify="left")
+    table.add_column("Value", justify="right")
+    table.add_column("Grade", justify="center")
+    table.add_column("Info", justify="left")
+
     table.add_row(
-        f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
-        f"{result.lines_comment:,d} ({result.lines_comment_p:.1f}%)",
-        f"{result.lines_blank:,d} ({result.lines_blank_p:.1f}%)",
-        f"{result.lines_total:,d}",
+        "Lines Of Code",
+        f"{result.lines_code:,d}",
+        "",
+        f"{result.lines_code_p:.0f}% of total",
+    )
+    table.add_row(
+        "Comments",
+        f"{result.lines_comment:,d}",
+        "",
+        f"{result.lines_comment_p:.0f}% of total",
+    )
+    table.add_row(
+        "Blanks",
+        f"{result.lines_blank:,d}",
+        "",
+        f"{result.lines_blank_p:.0f}% of total",
+    )
+    table.add_row(
+        "File Density",
+        f"{result.avg_lines_per_file.score:.2f}",
+        result.avg_lines_per_file.grade,
+        "Average LOC per File",
+    )
+    table.add_row(
+        "Code Density",
+        f"{result.code_density.score:.2f}",
+        result.code_density.grade,
+        "LOC / (LOC + Blanks)",
+    )
+    table.add_row(
+        "Comment Ratio",
+        f"{result.comment_ratio.score:.2f}",
+        result.comment_ratio.grade,
+        "Comments / (Comments + LOC)",
     )
     cli_console.print(table)
 
@@ -104,35 +132,6 @@ def _render_2(args: Namespace, scan: Scan) -> None:
             fmt(row.lines_blank, False),
             fmt(row.lines_total, False),
         )
-    cli_console.print(table)
-
-
-def _render_d(args: Namespace, scan: Scan) -> None:
-    result = query_cloc_d(args, scan)
-
-    table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
-    table.add_column("Metric")
-    table.add_column("Value", justify="right")
-    table.add_column("Grade", justify="center")
-    table.add_column("Explanation", justify="left")
-    table.add_row(
-        "File Density",
-        f"{result.avg_lines_per_file.score:.2f}",
-        result.avg_lines_per_file.grade,
-        "Average LOC per File",
-    )
-    table.add_row(
-        "Code Density",
-        f"{result.code_density.score:.2f}",
-        result.code_density.grade,
-        "LOC / (LOC + Blanks)",
-    )
-    table.add_row(
-        "Comment Ratio",
-        f"{result.comment_ratio.score:.2f}",
-        result.comment_ratio.grade,
-        "Comments / (Comment + LOC)",
-    )
     cli_console.print(table)
 
 

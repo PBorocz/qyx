@@ -12,6 +12,7 @@ from qyx.cli.admin.clean import clean
 from qyx.cli.ingest import ingest
 from qyx.cli.report import report
 from qyx.cli.status import status
+from qyx import constants as c
 from qyx.setup.args_cli import get_args_command_line
 from qyx.setup.args_interactive import get_args_interactively
 from qyx.setup.args_validate import validate_args
@@ -59,7 +60,7 @@ def dispatch(args: Namespace) -> str:
             args = get_args_interactively(args, iter)
 
             # Allow user to exit interactive mode
-            if args.command is None or args.command == "_exit_":  # SENTINEL!
+            if args.command is None or args.command == c.EXIT_COMMAND:
                 break
 
         # Are our arguments valid? (irrespective of whether they came from arguments or interactively)

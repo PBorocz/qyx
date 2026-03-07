@@ -3,6 +3,7 @@
 import logging
 from argparse import Namespace
 
+from qyx.constants import ALL_ITEMS
 from qyx.tools.base import ToolType
 
 log = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ def generate_ta_pairs(args: Namespace) -> list[tuple[ToolType, str]]:
     ################################################################################
     # Case 1: No analysis specified -> we want to "process" everything!
     ################################################################################
-    if not args.analysis or args.analysis == "*":  # SENTINEL!
+    if not args.analysis or args.analysis == ALL_ITEMS:
         return args.tools.tools_analyses()
 
     # Is the arg a "tool" or an analysis?

@@ -19,10 +19,10 @@ class Configuration(ToolType):
     def __init__(self):
         """..."""
         cli = {
-            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
         }
         web = {
-            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.DERIVED, Rl.HISTORY),
+            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
         }
 
         super(Configuration, self).__init__(

@@ -6,7 +6,7 @@ from argparse import Namespace
 from questionary import Separator, Style, Choice, confirm, path, select, text
 from questionary import print as qprint
 
-from qyx.constants import BaseModel
+from qyx import constants as c
 from qyx.constants import ReportLevel as Rl
 from qyx.constants import StatusLevel
 from qyx.tools.base import Project, Request, Scan, State
@@ -52,7 +52,7 @@ def _get_command_args(args: Namespace) -> Namespace:
             args = _prompt_command_admin(args)
             if not args:
                 _goodbye()
-        case "_exit_":
+        case c.EXIT_COMMAND:  # noqa: F841
             _goodbye()
     return args
 
@@ -84,7 +84,7 @@ def _select_main_command(args: Namespace):
         Choice(title="Serve" , value="serve"  , shortcut_key="v"),
         Choice(title="Admin" , value="admin"  , shortcut_key="a"),
         Separator("────────────"),
-        Choice(title="Exit"  , value="_exit_" , shortcut_key="x"), # SENTINEL!
+        Choice(title="Exit"  , value=c.EXIT_COMMAND , shortcut_key="x"),
     ]
     # fmt: on
 
@@ -98,7 +98,7 @@ def _select_main_command(args: Namespace):
         **kwargs,
     ).unsafe_ask()
 
-    if command != "_exit_":
+    if command != c.EXIT_COMMAND:
         State.update(args, command=command)
 
     return command
@@ -171,13 +171,13 @@ def _prompt_command_admin(args: Namespace) -> Namespace:
 
 
 def _prompt_admin_command_delete(args: Namespace) -> Namespace:
-    delete_entity: BaseModel = _prompt_delete_entity()
+    delete_entity: c.BaseModel = _prompt_delete_entity()
     match delete_entity:
-        case BaseModel.PROJECT:
+        case c.BaseModel.PROJECT:
             delete_id: int = _prompt_delete_project()
-        case BaseModel.REQUEST:
+        case c.BaseModel.REQUEST:
             delete_id: int = _prompt_delete_request()
-        case BaseModel.SCAN:
+        case c.BaseModel.SCAN:
             delete_id: int = _prompt_delete_scan()
         case _:
             raise RuntimeError(f"Invalid delete_entity recieved!: {delete_entity}")
@@ -197,9 +197,9 @@ def _prompt_name(args: Namespace, include_new_option: bool = False):
         choices.append(Choice(title=project.name))
 
     if include_new_option:
-        choices.append(Choice(title="─── Add New ───", value="__new__"))  # SENTINEL!
+        choices.append(Choice(title="─── Add New ───", value=c.NEW_ITEM))
     else:
-        choices.append(Choice(title="─── All ───", value="*"))  # SENTINEL!
+        choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS))
 
     name = select(
         "Project:",
@@ -209,7 +209,7 @@ def _prompt_name(args: Namespace, include_new_option: bool = False):
         **kwargs,
     ).unsafe_ask()
 
-    if name == "__new__":  # SENTINEL!
+    if name == c.NEW_ITEM:
         name = text("Project name:", style=PROMPT_STYLE).unsafe_ask()
 
     State.update(args, name=name)
@@ -229,8 +229,8 @@ def _prompt_path(args: Namespace) -> tuple[str, str]:
         arg_raws = []
 
     choices = [Choice(title=arg_raw, value=arg_raw) for arg_raw in arg_raws]
-    choices.append(Choice(title="─── From new path ───", value="__path__"))  # SENTINEL (local to method only)
-    choices.append(Choice(title="─── From new repo ───", value="__repo__"))  # SENTINEL (local to method only)
+    choices.append(Choice(title="─── From new path ───", value=c.NEW_PATH))
+    choices.append(Choice(title="─── From new repo ───", value=c.NEW_REPO))
 
     source = select(
         "Source:",
@@ -243,9 +243,9 @@ def _prompt_path(args: Namespace) -> tuple[str, str]:
         return source
 
     match source:
-        case "__path__":
+        case c.NEW_PATH:
             path_ = path("Path:", style=PROMPT_STYLE, only_directories=True).unsafe_ask()
-        case "__repo__":
+        case c.NEW_REPO:
             path_ = text("Git repo URL:", style=PROMPT_STYLE).unsafe_ask()
 
     return path_
@@ -267,15 +267,15 @@ def _prompt_browser() -> str:
     return confirm("Auto-open browser", default=False, style=PROMPT_STYLE).unsafe_ask()
 
 
-def _prompt_delete_entity() -> BaseModel:
-    choices = [Choice(title=model.value.title(), value=model.value) for model in BaseModel]
+def _prompt_delete_entity() -> c.BaseModel:
+    choices = [Choice(title=model.value.title(), value=model.value) for model in c.BaseModel]
     value = select(
         "Model:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
     ).unsafe_ask()
-    return BaseModel(value)
+    return c.BaseModel(value)
 
 
 def _prompt_delete_project() -> int:
@@ -377,10 +377,9 @@ def _prompt_report_level() -> Rl:
     choices = [
         Choice(title=level.description, value=level.value, shortcut_key=level.value)
         for level in Rl
-        if level.value != "*"
+        if level.value != c.ALL_ITEMS
     ]
-    # FIXME: Make the following work! (doesn't now as sentinel isn't in the Enum)
-    choices.append(Choice(title="─── All ───", value="*", shortcut_key="a"))  # SENTINEL!
+    choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS, shortcut_key="a"))
     value = select(
         "Report Level:",
         choices=choices,
@@ -408,7 +407,7 @@ def _prompt_analysis(args: Namespace, message: str) -> str:
             choices.append(Choice(title=f"{o_tool.name} - ALL", value=o_tool.name))
 
     # Final choice is a "global" all
-    choices.append(Choice(title="─── All ───", value="*"))  # SENTINEL!
+    choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS))
 
     # Do we have an existing value to default?
     kwargs = _lookup_state_default("analysis")

@@ -2,6 +2,13 @@
 
 from enum import Enum
 
+# Sentinel values used across the application
+EXIT_COMMAND = "_exit_"
+NEW_ITEM = "__new__"
+NEW_PATH = "__path__"
+NEW_REPO = "__repo__"
+ALL_ITEMS = "*"
+
 
 class ConfigurationError(ValueError):
     """Raised when there's an error in configuration, specifically tool setup."""
@@ -48,7 +55,6 @@ class ReportLevel(str, Enum):
     DIRECTORY = "1"
     FILE      = "2"
     GRANULAR  = "3"  # Primarily used for Radon @class/method/function level; other tools: TBD
-    DERIVED   = "d"
     HISTORY   = "h"
     ALL       = "*"
     # fmt: on
@@ -61,7 +67,6 @@ class ReportLevel(str, Enum):
             "1": "Directory",
             "2": "File",
             "3": "Granular",
-            "d": "Derived",
             "h": "History",
             "*": "-All-",
         }

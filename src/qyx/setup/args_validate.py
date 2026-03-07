@@ -7,6 +7,7 @@ from typing import Optional
 
 from rich import print as rprint
 
+from qyx import constants as c
 from qyx.utils import is_git_url
 
 
@@ -88,7 +89,7 @@ def _validate_analysis(args: Namespace) -> list[str]:
         return []
 
     # finally, is it a wildcard?
-    if args.analysis == "*":  # SENTINEL!
+    if args.analysis == c.ALL_ITEMS:
         return []
 
     s_analyses = ", ".join(analyses + multi_tool_names)
