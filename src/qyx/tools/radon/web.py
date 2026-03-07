@@ -69,7 +69,7 @@ def get_content(scan: Scan) -> Sns:
 def _get_content_by_level(args: Namespace, level: str, scan: Scan) -> dict | Sns | None:
     """Dispatch to the appropriate view method to get data obo the specified level fand analysis."""
     # First, lookup the method below based on the analysis and level requested.
-    view_method_name = f"{scan.analysis}_{level}"
+    view_method_name = f"view_{scan.analysis}_{level}"
     view_method = globals().get(view_method_name)
     if view_method:
         return view_method(args, scan)
@@ -79,23 +79,23 @@ def _get_content_by_level(args: Namespace, level: str, scan: Scan) -> dict | Sns
 ################################################################################
 # CC
 ################################################################################
-def cc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict:
+def view_cc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict:
     return rm.query_cc_0(args, scan)
 
 
-def cc_1(args: Namespace, scan: Scan) -> dict:
+def view_cc_1(args: Namespace, scan: Scan) -> dict:
     return rm.query_cc_1(args, scan)
 
 
-def cc_2(args: Namespace, scan: Scan) -> dict:
+def view_cc_2(args: Namespace, scan: Scan) -> dict:
     return rm.query_cc_2(args, scan)
 
 
-def cc_3(args: Namespace, scan: Scan) -> dict:
+def view_cc_3(args: Namespace, scan: Scan) -> dict:
     return rm.query_cc_3(args, scan)
 
 
-def cc_h(args: Namespace, scan: Scan) -> str:
+def view_cc_h(args: Namespace, scan: Scan) -> str:
     """Render our chart to display Radon CC information."""
     result = rm.query_cc_h(scan.request.project)
 
@@ -126,7 +126,7 @@ def cc_h(args: Namespace, scan: Scan) -> str:
 ################################################################################
 # HAL
 ################################################################################
-def hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
+def view_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
     result = rm.query_hal_0(args, scan)
     rows = []
     for metric, attr in [
@@ -156,7 +156,7 @@ def hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
     return rows
 
 
-def hal_1(args: Namespace, scan: Scan = None) -> dict:
+def view_hal_1(args: Namespace, scan: Scan = None) -> dict:
     result = rm.query_hal_1(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
@@ -170,7 +170,7 @@ def hal_1(args: Namespace, scan: Scan = None) -> dict:
     return dict(thead=thead, tbody=tbody)
 
 
-def hal_2(args: Namespace, scan: Scan = None) -> dict:
+def view_hal_2(args: Namespace, scan: Scan = None) -> dict:
     result = rm.query_hal_2(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
@@ -186,7 +186,7 @@ def hal_2(args: Namespace, scan: Scan = None) -> dict:
     return dict(thead=thead, tbody=tbody)
 
 
-def hal_3(args: Namespace, scan: Scan = None) -> dict:
+def view_hal_3(args: Namespace, scan: Scan = None) -> dict:
     result = rm.query_hal_3(scan)
     thead = [attr.display for attr in RadonHal.attrs()]
     tbody = []
@@ -206,7 +206,7 @@ def hal_3(args: Namespace, scan: Scan = None) -> dict:
     return dict(thead=thead, tbody=tbody)
 
 
-def hal_h(args: Namespace, scan: Scan = None) -> dict[str, str]:
+def view_hal_h(args: Namespace, scan: Scan = None) -> dict[str, str]:
     result = rm.query_hal_h(scan.request.project)
     if not result.transposed:
         return dict()
@@ -244,19 +244,19 @@ def hal_h(args: Namespace, scan: Scan = None) -> dict[str, str]:
 ################################################################################
 # MI
 ################################################################################
-def mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict[str, float | None]:
+def view_mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict[str, float | None]:
     return rm.query_mi_0(args, scan)
 
 
-def mi_1(args: Namespace, scan: Scan):
+def view_mi_1(args: Namespace, scan: Scan):
     return rm.query_mi_1(args, scan)
 
 
-def mi_2(args: Namespace, scan: Scan):
+def view_mi_2(args: Namespace, scan: Scan):
     return rm.query_mi_2(args, scan)
 
 
-def mi_h(args: Namespace, scan: Scan):
+def view_mi_h(args: Namespace, scan: Scan):
     """Render the maintainability index chart."""
     result = rm.query_mi_h(scan.request.project)
     x_values = [datetime.fromisoformat(ts_) for ts_ in result.rows.keys()]
@@ -286,19 +286,19 @@ def mi_h(args: Namespace, scan: Scan):
 ################################################################################
 # RAW
 ################################################################################
-def raw_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME):
+def view_raw_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME):
     return rm.query_raw_0(args, scan)
 
 
-def raw_1(args: Namespace, scan: Scan):
+def view_raw_1(args: Namespace, scan: Scan):
     return rm.query_raw_1(scan)
 
 
-def raw_2(args: Namespace, scan: Scan):
+def view_raw_2(args: Namespace, scan: Scan):
     return rm.query_raw_2(scan)
 
 
-def raw_h(args: Namespace, scan: Scan = None):
+def view_raw_h(args: Namespace, scan: Scan = None):
     """Create chart obo all Raw metrics."""
     result = rm.query_raw_h(scan.request.project)
 

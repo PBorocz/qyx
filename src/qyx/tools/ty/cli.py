@@ -45,7 +45,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def ty_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = query_ty_0(args, project, scan)
+    result: Sns = query_ty_0(args, scan)
 
     table = cli_table(title=f"TY @ {scan.as_of_display()}")
     table.add_column("Metric", justify="left")

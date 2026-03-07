@@ -21,7 +21,7 @@ def render(tool: ToolType, template: str, content_method: Callable) -> str:
         return render_template("base::_no_projects_yet.html")
 
     # (we may or may not use the analysis_options but it's inexpensive to create)
-    analysis_options, analysis = get_analysis_selector(tool, project)
+    analysis_options, analysis = _get_analysis_selector(tool, project)
     if not analysis:
         return render_template("base::_no_scans_yet.html")
 
@@ -86,7 +86,7 @@ def render_analyses(tool: ToolType, project: str, content_method: Callable) -> s
 
 def _build_analysis_selector(tool: ToolType, project: Project) -> tuple[str, str]:
     # Get the analysis options associated with this tool and scan's for the project.
-    analysis_options, analysis = get_analysis_selector(tool, project)
+    analysis_options, analysis = _get_analysis_selector(tool, project)
 
     # Render the HTML associated with the analysis select widget given the new project
     context = Sns(analysis_options=analysis_options, hx_change_analysis_url=f"/{tool.name}/content")
@@ -171,7 +171,7 @@ def get_project_selector(tool: ToolType | None = None) -> tuple[list[Option], Pr
     return options, selected_project
 
 
-def get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Option] | str]:
+def _get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Option] | str]:
     """Return a form to allow selection over all analyses for the specified tool and project."""
     query = (
         Scan.select(Scan.analysis)

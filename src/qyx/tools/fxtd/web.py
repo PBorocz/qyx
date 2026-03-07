@@ -41,12 +41,12 @@ def get_content(scan: Scan) -> Sns:
     context.fxtd_0 = query_fxtd_0(args, scan)
     context.fxtd_1 = query_fxtd_1(scan)
     context.fxtd_2 = query_fxtd_2(scan)
-    context.fxtd_h = fxtd_h(args, scan.request.project)
+    context.fxtd_h = view_fxtd_h(args, scan.request.project)
     return context
 
 
 ################################################################################################
-def fxtd_h(args: Namespace, project: Project) -> bytes | None:
+def view_fxtd_h(args: Namespace, project: Project) -> bytes | None:
     result = query_fxtd_h(project)
     if not result.transposed:
         return None

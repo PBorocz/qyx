@@ -159,6 +159,7 @@ class State(BaseModel):
 
     key = pw.CharField(primary_key=True, max_length=100)
     value = pw.TextField()
+    updated = pw.DateTimeField(default=lambda: datetime.now(UTC).replace(microsecond=0))
 
     @classmethod
     def update(cls, args: Namespace, **kwargs):

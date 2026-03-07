@@ -42,7 +42,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def ruff_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = query_ruff_0(args, project, scan)
+    result: Sns = query_ruff_0(args, scan)
     table = cli_table(title=f"RUFF @ {scan.as_of_display()}")
     # table.add_column("_", style="bold magenta")
     # table.add_column("_", style="bold magenta")

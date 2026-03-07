@@ -41,7 +41,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = query_fxtd_0(args, project, scan)
+    result: Sns = query_fxtd_0(args, scan)
     if not result.rows:
         cli_console.print("[yellow]Congratulations! No issues found.[/yellow]")
         return

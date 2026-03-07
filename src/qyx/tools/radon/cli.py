@@ -333,7 +333,7 @@ def mi_h(args: Namespace, project: Project, scan: Scan) -> None:
 # RAW
 ################################################################################
 def raw_0(args: Namespace, project: Project, scan: Scan) -> None:
-    result: Sns = rm.query_raw_0(scan)
+    result: Sns = rm.query_raw_0(args, scan)
     table = cli_table(title=f"RADON-RAW @ {scan.as_of_display()}")
     # fmt: off
     table.add_column("SLOC"    , justify="right")

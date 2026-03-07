@@ -42,12 +42,12 @@ def get_content(scan: Scan) -> Sns:
     context.ty_1 = query_ty_1(scan)
     context.ty_2 = query_ty_2(scan)
     context.ty_3 = query_ty_3(scan)
-    context.ty_h = ty_h(args, scan.request.project)
+    context.ty_h = view_ty_h(args, scan.request.project)
     return context
 
 
 ################################################################################################
-def ty_h(args: Namespace, project: Project):
+def view_ty_h(args: Namespace, project: Project):
     """Render the history chart of number of issues over time."""
     result = query_ty_h(project)
     if not result.transposed:

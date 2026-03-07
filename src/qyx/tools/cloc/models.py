@@ -72,8 +72,8 @@ def query_cloc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns
 
 
 @query_cache
-def query_cloc_1(scan: Scan) -> Sns:
-    grand_total: Sns = query_cloc_0(scan)
+def query_cloc_1(args: Namespace, scan: Scan) -> Sns:
+    grand_total: Sns = query_cloc_0(args, scan)
     query = (
         Cloc.select(
             Cloc.directory,
@@ -101,8 +101,8 @@ def query_cloc_1(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_cloc_2(scan: Scan) -> Sns:
-    grand_total: Sns = query_cloc_0(scan)
+def query_cloc_2(args: Namespace, scan: Scan) -> Sns:
+    grand_total: Sns = query_cloc_0(args, scan)
 
     query = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename).dicts()
     rows = [Sns(**row_dict) for row_dict in query]
@@ -202,7 +202,7 @@ def query_cloc_h(project: Project, last: int = None) -> Sns:
 @query_cache
 def query_cloc_d(args: Namespace, scan: Scan) -> Sns:
     """Calculate all 'derived' report values."""
-    result = query_cloc_0(scan)
+    result = query_cloc_0(args, scan)
     if not result or not result.lines_code:
         return None
 

@@ -38,17 +38,17 @@ def get_content(scan: Scan) -> Sns:
 
     context = Sns()
     context.cloc_as_of = scan.as_of_display(collapse_today=True)
-    context.cloc_0 = query_cloc_0(scan)
-    context.cloc_1 = query_cloc_1(scan)
-    context.cloc_2 = query_cloc_2(scan)
+    context.cloc_0 = query_cloc_0(args, scan)
+    context.cloc_1 = query_cloc_1(args, scan)
+    context.cloc_2 = query_cloc_2(args, scan)
     context.cloc_d = query_cloc_d(args, scan)
-    context.cloc_f = cloc_f(args, scan)
-    context.cloc_h = cloc_h(args, scan.request.project)
+    context.cloc_f = view_cloc_f(args, scan)
+    context.cloc_h = view_cloc_h(args, scan.request.project)
     return context
 
 
 ################################################################################################
-def cloc_f(args: Namespace, scan: Scan):
+def view_cloc_f(args: Namespace, scan: Scan):
     # Get bucket definitions from configuration for coloring
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")
     histogram = query_cloc_f(args, scan)
@@ -85,7 +85,7 @@ def cloc_f(args: Namespace, scan: Scan):
     return fig.to_html()
 
 
-def cloc_h(args: Namespace, project: Project) -> bytes | None:
+def view_cloc_h(args: Namespace, project: Project) -> bytes | None:
     result = query_cloc_h(project)
     if not result.rows:
         return None

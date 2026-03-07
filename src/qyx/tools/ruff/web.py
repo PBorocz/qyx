@@ -41,12 +41,12 @@ def get_content(scan: Scan) -> str:
     context.ruff_0 = query_ruff_0(args, scan)
     context.ruff_1 = query_ruff_1(scan)
     context.ruff_2 = query_ruff_2(scan)
-    context.ruff_h = ruff_h(args, scan.request.project)
+    context.ruff_h = view_ruff_h(args, scan.request.project)
     return context
 
 
 ################################################################################################
-def ruff_h(args: Namespace, project: Project):
+def view_ruff_h(args: Namespace, project: Project):
     """Render the history chart of number of issues over time."""
     result = query_ruff_h(project)
     if not result.transposed:

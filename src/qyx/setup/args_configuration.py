@@ -70,7 +70,12 @@ class Configuration:
                 o_tool = args.tools[tool]
                 analyses = [anl.lower() for anl in o_tool.analyses]
                 if analysis.lower() not in analyses:
-                    msg = f"Sorry, encountered {analysis=} in 'renderers.web.dashboard.analysis_order' section that isn't defined for {tool=}!"
+                    msg = (
+                        (
+                            f"Sorry, encountered {analysis=} in 'renderers.web.dashboard.analysis_order' "
+                            f"section that isn't defined for {tool=}!"
+                        ),
+                    )
                     log.error(msg)
                     error_encountered = True
 

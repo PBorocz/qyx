@@ -187,7 +187,7 @@ def _derived_weighted_violations_per_kloc(args: Namespace, lines_of_code: int, r
         except KeyError:
             log.error(
                 f"Sorry, unable to categorise ty check type of {check_and_count.check_name}, "
-                "check your configuration file!"
+                "check your configuration file!",
             )
             continue
         weight = weights_by_category[category]  # eg. 3.0

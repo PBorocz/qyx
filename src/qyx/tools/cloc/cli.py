@@ -45,7 +45,7 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 
 def _render_0(args: Namespace, scan: Scan) -> None:
-    result = query_cloc_0(scan)
+    result = query_cloc_0(args, scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}")
     table.add_column("LOC", justify="center")
     table.add_column("Comments", justify="center")
@@ -61,7 +61,7 @@ def _render_0(args: Namespace, scan: Scan) -> None:
 
 
 def _render_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
-    grand_total: Sns = query_cloc_0(scan)
+    grand_total: Sns = query_cloc_0(args, scan)
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("Directory", justify="left", footer="TOTAL")
 
@@ -76,7 +76,7 @@ def _render_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
     table.add_column("TOTAL", justify="right", footer=fmt(grand_total.lines_total, False))
 
-    for result in query_cloc_1(scan).rows:
+    for result in query_cloc_1(args, scan).rows:
         table.add_row(
             result.directory,
             f"{result.lines_code:,d} ({result.lines_code_p:.1f}%)",
@@ -88,7 +88,7 @@ def _render_1(args: Namespace, scan: Scan, percentage: bool = False) -> None:
 
 
 def _render_2(args: Namespace, scan: Scan) -> None:
-    results: Sns = query_cloc_2(scan)
+    results: Sns = query_cloc_2(args, scan)
 
     table = cli_table(title=f"CLOC @ {scan.as_of_display()}", show_footer=True)
     table.add_column("File", footer="TOTAL")

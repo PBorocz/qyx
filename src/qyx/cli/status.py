@@ -1,7 +1,6 @@
 """Report on status of projects, request and scans in db."""
 
 from argparse import Namespace
-from collections import defaultdict
 
 from rich.tree import Tree
 from rich import print
@@ -42,14 +41,7 @@ def scan_tree_summary(args: Namespace, request, scans_for_request, scan_tree):
     s_scans = (
         f"[bright_green]SCANS[/bright_green] {len(scans_for_request):,d} [grey50]{s_min_date} → {s_max_date}[/grey50]"
     )
-    ta_tree = scan_tree.add(s_scans)
-
-    # Count up the total number of scans by tool/analysis:
-    counts = defaultdict(int)
-    for scan in scans_for_request:
-        counts[scan.analysis_display()] += 1
-    for s_analysis, count in sorted(counts.items()):
-        s_scan = f"[cyan]{s_analysis}[/cyan] → [green]{count:,d}[/green] scans"
+    scan_tree.add(s_scans)
 
     return scan_tree
 
