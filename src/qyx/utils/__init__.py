@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 log = logging.getLogger(__name__)
 
 
-def dt_to_local(timestamp: str) -> str:
+def dt_to_local(timestamp: str) -> datetime:
     """Convert a db-based timestamp to local."""
     # Parse the string timestamp from database
     dt_utc = datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else timestamp
@@ -59,7 +59,7 @@ def rate_of_change_percentage(old_value: int | float, new_value: int | float) ->
     return ((new_value - old_value) / old_value) * 100
 
 
-def format_timestamp_headers(timestamps: list[str]) -> dict[datetime, str]:
+def format_timestamp_headers(timestamps: list[str]) -> dict[str, datetime]:
     """Format timestamp headers based on distribution across days/times..
 
     Args:

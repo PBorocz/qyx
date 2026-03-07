@@ -1,12 +1,13 @@
 """User state management/persistence."""
 
 import logging
+from argparse import Namespace
 from types import SimpleNamespace as Sns
 
 log = logging.getLogger(__name__)
 
 
-def score_metric(args: Sns, metric_path: str, value: float) -> Sns:
+def score_metric(args: Namespace, metric_path: str, value: float) -> Sns:
     """Score a metric value according to configured thresholds.
 
     Returns:
@@ -36,8 +37,8 @@ def find_grade(value: float, thresholds: list[dict]) -> tuple[str, str]:
     Value is checked against each threshold range [min, max).
     """
     for threshold in thresholds:
-        min_val = threshold.get("min", 0)
-        max_val = threshold.get("max", float("inf"))
+        min_val: float = threshold.get("min", 0.0)
+        max_val: float = threshold.get("max", float("inf"))
 
         # Convert "inf" strings to float
         if min_val == "inf":
@@ -47,7 +48,7 @@ def find_grade(value: float, thresholds: list[dict]) -> tuple[str, str]:
 
         # Check if value falls in this range [min-inclusive, max-below]
         if min_val <= value < max_val:
-            return threshold.get("grade"), threshold.get("color")
+            return threshold.get("grade", "?"), threshold.get("color", "#6b7280")
 
     # Fallback if no threshold matched
     return "?", "#6b7280"

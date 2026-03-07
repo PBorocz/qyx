@@ -88,7 +88,7 @@ def serve(args: Namespace) -> None:
             _register_route(app, o_tool, path, method)
 
     if args.browser:
-        _open_browser()
+        _open_browser(args)
 
     ################################################################################
     # Start us up!

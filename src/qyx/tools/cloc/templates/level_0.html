@@ -29,7 +29,7 @@
       <td style="text-align: left"><small>{{ "%.1f"|format(cloc_0.lines_blank_p) }}%</small></td>
     </tr>
 
-    {% if cloc_0.avg_lines_per_file.grade %}
+    {% if cloc_0.avg_lines_per_file %}
     <tr>
       <td style="text-align: left">File Density</td>
       <td style="text-align: right">{{ "{:.0f}".format(cloc_0.avg_lines_per_file.score) }}</td>
@@ -40,7 +40,7 @@
     </tr>
     {% endif %}
 
-    {% cloc_0.code_density.grade %}
+    {% if cloc_0.code_density %}
     <tr>
       <td style="text-align: left">Code Density</td>
       <td style="text-align: right">{{ "{:.0f}".format(cloc_0.code_density.score) }}</td>
@@ -51,7 +51,7 @@
     </tr>
     {% endif %}
 
-    {% cloc_0.comment_ratio.grade %}
+    {% if cloc_0.comment_ratio %}
     <tr>
       <td style="text-align: left">Code Density</td>
       <td style="text-align: right">{{ "{:.0f}".format(cloc_0.comment_ratio.score) }}</td>

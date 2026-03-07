@@ -70,16 +70,18 @@ def render_content(project: str | Project, tool: ToolType, analysis: str, conten
 
 
 ################################################################################################
-def render_analyses(tool: ToolType, project: str, content_method: Callable) -> str:
+def render_analyses(tool: ToolType, s_project_id: str, content_method: Callable) -> str:
     """Render BOTH the new analysis widget associated with the new project *AND* update content on an OOB basis."""
     # Find the currently selected project..
-    project = Project.get_or_none(Project.id == int(project)) if project else None
+    project: Project | None = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
+    if not project:
+        return ""
 
     # Get the analysis options associated with this tool and scan's for the project.
     html_select_analysis_widget, analysis = _build_analysis_selector(tool, project)
 
     # Render the "body" portion given the new project *and* potentially a different analysis!
-    html_div_body = render_content(project, tool, analysis, content_method)
+    html_div_body: str = render_content(project, tool, analysis, content_method)
 
     return f'{html_select_analysis_widget}<div id="div_body_content" hx-swap-oob="true">{html_div_body}</div>'
 
@@ -89,8 +91,8 @@ def _build_analysis_selector(tool: ToolType, project: Project) -> tuple[str, str
     analysis_options, analysis = _get_analysis_selector(tool, project)
 
     # Render the HTML associated with the analysis select widget given the new project
-    context = Sns(analysis_options=analysis_options, hx_change_analysis_url=f"/{tool.name}/content")
-    template = "base::_select_analysis.html"
+    context: Sns = Sns(analysis_options=analysis_options, hx_change_analysis_url=f"/{tool.name}/content")
+    template: str = "base::_select_analysis.html"
     return (render_template(template, **context.__dict__), analysis)
 
 
@@ -171,7 +173,7 @@ def get_project_selector(tool: ToolType | None = None) -> tuple[list[Option], Pr
     return options, selected_project
 
 
-def _get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Option] | str]:
+def _get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Option], str]:
     """Return a form to allow selection over all analyses for the specified tool and project."""
     query = (
         Scan.select(Scan.analysis)
@@ -193,7 +195,7 @@ def _get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Optio
     selected_analysis = None
     if last_analysis:
         for analysis, _ in analyses:
-            if last_analysis.lower() == project.name.lower():
+            if last_analysis.lower() == analysis.lower():
                 selected_analysis = analysis
                 break
 

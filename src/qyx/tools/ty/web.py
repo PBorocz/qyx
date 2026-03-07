@@ -54,10 +54,10 @@ def view_ty_h(args: Namespace, project: Project):
         return None
 
     x_values = [datetime.fromisoformat(ts_) for ts_ in result.transposed.keys()]
-    y_values = list(result.transposed.values())
+    y_values: list[int] = list(result.transposed.values())
 
     # Create custom hover labels
-    s_y_values = []
+    s_y_values: list[str] = []
     for count in y_values:
         match count:
             case 0:

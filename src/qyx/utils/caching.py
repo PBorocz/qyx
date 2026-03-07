@@ -112,10 +112,11 @@ def _get_cache_info() -> dict[str, Any]:
     }
 
 
-def _format_bytes(bytes: int) -> str:
+def _format_bytes(num_bytes: int) -> str:
     """Format bytes into human-readable format."""
+    value: float = num_bytes
     for unit in ["B", "KB", "MB", "GB"]:
-        if bytes < 1024.0:
-            return f"{bytes:.2f} {unit}"
-        bytes /= 1024.0
-    return f"{bytes:.2f} TB"
+        if value < 1024:
+            return f"{value:.2f} {unit}"
+        value /= 1024
+    return f"{value:.2f} TB"

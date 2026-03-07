@@ -75,7 +75,7 @@ def _get_repo_cache_dir(git_url: str) -> Path:
     return repo_dir
 
 
-def _get_commits(repo_path: Path) -> list[tuple[str, str, str]]:
+def _get_commits(repo_path: Path) -> list[Sns]:
     """Get all commit hashes in chronological order (oldest to newest)."""
     result = subprocess.run(
         ["git", "log", "--reverse", "--pretty=format:%H|%at|%s", "origin/HEAD"],  # Unix timestamp!

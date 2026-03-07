@@ -69,7 +69,7 @@ def style_figure(fig, **kwargs):
     return fig
 
 
-def custom_labels(metric: str, messages: dict, x_values: str, y_values: str) -> list[str]:
+def custom_labels(metric: str, messages: dict, x_values: list[str | None], y_values: list[str | None]) -> list[str]:
     """Return a list of custom hover labels based on the respective git messages."""
     labels = []
     for timestamp, value in zip(x_values, y_values):

@@ -97,7 +97,7 @@ def ty_3(args: Namespace, project: Project, scan: Scan) -> None:
     table.add_column("Check")
     table.add_column("Description")
     for row in results.rows:
-        table.add_row(f"{row.directory}/{row.filename}", row.check_name, row.description)
+        table.add_row(f"{row.directory}/{row.filename} [{row.line}]", row.check_name, row.description)
     cli_console.print(table)
 
 
