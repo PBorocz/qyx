@@ -122,7 +122,10 @@ def cc_h(args: Namespace, project: Project, scan: Scan) -> None:
     for entity_type, values in result.transposed.items():
         t_row = [entity_type]
         for timestamp in sorted(result.timestamps):
-            t_row.append(f"{values[timestamp]:.2f}")
+            try:
+                t_row.append(f"{values[timestamp]:.2f}")
+            except TypeError:
+                t_row.append("-")
 
         t_value = ""
         roc_ = result.rocs.get(entity_type, 0)

@@ -172,6 +172,7 @@ class State(BaseModel):
                 else:
                     # Otherwise, simply replace it.
                     State.replace(key=key, value=str(value)).execute()
+                log.debug(f"state: {key=} -> {value=}")
 
     @classmethod
     def lookup(cls, key: str, default=None):
@@ -337,7 +338,12 @@ class Scan(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        indexes = ((("request", "as_of", "analysis", "tool"), True),)
+        indexes = (
+            # Uniqueness criteria
+            (("request", "as_of", "analysis", "tool"), True),
+            # Query optimization for filtering + sorting
+            (("request", "analysis", "as_of"), False),
+        )
 
     @classmethod
     def get_most_recent(cls, project: Project, tool: str = None, analysis: str = None) -> Scan | None:

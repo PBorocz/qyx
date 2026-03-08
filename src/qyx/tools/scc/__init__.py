@@ -20,10 +20,10 @@ class Configuration(ToolType):
         """Class meta-definition for the Scc tool."""
         # fmt: off
         cli = {
-            AnalysisType.SCC.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
+            AnalysisType.SCC.value: (Rl.SUMMARY,),
         }
         web = {
-            AnalysisType.SCC.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
+            AnalysisType.SCC.value: (Rl.SUMMARY,),
         }
 
         super(Configuration, self).__init__(

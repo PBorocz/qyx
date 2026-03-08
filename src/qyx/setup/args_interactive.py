@@ -114,7 +114,7 @@ def _prompt_command_status(args: Namespace) -> Namespace:
 def _prompt_command_report(args: Namespace) -> Namespace:
     args.name = _prompt_name(args)
     args.analysis = _prompt_analysis(args, "Analysis:")
-    args.level = _prompt_report_level()
+    args.level = _prompt_report_level(args)
     return args
 
 
@@ -374,24 +374,6 @@ def _prompt_status_level() -> StatusLevel:
     return StatusLevel(value)
 
 
-def _prompt_report_level() -> Rl:
-    choices = [
-        Choice(title=level.description, value=level.value, shortcut_key=level.value)
-        for level in Rl
-        if level.value != c.ALL_ITEMS
-    ]
-    choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS, shortcut_key="a"))
-    value = select(
-        "Report Level:",
-        choices=choices,
-        style=PROMPT_STYLE,
-        default=Rl.SUMMARY,
-        use_indicator=True,
-        use_shortcuts=True,
-    ).unsafe_ask()
-    return Rl(value)
-
-
 def _prompt_analysis(args: Namespace, message: str) -> str:
     choices = []
     for o_tool in args.tools.tools():
@@ -423,6 +405,28 @@ def _prompt_analysis(args: Namespace, message: str) -> str:
     State.update(args, analysis=analysis)
 
     return analysis
+
+
+def _prompt_report_level(args: Namespace) -> Rl:
+    last_report_level = State.lookup("report_level", c.ALL_ITEMS)
+    choices = [
+        Choice(title=level.description, value=level.value, shortcut_key=level.value)
+        for level in Rl
+        if level.value != c.ALL_ITEMS
+    ]
+    choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS, shortcut_key="a"))
+    value = select(
+        "Report Level:",
+        choices=choices,
+        style=PROMPT_STYLE,
+        default=last_report_level,
+        use_indicator=True,
+        use_shortcuts=True,
+    ).unsafe_ask()
+
+    State.update(args, report_level=value)
+
+    return Rl(value)
 
 
 def __get_project_choices() -> list[Choice]:

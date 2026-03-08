@@ -153,7 +153,7 @@ def query_cloc_h(project: Project, last: int = None) -> Sns:
             fn.SUM(Cloc.lines_blank).alias("total_blank"),
         )
         .join(Scan)
-        .where(Scan.id.in_(scans))
+        .where(Scan.id.in_([scan.id for scan in scans]))
         .group_by(Scan.as_of)
         .order_by(Scan.as_of)
         .objects()

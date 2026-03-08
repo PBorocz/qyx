@@ -10,7 +10,7 @@ from typing import Literal
 from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import BaseModel, BaseResultsModel, Project, Scan
+from qyx.tools.base import BaseModel, BaseResultsModel, Project, Request, Scan
 from qyx.tools.common import get_scans_for_project_analysis
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
@@ -93,7 +93,12 @@ class RadonCc(BaseResultsModel):
         """Define peewee meta data."""
 
         table_name = "radon_cc"
-        indexes = ((("scan", "directory", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),)
+        indexes = (
+            # Uniqueness criteria
+            (("scan", "directory", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),
+            # Optimize for joining + grouping by entity_type
+            (("scan", "entity_type"), False),
+        )
 
 
 class RadonHal(BaseResultsModel):
@@ -263,7 +268,7 @@ def query_raw_h(project: Project, last: int = None) -> Sns:
             fn.SUM(RadonRaw.sloc).alias("sloc"),
         )
         .join(Scan)
-        .where(Scan.id.in_(scans))
+        .where(Scan.id.in_([scan.id for scan in scans]))
         .group_by(Scan.as_of)
         .order_by(Scan.as_of)
         .objects()
@@ -480,7 +485,7 @@ def query_hal_h(project: Project = None, last: int = None) -> Sns:
             fn.AVG(RadonHal.bugs).alias("bugs"),
         )
         .join(Scan)
-        .where(Scan.id.in_(scans))
+        .where(Scan.id.in_([scan.id for scan in scans]))
         .group_by(Scan.as_of)
         .order_by(Scan.as_of)
         .objects()
@@ -591,6 +596,58 @@ def query_mi_2(args, scan: Scan) -> Sns:
 
 
 @query_cache
+def query_mi_h_original(project, last: int = None) -> Sns:
+    assert project
+
+    scans = get_scans_for_project_analysis(project, "mi", last=last)
+    scan_ids = [scan.id for scan in scans]
+
+    # Alias for the RAW scan to make the query clearer
+    rawscan = Scan.alias()
+
+    query = (
+        RadonMi.select(
+            Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
+            (fn.SUM(RadonMi.mi * RadonRaw.loc) / fn.SUM(RadonRaw.loc)).alias("mi_weighted"),
+        )
+        .join(
+            Scan,
+            on=(RadonMi.scan == Scan.id),
+        )
+        .switch(RadonMi)
+        .join(
+            RadonRaw,
+            on=((RadonMi.directory == RadonRaw.directory) & (RadonMi.filename == RadonRaw.filename)),
+        )
+        .join(
+            rawscan,
+            on=(
+                (RadonRaw.scan == rawscan.id)
+                & (rawscan.request == Scan.request)
+                & (rawscan.tool == "radon")
+                & (rawscan.analysis == "raw")
+            ),
+        )
+        .where(RadonMi.scan.in_(scan_ids))
+        .group_by(Scan.as_of)
+        .order_by(Scan.as_of.desc())
+        .dicts()
+    )
+    rows = {row["timestamp"]: row["mi_weighted"] for row in query.dicts()}
+    messages = {row["timestamp"]: row["message"] for row in query.dicts()}
+
+    # Calculate rate of change of last 2 entries..
+    timestamps = list(rows.keys())
+    roc = 0.00
+    if len(timestamps) > 1:
+        ts_penultimate, ts_last = sorted(timestamps)[-2:]
+        roc = rate_of_change_percentage(rows[ts_penultimate], rows[ts_last])
+
+    return Sns(messages=messages, rows=rows, roc=roc)
+
+
+@query_cache
 def query_mi_h(project, last: int = None) -> Sns:
     assert project
 
@@ -627,6 +684,7 @@ def query_mi_h(project, last: int = None) -> Sns:
         .where(RadonMi.scan.in_(scan_ids))
         .group_by(Scan.as_of)
         .order_by(Scan.as_of.desc())
+        .dicts()
     )
     rows = {row["timestamp"]: row["mi_weighted"] for row in query.dicts()}
     messages = {row["timestamp"]: row["message"] for row in query.dicts()}
@@ -750,26 +808,47 @@ def query_cc_3(args: Namespace, scan: Scan) -> Sns:
 
 @query_cache
 def query_cc_h(project: Project, last: int = None) -> Sns:
+    # Step 1: Find the relevant scans for the project (potentially limited)
     scans = get_scans_for_project_analysis(project, "cc", last=last)
-    query = (
+
+    # Step 2: Get aggregated complexity for those scans (fast - no join!)
+    scan_id_list = [s.id for s in scans]
+    complexity_data = (
         RadonCc.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
+            RadonCc.scan_id,
             RadonCc.entity_type,
-            fn.AVG(RadonCc.complexity).alias("complexity"),
+            fn.AVG(RadonCc.complexity).alias("avg_complexity"),
         )
-        .join(Scan)
-        .where(Scan.id.in_(scans))
-        .group_by(Scan.as_of, RadonCc.entity_type)
-        .order_by(Scan.as_of)
-        .objects()
+        .where(RadonCc.scan_id.in_(scan_id_list))
+        .group_by(RadonCc.scan_id, RadonCc.entity_type)
+        .dicts()
     )
-    timestamps = list({result.timestamp for result in query})
-    messages = {result.timestamp: result.message for result in query}
+
+    # Step 3: Combine in Python (fast - in-memory)
+    complexity_by_scan = {}
+    for row in complexity_data:
+        key = (row["scan"], row["entity_type"])
+        complexity_by_scan[key] = row["avg_complexity"]
+
+    # Step 4: Build final result
+    query = []
+    for scan in scans:
+        # Get all entity types for this scan
+        for entity_type in set(k[1] for k in complexity_by_scan.keys() if k[0] == scan.id):
+            query.append(
+                Sns(
+                    timestamp=scan.as_of,
+                    message=scan.git_commit_message,
+                    entity_type=entity_type,
+                    complexity=complexity_by_scan.get((scan.id, entity_type), 0),
+                ),
+            )
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
+    timestamps = list({result.timestamp for result in query})
+    messages = {result.timestamp: result.message for result in query}
     transposed = defaultdict(lambda: defaultdict(dict))
     for result in query:
         transposed[result.entity_type][result.timestamp] = result.complexity

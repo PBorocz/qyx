@@ -115,7 +115,7 @@ def query_fxtd_h(project: Project, last: int = None) -> Sns:
             fn.COUNT(Fxtd.id).alias("count"),
         )
         .join(Fxtd, JOIN.LEFT_OUTER)
-        .where(Scan.id.in_(scans))
+        .where(Scan.id.in_([scan.id for scan in scans]))
         .group_by(
             Scan.as_of,
             Fxtd.type,

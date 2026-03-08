@@ -132,7 +132,7 @@ def query_ty_h(project: Project, last: int = None) -> Sns:
         )
         .join(Ty, JOIN.LEFT_OUTER)
         .where(
-            Scan.id.in_(scans),
+            Scan.id.in_([scan.id for scan in scans]),
         )
         .group_by(Scan.as_of)
         .order_by(Scan.as_of)

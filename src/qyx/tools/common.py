@@ -55,15 +55,18 @@ def import_method(module_method: str) -> Callable + None:
 def get_scans_for_project_analysis(project: Project, analysis: str, last: int = None) -> ModelSelect:
     """Return the most recent scans for the selected project and analysis."""
     scans = (
-        Scan.select()
+        Scan.select(
+            Scan.id,
+            Scan.as_of,
+            Scan.git_commit_message,
+        )
+        .join(Request)
         .where(
             Request.project == project,
             Scan.analysis == analysis,
         )
-        .join(Request)
-        .order_by(
-            Scan.as_of.desc(),  # IMPORTANT as we use a simple slice below to limit!
-        )
+        .order_by(Scan.as_of.desc())  # IMPORTANT as we use a simple slice below to limit!
+        .objects()
     )
     if last:
         scans = scans.limit(last)
