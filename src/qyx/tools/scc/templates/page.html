@@ -1,0 +1,13 @@
+{% extends "base::_base.html" %}
+
+{% block content %}
+
+<h2>"scc" - Count Lines of Code</h2>
+
+{% include "base::_select_project.html" %}
+
+<div id="div_body_content">
+  {% include "scc::scc.html" %}
+</div>
+
+{% endblock %}

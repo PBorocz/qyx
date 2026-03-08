@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class Cloc(BaseResultsModel):
-    """..."""
+    """Cloc tool line of code storage."""
 
     # fmt: off
     lines_blank   = IntegerField(null=True)

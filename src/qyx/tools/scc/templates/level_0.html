@@ -1,0 +1,43 @@
+<table>
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left">Language</th>
+      <th scope="col" style="text-align: right">Files</th>
+      <th scope="col" style="text-align: right">Lines</th>
+      <th scope="col" style="text-align: right">Blanks</th>
+      <th scope="col" style="text-align: right">Comments</th>
+      <th scope="col" style="text-align: right">Code</th>
+      <th scope="col" style="text-align: right">ULOC</th>
+      <th scope="col" style="text-align: right">DRYness</th>
+      <th scope="col" style="text-align: right">Complexity</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for lang in scc_0.rows %}
+    <tr>
+      <td style="text-align: left">{{ lang.name }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(lang.num_files)  }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(lang.lines)      }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(lang.blank)      }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(lang.comment)    }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(lang.code)       }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(lang.uloc)       }}</td>
+      <td style="text-align: right">{{ "{:.0f}".format(lang.dryness)   }}%</td>
+      <td style="text-align: right">{{ "{:,d}".format(lang.complexity) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td style="text-align: left"></td>
+      <td style="text-align: right">{{ "{:,d}".format(scc_0.grand_totals.num_files)  }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(scc_0.grand_totals.lines)      }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(scc_0.grand_totals.blank)      }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(scc_0.grand_totals.comment)    }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(scc_0.grand_totals.code)       }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(scc_0.grand_totals.uloc)       }}</td>
+      <td style="text-align: right">{{ "{:.0f}".format(scc_0.grand_totals.dryness)   }}%</td>
+      <td style="text-align: right"></td>
+    </tr>
+  </tfoot>
+</table>

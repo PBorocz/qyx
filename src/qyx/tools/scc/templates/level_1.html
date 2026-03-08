@@ -1,0 +1,32 @@
+<table id="level_1" class="striped">
+  <thead>
+    <tr>
+      <th scope="col" style="text-align: left">Directory</th>
+      <th scope="col" style="text-align: right">LOC</th>
+      <th scope="col" style="text-align: right">Comments</th>
+      <th scope="col" style="text-align: right">Blanks</th>
+      <th scope="col" style="text-align: right">TOTAL</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for result in cloc_1.rows %}
+    <tr>
+      <td style="text-align: left">{{ result.directory }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(result.lines_code) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(result.lines_comment) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(result.lines_blank) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(result.lines_total) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td style="text-align: left">TOTAL</td>
+      <td style="text-align: right">{{ "{:,d}".format(cloc_1.grand_total.lines_code) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(cloc_1.grand_total.lines_comment) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(cloc_1.grand_total.lines_blank) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(cloc_1.grand_total.lines_total) }}</td>
+    </tr>
+  </tfoot>
+</table>
+<script>new Tablesort(document.getElementById('level_1'));</script>

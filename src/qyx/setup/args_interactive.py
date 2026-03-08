@@ -304,9 +304,10 @@ def _prompt_delete_request() -> int:
     project = Project.get(Project.id == int(s_project_id))
     for request in Request.select().where(Request.project == project):
         most_current_scan = Scan.select(Scan.as_of).where(Scan.request == request).order_by(Scan.as_of).first()
-        source = request.arg_normalised if request.is_git else request.arg_raw
-        title = f"{dt_to_display(most_current_scan.as_of)} from {source}"
-        choices.append(Choice(title=title, value=request.id))
+        if most_current_scan:
+            source = request.arg_normalised if request.is_git else request.arg_raw
+            title = f"{dt_to_display(most_current_scan.as_of)} from {source}"
+            choices.append(Choice(title=title, value=request.id))
 
     value = select(
         "Request to delete:",

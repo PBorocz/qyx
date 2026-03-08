@@ -90,7 +90,7 @@ class AbstractToolConfiguration(ABC):
         try:
             render_module: ModuleType = self.import_component(interface)
         except ModuleNotFoundError as exc:
-            log.warning(f"Sorry, no '{interface}' capabilities available yet for {self.name} ({str(exc).lower})")
+            log.warning(f"Sorry, no '{interface}' capabilities available yet for {self.name} ({str(exc).lower()})")
             return None, None
 
         if not (render_method := getattr(render_module, "render")):

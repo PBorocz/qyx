@@ -16,10 +16,10 @@ renderers:
   web:
     nav:
       # Order of tools on the main nav bar.
-      tool_order: ["cloc", "ruff", "radon", "fxtd", "ty"]
+      tool_order: ["scc", "cloc", "ruff", "radon", "fxtd", "ty", "cloc"]
     dashboard:
       # Order of summaries on the main/dashboard/home page
-      analysis_order: ["cloc:cloc", "fxtd:fxtd", "ruff:ruff", "ty:ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw"]
+      analysis_order: ["scc:scc", "fxtd:fxtd", "ruff:ruff", "ty:ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw", "cloc:cloc"]
 
   cli:
     colors:
@@ -350,6 +350,17 @@ tools:
         - {min:  50, max:  100, grade: "D", color: "#f97316"}
         - {min: 100, max: .inf, grade: "F", color: "#ef4444"}
 
+  scc:
+    run:
+      command:
+        - scc
+        - --uloc
+        - --character
+        - --by-file
+        - --format
+        - json
+        - --percent
+        - "{relative}"
 
 database:
   # Database configuration (if applicable)
