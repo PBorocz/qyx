@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 
 from qyx.constants import ReportLevel as Rl
-from qyx.tools.base import ToolType
+from qyx.tools._models_ import ToolType
 from qyx.tools.fxtd.models import Fxtd
 
 

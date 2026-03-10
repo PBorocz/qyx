@@ -6,7 +6,7 @@ from rich.tree import Tree
 from rich import print
 
 from qyx.constants import ALL_ITEMS, StatusLevel
-from qyx.tools.base import Project, Request, Scan
+from qyx.tools._models_ import Project, Request, Scan
 from qyx.utils import dt_to_display
 
 

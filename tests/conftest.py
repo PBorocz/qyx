@@ -11,7 +11,7 @@ from qyx.setup.args_configuration import setup_configuration
 from qyx.setup.logging import setup_logging
 from qyx.setup.sqlite import setup_sqlite
 from qyx.setup.tools import setup_tools
-from qyx.tools.base import Project, Request, Scan
+from qyx.tools._models_ import Project, Request, Scan
 
 TEST_PROJECT = "__test_project__"
 

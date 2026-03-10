@@ -8,7 +8,7 @@ from pathlib import Path
 from types import ModuleType
 
 from qyx.constants import ConfigurationError
-from qyx.tools.base import Tools, ToolType
+from qyx.tools._models_ import Tools, ToolType
 
 log = logging.getLogger(__name__)
 

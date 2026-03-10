@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from qyx.tools.cloc.models import Cloc
-from qyx.tools.base import Scan
+from qyx.tools._models_ import Scan
 
 
 def parse(scan: Scan, data: Any) -> int:

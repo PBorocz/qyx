@@ -7,7 +7,7 @@ from types import SimpleNamespace as Sns
 import plotly.graph_objects as go
 from bottle import request
 
-from qyx.tools.base import Project, Scan, State
+from qyx.tools._models_ import Project, Scan, State
 from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_f, query_cloc_h
 from qyx.utils.scoring import find_grade
 from qyx.web.page import render, render_content

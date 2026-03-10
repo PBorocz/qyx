@@ -4,7 +4,7 @@ import logging
 from argparse import Namespace
 
 from qyx.constants import ALL_ITEMS
-from qyx.tools.base import ToolType
+from qyx.tools._models_ import ToolType
 
 log = logging.getLogger(__name__)
 

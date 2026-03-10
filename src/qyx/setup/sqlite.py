@@ -10,7 +10,7 @@ from pathlib import Path
 from peewee import SqliteDatabase
 from platformdirs import user_data_dir
 
-from qyx.tools.base import Project, Request, Scan, State
+from qyx.tools._models_ import Project, Request, Scan, State
 
 
 class DebugSqliteDatabase(SqliteDatabase):

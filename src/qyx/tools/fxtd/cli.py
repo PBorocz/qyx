@@ -6,7 +6,7 @@ from types import SimpleNamespace as Sns
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
-from qyx.tools.base import Project, Scan, ToolType
+from qyx.tools._models_ import Project, Scan, ToolType
 from qyx.tools.fxtd.models import query_fxtd_0, query_fxtd_1, query_fxtd_2, query_fxtd_h
 from qyx.utils import format_timestamp_headers
 

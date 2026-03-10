@@ -6,10 +6,11 @@ from collections import defaultdict
 from datetime import datetime
 from types import SimpleNamespace as Sns
 
-from peewee import IntegerField, fn
+import peewee as pw
+from peewee import fn
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import BaseResultsModel, Project, Scan
+from qyx.tools._models_ import BaseModel, Project, Scan
 from qyx.tools.common import get_scans_for_project_analysis
 from qyx.utils import bucket, rate_of_change_percentage
 from qyx.utils.caching import query_cache
@@ -19,14 +20,19 @@ from qyx.utils.scoring import score_metric
 log = logging.getLogger(__name__)
 
 
-class Cloc(BaseResultsModel):
+class Cloc(BaseModel):
     """Cloc tool line of code storage."""
 
     # fmt: off
-    lines_blank   = IntegerField(null=True)
-    lines_code    = IntegerField(null=True)
-    lines_comment = IntegerField(null=True)
-    scale_factor  = IntegerField(null=True)
+    id            = pw.AutoField()
+    scan          = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory     = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename      = pw.CharField(help_text="eg. foo.py")
+    lines_blank   = pw.IntegerField(null=True)
+    lines_code    = pw.IntegerField(null=True)
+    lines_comment = pw.IntegerField(null=True)
+    scale_factor  = pw.IntegerField(null=True)
+
     # fmt: on
 
     class Meta:

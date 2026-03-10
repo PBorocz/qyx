@@ -7,10 +7,11 @@ from dataclasses import dataclass
 from types import SimpleNamespace as Sns
 from typing import Literal
 
-from peewee import fn, CharField, FloatField, IntegerField, ForeignKeyField
+import peewee as pw
+from peewee import fn
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import BaseModel, BaseResultsModel, Project, Request, Scan
+from qyx.tools._models_ import BaseModel, Project, Scan
 from qyx.tools.common import get_scans_for_project_analysis
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
@@ -20,18 +21,22 @@ from qyx.utils.scoring import score_metric
 log = logging.getLogger(__name__)
 
 
-class RadonRaw(BaseResultsModel):
+class RadonRaw(BaseModel):
     """Radon "RAW" metric storage."""
 
     # NOTE: LOC = Blanks + COmments + Multi + SingleComments + SLOC
     # fmt: off
-    loc             = IntegerField(help_text="Lines of code")
-    blank           = IntegerField(help_text="Blank lines")
-    comments        = IntegerField(help_text="Comment lines")
-    lloc            = IntegerField(help_text="Logical lines of code")
-    multi           = IntegerField(help_text="Multi-line strings")
-    single_comments = IntegerField(help_text="Single-line comments")
-    sloc            = IntegerField(help_text="Source lines of code")
+    id              = pw.AutoField()
+    scan            = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory       = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename        = pw.CharField(help_text="eg. foo.py")
+    loc             = pw.IntegerField(help_text="Lines of code")
+    blank           = pw.IntegerField(help_text="Blank lines")
+    comments        = pw.IntegerField(help_text="Comment lines")
+    lloc            = pw.IntegerField(help_text="Logical lines of code")
+    multi           = pw.IntegerField(help_text="Multi-line strings")
+    single_comments = pw.IntegerField(help_text="Single-line comments")
+    sloc            = pw.IntegerField(help_text="Source lines of code")
     # fmt: on
 
     class Meta:
@@ -46,12 +51,16 @@ class RadonRaw(BaseResultsModel):
         return ("loc", "sloc", "comments", "multi", "blank")
 
 
-class RadonMi(BaseResultsModel):
+class RadonMi(BaseModel):
     """Radon "MI" metric storage."""
 
     # fmt: off
-    mi   = FloatField(help_text="Maintainability index")
-    rank = CharField(help_text="Grade, ie. A, B, C, etc.")
+    id        = pw.AutoField()
+    scan      = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename  = pw.CharField(help_text="eg. foo.py")
+    mi        = pw.FloatField(help_text="Maintainability index")
+    rank      = pw.CharField(help_text="Grade, ie. A, B, C, etc.")
     # fmt: on
 
     class Meta:
@@ -61,17 +70,21 @@ class RadonMi(BaseResultsModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-class RadonCc(BaseResultsModel):
+class RadonCc(BaseModel):
     """Radon "CC" metric storage."""
 
     # fmt: off
-    entity_type   = CharField(help_text="Function, Method or Class)")
-    entity_name   = CharField(help_text="main, <class>.method, etc.")
-    line_start    = IntegerField()
-    line_end      = IntegerField()
-    column_offset = IntegerField()
-    rank          = CharField(help_text="Complexity grade, ie. A, B, C...")
-    complexity    = IntegerField(help_text="Raw complexity score")
+    id            = pw.AutoField()
+    scan          = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory     = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename      = pw.CharField(help_text="eg. foo.py")
+    entity_type   = pw.CharField(help_text="Function, Method or Class)")
+    entity_name   = pw.CharField(help_text="main, <class>.method, etc.")
+    line_start    = pw.IntegerField()
+    line_end      = pw.IntegerField()
+    column_offset = pw.IntegerField()
+    rank          = pw.CharField(help_text="Complexity grade, ie. A, B, C...")
+    complexity    = pw.IntegerField(help_text="Raw complexity score")
     # fmt: on
 
     @classmethod
@@ -101,22 +114,26 @@ class RadonCc(BaseResultsModel):
         )
 
 
-class RadonHal(BaseResultsModel):
+class RadonHal(BaseModel):
     """Radon "HAL" metric storage."""
 
     # fmt: off
-    h1		       = IntegerField () # See below for descriptions...
-    h2		       = IntegerField ()
-    N1		       = IntegerField ()
-    N2		       = IntegerField ()
-    program_vocabulary = IntegerField ()
-    program_length     = IntegerField ()
-    calculated_length  = FloatField   ()
-    volume             = FloatField   ()
-    difficulty         = FloatField   ()
-    effort             = FloatField   ()
-    time               = FloatField   ()
-    bugs               = FloatField   ()
+    id                 = pw.AutoField()
+    scan               = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory          = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename           = pw.CharField(help_text="eg. foo.py")
+    h1		       = pw.IntegerField () # See below for descriptions...
+    h2		       = pw.IntegerField ()
+    N1		       = pw.IntegerField ()
+    N2		       = pw.IntegerField ()
+    program_vocabulary = pw.IntegerField ()
+    program_length     = pw.IntegerField ()
+    calculated_length  = pw.FloatField   ()
+    volume             = pw.FloatField   ()
+    difficulty         = pw.FloatField   ()
+    effort             = pw.FloatField   ()
+    time               = pw.FloatField   ()
+    bugs               = pw.FloatField   ()
     # fmt:
 
     @classmethod
@@ -151,22 +168,21 @@ class RadonHalFunction(BaseModel):
     """Radon "HAL" Function metric storage."""
 
     # fmt: off
-    scan              = ForeignKeyField(Scan, backref="radon_hal_functions_scan", on_delete="CASCADE")
-    radon_hal         = ForeignKeyField(RadonHal, backref="radon_hal_functions", on_delete="CASCADE")
-
-    name              = CharField(help_text="function name")
-    h1		      = IntegerField(help_text="Total distinct operators")
-    h2		      = IntegerField(help_text="Total distinct operands")
-    N1		      = IntegerField(help_text="Total operators in file")
-    N2		      = IntegerField(help_text="Total operands in file")
-    program_vocabulary= IntegerField(help_text="Total vocabulary (h = h1 + h2)")
-    program_length    = IntegerField(help_text="Total length (N = N1 + N2)")
-    calculated_length = IntegerField(help_text="(see wikipedia page!)")
-    volume            = FloatField(help_text="Total volume (V = N log2 h)")
-    difficulty        = FloatField(help_text="Mean difficulty across functions (D = ((h1/2) * (N2/h2)))")
-    effort            = FloatField(help_text="Total effort (E = D * V)")
-    time              = FloatField(help_text="Total time (T = (E / 18) in seconds)")
-    bugs              = FloatField(help_text="Estimated bugs for file (B = V / 3000)")
+    scan              = pw.ForeignKeyField(Scan, backref="radon_hal_functions_scan", on_delete="CASCADE")
+    radon_hal         = pw.ForeignKeyField(RadonHal, backref="radon_hal_functions", on_delete="CASCADE")
+    name              = pw.CharField(help_text="function name")
+    h1		      = pw.IntegerField(help_text="Total distinct operators")
+    h2		      = pw.IntegerField(help_text="Total distinct operands")
+    N1		      = pw.IntegerField(help_text="Total operators in file")
+    N2		      = pw.IntegerField(help_text="Total operands in file")
+    program_vocabulary= pw.IntegerField(help_text="Total vocabulary (h = h1 + h2)")
+    program_length    = pw.IntegerField(help_text="Total length (N = N1 + N2)")
+    calculated_length = pw.IntegerField(help_text="(see wikipedia page!)")
+    volume            = pw.FloatField(help_text="Total volume (V = N log2 h)")
+    difficulty        = pw.FloatField(help_text="Mean difficulty across functions (D = ((h1/2) * (N2/h2)))")
+    effort            = pw.FloatField(help_text="Total effort (E = D * V)")
+    time              = pw.FloatField(help_text="Total time (T = (E / 18) in seconds)")
+    bugs              = pw.FloatField(help_text="Estimated bugs for file (B = V / 3000)")
     # fmt:
 
     class Meta:

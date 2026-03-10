@@ -13,7 +13,7 @@ from typing import Any, Callable, Iterator
 from rich import print as rprint
 
 from qyx.tools import generate_ta_pairs
-from qyx.tools.base import ToolType, Project, Request, Scan
+from qyx.tools._models_ import ToolType, Project, Request, Scan
 from qyx.utils.git import git_checkout, get_git_commits
 
 log = logging.getLogger(__name__)

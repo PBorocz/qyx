@@ -4,7 +4,7 @@ from types import SimpleNamespace as Sns
 
 from bottle import request
 
-from qyx.tools.base import Scan, State
+from qyx.tools._models_ import Scan, State
 from qyx.tools.scc.models import query_scc_0
 from qyx.web.page import render, render_content
 

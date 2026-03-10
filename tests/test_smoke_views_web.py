@@ -5,7 +5,7 @@ import inspect
 from argparse import Namespace
 from types import SimpleNamespace
 
-from qyx.tools.base import Scan
+from qyx.tools._models_ import Scan
 
 
 def _get_granular_view_cases(app_args, ingested_project):

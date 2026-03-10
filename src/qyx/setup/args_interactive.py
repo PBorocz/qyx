@@ -9,7 +9,7 @@ from questionary import print as qprint
 from qyx import constants as c
 from qyx.constants import ReportLevel as Rl
 from qyx.constants import StatusLevel
-from qyx.tools.base import Project, Request, Scan, State
+from qyx.tools._models_ import Project, Request, Scan, State
 from qyx.utils import dt_to_display
 
 # fmt: off

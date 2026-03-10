@@ -8,7 +8,7 @@ from types import ModuleType
 
 from peewee import ModelSelect
 
-from qyx.tools.base import Project, Request, Scan
+from qyx.tools._models_ import Project, Request, Scan
 
 log = logging.getLogger(__name__)
 

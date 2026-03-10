@@ -5,7 +5,7 @@ from argparse import Namespace
 from rich import print as rprint
 
 from qyx.tools import generate_ta_pairs
-from qyx.tools.base import Project
+from qyx.tools._models_ import Project
 
 
 def report(args: Namespace) -> None:

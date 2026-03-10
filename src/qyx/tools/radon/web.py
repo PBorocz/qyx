@@ -8,7 +8,7 @@ from types import SimpleNamespace as Sns
 from bottle import request
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import Scan
+from qyx.tools._models_ import Scan
 from qyx.tools.radon import models as rm
 from qyx.tools.radon.models import RadonCc
 from qyx.tools.radon.models import RadonHal

@@ -8,7 +8,7 @@ from urllib.request import urlopen
 
 import pytest
 
-from qyx.tools.base import Project
+from qyx.tools._models_ import Project
 from qyx.web.serve import create_app
 
 

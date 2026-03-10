@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from qyx.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
-from qyx.tools.base import Scan
+from qyx.tools._models_ import Scan
 
 log = logging.getLogger(__name__)
 

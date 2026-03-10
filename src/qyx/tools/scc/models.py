@@ -5,10 +5,10 @@ from argparse import Namespace
 from collections import defaultdict
 from types import SimpleNamespace as Sns
 
-from peewee import AutoField, BooleanField, CharField, FloatField, IntegerField, ForeignKeyField
+import peewee as pw
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import BaseModel, Scan
+from qyx.tools._models_ import BaseModel, Scan
 from qyx.utils.caching import query_cache
 
 
@@ -19,21 +19,21 @@ class Scc(BaseModel):
     """Scc language summary."""
 
     # fmt: off
-    id                  = AutoField()
-    scan                = ForeignKeyField(Scan, on_delete="CASCADE")
-    name                = CharField()
-    bytes               = IntegerField()
-    code_bytes          = IntegerField()
-    lines               = IntegerField()
-    code                = IntegerField()
-    comment             = IntegerField()
-    blank               = IntegerField()
-    complexity          = IntegerField()
-    count               = IntegerField()
-    weighted_complexity = IntegerField()
-    uloc                = IntegerField()
-    dryness             = FloatField(null=True)
-    num_files           = IntegerField() # Derived on load from number of files in relation below..
+    id                  = pw.AutoField()
+    scan                = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    name                = pw.CharField()
+    bytes               = pw.IntegerField()
+    code_bytes          = pw.IntegerField()
+    lines               = pw.IntegerField()
+    code                = pw.IntegerField()
+    comment             = pw.IntegerField()
+    blank               = pw.IntegerField()
+    complexity          = pw.IntegerField()
+    count               = pw.IntegerField()
+    weighted_complexity = pw.IntegerField()
+    uloc                = pw.IntegerField()
+    dryness             = pw.FloatField(null=True)
+    num_files           = pw.IntegerField() # Derived on load from number of files in relation below..
     # fmt:
 
     class Meta:
@@ -47,24 +47,24 @@ class SccFile(BaseModel):
     """Scc file-specific breakdown for a specific language."""
 
     # fmt: off
-    scc                 = ForeignKeyField(Scc, backref='scc_file', on_delete='CASCADE')
-    location            = CharField() # eg. src/qyx/__main__.py
-    filename            = CharField() # eg. __main__.py
-    directory           = CharField() # eg. src/qyx/
-    extension           = CharField() # eg. py
-    bytes               = IntegerField()
-    lines               = IntegerField()
-    code                = IntegerField()
-    comment             = IntegerField()
-    blank               = IntegerField()
-    complexity          = IntegerField()
-    weighted_complexity = IntegerField()
-    binary              = BooleanField(default=False)
-    minified            = BooleanField(default=False)
-    generated           = BooleanField(default=False)
-    endpoint            = IntegerField(default=0)
-    uloc                = IntegerField()
-    dryness             = FloatField(null=True)
+    scc                 = pw.ForeignKeyField(Scc, backref='scc_file', on_delete='CASCADE')
+    location            = pw.CharField() # eg. src/qyx/__main__.py
+    filename            = pw.CharField() # eg. __main__.py
+    directory           = pw.CharField() # eg. src/qyx/
+    extension           = pw.CharField() # eg. py
+    bytes               = pw.IntegerField()
+    lines               = pw.IntegerField()
+    code                = pw.IntegerField()
+    comment             = pw.IntegerField()
+    blank               = pw.IntegerField()
+    complexity          = pw.IntegerField()
+    weighted_complexity = pw.IntegerField()
+    binary              = pw.BooleanField(default=False)
+    minified            = pw.BooleanField(default=False)
+    generated           = pw.BooleanField(default=False)
+    endpoint            = pw.IntegerField(default=0)
+    uloc                = pw.IntegerField()
+    dryness             = pw.FloatField(null=True)
     # fmt:
 
     class Meta:

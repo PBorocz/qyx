@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Callable
 
 from qyx.constants import ReportLevel as Rl
-from qyx.tools.base import ToolType
+from qyx.tools._models_ import ToolType
 from qyx.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi, RadonRaw
 
 

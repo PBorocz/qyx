@@ -4,10 +4,11 @@ import logging
 from argparse import Namespace
 from types import SimpleNamespace as Sns
 
-from peewee import fn, CharField, IntegerField, JOIN
+import peewee as pw
+from peewee import fn, JOIN
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import BaseResultsModel, Project, Scan
+from qyx.tools._models_ import BaseModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_project_analysis
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
@@ -16,15 +17,19 @@ from qyx.utils.scoring import score_metric
 log = logging.getLogger(__name__)
 
 
-class Ruff(BaseResultsModel):
+class Ruff(BaseModel):
     """..."""
 
     # fmt: off
-    line      = IntegerField()
-    column    = IntegerField()
-    rule_code = CharField(help_text="Eg. E302, PLC123 etc.")
-    message   = CharField()
-    url       = CharField(null=True)
+    id        = pw.AutoField()
+    scan      = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename  = pw.CharField(help_text="eg. foo.py")
+    line      = pw.IntegerField()
+    column    = pw.IntegerField()
+    rule_code = pw.CharField(help_text="Eg. E302, PLC123 etc.")
+    message   = pw.CharField()
+    url       = pw.CharField(null=True)
     # fmt: on
 
     class Meta:

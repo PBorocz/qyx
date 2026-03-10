@@ -4,7 +4,7 @@ import logging
 from argparse import Namespace
 from datetime import datetime, timedelta
 
-from qyx.tools.base import ToolType, Project, Request, Scan
+from qyx.tools._models_ import ToolType, Project, Request, Scan
 from qyx.utils import dt_to_display
 
 log = logging.getLogger(__name__)

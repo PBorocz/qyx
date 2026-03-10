@@ -3,7 +3,7 @@
 from enum import Enum
 
 from qyx.constants import ReportLevel as Rl
-from qyx.tools.base import ToolType
+from qyx.tools._models_ import ToolType
 from qyx.tools.scc.models import Scc, SccFile
 
 

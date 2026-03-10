@@ -7,7 +7,7 @@ from typing import Callable
 
 from bottle import request
 
-from qyx.tools.base import Project, Request, Scan, State, ToolType
+from qyx.tools._models_ import Project, Request, Scan, State, ToolType
 
 
 log = logging.getLogger(__name__)

@@ -7,7 +7,7 @@ from typing import Callable
 from qyx.cli import cli_console
 from qyx.cli.admin import do_it
 from qyx.constants import BaseModel
-from qyx.tools.base import Project, Request, Scan
+from qyx.tools._models_ import Project, Request, Scan
 
 log = logging.getLogger(__name__)
 

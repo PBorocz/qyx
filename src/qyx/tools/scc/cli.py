@@ -5,7 +5,7 @@ from argparse import Namespace
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
-from qyx.tools.base import Project, Scan, ToolType
+from qyx.tools._models_ import Project, Scan, ToolType
 from qyx.tools.scc.models import query_scc_0
 
 log = logging.getLogger(__name__)

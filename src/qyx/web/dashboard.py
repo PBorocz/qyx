@@ -6,7 +6,7 @@ from types import SimpleNamespace as Sns
 from bottle import request
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools.base import Project, Scan, State
+from qyx.tools._models_ import Project, Scan, State
 from qyx.tools.common import import_method
 from qyx.web.page import get_project_selector, render_page, render_template
 
