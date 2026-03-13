@@ -17,19 +17,43 @@ from qyx.utils.scoring import score_metric
 log = logging.getLogger(__name__)
 
 
+class RuffMessage(BaseModel):
+    """Normalise out for space savings!"""
+
+    id = pw.AutoField()
+    value = pw.CharField(unique=True, index=True)
+
+    class Meta:
+        """..."""
+
+        table_name = "ruff_message"
+
+
+class RuffUrl(BaseModel):
+    """Normalise out for space savings!"""
+
+    id = pw.AutoField()
+    value = pw.CharField(unique=True, index=True)
+
+    class Meta:
+        """..."""
+
+        table_name = "ruff_url"
+
+
 class Ruff(BaseModel):
     """..."""
 
     # fmt: off
-    id        = pw.AutoField()
-    scan      = pw.ForeignKeyField(Scan, on_delete="CASCADE")
-    directory = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
-    filename  = pw.CharField(help_text="eg. foo.py")
-    line      = pw.IntegerField()
-    column    = pw.IntegerField()
-    rule_code = pw.CharField(help_text="Eg. E302, PLC123 etc.")
-    message   = pw.CharField()
-    url       = pw.CharField(null=True)
+    id         = pw.AutoField()
+    scan       = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory  = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename   = pw.CharField(help_text="eg. foo.py")
+    line       = pw.IntegerField()
+    column     = pw.IntegerField()
+    rule_code  = pw.CharField(help_text="Eg. E302, PLC123 etc.")
+    message    = pw.ForeignKeyField(RuffMessage, backref='ruff_message')
+    url        = pw.ForeignKeyField(RuffUrl, null=True, backref='ruff_url')
     # fmt: on
 
     class Meta:

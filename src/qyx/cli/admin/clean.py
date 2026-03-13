@@ -73,9 +73,13 @@ def _delete_orphaned_scans(args: Namespace) -> None:
         model_scan_ids = set()
         for models in o_tool.models.values():
             for model in models:
-                result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
-                model_scan_ids.update(result_scan_ids)
-                log.debug(f"-- Analysis: {model.__name__:16s} has {len(result_scan_ids):2d} scan(s)")
+                try:
+                    result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
+                    model_scan_ids.update(result_scan_ids)
+                    log.debug(f"-- Analysis: {model.__name__:16s} has {len(result_scan_ids):2d} scan(s)")
+                except AttributeError:
+                    # Not all models have the scan attribute (e.g. RuffMessage, SccFile etc.)
+                    pass
 
         log.debug(f"- {o_tool.name:6s} {len(model_scan_ids):4d} scan definitions")
 

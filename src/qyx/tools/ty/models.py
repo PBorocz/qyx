@@ -17,20 +17,32 @@ from qyx.utils.scoring import score_metric
 log = logging.getLogger(__name__)
 
 
+class TyDescription(BaseModel):
+    """Normalise out for space savings!"""
+
+    id = pw.AutoField()
+    value = pw.CharField(unique=True, index=True)
+
+    class Meta:
+        """..."""
+
+        table_name = "ty_description"
+
+
 class Ty(BaseModel):
     """..."""
 
     # fmt: off
-    id          = pw.AutoField()
-    scan        = pw.ForeignKeyField(Scan, on_delete="CASCADE")
-    directory   = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
-    filename    = pw.CharField(help_text="eg. foo.py")
-    line        = pw.IntegerField()
-    column      = pw.IntegerField()
-    check_name  = pw.CharField() # Eg. invalid-argument-type, unresolved-attribute etc.")
-    description = pw.CharField()
-    severity    = pw.CharField() # Eg. major, ... ?
-    fingerprint = pw.CharField()
+    id             = pw.AutoField()
+    scan           = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory      = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
+    filename       = pw.CharField(help_text="eg. foo.py")
+    line           = pw.IntegerField()
+    column         = pw.IntegerField()
+    check_name     = pw.CharField() # Eg. invalid-argument-type, unresolved-attribute etc.")
+    description    = pw.ForeignKeyField(TyDescription, on_delete="CASCADE")
+    severity       = pw.CharField() # Eg. major, ... ?
+    fingerprint    = pw.CharField()
     # fmt: on
 
     class Meta:

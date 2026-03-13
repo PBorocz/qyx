@@ -17,24 +17,10 @@ class Request(BaseModel):
     """A 'Request' captures the user desire to perform an analysis."""
 
     id = pw.AutoField()
-
-    project = pw.ForeignKeyField(
-        Project,
-        backref="requests",
-        on_delete="CASCADE",
-    )
-
-    arg_raw = pw.CharField(
-        help_text="Project argument as entered by user, eg '.' or '../src', '/abs/path', 'https:...').",
-    )
-
-    arg_normalised = pw.CharField(
-        help_text="Arg_Normalised identifier for pathing (could be file path or git repo!)",
-    )
-
-    is_git = pw.BooleanField(
-        help_text="Is this a git project?",
-    )
+    project = pw.ForeignKeyField(Project, backref="request", on_delete="CASCADE")
+    arg_raw = pw.CharField(help_text="Project arg from user, eg '.' or '../src', '/abs/path', 'https:...').")
+    arg_normalised = pw.CharField(help_text="Arg_Normalised identifier for pathing (could be file path or git repo!)")
+    is_git = pw.BooleanField(help_text="Is this a git project?")
 
     class Meta:
         """Define peewee meta data."""

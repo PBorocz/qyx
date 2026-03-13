@@ -61,7 +61,7 @@ def ingest(args: Namespace) -> None:
             num = _ingest_analysis(args, request, o_tool, analysis, scan_request)
 
             display: str = o_tool.name if o_tool.name == analysis else f"{o_tool.name}:{analysis}"
-            rprint(f"[green]✔ Ingested [bold]{num:3d}[/bold] results on behalf of {display}[/green]")
+            rprint(f"[green]✔ Ingested [bold]{num:3d}[/bold] as of {s_as_of} from {display}[/green]")
             ingestion_count += 1
 
     if not ingestion_count:

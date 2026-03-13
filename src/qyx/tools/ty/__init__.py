@@ -4,7 +4,7 @@ from enum import Enum
 
 from qyx.constants import ReportLevel as Rl
 from qyx.tools._models_ import ToolType
-from qyx.tools.ty.models import Ty
+from qyx.tools.ty.models import Ty, TyDescription
 
 
 class AnalysisType(str, Enum):
@@ -29,7 +29,7 @@ class Configuration(ToolType):
             module="ty",
             name="ty",
             analyses={AnalysisType.TY.value: "TypeChecker"},
-            models=dict(ty=(Ty,)),
+            models=dict(ty=(Ty, TyDescription)),
             reports=dict(cli=cli, web=web),
             results_required=False,  # In this case,  Ty Scans without data ARE valid (albeit rare?)
         )

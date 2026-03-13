@@ -168,8 +168,8 @@ class RadonHalFunction(BaseModel):
     """Radon "HAL" Function metric storage."""
 
     # fmt: off
-    scan              = pw.ForeignKeyField(Scan, backref="radon_hal_functions_scan", on_delete="CASCADE")
-    radon_hal         = pw.ForeignKeyField(RadonHal, backref="radon_hal_functions", on_delete="CASCADE")
+    scan              = pw.ForeignKeyField(Scan, backref="radon_hal_function_scan", on_delete="CASCADE")
+    radon_hal         = pw.ForeignKeyField(RadonHal, backref="radon_hal_function", on_delete="CASCADE")
     name              = pw.CharField(help_text="function name")
     h1		      = pw.IntegerField(help_text="Total distinct operators")
     h2		      = pw.IntegerField(help_text="Total distinct operands")

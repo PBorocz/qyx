@@ -90,5 +90,9 @@ def query_scc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     sns_gt = Sns(**gt_)
 
     # Calculate "net" dryness across all languages
-    sns_gt.dryness = (sns_gt.uloc / sns_gt.code) * 100.0
+    try:
+        sns_gt.dryness = (sns_gt.uloc / sns_gt.code) * 100.0
+    except AttributeError:
+        breakpoint()
+
     return Sns(rows=rows, grand_totals=sns_gt)

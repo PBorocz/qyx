@@ -16,7 +16,7 @@ renderers:
   web:
     nav:
       # Order of tools on the main nav bar.
-      tool_order: ["scc", "cloc", "ruff", "radon", "fxtd", "ty", "cloc"]
+      tool_order: ["scc", "ruff", "radon", "fxtd", "ty", "cloc"]
     dashboard:
       # Order of summaries on the main/dashboard/home page
       analysis_order: ["scc:scc", "fxtd:fxtd", "ruff:ruff", "ty:ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw", "cloc:cloc"]
@@ -360,7 +360,7 @@ tools:
         - --format
         - json
         - --percent
-        - "{relative}"
+        - "{absolute}"
 
 database:
   # Database configuration (if applicable)

@@ -24,33 +24,15 @@ class Scan(BaseModel):
 
     id = pw.AutoField()
 
-    request = pw.ForeignKeyField(
-        Request,
-        backref="scans",
-        on_delete="CASCADE",
-    )
-    as_of = pw.DateTimeField(
-        help_text="As Of GMT/UTC datetime of the code base being analysed",
-    )
-    analysis = pw.CharField(
-        help_text="Analysis performed, e.g. cloc, cc, mi, hal, ruff etc.",
-        null=True,
-    )
-    tool = pw.CharField(
-        help_text="Tool used, e.g. cloc, radon, ruff etc.",
-        null=True,
-    )
+    request = pw.ForeignKeyField(Request, backref="scan", on_delete="CASCADE")
+    as_of = pw.DateTimeField(help_text="As Of GMT/UTC datetime of the code base being analysed")
+    analysis = pw.CharField(help_text="Analysis performed, e.g. cloc, cc, mi, hal, ruff etc.", null=True)
+    tool = pw.CharField(help_text="Tool used, e.g. cloc, radon, ruff etc.", null=True)
+    git_commit_hash = pw.CharField(help_text="Git commit/revision hash", null=True)
+    git_commit_message = pw.TextField(help_text="Git message", null=True)
     timestamp = pw.DateTimeField(
         help_text="GMT/UTC datetime the scan/ingest occurred",
         default=lambda: datetime.now(UTC).replace(microsecond=0),
-    )
-    git_commit_hash = pw.CharField(
-        help_text="Git commit/revision hash",
-        null=True,
-    )
-    git_commit_message = pw.TextField(
-        help_text="Git message",
-        null=True,
     )
 
     class Meta:

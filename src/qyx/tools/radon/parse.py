@@ -84,7 +84,12 @@ def parse_cc(scan: Scan, data: Any) -> int:
     for fn_, entities in json_.items():
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         for entity in entities:
-            entity_type = entity["type"][0].upper()
+            try:
+                entity_type = entity["type"][0].upper()
+            except TypeError as exc:
+                log.error(f"Unable to parse radon cc scan: [{scan.git_commit_hash[:8]}] {exc=} {entity=}")
+                continue
+
             if not RadonCc.entity_type_display(entity_type):
                 log.error(
                     f"Invalid/unexpected EntityType encountered: '{entity_type}', expecting one of 'C', 'M', or 'F'",

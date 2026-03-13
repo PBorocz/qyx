@@ -7,7 +7,7 @@ from pathlib import Path
 
 from qyx.constants import ReportLevel as Rl
 from qyx.tools._models_ import ToolType
-from qyx.tools.ruff.models import Ruff
+from qyx.tools.ruff.models import Ruff, RuffMessage, RuffUrl
 
 RUFF_RULES = None  # Hold as a cache after first read
 
@@ -34,7 +34,7 @@ class Configuration(ToolType):
             module="ruff",
             name="ruff",
             analyses={AnalysisType.RUFF.value: "Linter"},
-            models=dict(ruff=(Ruff,)),
+            models=dict(ruff=(Ruff, RuffMessage, RuffUrl)),
             reports=dict(cli=cli, web=web),
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
