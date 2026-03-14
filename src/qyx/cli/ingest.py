@@ -1,6 +1,7 @@
 """Master ingest (ie. run, parse/save) logic."""
 
 import logging
+import shlex
 import subprocess
 import sys
 from argparse import Namespace
@@ -58,11 +59,13 @@ def ingest(args: Namespace) -> None:
             s_analysis = analysis if o_tool.name != analysis else ""
             rprint(f"{s_as_of} → {o_tool.name} {s_analysis}...", end="\r")
 
-            num = _ingest_analysis(args, request, o_tool, analysis, scan_request)
-
+            num, error = _ingest_analysis(args, request, o_tool, analysis, scan_request)
             display: str = o_tool.name if o_tool.name == analysis else f"{o_tool.name}:{analysis}"
-            rprint(f"[green]✔ Ingested [bold]{num:3d}[/bold] as of {s_as_of} from {display}[/green]")
-            ingestion_count += 1
+            if error:
+                rprint(f"[red]❌ Error: Unable to ingest {s_as_of} from {display}[/red]")
+            else:
+                rprint(f"[green]✔ Ingested [bold]{num:3d}[/bold] from {display:10s} as of {s_as_of}[/green]")
+                ingestion_count += 1
 
     if not ingestion_count:
         rprint("[cyan]Nothing done![/cyan]")
@@ -85,8 +88,8 @@ def _ingest_analysis(
     o_tool: ToolType,
     analysis: str,
     scan_request: Sns,
-) -> int:
-    """Do the specified analysis for respective tool, running the respective command, parsing and saving results!."""
+) -> tuple[int, bool]:
+    """Ingest an analysis: run the respective command, parse and save results!."""
     # Create the scan on whose behalf the results will be stored.
     scan = Scan.create(
         request=request,
@@ -101,13 +104,18 @@ def _ingest_analysis(
     ################################################################################################
     # Run the respective tool's data collection method...
     ################################################################################################
-    datum = _run_tool(args, request, o_tool, analysis, scan_request)
+    datum, error = _run_tool(args, request, o_tool, analysis, scan_request)
+    if error:
+        # Problem with running the ingest, don't leave the scan hanging around
+        scan.delete_instance(recursive=True)  # recursive is just in case..
+        return None, True
 
     ################################################################################################
     # Parse & save the results received this time using the respective tool's ingest method
     ################################################################################################
     parse_method: Callable = o_tool.get_parse_method(analysis)
-    return parse_method(scan, datum)
+    count_of_results = parse_method(scan, datum)
+    return count_of_results, False
 
 
 def _run_tool(
@@ -116,7 +124,7 @@ def _run_tool(
     o_tool: ToolType,
     analysis: str,
     scan_request: Sns,
-) -> Any:
+) -> tuple[Any, bool]:
     """Return the results associated with the tool/analysis, either from stdin or by running the respective tool."""
     if args.stdin:
         ################################################################################################
@@ -133,32 +141,26 @@ def _run_tool(
             absolute=str(scan_request.cwd),  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
             analysis=analysis,
         )
-        import shlex
 
-        log.debug(f"Executing from: {scan_request.cwd=}")
-        log.debug(f"Executing cmd:  {shlex.join(command)=}")
+        log.debug(f"Executing {scan_request.cwd=}")
+        log.debug(f"Executing {shlex.join(command)=}")
         try:
-            # log.info(f"{scan_request.as_of=}")
-            # log.info(f"{scan_request.hash[:8]=}")
-            # log.info(f"{scan_request.cwd=}")
-            # log.info(f"{command=}")
-            # log.info(f"cwd exists: {scan_request.cwd.exists()}")
-            # log.info(
-            #     f"cwd contents: {list(scan_request.cwd.iterdir()) if scan_request.cwd.exists() else 'DOES NOT EXIST'}"
-            # )
             result = subprocess.run(command, cwd=str(scan_request.cwd), capture_output=True, check=True)
         except subprocess.CalledProcessError as exc:
-            log.error(f"{str(exc)}")
-            log.error(f"{len(exc.stdout.decode())=}")
-            log.error(f"{exc.stderr.decode()=}")
-            log.error(f"{scan_request.as_of=}")
-            log.error(f"{scan_request.cwd=}")
-            log.error(f"{command=}")
-            sys.exit(1)
+            for line in exc.stdout.decode().split("\n"):
+                if line:
+                    log.debug(f"STDOUT: {line}")
+            for line in exc.stderr.decode().split("\n"):
+                if line:
+                    log.debug(f"STDERR: {line}")
+            log.debug(f"{scan_request.as_of=}")
+            log.debug(f"{scan_request.cwd=}")
+            log.debug(f"{shlex.join(command)=}")
+            return None, True
 
         datum = result.stdout
 
-    return datum
+    return datum, False
 
 
 def _get_git_hashes(request: Request) -> dict[tuple[str, str], str]:
