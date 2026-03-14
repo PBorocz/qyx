@@ -113,7 +113,20 @@ def query_ruff_1(scan: Scan) -> Sns:
 @query_cache
 def query_ruff_2(scan: Scan) -> Sns:
     query = (
-        Ruff.select()
+        Ruff.select(
+            Ruff.id,
+            Ruff.scan,
+            Ruff.directory,
+            Ruff.filename,
+            Ruff.line,
+            Ruff.column,
+            Ruff.rule_code,
+            RuffMessage.value.alias("message"),  # Explicitly select this
+            RuffUrl.value.alias("url"),
+        )
+        .join(RuffMessage)
+        .switch(Ruff)
+        .join(RuffUrl, JOIN.LEFT_OUTER)
         .where(
             Ruff.scan == scan,
         )

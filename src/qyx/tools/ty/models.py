@@ -120,7 +120,15 @@ def query_ty_2(scan: Scan):
 @query_cache
 def query_ty_3(scan: Scan) -> Sns:
     query = (
-        Ty.select()
+        Ty.select(
+            Ty.directory,
+            Ty.filename,
+            Ty.line,
+            Ty.column,
+            Ty.check_name,
+            TyDescription.value.alias("description"),
+        )
+        .join(TyDescription)
         .where(
             Ty.scan == scan,
         )
