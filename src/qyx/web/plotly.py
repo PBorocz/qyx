@@ -22,6 +22,7 @@ SERIES_COLORS = [
 # Layout default attributes
 ################################################################################################
 LAYOUT_DEFAULTS = dict(
+    autosize=True,
     hovermode="closest",
     margin=dict(t=20, b=40, autoexpand=True),
     paper_bgcolor="rgba(0,0,0,0)",

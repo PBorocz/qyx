@@ -94,20 +94,9 @@ svg {
     font-weight: bold !important;
 }
 
-/* HTMX Loading indicator */
-/* #hx-loading-indicator { */
-/*     display: none; */
-/*     position: fixed; */
-/*     top: 50%; */
-/*     left: 50%; */
-/*     transform: translate(-50%, -50%); */
-/*     padding: 1rem 2rem; */
-/*     background: var(--primary); */
-/*     color: red; */
-/*     border-radius: var(--border-radius); */
-/*     z-index: 9999; */
-/* } */
-
-/* #hx-loading-indicator.htmx-request { */
-/*     display: block; */
-/* } */
+/* Try to enforce nice ratio of width/height on all charts */
+ .plotly_chart {
+   width: 100%;
+   max-width: 1200px;  /* Optional: prevent too wide */
+   aspect-ratio: 1.618 / 1;  /* Golden ratio */
+ }
