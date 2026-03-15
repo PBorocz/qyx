@@ -52,7 +52,7 @@ def _render_0(args: Namespace, scan: Scan) -> None:
     for lang in result.report_languages:
         column_args = dict(justify="right")
         if result.dryness:
-            column_args["footer"] = f"{result.dryness.get(lang)}%"
+            column_args["footer"] = f"{result.dryness.get(lang).score}%"
         table.add_column(lang, **column_args)
     table.add_column("Total", justify="right")
 

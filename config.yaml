@@ -355,6 +355,17 @@ tools:
       report_languages: # Rest will be skipped!
         - Python
         - HTML
+    dryness:
+      thresholds:
+        # Per https://github.com/boyter/scc?tab=readme-ov-file#unique-lines-of-code-uloc
+        # 75%    (High Density): Very terse, expressive code. Every line counts. (Example: Clojure, Haskell)
+        # 60-70% (Standard): A healthy balance of logic and structural ceremony. (Example: Java, Python)
+        # <55%   (High Boilerplate): High repetition. Likely due to mandatory error handling, auto-generated code or verbose configuration. (Example: C#, CSS)
+        - {min: 75, max: .inf, grade: "A", color: "#22c55e"}
+        - {min: 70, max:   75, grade: "B", color: "#84cc16"}
+        - {min: 60, max:   70, grade: "C", color: "#eab308"}
+        - {min: 50, max:   60, grade: "D", color: "#f97316"}
+        - {min:  0, max:   55, grade: "F", color: "#ef4444"}
     run:
       command:
         - scc

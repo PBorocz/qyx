@@ -21,7 +21,9 @@
     <tr>
       <td style="text-align: left">DRYness</td>
       {% for language in scc_0.report_languages %}
-      <td style="text-align: right">{{ "{:,d}".format(scc_0.dryness[language]) }}%</td>
+        <td style="text-align: right; color: var(--pico-muted-color); background-color: {{ scc_0.dryness[language].color }}">
+          {{ scc_0.dryness[language].score }}%
+        </td>
       {% endfor %}
     </tr>
   </tfoot>

@@ -10,6 +10,7 @@ import peewee as pw
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Scan
 from qyx.utils.caching import query_cache
+from qyx.utils.scoring import score_metric
 
 
 log = logging.getLogger(__name__)
@@ -93,7 +94,8 @@ def query_scc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     # Add calculated DRYness of each language we're reporting on.
     dryness = {}
     for lang in report_languages:
-        dryness[lang] = round((transposed["uloc"][lang] / transposed["code"][lang]) * 100.0 + 0.5)
+        i_dryness = round((transposed["uloc"][lang] / transposed["code"][lang]) * 100.0 + 0.5)
+        dryness[lang] = score_metric(args, "tools.scc.dryness", i_dryness)
 
     # Convert to Sns
     rows = []
