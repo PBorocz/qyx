@@ -40,33 +40,33 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
 
 def _render_0(args: Namespace, scan: Scan) -> None:
     result = query_scc_0(args, scan)
-    table = cli_table(title=f"SCC @ {scan.as_of_display()}", show_footer=True)
-    # fmt: off
-    gt = result.grand_totals
-    table.add_column("Language"   , justify="left")
-    table.add_column("Files"      , justify="right", footer=f"{gt.num_files:,d}")
-    table.add_column("Lines"      , justify="right", footer=f"{gt.lines:,d}")
-    table.add_column("Blanks"     , justify="right", footer=f"{gt.blank:,d}")
-    table.add_column("Comments"   , justify="right", footer=f"{gt.comment:,d}")
-    table.add_column("Code"       , justify="right", footer=f"{gt.code:,d}")
-    table.add_column("ULOC"       , justify="right", footer=f"{gt.uloc:,d}")
-    table.add_column("DRYness"    , justify="right", footer=f"{gt.dryness:.0f}%")
-    table.add_column("Complexity" , justify="right")
-    # fmt: on
 
-    for lang in result.rows:
-        # Add row for core language results
-        table.add_row(
-            lang.name,
-            f"{lang.num_files:,d}",
-            f"{lang.lines:,d}",
-            f"{lang.blank:,d}",
-            f"{lang.comment:,d}",
-            f"{lang.code:,d}",
-            f"{lang.uloc:,d}",
-            f"{lang.dryness:.0f}%",
-            f"{lang.complexity:,d}",
-        )
+    # Setup our table..
+    table_args = dict(title=f"SCC @ {scan.as_of_display()}")
+    if result.dryness:
+        table_args["show_footer"] = True
+    table = cli_table(**table_args)
+
+    # Render table header (and footer if available)
+    table.add_column("Metric", justify="left", footer="DRYness")
+    for lang in result.report_languages:
+        column_args = dict(justify="right")
+        if result.dryness:
+            column_args["footer"] = f"{result.dryness.get(lang)}%"
+        table.add_column(lang, **column_args)
+    table.add_column("Total", justify="right")
+
+    # Render
+    for row in result.rows:
+        if row.attr == "dryness":
+            continue  # We already handled as a footer above!
+        columns = [row.attr.title()]  # e.g. Code, Blanks etc..
+        for lang in result.report_languages:
+            columns.append(f"{row.languages.get(lang):,d}")  # e.g. Code for Python
+        columns.append(f"{getattr(result.grand_totals, row.attr):,d}")  # Total Code across all languages
+
+        table.add_row(*columns)
+
     cli_console.print(table)
 
 

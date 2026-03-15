@@ -79,20 +79,36 @@ class SccFile(BaseModel):
 ################################################################################################
 @query_cache
 def query_scc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
-    query = Scc.select().where(Scc.scan == scan).dicts()
-    rows = [Sns(**row_dict) for row_dict in query]
+    query = Scc.select().where(Scc.scan == scan)
+
+    # Transpose so that each attr is a row, consisting of desired languages
+    report_languages = args.config.get("tools.scc.settings.report_languages")
+    transposed = {}
+    for attr in ("num_files", "lines", "blank", "comment", "code", "uloc"):
+        transposed[attr] = {}
+        for row_dict in query.dicts():
+            if row_dict["name"] in report_languages:
+                transposed[attr][row_dict["name"]] = row_dict.get(attr)
+
+    # Add calculated DRYness of each language we're reporting on.
+    dryness = {}
+    for lang in report_languages:
+        dryness[lang] = round((transposed["uloc"][lang] / transposed["code"][lang]) * 100.0 + 0.5)
+
+    # Convert to Sns
+    rows = []
+    for attr, languages in transposed.items():
+        rows.append(Sns(attr=attr, languages=languages))
 
     # Calculate grand totals
     gt_ = defaultdict(int)
     for row in rows:
-        for attr in ("num_files", "lines", "blank", "comment", "code", "uloc"):
-            gt_[attr] += getattr(row, attr)
+        gt_[row.attr] = sum(row.languages.values())
     sns_gt = Sns(**gt_)
 
-    # Calculate "net" dryness across all languages
-    try:
-        sns_gt.dryness = (sns_gt.uloc / sns_gt.code) * 100.0
-    except AttributeError:
-        breakpoint()
-
-    return Sns(rows=rows, grand_totals=sns_gt)
+    return Sns(
+        rows=rows,
+        dryness=dryness,
+        grand_totals=sns_gt,
+        report_languages=report_languages,
+    )

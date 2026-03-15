@@ -351,6 +351,10 @@ tools:
         - {min: 100, max: .inf, grade: "F", color: "#ef4444"}
 
   scc:
+    settings:
+      report_languages: # Rest will be skipped!
+        - Python
+        - HTML
     run:
       command:
         - scc
