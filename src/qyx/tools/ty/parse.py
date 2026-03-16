@@ -1,6 +1,7 @@
 """..."""
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ from qyx.tools.ty.models import Ty, TyDescription
 def parse(scan: Scan, data: Any) -> int:
     def _json_to_row(ty_result: dict) -> Ty:
         fn_path = Path(ty_result["location"]["path"])
+        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         description, _ = TyDescription.get_or_create(value=ty_result["description"])
 
         return Ty(

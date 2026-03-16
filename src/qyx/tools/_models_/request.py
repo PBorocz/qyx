@@ -32,27 +32,17 @@ class Request(BaseModel):
         """Return the appropriate request instance, whether (back)filling a git history or new."""
         (name, normalised, is_git) = parse_path_arg(args.path)
 
-        if not is_git:
-            # For a NON git-based scan (ie. a directory), we create a new Request each time, easy!!
-            log.debug("Creating new request this project...")
-            return cls.factory(project, args, normalised, is_git)
-
-        # Otherwise, we first look for the most recent git-based Request for this project.
-        request = (
-            cls.select()
-            .order_by(Request.id.asc())
-            .where(
-                Request.project == project,
-                Request.is_git,
-            )
-            .first()
+        # Look for the most recent Request for this project based on whether or not we're using git.
+        request = Request.get(
+            Request.project == project,
+            Request.arg_normalised == normalised,
+            Request.is_git == is_git,
         )
-        if request:
-            log.debug(f"Found existing git {request.id=}, using it...")
-            request.save()
-        else:
-            log.debug("No existing git request found for this project, creating a new one.")
+        if not request:
+            log.debug("No existing request found for this project, creating a new one.")
             request = cls.factory(project, args, normalised, is_git)
+        else:
+            log.debug(f"Found existing request {request.id=}, using it...")
         return request
 
     @classmethod

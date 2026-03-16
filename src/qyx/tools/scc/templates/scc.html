@@ -2,6 +2,21 @@
 
   {% include "scc::level_0.html" %}
 
+  <details name="details">
+    <summary>By Directory</summary>
+    {% include "scc::level_1.html" %}
+  </details>
+
+  <details name="details">
+    <summary>By File</summary>
+    {% include "scc::level_2.html" %}
+  </details>
+
+  <details name="details">
+    <summary>Trend</summary>
+    <div class="plotly_chart">{{ scc_h }}</div>
+  </details>
+
 </section>
 
 <hr />

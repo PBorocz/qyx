@@ -47,14 +47,15 @@ def parse(scan: Scan, data: Any) -> int:
         count += 1
 
         for file_info in language.get("Files", []):
-            fn_ = Path(file_info["Location"])
-            assert file_info["Filename"] == fn_.name
+            fn_path = Path(file_info["Location"])
+            fn_path = Path(os.path.relpath(fn_path, scan.cwd))
+            assert file_info["Filename"] == fn_path.name
             # fmt: off
             scc_file = SccFile(
                 scc                 = scc,
                 location            = file_info["Location"],
                 filename            = file_info["Filename"],
-                directory           = fn_.parent,
+                directory           = fn_path.parent,
                 extension           = file_info["Extension"],
                 bytes               = file_info["Bytes"],
                 lines               = file_info["Lines"],

@@ -29,7 +29,7 @@ class Configuration(ToolType):
         super(Configuration, self).__init__(
             module="scc",
             name="scc",
-            analyses={AnalysisType.SCC.value  : "SCC Code Counter"},
+            analyses={AnalysisType.SCC.value  : "Succint Code Counter"},
             models={AnalysisType.SCC.value: (Scc, SccFile)},
             reports=dict(cli=cli, web=web),
         )

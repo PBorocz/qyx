@@ -46,6 +46,43 @@ def get_content(scan: Scan) -> Sns:
     return context
 
 
+def view_cloc_h(args: Namespace, project: Project) -> bytes | None:
+    result = query_cloc_h(project)
+    if not result.rows:
+        return None
+
+    metric_titles = (
+        ("total_code", "Total Code Lines"),
+        ("total_comment", "Total Comment Lines"),
+        ("total_blank", "Total Blank Lines"),
+    )
+    fig = go.Figure()
+    for i, (metric, title) in enumerate(metric_titles):
+        x_values = [datetime.fromisoformat(row.timestamp) for row in result.rows]
+        y_values = [getattr(row, metric) for row in result.rows]
+
+        # We want custom hover labels based on the respective git messages
+        labels = custom_labels(title, result.messages, x_values, y_values)
+
+        # Add a series for each specific metric
+        fig.add_trace(
+            go.Scatter(
+                x=x_values,
+                y=y_values,
+                mode="lines+markers",
+                name=title,
+                marker=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], size=4, opacity=0.5),
+                line=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], width=2),
+                customdata=labels,
+                hovertemplate="%{customdata}",
+            ),
+        )
+
+    style_figure(fig, layout={"yaxis_title": "Lines"})
+
+    return fig.to_html()
+
+
 ################################################################################################
 def view_cloc_f(args: Namespace, scan: Scan):
     # Get bucket definitions from configuration for coloring
@@ -81,41 +118,4 @@ def view_cloc_f(args: Namespace, scan: Scan):
             "yaxis_title": "Percent of Files by Total Lines",
         },
     )
-    return fig.to_html()
-
-
-def view_cloc_h(args: Namespace, project: Project) -> bytes | None:
-    result = query_cloc_h(project)
-    if not result.rows:
-        return None
-
-    metric_titles = (
-        ("total_code", "Total Code Lines"),
-        ("total_comment", "Total Comment Lines"),
-        ("total_blank", "Total Blank Lines"),
-    )
-    fig = go.Figure()
-    for i, (metric, title) in enumerate(metric_titles):
-        x_values = [datetime.fromisoformat(row.timestamp) for row in result.rows]
-        y_values = [getattr(row, metric) for row in result.rows]
-
-        # We want custom hover labels based on the respective git messages
-        labels = custom_labels(title, result.messages, x_values, y_values)
-
-        # Add a series for each specific metric
-        fig.add_trace(
-            go.Scatter(
-                x=x_values,
-                y=y_values,
-                mode="lines+markers",
-                name=title,
-                marker=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], size=4, opacity=0.5),
-                line=dict(color=SERIES_COLORS[i % len(SERIES_COLORS)], width=2),
-                customdata=labels,
-                hovertemplate="%{customdata}",
-            ),
-        )
-
-    style_figure(fig, layout={"yaxis_title": "Lines"})
-
     return fig.to_html()

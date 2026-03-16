@@ -1,33 +1,28 @@
 <table id="level_2" class="striped">
   <thead>
     <tr>
-      <th scope="col" style="text-align: left">File</th>
-      <th scope="col" style="text-align: right">LOC</th>
-      <th scope="col" style="text-align: right">Comments</th>
+      <th scope="col" style="text-align:  left">Directory</th>
+      <th scope="col" style="text-align: right">Lines</th>
       <th scope="col" style="text-align: right">Blanks</th>
-      <th scope="col" style="text-align: right">TOTAL</th>
+      <th scope="col" style="text-align: right">Comments</th>
+      <th scope="col" style="text-align: right">Code</th>
+      <th scope="col" style="text-align: right">ULOC</th>
+      <th scope="col" style="text-align: right">Complexity</th>
     </tr>
   </thead>
   <tbody>
-    {% for row in cloc_2.rows %}
+    {% for row in scc_2.rows %}
     <tr>
-      <td style="text-align: left">{{ row.directory }}/{{ row.filename }}</td>
-      <td style="text-align: right">{{ "{:,d}".format(row.lines_code) }}</td>
-      <td style="text-align: right">{{ "{:,d}".format(row.lines_comment) }}</td>
-      <td style="text-align: right">{{ "{:,d}".format(row.lines_blank) }}</td>
-      <td style="text-align: right">{{ "{:,d}".format(row.lines_total) }}</td>
+      <td style="text-align:  left">{{ row.directory }}/{{ row.filename }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.lines) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.blank) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.comment) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.code) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.uloc) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.complexity) }}</td>
     </tr>
     {% endfor %}
   </tbody>
-  <tfoot>
-    <tr>
-      <td style="text-align: left">TOTAL</td>
-      <td style="text-align: right">{{ "{:.0f}".format(cloc_2.column_totals.lines_code)    }}</td>
-      <td style="text-align: right">{{ "{:.0f}".format(cloc_2.column_totals.lines_comment) }}</td>
-      <td style="text-align: right">{{ "{:.0f}".format(cloc_2.column_totals.lines_blank)   }}</td>
-      <td style="text-align: right">{{ "{:.0f}".format(cloc_2.grand_total.lines_code)      }}</td>
-    </tr>
-  </tfoot>
 </table>
 
 <script>new Tablesort(document.getElementById('level_2'));</script>

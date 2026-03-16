@@ -6,11 +6,14 @@ from collections import defaultdict
 from types import SimpleNamespace as Sns
 
 import peewee as pw
+from peewee import fn
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools._models_ import BaseModel, Scan
+from qyx.tools._models_ import BaseModel, Project, Scan
+from qyx.tools.common import get_scans_for_project_analysis
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
+from qyx.utils import rate_of_change_percentage
 
 
 log = logging.getLogger(__name__)
@@ -75,9 +78,6 @@ class SccFile(BaseModel):
         indexes = ((("scc", "location"), True),)
 
 
-################################################################################################
-# RAW
-################################################################################################
 @query_cache
 def query_scc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = Scc.select().where(Scc.scan == scan)
@@ -113,4 +113,106 @@ def query_scc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
         dryness=dryness,
         grand_totals=sns_gt,
         report_languages=report_languages,
+    )
+
+
+@query_cache
+def query_scc_1(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+    query = (
+        Scc.select(
+            SccFile.directory,
+            fn.SUM(SccFile.bytes),
+            fn.SUM(SccFile.lines),
+            fn.SUM(SccFile.code),
+            fn.SUM(SccFile.comment),
+            fn.SUM(SccFile.blank),
+            fn.SUM(SccFile.complexity),
+            fn.SUM(SccFile.uloc),
+            fn.AVG(SccFile.weighted_complexity),
+            fn.AVG(SccFile.dryness),
+        )
+        .join(SccFile)
+        .where(Scc.scan == scan, SccFile.extension == "py")  # FIXME!
+        .group_by(SccFile.directory)
+        .order_by(SccFile.directory)
+        .dicts()
+    )
+    return Sns(rows=[Sns(**row_dict) for row_dict in query])
+
+
+@query_cache
+def query_scc_2(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+    query = (
+        Scc.select(
+            SccFile.directory,
+            SccFile.filename,
+            SccFile.bytes,
+            SccFile.lines,
+            SccFile.code,
+            SccFile.comment,
+            SccFile.blank,
+            SccFile.complexity,
+            SccFile.uloc,
+            SccFile.weighted_complexity,
+            SccFile.dryness,
+        )
+        .join(SccFile)
+        .where(Scc.scan == scan, SccFile.extension == "py")  # FIXME!
+        .order_by(SccFile.directory, SccFile.filename)
+        .dicts()
+    )
+    return Sns(rows=[Sns(**row_dict) for row_dict in query])
+
+
+@query_cache
+def query_scc_h(project: Project, last: int = None) -> Sns:
+    scans = get_scans_for_project_analysis(project, "scc", last=last)
+    query = (
+        Scc.select(
+            Scan.as_of.alias("timestamp"),
+            Scan.git_commit_message.alias("message"),
+            Scc.name,
+            Scc.lines,
+            Scc.code,
+            Scc.comment,
+            Scc.blank,
+            Scc.complexity,
+            Scc.uloc,
+            Scc.dryness,
+        )
+        .join(Scan)
+        .where(Scan.id.in_([scan.id for scan in scans]), Scc.name == "Python")  # FIXME!
+        .order_by(Scan.as_of)
+        .objects()
+    )
+    timestamps = [result.timestamp for result in query]
+    messages = {result.timestamp: result.message for result in query}
+
+    ################################################################################################
+    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
+    ################################################################################################
+    transposed = defaultdict(lambda: defaultdict(dict))
+    grand_totals = defaultdict(int)
+    attrs = ("lines", "code", "comment", "blank", "complexity", "uloc", "dryness")
+    for row in query:
+        for attr in attrs:
+            transposed[attr][row.timestamp] = getattr(row, attr)
+
+    # Calculate rate of change (primarily for CLI reporting)
+    roc = dict()
+    for attr in attrs:
+        if len(timestamps) > 1:
+            roc[attr] = rate_of_change_percentage(
+                transposed[attr][timestamps[-2]],
+                transposed[attr][timestamps[-1]],
+            )
+        else:
+            roc[attr] = 0.00
+
+    return Sns(
+        rows=query,
+        timestamps=timestamps,
+        messages=messages,
+        transposed=transposed,
+        roc=roc,
     )
