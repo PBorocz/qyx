@@ -45,17 +45,18 @@ verbosity = -1
 #-------------------------------------------------------------------------------
 # Ingest examples:
 #-------------------------------------------------------------------------------
-# poe qyx ingest --name python-code-quality --path "."                                          --log-level debug
-# poe qyx ingest --name python-code-quality --path https://github.com/PBorocz/qyx.git           --log-level debug
-# poe qyx ingest --name optimus_ludos       --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
+# poe qyx ingest --name python-code-quality       --path "."                                          --log-level debug
+# poe qyx ingest --name python-code-quality       --path https://github.com/PBorocz/qyx.git           --log-level debug
+# poe qyx ingest --name optimus_ludos             --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
+# poe qyx ingest --tool ruff --name optimus_ludos --path https://github.com/PBorocz/optimus_ludos.git --log-level debug
 #-------------------------------------------------------------------------------
 # Direct JSON ingestion examples
-# cloc --include-lang=Python src/ --by-file --json | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis cloc
-# ruff check --output-format=json                  | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis ruff
-# uvx radon cc  . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:cc
-# uvx radon hal . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:hal
-# uvx radon mi  . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:mi
-# uvx radon raw . --json                           | uv run qyx ingest --stdin --name python-code-quality --path "." --analysis radon:raw
+# cloc --include-lang=Python src/ --by-file --json | uv run qyx ingest --tool cloc --stdin --name python-code-quality --path "." --analysis cloc
+# ruff check --output-format=json                  | uv run qyx ingest --tool cloc --stdin --name python-code-quality --path "." --analysis ruff
+# uvx radon cc  . --json                           | uv run qyx ingest --tool cloc --stdin --name python-code-quality --path "." --analysis radon:cc
+# uvx radon hal . --json                           | uv run qyx ingest --tool cloc --stdin --name python-code-quality --path "." --analysis radon:hal
+# uvx radon mi  . --json                           | uv run qyx ingest --tool cloc --stdin --name python-code-quality --path "." --analysis radon:mi
+# uvx radon raw . --json                           | uv run qyx ingest --tool cloc --stdin --name python-code-quality --path "." --analysis radon:raw
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------

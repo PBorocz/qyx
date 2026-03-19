@@ -8,11 +8,10 @@ from types import SimpleNamespace as Sns
 import peewee as pw
 from peewee import fn
 
+from qyx.constants import ALL_ITEMS
 from qyx.constants import ViewContext as Vc
-from qyx.tools._models_ import BaseModel, Project, Scan
-from qyx.tools.common import get_scans_for_project_analysis
-from qyx.utils.caching import query_cache
-from qyx.utils.scoring import score_metric
+from qyx.tools._models_ import BaseModel, ModelAttribute, Project, Scan
+from qyx.tools.common import get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
 
 
@@ -25,7 +24,7 @@ class Scc(BaseModel):
     # fmt: off
     id                  = pw.AutoField()
     scan                = pw.ForeignKeyField(Scan, on_delete="CASCADE")
-    name                = pw.CharField()
+    language            = pw.CharField() # eg. python, html, markdown, license, css etc.
     bytes               = pw.IntegerField()
     code_bytes          = pw.IntegerField()
     lines               = pw.IntegerField()
@@ -40,11 +39,27 @@ class Scc(BaseModel):
     num_files           = pw.IntegerField() # Derived on load from number of files in relation below..
     # fmt:
 
+    @classmethod
+    def attrs(cls):
+        """Return the SCC attributes to report on *in order*!"""
+        # fmt: off
+        return (
+            ModelAttribute("Num Files"    , "", "num_files"  , "int"),
+            ModelAttribute("Lines of Code", "", "lines"      , "int"),
+            # ModelAttribute("Code"        , "", "code"       , "int"),
+            ModelAttribute("Unique Code"  , "", "uloc"       , "int"),
+            ModelAttribute("Comments"     , "", "comment"    , "int"),
+            ModelAttribute("Blanks"       , "", "blank"      , "int"),
+            ModelAttribute("Complexity"   , "", "complexity" , "int"),
+            ModelAttribute("Dryness"      , "", "dryness"    , "int"),
+        )
+        # fmt: off
+
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "scc"
-        indexes = ((("scan", "name"), True),)
+        table_name = "tool_scc"
+        indexes = ((("scan", "language"), True),)
 
 
 class SccFile(BaseModel):
@@ -55,7 +70,7 @@ class SccFile(BaseModel):
     location            = pw.CharField() # eg. src/qyx/__main__.py
     filename            = pw.CharField() # eg. __main__.py
     directory           = pw.CharField() # eg. src/qyx/
-    extension           = pw.CharField() # eg. py
+    language            = pw.CharField() # eg. python, html, css, etc.
     bytes               = pw.IntegerField()
     lines               = pw.IntegerField()
     code                = pw.IntegerField()
@@ -74,50 +89,44 @@ class SccFile(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "scc_file"
+        table_name = "tool_scc_file"
         indexes = ((("scc", "location"), True),)
 
 
-@query_cache
-def query_scc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
-    query = Scc.select().where(Scc.scan == scan)
+def query_scc_0(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TOOL_HOME) -> Sns:
+    query = Scc.select().where(Scc.scan == scan).dicts()  # Default is essentially wildcard!
+    if not dimension:
+        types = args.config.get("tools.scc.settings.dashboard_report_types")
+        query = query.where(Scc.language.in_(types))
+    elif dimension != ALL_ITEMS:
+        query = query.where(fn.LOWER(Scc.language) == fn.LOWER(dimension))
 
-    # Transpose so that each attr is a row, consisting of desired languages
-    report_languages = args.config.get("tools.scc.settings.report_languages")
-    transposed = {}
-    for attr in ("num_files", "lines", "blank", "comment", "code", "uloc"):
-        transposed[attr] = {}
-        for row_dict in query.dicts():
-            if row_dict["name"] in report_languages:
-                transposed[attr][row_dict["name"]] = row_dict.get(attr)
+    if not len(query):  # Make sure we got rows back
+        return Sns()
 
-    # Add calculated DRYness of each language we're reporting on.
-    dryness = {}
-    for lang in report_languages:
-        i_dryness = round((transposed["uloc"][lang] / transposed["code"][lang]) * 100.0 + 0.5)
-        dryness[lang] = score_metric(args, "tools.scc.dryness", i_dryness)
+    # Instead of each row being a file type, collapse so that each row has information on all types.
+    d_rows = {}
+    types_encountered = set()
+    for attr in [attr for attr in query[0].keys() if attr not in ("id", "language")]:
+        d_rows[attr] = {}
+        for row_dict in query:
+            d_rows[attr][row_dict["language"]] = int(row_dict.get(attr))
+            types_encountered.add(row_dict["language"])
 
-    # Convert to Sns
-    rows = []
-    for attr, languages in transposed.items():
-        rows.append(Sns(attr=attr, languages=languages))
+    # Return list of file types encountered in *sorted* order by total number of lines (thanks Claude!)
+    values: list[int] = [d_rows["lines"][lang] for lang in types_encountered]
+    types: list[str] = [lang for lang, _ in sorted(zip(types_encountered, values), key=lambda x: x[1], reverse=True)]
 
     # Calculate grand totals
     gt_ = defaultdict(int)
-    for row in rows:
-        gt_[row.attr] = sum(row.languages.values())
+    for attr, types in d_rows.items():
+        gt_[attr] = sum(types.values())
     sns_gt = Sns(**gt_)
 
-    return Sns(
-        rows=rows,
-        dryness=dryness,
-        grand_totals=sns_gt,
-        report_languages=report_languages,
-    )
+    return Sns(types=types, rows=d_rows, grand_totals=sns_gt, attrs=Scc.attrs())
 
 
-@query_cache
-def query_scc_1(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_scc_1(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Scc.select(
             SccFile.directory,
@@ -132,7 +141,7 @@ def query_scc_1(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
             fn.AVG(SccFile.dryness),
         )
         .join(SccFile)
-        .where(Scc.scan == scan, SccFile.extension == "py")  # FIXME!
+        .where(Scc.scan == scan, SccFile.language == dimension)
         .group_by(SccFile.directory)
         .order_by(SccFile.directory)
         .dicts()
@@ -140,8 +149,7 @@ def query_scc_1(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 
-@query_cache
-def query_scc_2(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_scc_2(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Scc.select(
             SccFile.directory,
@@ -157,21 +165,21 @@ def query_scc_2(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
             SccFile.dryness,
         )
         .join(SccFile)
-        .where(Scc.scan == scan, SccFile.extension == "py")  # FIXME!
+        .where(Scc.scan == scan, SccFile.language == dimension)
         .order_by(SccFile.directory, SccFile.filename)
         .dicts()
     )
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 
-@query_cache
-def query_scc_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_project_analysis(project, "scc", last=last)
+def query_scc_h(project: Project, dimension: str, last: int = None) -> Sns:
+    scans = get_scans_for_project_dimension(project, "scc", last=last)
+
     query = (
         Scc.select(
             Scan.as_of.alias("timestamp"),
             Scan.git_commit_message.alias("message"),
-            Scc.name,
+            Scc.language,
             Scc.lines,
             Scc.code,
             Scc.comment,
@@ -181,18 +189,20 @@ def query_scc_h(project: Project, last: int = None) -> Sns:
             Scc.dryness,
         )
         .join(Scan)
-        .where(Scan.id.in_([scan.id for scan in scans]), Scc.name == "Python")  # FIXME!
+        .where(
+            Scan.id.in_([scan.id for scan in scans]),
+            fn.LOWER(Scc.language) == fn.LOWER(dimension),
+        )
         .order_by(Scan.as_of)
         .objects()
     )
     timestamps = [result.timestamp for result in query]
-    messages = {result.timestamp: result.message for result in query}
+    messages_by_timestamp = {result.timestamp: result.message for result in query}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
     transposed = defaultdict(lambda: defaultdict(dict))
-    grand_totals = defaultdict(int)
     attrs = ("lines", "code", "comment", "blank", "complexity", "uloc", "dryness")
     for row in query:
         for attr in attrs:
@@ -212,7 +222,7 @@ def query_scc_h(project: Project, last: int = None) -> Sns:
     return Sns(
         rows=query,
         timestamps=timestamps,
-        messages=messages,
+        messages=messages_by_timestamp,
         transposed=transposed,
         roc=roc,
     )

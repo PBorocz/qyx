@@ -3,16 +3,14 @@
 import logging
 from argparse import Namespace
 from collections import defaultdict
-from dataclasses import dataclass
 from types import SimpleNamespace as Sns
-from typing import Literal
 
 import peewee as pw
 from peewee import fn
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools._models_ import BaseModel, Project, Scan
-from qyx.tools.common import get_scans_for_project_analysis
+from qyx.tools._models_ import BaseModel, ModelAttribute, Project, Scan
+from qyx.tools.common import get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -42,7 +40,7 @@ class RadonRaw(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "radon_raw"
+        table_name = "tool_radon_raw"
         indexes = ((("scan", "directory", "filename"), True),)
 
     @classmethod
@@ -66,7 +64,7 @@ class RadonMi(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "radon_mi"
+        table_name = "tool_radon_mi"
         indexes = ((("scan", "directory", "filename"), True),)
 
 
@@ -105,7 +103,7 @@ class RadonCc(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "radon_cc"
+        table_name = "tool_radon_cc"
         indexes = (
             # Uniqueness criteria
             (("scan", "directory", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),
@@ -160,7 +158,7 @@ class RadonHal(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "radon_hal"
+        table_name = "tool_radon_hal"
         indexes = ((("scan", "directory", "filename"), True),)
 
 
@@ -188,7 +186,7 @@ class RadonHalFunction(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "radon_hal_function"
+        table_name = "tool_radon_hal_function"
         indexes = ((("radon_hal", "name"), True),)
 
 
@@ -272,7 +270,7 @@ def query_raw_2(scan: Scan) -> Sns:
 
 @query_cache
 def query_raw_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_project_analysis(project, "raw", last=last)
+    scans = get_scans_for_project_dimension(project, "raw", last=last)
     query = (
         RadonRaw.select(
             Scan.as_of.alias("timestamp"),
@@ -366,7 +364,7 @@ def query_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     # Calculate "derived" metrics based on the raws ones above.
     ################################################################################
     # Get SLOC values...
-    raw = query_raw_0(args, scan=Scan.get_most_recent(scan.request.project, "radon", "raw"))
+    raw = query_raw_0(args, scan=Scan.get_latest(scan.request.project, "radon", "raw"))
 
     # Score Halstead effort per 1000 source lines of code.
     metric_value = (result.bugs / raw.sloc) * 1000
@@ -482,7 +480,7 @@ def query_hal_3(scan: Scan) -> Sns:
 
 @query_cache
 def query_hal_h(project: Project = None, last: int = None) -> Sns:
-    scans = get_scans_for_project_analysis(project, "hal", last=last)
+    scans = get_scans_for_project_dimension(project, "hal", last=last)
     query = (
         RadonHal.select(
             Scan.as_of.alias("timestamp"),
@@ -540,7 +538,7 @@ def query_hal_h(project: Project = None, last: int = None) -> Sns:
 @query_cache
 def query_mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
-    raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
+    raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
     query = (
         RadonMi.select(
             fn.SUM(RadonRaw.loc * RadonMi.mi).alias("weighted_sum"),
@@ -566,7 +564,7 @@ def query_mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
 @query_cache
 def query_mi_1(args, scan: Scan) -> Sns:
     mi_metric = query_mi_0(args, scan).mi_metric
-    raw_scan = Scan.get_most_recent(scan.request.project, "radon", "raw")
+    raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
     query = (
         RadonMi.select(
             RadonMi.directory,
@@ -615,7 +613,7 @@ def query_mi_2(args, scan: Scan) -> Sns:
 def query_mi_h_original(project, last: int = None) -> Sns:
     assert project
 
-    scans = get_scans_for_project_analysis(project, "mi", last=last)
+    scans = get_scans_for_project_dimension(project, "mi", last=last)
     scan_ids = [scan.id for scan in scans]
 
     # Alias for the RAW scan to make the query clearer
@@ -642,7 +640,7 @@ def query_mi_h_original(project, last: int = None) -> Sns:
                 (RadonRaw.scan == rawscan.id)
                 & (rawscan.request == Scan.request)
                 & (rawscan.tool == "radon")
-                & (rawscan.analysis == "raw")
+                & (rawscan.ingest_dimension == "raw")
             ),
         )
         .where(RadonMi.scan.in_(scan_ids))
@@ -667,7 +665,7 @@ def query_mi_h_original(project, last: int = None) -> Sns:
 def query_mi_h(project, last: int = None) -> Sns:
     assert project
 
-    scans = get_scans_for_project_analysis(project, "mi", last=last)
+    scans = get_scans_for_project_dimension(project, "mi", last=last)
     scan_ids = [scan.id for scan in scans]
 
     # Alias for the RAW scan to make the query clearer
@@ -694,7 +692,7 @@ def query_mi_h(project, last: int = None) -> Sns:
                 (RadonRaw.scan == rawscan.id)
                 & (rawscan.request == Scan.request)
                 & (rawscan.tool == "radon")
-                & (rawscan.analysis == "raw")
+                & (rawscan.ingest_dimension == "raw")
             ),
         )
         .where(RadonMi.scan.in_(scan_ids))
@@ -825,7 +823,7 @@ def query_cc_3(args: Namespace, scan: Scan) -> Sns:
 @query_cache
 def query_cc_h(project: Project, last: int = None) -> Sns:
     # Step 1: Find the relevant scans for the project (potentially limited)
-    scans = get_scans_for_project_analysis(project, "cc", last=last)
+    scans = get_scans_for_project_dimension(project, "cc", last=last)
 
     # Step 2: Get aggregated complexity for those scans (fast - no join!)
     scan_id_list = [s.id for s in scans]
@@ -879,16 +877,3 @@ def query_cc_h(project: Project, last: int = None) -> Sns:
             )
 
     return Sns(timestamps=timestamps, messages=messages, transposed=transposed, rocs=rocs)
-
-
-################################################################################################
-# Supporting...
-################################################################################################
-@dataclass(frozen=True)
-class ModelAttribute:
-    """Represents a model attribute/metric with its metadata."""
-
-    display: str
-    calculation: str
-    name: str
-    type: Literal["float", "int", "str"]

@@ -24,48 +24,66 @@ class Scan(BaseModel):
 
     id = pw.AutoField()
 
+    # What request is this Scan on behalf of?
     request = pw.ForeignKeyField(Request, backref="scan", on_delete="CASCADE")
-    as_of = pw.DateTimeField(help_text="As Of GMT/UTC datetime of the code base being analysed")
-    analysis = pw.CharField(help_text="Analysis performed, e.g. cloc, cc, mi, hal, ruff etc.", null=True)
-    tool = pw.CharField(help_text="Tool used, e.g. cloc, radon, ruff etc.", null=True)
-    git_commit_hash = pw.CharField(help_text="Git commit/revision hash", null=True)
-    git_commit_message = pw.TextField(help_text="Git message", null=True)
-    timestamp = pw.DateTimeField(
-        help_text="GMT/UTC datetime the scan/ingest occurred",
-        default=lambda: datetime.now(UTC).replace(microsecond=0),
-    )
+
+    # As Of GMT/UTC datetime of the code base being analysed.
+    as_of = pw.DateTimeField()
+
+    # Tool used, e.g. cloc, radon, ruff etc."
+    tool = pw.CharField()
+
+    # Dimension ingested.
+    # For tools with a single dimension, this will default to tool.name (e.g. cloc, ruff, ty etc.)
+    # For tools with multiple *reporting* dimensions but that we ingest once, this will also be the tool name (eg. scc)
+    # For tools that we ingest *by dimension*, this will be the "ingest" dimension (e.g. raw, hal, cc obo radon)
+    ingest_dimension = pw.CharField()
+
+    # Git commit/revision hash
+    git_commit_hash = pw.CharField(null=True)
+
+    # Git message associated with the commit/revision hash
+    git_commit_message = pw.TextField(null=True)
+
+    # GMT/UTC datetime the scan/ingest occurred"
+    timestamp = pw.DateTimeField(default=lambda: datetime.now(UTC).replace(microsecond=0))
 
     class Meta:
         """Define peewee meta data."""
 
         indexes = (
             # Uniqueness criteria
-            (("request", "as_of", "analysis", "tool"), True),
+            (("request", "as_of", "tool", "ingest_dimension"), True),
             # Query optimization for filtering + sorting
-            (("request", "analysis", "as_of"), False),
+            (("request", "as_of"), False),
         )
 
     @classmethod
-    def get_most_recent(cls, project: "Project", tool: str = None, analysis: str = None) -> "Scan" | None:
-        """Find the most recent scan for the specified project, tool and analysis BY AS-OF DATE!"""
-        from .request import Request
+    def get_latest(cls, project: "Project", tool: str, ingest_dimension: str = None) -> "Scan" | None:
+        """Find the most recent scan for the specified project, tool and dimension BY AS-OF DATE!"""
+        from .request import Request  # Circular import...arghhh
 
-        query = Scan.select().where(Request.project == project).join(Request).order_by(Scan.as_of.desc())
-        if tool:
-            query = query.where(Scan.tool == tool)
-        if analysis:
-            query = query.where(Scan.analysis == analysis)
-        if run := query.first():
-            return run
-        return None
+        query = (
+            Scan.select()
+            .where(
+                Request.project == project,
+                Scan.tool == tool,
+            )
+            .join(Request)
+            .order_by(Scan.as_of.desc())
+        )
+        if ingest_dimension:
+            query = query.where(Scan.ingest_dimension == ingest_dimension)
 
-    def analysis_display(self) -> str:
-        """Return a nicely formatted tool + analysis."""
-        if self.tool == self.analysis:
-            return f"{self.tool:9s}"
-        else:
-            return f"{self.tool:5s}:{self.analysis:3}"
+        return query.first()
 
     def as_of_display(self, **kwargs) -> str:
         """Return the scan AsOf date nicely formatted in local time."""
         return dt_to_display(self.as_of, **kwargs)
+
+    def tool_dimension_display(self) -> str:
+        """Return a nicely formatted tool + cli_option."""
+        if self.tool != self.ingest_dimension:
+            return f"{self.tool:5s}:{self.ingest_dimension:3}"
+        else:
+            return f"{self.tool:9s}"

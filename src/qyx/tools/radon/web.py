@@ -8,11 +8,11 @@ from types import SimpleNamespace as Sns
 from bottle import request
 
 from qyx.constants import ViewContext as Vc
-from qyx.tools._models_ import Scan
+from qyx.tools._models_ import Scan, State
 from qyx.tools.radon import models as rm
 from qyx.tools.radon.models import RadonCc
 from qyx.tools.radon.models import RadonHal
-from qyx.web.page import render, render_analyses, render_content
+from qyx.web.page import render, render_dimensions, render_content
 
 import plotly.graph_objects as go
 
@@ -26,52 +26,55 @@ log = logging.getLogger(__name__)
 # Routing/View methods
 ################################################################################################
 def view(template: str = "radon::page.html") -> str:
-    """View callback to render the entire tool page: project selector, analysis selector and body content."""
+    """View callback to render the entire tool page: project selector, dimension selector and body content."""
     o_tool = request.app.args.tools["radon"]
     return render(o_tool, template, get_content)
 
 
-def view_analyses() -> str:
-    """View callback when project changes to render BOTH update analysis selector *AND* update body on an OOB basis."""
+def view_dimension() -> str:
+    """View callback when project changes to render BOTH update dimension selector *AND* update body on an OOB basis."""
     o_tool = request.app.args.tools["radon"]
     project: str = request.query.project
-    return render_analyses(o_tool, project, get_content)
+    return render_dimensions(o_tool, project, get_content)
 
 
 def view_content() -> str:
-    """View callback for when a new analysis is selected, just need to update the body content directly."""
+    """View callback for when a new dimension is selected, just need to update the body content directly."""
     o_tool = request.app.args.tools["radon"]
     project: str = request.query.project
-    analysis: str = request.query.analysis.lower()
-    return render_content(project, o_tool, analysis, get_content)
+    dimension: str = request.query.dimension.lower()
+    return render_content(project, o_tool, dimension, get_content)
 
 
 ################################################################################################
-def get_content(scan: Scan) -> Sns:
+def get_content(scan: Scan, *args) -> Sns:
     """Populate our tool's home page data based on the specified scan."""
     args = request.app.args
+
+    State.update(args, project=scan.request.project.name, dimension=scan.ingest_dimension)
 
     if scan.git_commit_message:
         display = f"{scan.as_of_display(collapse_today=True)} - {scan.git_commit_message}"
     else:
         display = f"{scan.as_of_display(collapse_today=True)}"
 
-    context = Sns(tool=scan.tool, analysis=scan.analysis)
-    setattr(context, f"{scan.analysis}_as_of", display)
-    setattr(context, f"{scan.analysis}_0", _get_content_by_level(args, "0", scan))
-    setattr(context, f"{scan.analysis}_1", _get_content_by_level(args, "1", scan))
-    setattr(context, f"{scan.analysis}_2", _get_content_by_level(args, "2", scan))
-    setattr(context, f"{scan.analysis}_3", _get_content_by_level(args, "3", scan))
-    setattr(context, f"{scan.analysis}_h", _get_content_by_level(args, "h", scan))
+    context = Sns(tool=scan.tool, dimension=scan.ingest_dimension)
+    setattr(context, f"{scan.ingest_dimension}_as_of", display)
+    setattr(context, f"{scan.ingest_dimension}_0", _get_content_by_level(args, "0", scan))
+    setattr(context, f"{scan.ingest_dimension}_1", _get_content_by_level(args, "1", scan))
+    setattr(context, f"{scan.ingest_dimension}_2", _get_content_by_level(args, "2", scan))
+    setattr(context, f"{scan.ingest_dimension}_3", _get_content_by_level(args, "3", scan))
+    setattr(context, f"{scan.ingest_dimension}_h", _get_content_by_level(args, "h", scan))
     return context
 
 
 def _get_content_by_level(args: Namespace, level: str, scan: Scan) -> dict | Sns | None:
-    """Dispatch to the appropriate view method to get data obo the specified level fand analysis."""
-    # First, lookup the method below based on the analysis and level requested.
-    view_method_name = f"view_{scan.analysis}_{level}"
+    """Dispatch to the appropriate view method to get data obo the specified level and dimension."""
+    # First, lookup the method below based on the dimension and level requested.
+    view_method_name = f"view_{scan.ingest_dimension}_{level}"
     view_method = globals().get(view_method_name)
     if view_method:
+        # ...and RUN it!
         return view_method(args, scan)
     return None
 
@@ -79,7 +82,7 @@ def _get_content_by_level(args: Namespace, level: str, scan: Scan) -> dict | Sns
 ################################################################################
 # CC
 ################################################################################
-def view_cc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict:
+def view_cc_0(args: Namespace, scan: Scan, dimension: str = "cc", context: Vc = Vc.TOOL_HOME) -> Sns:
     return rm.query_cc_0(args, scan)
 
 
@@ -126,7 +129,7 @@ def view_cc_h(args: Namespace, scan: Scan) -> str:
 ################################################################################
 # HAL
 ################################################################################
-def view_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> list:
+def view_hal_0(args: Namespace, scan: Scan, dimension: str = "hal", context: Vc = Vc.TOOL_HOME) -> list:
     result = rm.query_hal_0(args, scan)
     rows = []
     for metric, attr in [
@@ -244,7 +247,9 @@ def view_hal_h(args: Namespace, scan: Scan = None) -> dict[str, str]:
 ################################################################################
 # MI
 ################################################################################
-def view_mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> dict[str, float | None]:
+def view_mi_0(
+    args: Namespace, scan: Scan, dimension: str = "mi", context: Vc = Vc.TOOL_HOME
+) -> dict[str, float | None]:
     return rm.query_mi_0(args, scan)
 
 
@@ -286,7 +291,7 @@ def view_mi_h(args: Namespace, scan: Scan):
 ################################################################################
 # RAW
 ################################################################################
-def view_raw_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME):
+def view_raw_0(args: Namespace, scan: Scan, dimension: str = "raw", context: Vc = Vc.TOOL_HOME):
     return rm.query_raw_0(args, scan)
 
 

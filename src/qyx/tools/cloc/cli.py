@@ -7,21 +7,21 @@ from types import SimpleNamespace as Sns
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
 from qyx.tools import format_int_or_percentage as fmt
-from qyx.tools._models_ import Project, Scan, ToolType
+from qyx.tools._models_ import Project, Scan, ToolDimension, ToolType
 from qyx.tools.cloc.models import query_cloc_0, query_cloc_1, query_cloc_2, query_cloc_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
 
-def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -> None:
+def render(args: Namespace, project: Project, o_tool: ToolType, o_dimension: ToolDimension) -> bool:
     # Get most recent Scan for simple "current-state" reporting..
     # Note: We safely can disregard whether or not the Scan was based on
     # git or directly from a directory as we're searching based on "as of",
     # thus, the most recent scan could be from either source!
-    if not (scan := Scan.get_most_recent(project, "cloc", "cloc")):
+    if not (scan := Scan.get_latest(project, "cloc", "cloc")):
         log.error("Sorry, we haven't performed a CLOC measurement yet for this project.")
-        return None
+        return False
 
     match args.level.lower():
         case Rl.SUMMARY:
@@ -39,6 +39,8 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             _render_h(args, project, scan)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
+            return False
+    return True
 
 
 def _render_0(args: Namespace, scan: Scan) -> None:

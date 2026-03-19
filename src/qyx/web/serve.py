@@ -68,21 +68,21 @@ def serve(args: Namespace) -> None:
         if not o_tool.render_web_module:  # Not every tool may have web reporting setup!
             continue
 
-        # For tools with a "single" analysis:
-        # ===================================
+        # For tools with a "single" dimension:
+        # ====================================
         # /<tool>          - home page - FULL page render
         # /<tool>/content  - change in which project is selected, show new body content (partial HTML
         #
-        # For tools with a "multiple" analyses:
+        # For tools with a "multiple" dimensions:
         # =====================================
-        # /<tool>          - home page - FULL page render
-        # /<tool>/analysis - change in which project is selected,
-        #                    cascade to update analysis widget *AND* update body(partial HTML
-        # /<tool>/content  - change in which analysis is selected, show new body content (partial HTML.
+        # /<tool>           - home page - FULL page render
+        # /<tool>/dimension - change in which project is selected,
+        #                     cascade to update dimensions widget *AND* update body(partial HTML
+        # /<tool>/content   - change in which dimension, show new body content (partial HTML.
         #
         paths_and_methods = [("", "view"), ("/content", "view_content")]
-        if len(o_tool.analyses) > 1:
-            paths_and_methods.append(("/analysis", "view_analyses"))
+        if len(o_tool.dimensions) > 1:
+            paths_and_methods.append(("/dimension", "view_dimension"))
 
         for path, method in paths_and_methods:
             _register_route(app, o_tool, path, method)
@@ -106,7 +106,7 @@ def _register_route(app, o_tool, path, method) -> bool:
 
     route = f"/{o_tool.name}{path}"
     app.route(route)(method)
-    log.debug(f"serve.py: Registered {route=} to {method=}")
+    log.debug(f"route='{route:20s}' → method='{method.__name__}'")
     return True
 
 

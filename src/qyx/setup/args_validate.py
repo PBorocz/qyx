@@ -20,10 +20,6 @@ def validate_args(args: Namespace) -> bool:
         case "report":
             issues.extend(_validate_report(args))
 
-    # Irrespective of the command, if a tool:analysis was specifed, validate it:
-    if "analysis" in args:
-        issues.extend(_validate_analysis(args))
-
     # Did we find anything untowards?
     if issues:
         for issue in issues:
@@ -71,32 +67,25 @@ def _validate_ingest(args: Namespace) -> list[str]:
 
 
 def _validate_report(args: Namespace) -> list[str]:
+    return_ = []
     if not args.name:
-        return ["[red]Sorry! [bold]-n/--name[/bold] is required to report results."]
-    return []
+        return_.append("[red]Sorry! [bold]-n/--name[/bold] is required to report results.")
 
+    if args.tool:
+        if args.tool.lower() not in args.tools.names():
+            # FIXME: List the tools that ARE available!
+            return_.append(f"[red]Sorry! tool='{args.tool}' is not defined![/red]")
 
-def _validate_analysis(args: Namespace) -> list[str]:
-    """Is the analysis argument valid agains the list of all analyses in all tools?"""
-    # First, check for raw analysis names only..
-    analyses = args.tools.analyses()
-    if args.analysis.lower() in analyses:
-        return []
+    if args.dimension:
+        dim_names = []
+        for o_dim in args.tools.dimensions():
+            dim_names.append(o_dim.name.lower())
+            dim_names.append(o_dim.description.lower())
+        if args.dimension != c.ALL_ITEMS and args.dimension.lower() not in dim_names:
+            # FIXME: List the dimensions that ARE available!
+            return_.append(f"[red]Sorry! dimension='{args.dimension}' isn't defined for tool='{args.tool}'![/red]")
 
-    # arg isn't an analysis, only other option is that of a multi-analysis tool:
-    multi_tool_names = [o_tool.name for o_tool in args.tools.tools() if len(o_tool.analyses) != 1]
-    if args.analysis.lower() in multi_tool_names:
-        return []
-
-    # finally, is it a wildcard?
-    if args.analysis == c.ALL_ITEMS:
-        return []
-
-    s_analyses = ", ".join(analyses + multi_tool_names)
-    return (
-        f"[red]Sorry! analysis: '[bold]{args.analysis}[/bold]' is not valid, "
-        f"must be one of:[/red] [blue]{s_analyses}[/blue]",
-    )
+    return return_
 
 
 def __find_git_root(dir: Path) -> Path | None:

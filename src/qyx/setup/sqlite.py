@@ -131,9 +131,8 @@ def setup_sqlite(args: Namespace) -> None:
     # Make sure our models have tables defined for 'em!
     models = [Project, Request, Scan, State]  # Base models first...
     for o_tool in args.tools.tools():  # Followed by tool-specific storage models
-        for tool_peewee_classes in o_tool.models.values():
-            for tool_peewee_class in tool_peewee_classes:
-                models.append(tool_peewee_class)
+        for peewee_model_class in o_tool.get_models():
+            models.append(peewee_model_class)
 
     # CORE! Tie the models defined to our database instance
     for model_class in models:

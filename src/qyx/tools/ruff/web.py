@@ -17,24 +17,24 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 # Routing/View methods
 ################################################################################################
 def view(template: str = "ruff::page.html") -> str:
-    """View callback to render the entire tool page: project selector, analysis selector and body content."""
+    """View callback to render the entire tool page: project selector, dimension selector and body content."""
     o_tool = request.app.args.tools["ruff"]
     return render(o_tool, template, get_content)
 
 
 def view_content() -> str:
-    """View callback for when a new analysis is selected, just need to update the body content directly."""
+    """View callback for when a new dimension is selected, just need to update the body content directly."""
     o_tool = request.app.args.tools["ruff"]
     project: str = request.query.project
     return render_content(project, o_tool, "ruff", get_content)
 
 
 ################################################################################################
-def get_content(scan: Scan) -> str:
+def get_content(scan: Scan, *args) -> str:
     """Render the content portion (ie. body) of the page."""
     args = request.app.args
 
-    State.update(args, project=scan.request.project.name, analysis=scan.analysis)
+    State.update(args, project=scan.request.project.name)
 
     context = Sns()
     context.ruff_as_of = scan.as_of_display(collapse_today=True)

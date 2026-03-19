@@ -50,18 +50,19 @@ def _get_dispatch_method(args: Namespace) -> Callable:
             raise RuntimeError("Sorry, you must provide a valid base command to execute, use the --help option.")
 
 
-def dispatch(args: Namespace) -> str:
+def dispatch(args: Namespace) -> list[str]:
     """Primary dispatch for core command requested."""
     interactive = not args.command
-    iter = 0
+    first_pass = True
+    commands = []
     while True:
         # If no command yet provided, go into "interactive" mode and get rest of the arguments.
         if not args.command:
-            args = get_args_interactively(args, iter)
+            args = get_args_interactively(args, first_pass)
 
             # Allow user to exit interactive mode
             if args.command is None or args.command == c.EXIT_COMMAND:
-                break
+                return commands
 
         # Are our arguments valid? (irrespective of whether they came from arguments or interactively)
         if not validate_args(args):
@@ -73,24 +74,25 @@ def dispatch(args: Namespace) -> str:
                 sys.exit(1)  # We're done!
 
         # Get our ultimate run command and run it!
+        commands.append(args.command)
         method = _get_dispatch_method(args)
-        method(args)
+        _ = method(args)  # Don't care about return status, methods will warn if necessary.
 
-        # If in command-line mode, save state and exit!
+        # If in command-line mode, save state and we're done!
         if not interactive:
             _update_state(args)
-            return method.__name__
+            return commands
 
-        # Reset for the next interactive cycle
+        # Otherwise, reset for the next interactive cycle
         args.command = None
+        first_pass = False
         print()
-        iter += 1
 
 
 def _update_state(args: Namespace) -> None:
     """Update state for command-line activity."""
     kwargs = {}
-    for attr in ("command", "name", "level", "analysis"):
+    for attr in ("command", "name", "level", "dimension"):
         if attr in args and getattr(args, attr) is not None:
             value = getattr(args, attr)
             kwargs[attr] = value.value if isinstance(value, Enum) else value
@@ -117,8 +119,8 @@ def main():
         sys.exit(1)
 
     # Lookup and dispatch the appropriate method to run based on the command (and sub-command):
-    cmd_run = dispatch(args)
+    cmds_run = dispatch(args)
 
     # Do *short* database housekeeping (if we haven't done so on explicit request above)
-    if cmd_run != "clean":
+    if "clean" not in cmds_run:
         clean(args, vacuum=False)

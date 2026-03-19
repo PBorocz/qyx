@@ -7,7 +7,7 @@ from typing import Callable
 
 from bottle import request
 
-from qyx.tools._models_ import Project, Request, Scan, State, ToolType
+from qyx.tools._models_ import Project, Request, Scan, State, ToolDimension, ToolType
 
 
 log = logging.getLogger(__name__)
@@ -20,41 +20,44 @@ def render(tool: ToolType, template: str, content_method: Callable) -> str:
     if not project:
         return render_template("base::_no_projects_yet.html")
 
-    # (we may or may not use the analysis_options but it's inexpensive to create)
-    analysis_options, analysis = _get_analysis_selector(tool, project)
-    if not analysis:
+    # (we may or may not use the dimension selector options but it's inexpensive to create)
+    dimension_options, dimension = _get_dimension_selector(tool, project)
+    if not dimension:
         return render_template("base::_no_scans_yet.html")
+    log.debug(f"selected dimension: {dimension.__dict__=}")
 
-    if tool.name == "scc":
-        scan = Scan.get_most_recent(project, tool.name, tool.name)
+    if tool.ingest_by_dimension:
+        scan = Scan.get_latest(project, tool.name, dimension.cli_option)
+        log.debug(f"ingest_by_dimension: {dimension.cli_option=}")
     else:
-        scan = Scan.get_most_recent(project, tool.name, analysis)
+        scan = Scan.get_latest(project, tool.name)
+        log.debug(f"ingest_by_tool_only: {tool.name=}")
     if not scan:
         return render_template("base::_no_scans_yet.html")
 
-    context: Sns = content_method(scan)  # Callback into the tool to get the "body" content as an Sns
+    context: Sns = content_method(scan, dimension.name)  # Callback into the tool to get the "body" content as an Sns
     context.tool = tool.name
-    context.analysis = analysis
+    context.dimension = dimension
     context.project_options = project_options
-    context.analysis_options = analysis_options
+    context.dimension_options = dimension_options
 
-    if len(tool.analyses) == 1 and tool.name != "scc":
-        # Single analysis case: Changing project goes immediately to populating the page
+    if len(tool.dimensions) == 1:
+        # Single dimension case: Changing project goes immediately to populating the page
         context.hx_change_project_url = f"/{tool.name}/content"
         context.hx_change_project_target = "#div_body_content"
     else:
-        # Multiple analysis case: Changing project goes instead to selecting relevant analysis..
-        context.hx_change_project_url = f"/{tool.name}/analysis"
-        context.hx_change_project_target = "#div_select_analysis"
+        # Multiple dimension case: Changing project goes instead to selecting relevant dimension..
+        context.hx_change_project_url = f"/{tool.name}/dimension"
+        context.hx_change_project_target = "#div_select_dimension"
 
-        # And updating the analysis populates the body of the page.
-        context.hx_change_analysis_url = f"/{tool.name}/content"
+        # And updating the dimension populates the body of the page.
+        context.hx_change_dimension_url = f"/{tool.name}/content"
 
     return render_page(f"QYX-{tool.name.upper()}", template, **context.__dict__)
 
 
 ################################################################################################
-def render_content(project: str | Project, tool: ToolType, analysis: str, content_method: Callable) -> str:
+def render_content(project: str | Project, tool: ToolType, dimension: str | None, content_method: Callable) -> str:
     """Render the HTML associated with the body of the respective tool page."""
     # If we haven't done so, lookup the project..
     if isinstance(project, str):
@@ -63,41 +66,56 @@ def render_content(project: str | Project, tool: ToolType, analysis: str, conten
             return render_template("base::_no_scans_yet.html")
 
     # Find the most recent scan on behalf of this project...
-    log.error(f"{tool.name=} {analysis=}")
-    scan: Scan | None = Scan.get_most_recent(project, tool.name, analysis)
+    if tool.ingest_by_dimension:
+        # Scan's are specific to the dimension, pick the one
+        # associated with the requested dimension (e.g. "raw" for Radon).
+        scan: Scan | None = Scan.get_latest(project, tool.name, dimension)
+    else:
+        # Irrespective of reporting dimensions, we ingest a single time for the tool, e.g. cloc, ruff,.. AND scc!
+        scan: Scan | None = Scan.get_latest(project, tool.name)
     if not scan:
         return render_template("base::_no_scans_yet.html")
 
-    context: Sns = content_method(scan)
-    template: str = f"{tool.name}::{analysis}.html"
+    ################################################################################
+    # CORE! Run the "body" content method associated with the tool and reporting dimension!
+    ################################################################################
+    context: Sns = content_method(scan, dimension)
+
+    try:
+        template: str = f"{tool.name}::{dimension}.html"
+        return render_template(template, **context.__dict__)
+    except Exception:
+        pass
+    template: str = f"{tool.name}::{tool.name}.html"
     return render_template(template, **context.__dict__)
 
 
 ################################################################################################
-def render_analyses(tool: ToolType, s_project_id: str, content_method: Callable) -> str:
-    """Render BOTH the new analysis widget associated with the new project *AND* update content on an OOB basis."""
+def render_dimensions(tool: ToolType, s_project_id: str, content_method: Callable) -> str:
+    """Render BOTH the new dimension widget associated with the new project *AND* update content on an OOB basis."""
     # Find the currently selected project..
     project: Project | None = Project.get_or_none(Project.id == int(s_project_id)) if s_project_id else None
     if not project:
         return ""
 
-    # Get the analysis options associated with this tool and scan's for the project.
-    html_select_analysis_widget, analysis = _build_analysis_selector(tool, project)
+    # Get the dimension options associated with this tool and scan's for the project.
+    html_select_dimension_widget, dimension = _build_dimension_selector(tool, project)
+    log.debug(f"selected dimension: {dimension.__dict__=}")
 
-    # Render the "body" portion given the new project *and* potentially a different analysis!
-    html_div_body: str = render_content(project, tool, analysis, content_method)
+    # Render the "body" portion given the new project *and* potentially a different dimension!
+    html_div_body: str = render_content(project, tool, dimension, content_method)
 
-    return f'{html_select_analysis_widget}<div id="div_body_content" hx-swap-oob="true">{html_div_body}</div>'
+    return f'{html_select_dimension_widget}<div id="div_body_content" hx-swap-oob="true">{html_div_body}</div>'
 
 
-def _build_analysis_selector(tool: ToolType, project: Project) -> tuple[str, str]:
-    # Get the analysis options associated with this tool and scan's for the project.
-    analysis_options, analysis = _get_analysis_selector(tool, project)
+def _build_dimension_selector(tool: ToolType, project: Project) -> tuple[str, str]:
+    # Get the dimensions options associated with this tool and scan's for the project.
+    dimension_options, dimension = _get_dimension_selector(tool, project)
 
-    # Render the HTML associated with the analysis select widget given the new project
-    context: Sns = Sns(analysis_options=analysis_options, hx_change_analysis_url=f"/{tool.name}/content")
-    template: str = "base::_select_analysis.html"
-    return (render_template(template, **context.__dict__), analysis)
+    # Render the HTML associated with the dimension select widget given the new project
+    context: Sns = Sns(dimension_options=dimension_options, hx_change_dimension_url=f"/{tool.name}/content")
+    template: str = "base::_select_dimension.html"
+    return (render_template(template, **context.__dict__), dimension)
 
 
 ################################################################################################
@@ -131,11 +149,10 @@ class Option:
 
 
 def get_project_selector(tool: ToolType | None = None) -> tuple[list[Option], Project | None]:
-    """Return a selection widget over all projects that have every had a scan for the specified tool."""
+    """Return a selection widget over all projects that have every had a scan (or for the specified tool)."""
     projects = Project.select().join(Request).join(Scan).distinct().order_by(Project.name)
     if tool:
-        analyses = list(tool.analyses.keys())
-        projects = projects.where(Scan.analysis.in_(analyses))
+        projects = projects.where(Scan.tool == tool.name)
 
     ################################################################################
     # Case 1: No projects found! (very unusual case)
@@ -177,56 +194,45 @@ def get_project_selector(tool: ToolType | None = None) -> tuple[list[Option], Pr
     return options, selected_project
 
 
-def _get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Option], str]:
-    """Return a form to allow selection over all analyses for the specified tool and project."""
-    if tool.name == "scc":
-        scc_slices = (
-            "CSS",
-            "HTML",
-            "License",
-            "Markdown",
-            "Plain Text",
-            "Python",
-            "Shell",
-            "TOML",
-            "YAML",
-        )
-        analyses = [(lang, lang) for lang in scc_slices]
-        last_analysis = State.lookup("scc_slice")
-    else:
+def _get_dimension_selector(tool: ToolType, project: Project) -> tuple[list[Option], ToolDimension]:
+    """Return a form to allow selection over all *REPORTING* dimensions for the specified tool and project."""
+    if tool.ingest_by_dimension:
+        # Eg. Radon and it's ilk:
         query = (
-            Scan.select(Scan.analysis)
+            Scan.select(Scan.ingest_dimension)
             .join(Request)
             .where(Request.project == project)
             .where(Scan.tool == tool.name)
             .distinct()
-            .order_by(
-                Scan.analysis,
-            )
+            .order_by(Scan.ingest_dimension)
         )
-        analyses = []
-        for scan_partial in query:
-            if scan_partial.analysis in tool.analyses:
-                analyses.append((scan_partial.analysis, tool.analyses[scan_partial.analysis]))
-        last_analysis = State.lookup("analysis")
+        dimensions = []
+        for scan in query:
+            if dimension := tool.find_dimension(scan.ingest_dimension):
+                dimensions.append(dimension)
+        log.debug(f"Found {len(dimensions)=}")
+    else:
+        # Single ingest and single or multiple reporting dimensions!
+        dimensions = tool.dimensions
 
-    selected_analysis = None
-    if last_analysis:
-        for analysis, _ in analyses:
-            if last_analysis.lower() == analysis.lower():
-                selected_analysis = analysis
+    last_dimension: str = State.lookup("dimension")
+
+    selected_dimension: ToolDimension = None
+    if last_dimension:
+        for dimension in dimensions:
+            if last_dimension.lower() == dimension.name.lower():
+                selected_dimension = dimension
                 break
 
-    # If no match found (or no last_analysis), default to first
-    if selected_analysis is None:
-        selected_analysis = analyses[0][0]
+    # If no match found (or no last_dimension), default to first
+    if selected_dimension is None:
+        selected_dimension = dimensions[0]
 
     # Build options now that we know which is the selected entry..
     options = []
-    for value, display in analyses:
-        selected = value == selected_analysis
-        options.append(Option(value=value, display=display, selected=selected))
+    for dimension in dimensions:
+        selected = dimension == selected_dimension
+        options.append(Option(value=dimension.name, display=dimension.description, selected=selected))
 
-    from pprint import pprint as pp
-
-    return options, selected_analysis
+    log.debug(f"{options=} {selected_dimension=}")
+    return options, selected_dimension

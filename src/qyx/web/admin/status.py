@@ -15,7 +15,7 @@ def status_page(template: str = "base::pages/status.html") -> str:
     ################################################################################
     # for project in Project.select():
     #     for request in Request.select().where(Request.project == project):
-    #         # Sum up the number of analysis scans done for this request
+    #         # Sum up the number of dimension scans done for this request
     #         query = Scan.select(
     #             Scan.
 
@@ -41,26 +41,26 @@ def status_page(template: str = "base::pages/status.html") -> str:
 
 # context = Sns(rows=[])
 # for request in Request.select().where(Request.project == project):
-#     for analysis in ("cloc", "ty"):
-#         scan = Scan.get(Scan.request == request, Scan.analysis == analysis)
+#     for dimension in ("cloc", "ty"):
+#         scan = Scan.get(Scan.request == request, Scan.dimension == dimension)
 #         print(f"{scan.__dict__=}")
 
-#     counts_by_scan_analysis = dict()
+#     counts_by_scan_dimension = dict()
 #     for scan in scans_for_request:
 #         counts[scan.as_of] =
-#         counts[scan.analysis] += 1
+#         counts[scan.dimension] += 1
 
-#     for analysis, count in sorted(counts.items()):
+#     for dimension, count in sorted(counts.items()):
 #         row = Sns(date=scan.as_of,
 #                   message=scan.git_commit_message,
 
-#         s_scan = f"[cyan]{s_analysis}[/cyan] → [green]{count:,d}[/green] scans"
+#         s_scan = f"[cyan]{s_dimension}[/cyan] → [green]{count:,d}[/green] scans"
 #         ta_tree.add(s_scan)
 
-# scan = Scan.get_most_recent(project, "ty", "ty")
+# scan = Scan.get_latest(project, "ty", "ty")
 # if not scan:
 #     return render_partial("base::_no_scans_yet.html")
 
-# State.update(args, project=project.name, analysis="ty")
+# State.update(args, project=project.name, dimension="ty")
 
 # return render_partial(template, **context.__dict__)

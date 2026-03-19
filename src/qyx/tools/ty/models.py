@@ -9,7 +9,7 @@ from peewee import fn, JOIN
 
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
-from qyx.tools.common import get_loc, get_scans_for_project_analysis
+from qyx.tools.common import get_loc, get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -26,7 +26,7 @@ class TyDescription(BaseModel):
     class Meta:
         """..."""
 
-        table_name = "ty_description"
+        table_name = "tool_ty_description"
 
 
 class Ty(BaseModel):
@@ -48,12 +48,12 @@ class Ty(BaseModel):
     class Meta:
         """..."""
 
-        table_name = "ty"
+        table_name = "tool_ty"
         indexes = ((("scan", "directory", "filename", "fingerprint"), True),)
 
 
 @query_cache
-def query_ty_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_ty_0(args: Namespace, scan: Scan, dimension: str = "ty", context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Ty.select(
             fn.COUNT(Ty.id).alias("count"),
@@ -148,7 +148,7 @@ def query_ty_h(project: Project, last: int = None) -> Sns:
     # We do this as there are valid cases when there are NO Ty table
     # entries for a particular scan. We still want the timestamp back
     # with a Ty count of *0*.
-    scans = get_scans_for_project_analysis(project, "ty", last=last)
+    scans = get_scans_for_project_dimension(project, "ty", last=last)
     query = (
         Scan.select(
             Scan.as_of.alias("timestamp"),

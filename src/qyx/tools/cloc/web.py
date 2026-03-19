@@ -18,23 +18,23 @@ from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 # Routing/View methods
 ################################################################################################
 def view(template: str = "cloc::page.html") -> str:
-    """View callback to render the entire tool page: project selector, analysis selector and body content."""
+    """View callback to render the entire tool page: project selector and body content."""
     o_tool = request.app.args.tools["cloc"]
     return render(o_tool, template, get_content)
 
 
 def view_content() -> str:
-    """View callback for when a new analysis is selected, just need to update the body content directly."""
+    """View callback for when a new project is selected, just need to update the body content directly."""
     o_tool = request.app.args.tools["cloc"]
     project: str = request.query.project
-    return render_content(project, o_tool, "cloc", get_content)
+    return render_content(project=project, tool=o_tool, content_method=get_content)
 
 
 ################################################################################################
-def get_content(scan: Scan) -> Sns:
+def get_content(scan: Scan, *args) -> Sns:
     """Populate our tool's home page to the specified scan."""
     args = request.app.args
-    State.update(args, project=scan.request.project.name, analysis=scan.analysis)
+    State.update(args, project=scan.request.project.name)
 
     context = Sns()
     context.cloc_as_of = scan.as_of_display(collapse_today=True)

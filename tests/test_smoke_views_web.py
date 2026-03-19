@@ -2,36 +2,41 @@
 
 import inspect
 
-from argparse import Namespace
-from types import SimpleNamespace
+from types import SimpleNamespace as Sns
 
+from qyx.constants import ReportLevel
 from qyx.tools._models_ import Scan
 
 
 def _get_granular_view_cases(app_args, ingested_project):
     cases = []
     for o_tool in app_args.tools.tools():
-        for analysis, report_level in o_tool.iter_reports("web"):
-            tool = o_tool.name
+        for report_level in ReportLevel:
+            for o_dimension in o_tool.dimensions:
+                tool, dimension = o_tool.name, o_dimension.name
 
-            scan = Scan.get_most_recent(ingested_project, tool, analysis)
+                scan = Scan.get_latest(ingested_project, tool, dimension)
 
-            # Lookup the correct web rendering method. Note, this could from *either*:
-            # - <tool>/web.py            (e.g. ruff, cloc etc.)
-            # - <tool>/web_<analysis>.py (e.g. radon with it's sub-analyses)
-            render_method_name = f"{analysis}_{report_level.value}"
-            try:
-                web_view_module = o_tool.import_component("web")
-                web_view_method = getattr(web_view_module, render_method_name)
-            except (ModuleNotFoundError, AttributeError):
+                # Lookup the correct web rendering method. Note, this could from *either*:
+                # - <tool>/web.py             (eg. ruff, cloc etc.)
+                # - <tool>/web_<dimension>.py (eg. radon with it's sub-analyses)
                 try:
-                    web_view_module = o_tool.import_component(f"web_{analysis}")
+                    render_method_name = f"view_{dimension}_{report_level.value}"
+                    web_view_module = o_tool.import_component("web")
                     web_view_method = getattr(web_view_module, render_method_name)
                 except (ModuleNotFoundError, AttributeError):
-                    print(f"Skipping view: {tool=} {render_method_name=}")
-                    continue
-            msg = f"T:{o_tool.name} A:{analysis} L:{report_level.value}]"
-            cases.append(Namespace(msg=msg, scan=scan, web_view_method=web_view_method))
+                    try:
+                        web_view_module = o_tool.import_component(f"web_{dimension}")
+                        web_view_method = getattr(web_view_module, render_method_name)
+                    except (ModuleNotFoundError, AttributeError):
+                        continue
+                        # pytest.fail(
+                        #     f"Missing web view method '{render_method_name}' for tool={tool}, dimension={dimension}",
+                        #     pytrace=False,  # optional: cleaner output without pytest internals
+                        # )
+
+                msg = f"T:{o_tool.name} D:{dimension} L:{report_level.value}]"
+                cases.append(Sns(msg=msg, scan=scan, web_view_method=web_view_method))
     return cases
 
 
@@ -64,16 +69,16 @@ def test_web_views(app_args, ingested_project, subtests):
                 case None:
                     pass
 
-                case SimpleNamespace():
+                case Sns():
                     pass  # Expected output!
 
                 case dict():
                     pass
 
                 case list():
-                    # Only happens when return raw Namespaces
+                    # Only happens when return raw Sns's
                     for foo in result:
-                        assert isinstance(foo, Namespace)
+                        assert isinstance(foo, Sns)
 
                 case str() as html:
                     assert html.startswith("<html>")

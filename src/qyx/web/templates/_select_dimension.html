@@ -1,13 +1,13 @@
-<div id="div_select_analysis">
-  <select name="analysis"
-          aria-label="Select analysis..."
-          hx-get="{{ hx_change_analysis_url }}" {# HTMX endpoint to update body based on a new analysis selection #}
+<div id="div_select_dimension">
+  <select name="dimension"
+          aria-label="Select dimension..."
+          hx-get="{{ hx_change_dimension_url }}" {# HTMX endpoint to update body based on a new dimension selection #}
           hx-target="#div_body_content"         {# What to update on response #}
           hx-swap="innerHTML"                   {# How to update on response #}
           hx-include="[name='project']"
           hx-on:htmx:before-request="document.getElementById('div_body_content').innerHTML = '<p aria-busy=true>Loading...</p>'"
   >
-    {% for option in analysis_options %}
+    {% for option in dimension_options %}
       <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
     {% endfor %}
   </select>

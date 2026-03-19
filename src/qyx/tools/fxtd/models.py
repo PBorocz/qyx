@@ -10,7 +10,7 @@ from peewee import fn, JOIN
 
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
-from qyx.tools.common import get_loc, get_scans_for_project_analysis
+from qyx.tools.common import get_loc, get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -35,12 +35,12 @@ class Fxtd(BaseModel):
     class Meta:
         """..."""
 
-        table_name = "fxtd"
+        table_name = "tool_fxtd"
         indexes = ((("scan", "directory", "filename", "line"), True),)
 
 
 @query_cache
-def query_fxtd_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_fxtd_0(args: Namespace, scan: Scan, dimension: str = "fxtd", context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary level fxtd metrics."""
     query = (
         Fxtd.select(
@@ -111,7 +111,7 @@ def query_fxtd_2(scan: Scan) -> Sns:
 
 @query_cache
 def query_fxtd_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_project_analysis(project, "fxtd", last=last)
+    scans = get_scans_for_project_dimension(project, "fxtd", last=last)
     rows = (
         Scan.select(
             Scan.as_of.alias("timestamp"),

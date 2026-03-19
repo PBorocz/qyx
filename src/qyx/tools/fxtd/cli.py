@@ -6,21 +6,21 @@ from types import SimpleNamespace as Sns
 
 from qyx.cli import cli_console, cli_table
 from qyx.constants import ReportLevel as Rl
-from qyx.tools._models_ import Project, Scan, ToolType
+from qyx.tools._models_ import Project, Scan, ToolDimension, ToolType
 from qyx.tools.fxtd.models import query_fxtd_0, query_fxtd_1, query_fxtd_2, query_fxtd_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
 
 
-def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -> None:
+def render(args: Namespace, project: Project, o_tool: ToolType, o_dimension: ToolDimension) -> bool:
     # Get most recent Scan for simple "current-state" reporting.
     # Note: We safely can disregard whether or not the Scan was based on
     # git or directly from a directory as we're searching based on "as of",
     # thus, the most recent scan could be from either source!
-    if not (scan := Scan.get_most_recent(project, "fxtd", "fxtd")):
+    if not (scan := Scan.get_latest(project, "fxtd", "fxtd")):
         log.error("Sorry, we haven't performed an 'fxtd' scan yet for this project.")
-        return None
+        return False
 
     match args.level.lower():
         case Rl.SUMMARY:
@@ -38,6 +38,8 @@ def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -
             fxtd_h(args, project)
         case _:
             log.warning(f"Sorry, invalid report level: '{args.level}', run 'qyx report --help' for valid options.")
+            return False
+    return True
 
 
 def fxtd_0(args: Namespace, project: Project, scan: Scan) -> None:

@@ -71,6 +71,11 @@ def get_args_command_line():
         formatter_class=RichHelpFormatter,
     )
     parser_ingest.add_argument(
+        "-t",
+        "--tool",
+        help="Tool to ingest with, eg. cloc, ruff, radon, scc etc.",
+    )
+    parser_ingest.add_argument(
         "-n",
         "--name",
         help="Project name, required to ingest data.",
@@ -78,14 +83,7 @@ def get_args_command_line():
     parser_ingest.add_argument(
         "-p",
         "--path",
-        help="Path to run analysis tool against, eg. '.', '../src', '/abs/path', 'https:...'.",
-    )
-    parser_ingest.add_argument(
-        "-a",
-        "--analysis",
-        dest="analysis",
-        default=ALL_ITEMS,
-        help="Analysis to ingest, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
+        help="Path to run tool against, eg. '.', '../src', '/abs/path', 'https:...'.",
     )
     parser_ingest.add_argument(
         "--stdin",
@@ -109,11 +107,16 @@ def get_args_command_line():
         help="Project name, if not specified, will be determined from path.",
     )
     parser_report.add_argument(
-        "-a",
-        "--analysis",
-        dest="analysis",
+        "-t",
+        "--tool",
+        help="Tool to report on, eg. cloc, ruff, radon, scc etc.",
+    )
+    parser_report.add_argument(
+        "-d",
+        "--dimension",
+        dest="dimension",
         default=ALL_ITEMS,
-        help="Analysis to run, eg. cloc, ruff, fxtd, cc, mi, radon etc.",
+        help="Optional dimension to report on, eg. python, html, cc, raw, hal etc.",
     )
     parser_report.add_argument(
         "-l",

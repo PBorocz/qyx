@@ -23,8 +23,8 @@ PROMPT_STYLE = Style([
 # fmt: on
 
 
-def get_args_interactively(args: Namespace, iter: int) -> Namespace:
-    if not iter:
+def get_args_interactively(args: Namespace, first_pass: bool) -> Namespace:
+    if first_pass:
         # Only print title the first time through...
         qprint("QYX → Code Quality Analysis Tool", style="bold italic")  #  fg:darkblue")
 
@@ -113,7 +113,8 @@ def _prompt_command_status(args: Namespace) -> Namespace:
 
 def _prompt_command_report(args: Namespace) -> Namespace:
     args.name = _prompt_name(args)
-    args.analysis = _prompt_analysis(args, "Analysis:")
+    args.tool = _prompt_tool(args, "Tool:")
+    args.dimension = _prompt_dimension(args, "Dimension:")
     args.level = _prompt_report_level(args)
     return args
 
@@ -121,7 +122,7 @@ def _prompt_command_report(args: Namespace) -> Namespace:
 def _prompt_command_ingest(args: Namespace) -> Namespace:
     args.name = _prompt_name(args, include_new_option=True)
     args.path = _prompt_path(args)
-    args.analysis = _prompt_analysis(args, "Analysis:")
+    args.tool = _prompt_tool(args, "Tool:")
     args.stdin = False  # Obviously since we're not able to read from stdin interactively!
     return args
 
@@ -349,7 +350,7 @@ def _prompt_delete_scan() -> int:
     choices = []
     request = Request.get(Request.id == int(s_request_id))
     for scan in Scan.select().where(Scan.request == request):
-        title = f"{scan.analysis_display()} as of {dt_to_display(scan.as_of)}"
+        title = f"{scan.tool_dimension_display()} as of {dt_to_display(scan.as_of)}"
         choices.append(Choice(title=title, value=scan.id))
 
     value = select(
@@ -374,37 +375,60 @@ def _prompt_status_level() -> StatusLevel:
     return StatusLevel(value)
 
 
-def _prompt_analysis(args: Namespace, message: str) -> str:
+def _prompt_tool(args: Namespace, message: str) -> str:
     choices = []
     for o_tool in args.tools.tools():
-        # Tools with a single analysis go out with just their analysis
-        if len(o_tool.analyses) == 1:
-            title = f"{o_tool.name:5s} - {o_tool.analyses[o_tool.name]}"
-            choices.append(Choice(title=title, value=o_tool.name))
-
-        else:
-            # For tools with multiple analyses, put an option out for each analysis and and "all" one
-            for analysis, description in o_tool.analyses.items():
-                title = f"{o_tool.name:5s} - {description}"
-                choices.append(Choice(title, value=analysis))
-            choices.append(Choice(title=f"{o_tool.name} - ALL", value=o_tool.name))
+        title = f"{o_tool.name:5s} - {o_tool.description}"
+        choices.append(Choice(title=title, value=o_tool.name))
 
     # Final choice is a "global" all
     choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS))
 
     # Do we have an existing value to default?
-    kwargs = _lookup_state_default("analysis")
+    kwargs = _lookup_state_default("tool")
 
-    analysis = select(
+    tool = select(
         message=message,
         choices=choices,
         style=PROMPT_STYLE,
         **kwargs,
     ).unsafe_ask()
 
-    State.update(args, analysis=analysis)
+    State.update(args, tool=tool)
 
-    return analysis
+    return tool
+
+
+def _prompt_dimension(args: Namespace, message: str) -> str:
+    choices = []
+    o_tool = args.tools[args.tool]
+
+    # Tools with a single dimension don't need a selector at all!
+
+    if len(o_tool.dimensions) == 1:
+        return o_tool.dimensions[0].name
+
+    # For tools with multiple dimensions, put an option out for each dimension and and "all" one
+    for o_dimension in o_tool.dimensions:
+        title = f"{o_dimension.name:5s} - {o_dimension.description}"
+        choices.append(Choice(title, value=o_dimension.name))
+
+    # Final choice is a "global" all
+    choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS))
+
+    # Do we have an existing value to default?
+    kwargs = _lookup_state_default("dimension")
+
+    dimension = select(
+        message=message,
+        choices=choices,
+        style=PROMPT_STYLE,
+        **kwargs,
+    ).unsafe_ask()
+
+    State.update(args, dimension=dimension)
+
+    return dimension
 
 
 def _prompt_report_level(args: Namespace) -> Rl:

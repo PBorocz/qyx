@@ -7,10 +7,9 @@ from abc import ABC
 from argparse import Namespace
 from importlib import import_module
 from types import ModuleType
-from typing import Callable, Iterator, TypeAlias
+from typing import Callable, TypeAlias
 
 from .base import BaseModel
-from qyx.constants import ReportLevel as Rl
 
 
 log = logging.getLogger(__name__)
@@ -19,36 +18,50 @@ log = logging.getLogger(__name__)
 ################################################################################################
 # "Tool" data models
 ################################################################################################
+class ToolDimension:
+    """Define a "dimension" of a tool, usually for reporting (Cloc, Scc) or also used to *run* the tool (radon)."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        models: tuple[BaseModel],
+        cli_option: str = "default",
+    ) -> None:
+        self.name = name
+        self.description = description
+        self.cli_option = cli_option
+        self.models = models
+
+
 class AbstractToolConfiguration(ABC):
     """Defines all the semantics of a code quality tool (aka module) supported by this package."""
 
     def __init__(
         self,
-        module: str,
         name: str,
-        analyses: dict[str, str],
-        models: dict[str, BaseModel],
-        reports: dict,
+        description: str,
+        dimensions: list[ToolDimension],
+        ingest_by_dimension: bool = False,
         **kwargs,
     ) -> "AbstractToolConfiguration":
         """..."""
-        # Name of python module directory implementing the tool, e.g. "ruff" obo ../src/qyx/tools/ruff
-        self.module: str = module
-
-        # Short name of the tool, e.g. e.g. "ruff", "cloc", etc. (by
+        # Short name of the tool, e.g. "ruff", "cloc"
         # separating out the module from the name, we can have a tool
-        # called "foo" in a directory called "foobar")
+        # called "foo" in a directory called "bar")
         self.name: str = name
 
-        # Analyses supported by the tool, short value (eg. "mi") -> long description (eg. "Maintainability Index")
-        self.analyses: dict[str, str] = analyses
+        # Description, e.g. "Count lines of code", "Type checker", etc.
+        self.description: str = description
 
-        # Peewee storage model(s) used by analysis (usually a single
-        # one per analysis but could be multiple, see RadonHal for example)
-        self.models: dict[str, list[BaseModel]] = models
+        # Name of python module directory implementing the tool, e.g. "ruff" obo ../src/qyx/tools/ruff
+        self.module: str  # Populated after instantiation
 
-        # Reports available by interface and report-level
-        self.reports: dict = reports
+        # Dimensions supported by the tool
+        self.dimensions: list[ToolDimension] = dimensions
+
+        # Are dimensions used during ingest? ie. do we ingest separately for each dimension?
+        self.ingest_by_dimension: bool = ingest_by_dimension
 
         # Are results "required" for a Scan to be valid? (usually yes)
         self.results_required = True
@@ -66,19 +79,28 @@ class AbstractToolConfiguration(ABC):
         """Dynamically import a component from this module."""
         return import_module(f"qyx.tools.{self.module}.{component}")
 
-    def get_ingest_command(self, args: Namespace, relative=None, absolute=None, analysis=None) -> list[str]:
+    def get_ingest_command(
+        self,
+        args: Namespace,
+        relative="",
+        absolute="",
+        dimension: ToolDimension = None,
+    ) -> list[str]:
         """Return the command sent to subprocess to directly perform a "tool" ingest operation."""
-        cmd_template = args.config.get(f"tools.{self.name}.run.command")
-        return [
-            part.format(relative=relative or "", absolute=absolute or "", analysis=analysis or "")
-            for part in cmd_template
-        ]
+        cmd_template = args.config.get(f"tools.{self.name}.command")
+        if not cmd_template:
+            log.critical(f"Unable to find 'tools.{self.name}.command'")
+            return None
+        args = dict(relative=relative, absolute=absolute, dimension="")
+        if dimension:
+            args["dimension"] = dimension.name
+        return [part.format(**args) for part in cmd_template]
 
     def get_parse_method(self, *args, **kwargs) -> Callable:
         """Return the method to parse & save this tool's output (usually JSON)."""
         # NOTE:
-        # - This implementation is for "single"-analysis tools (ruff, cloc etc.).
-        # - For multi-analysis tools (like radon), this method is *OVERRIDDEN* in their respective __init__.py.
+        # - This implementation is for "single"-dimension tools (ruff, cloc etc.).
+        # - For multi ingest-dimension tools (like radon), this method is *OVERRIDDEN* in their respective __init__.py.
         py_parse: ModuleType = self.import_component("parse")
         return getattr(py_parse, "parse")
 
@@ -96,20 +118,26 @@ class AbstractToolConfiguration(ABC):
 
         return render_module, render_method
 
-    def iter_reports(self, interface: str) -> Iterator[str, Rl]:
-        """Iterator over analysis available for the specified interface."""
-        if interface not in self.reports:
-            log.warning(f"Sorry, requesting reports for {interface=} that isn't defined for tool: '{self.name}'!")
-        for analysis, report_levels in self.reports.get(interface, ()).items():
-            for report_level in report_levels:
-                yield analysis, report_level
+    def find_dimension(self, arg_dimension: str) -> ToolDimension | None:
+        for o_dimension in self.dimensions:
+            if o_dimension.name.lower() == arg_dimension.lower():
+                return o_dimension
+        return None
+
+    def get_models(self) -> list[BaseModel]:
+        """Return a unique list of all storage models used by the tool."""
+        model_classes = set()  # May be duplicates for report only dimension tools! (eg. scc)
+        for o_dim in self.dimensions:
+            for model_class in o_dim.models:
+                model_classes.add(model_class)
+        return list(model_classes)
 
 
 ToolType: TypeAlias = AbstractToolConfiguration
 
 
 class Tools(dict):
-    """Tools are essentially a dict with some convenience methods."""
+    """The collection of all tools is essentially a dict with a few convenience methods."""
 
     def display_names(self) -> str:
         """Return a nice comma-delimited list of tool names available."""
@@ -123,17 +151,17 @@ class Tools(dict):
         """Return all the tools, sorted alphabetically by tool name."""
         return [self[tool] for tool in self.names()]
 
-    def analyses(self) -> list[str]:
-        """Return all the analyses available across all tools defined.."""
-        analyses = list()
+    def dimensions(self) -> list[str]:
+        """Return all the dimensions available across all tools defined.."""
+        dimensions = list()
         for o_tool in self.tools():
-            analyses.extend(o_tool.analyses.keys())
-        return analyses
+            dimensions.extend(o_tool.dimensions)
+        return dimensions
 
-    def tools_analyses(self) -> list[tuple[ToolType, str]]:
-        """Return all list of tool & analysis pairs."""
+    def tools_dimensions(self) -> list[tuple[ToolType, str]]:
+        """Return all list of tool & dimension pairs."""
         return_ = list()
         for o_tool in self.tools():
-            for analysis in o_tool.analyses:
-                return_.append((o_tool, analysis))
+            for dimension in o_tool.dimensions:
+                return_.append((o_tool, dimension))
         return return_

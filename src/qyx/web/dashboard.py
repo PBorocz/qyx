@@ -33,17 +33,22 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
 
     context = Sns(as_of_dates={}, analyses=[])
 
-    for ta_ in args.config.get("renderers.web.dashboard.analysis_order", ()):
-        (tool, analysis) = ta_.split(":")
-        scan = Scan.get_most_recent(project, tool, analysis)
+    for ta_ in args.config.get("renderers.web.dashboard.dimension_order", ()):
+        tool, ingest_dimension, report_dimension = (ta_.split(":") + [None, None])[:3]
+        report_dimension = ingest_dimension if not report_dimension else report_dimension
+        log.debug(f"dashboard: rendering {tool=} {ingest_dimension=} {report_dimension=}")
+
+        # Get the most recent scan, usually tool,dimension..
+        scan = Scan.get_latest(project, tool, ingest_dimension)
+
         if scan:
             # First, lookup the appropriate *VIEW* method to use from the respective tool's web views.
             # --> Relying upon NAMING CONVENTION's here!
-            method = import_method(f"qyx.tools.{tool}.web:view_{analysis}_0")
+            method = import_method(f"qyx.tools.{tool}.web:view_{ingest_dimension}_0")
             if not method:
                 # If there isn't a view method, lookup the appropriate *QUERY* method to use from the tool's models.
                 # --> Relying upon NAMING CONVENTION's here!
-                method = import_method(f"qyx.tools.{tool}.models:query_{analysis}_0")
+                method = import_method(f"qyx.tools.{tool}.models:query_{ingest_dimension}_0")
                 if not method:
                     log.error(f"Unable to render {ta_} for dashboard")
                     continue
@@ -51,13 +56,14 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
             ##################################
             # Call it to populate our context!
             ##################################
-            ctx = method(args=args, scan=scan, context=Vc.DASHBOARD)
-            setattr(context, f"{analysis}_0", ctx)
+            log.debug(f"dashboard: calling {method.__name__}")
+            ctx = method(args=args, scan=scan, dimension=report_dimension, context=Vc.DASHBOARD)
+            setattr(context, f"{ingest_dimension}_0", ctx)
 
-            # Mark which dates we processed each analysis upon..
-            context.as_of_dates[analysis] = scan.as_of_display(collapse_today=True)
+            # Mark which dates we processed each dimension upon..
+            context.as_of_dates[ingest_dimension] = scan.as_of_display(collapse_today=True)
 
             # Return which combinations we actually got data for!
-            context.analyses.append((tool, analysis))
+            context.analyses.append((tool, ingest_dimension))
 
     return render_template(template, **context.__dict__)

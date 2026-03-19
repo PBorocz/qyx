@@ -18,8 +18,9 @@ renderers:
       # Order of tools on the main nav bar.
       tool_order: ["scc", "ruff", "radon", "fxtd", "ty", "cloc"]
     dashboard:
-      # Order of summaries on the main/dashboard/home page
-      analysis_order: ["scc:scc", "fxtd:fxtd", "ruff:ruff", "ty:ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw", "cloc:cloc"]
+      # Order and content of summaries on the main/dashboard/home page:
+      # Syntax here is "<tool>:<ingest_dimension[:<report_dimension>]"
+      dimension_order: ["scc:scc:python", "fxtd:fxtd", "ruff:ruff", "ty:ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw", "cloc:cloc"]
 
   cli:
     colors:
@@ -29,14 +30,13 @@ renderers:
 
 tools:
   cloc:
-    run:
-      command:
-        - cloc
-        - --by-file
-        - --include-lang=Python
-        - --vcs=git
-        - --json
-        - "{absolute}"
+    command:
+      - cloc
+      - --by-file
+      - --include-lang=Python
+      - --vcs=git
+      - --json
+      - "{absolute}"
     code_density:
       thresholds:
         - {min:  0, max:   10, grade: "B", color: "#84cc16"}
@@ -96,14 +96,14 @@ tools:
         - {min:  5, max:   10, grade: "C", color: "#eab308"}
         - {min: 10, max:   20, grade: "D", color: "#f97316"}
         - {min: 20, max: .inf, grade: "F", color: "#ef4444"}
+
   radon:
-    run:
-      command:
-        - uvx
-        - radon
-        - "{analysis}"
-        - --json
-        - "{absolute}"
+    command:
+      - uvx
+      - radon
+      - "{dimension}"
+      - --json
+      - "{absolute}"
     cc:
     #
     # Standards reference:
@@ -166,13 +166,12 @@ tools:
           - {min: 40, max: .inf, grade: "F", color: "#ef4444"}
 
   ruff:
-    run:
-      command:
-        - ruff
-        - check
-        - --exit-zero
-        - --output-format=json
-        - "{absolute}"
+    command:
+      - ruff
+      - check
+      - --exit-zero
+      - --output-format=json
+      - "{absolute}"
     violations_per_kloc:
       thresholds:
         - {min:  0, max:    5, grade: "A", color: "#22c55e"}
@@ -208,14 +207,13 @@ tools:
         - {min:  50, max:  100, grade: "D", color: "#f97316"}
         - {min: 100, max: .inf, grade: "F", color: "#ef4444"}
   ty:
-    run:
-      command:
-        - ty
-        - check
-        - --exit-zero
-        - --output-format
-        - gitlab
-        - "{absolute}"
+    command:
+      - ty
+      - check
+      - --exit-zero
+      - --output-format
+      - gitlab
+      - "{absolute}"
     violations_per_kloc:
       thresholds:
         - {min:  0, max:    5, grade: "A", color: "#22c55e"}  # Excellent
@@ -352,9 +350,9 @@ tools:
 
   scc:
     settings:
-      report_languages: # Rest will be skipped!
-        - Python
-        - HTML
+      dashboard_report_types: # Which file types do we want to report on the dashboard?
+        - python
+        - html
     dryness:
       thresholds:
         # Per https://github.com/boyter/scc?tab=readme-ov-file#unique-lines-of-code-uloc
@@ -366,16 +364,15 @@ tools:
         - {min: 60, max:   70, grade: "C", color: "#eab308"}
         - {min: 50, max:   60, grade: "D", color: "#f97316"}
         - {min:  0, max:   55, grade: "F", color: "#ef4444"}
-    run:
-      command:
-        - scc
-        - --uloc
-        - --character
-        - --by-file
-        - --format
-        - json
-        - --percent
-        - "{absolute}"
+    command:
+      - scc
+      - --uloc
+      - --character
+      - --by-file
+      - --format
+      - json
+      - --percent
+      - "{absolute}"
 
 database:
   # Database configuration (if applicable)

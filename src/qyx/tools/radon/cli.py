@@ -6,8 +6,8 @@ from typing import Callable
 from types import SimpleNamespace as Sns
 
 from qyx.cli import cli_console, cli_table
-from qyx.constants import ReportLevel as Rl
-from qyx.tools._models_ import Project, Scan, ToolType
+from qyx.constants import ReportLevel
+from qyx.tools._models_ import Project, Scan, ToolDimension, ToolType
 from qyx.tools.radon import models as rm
 from qyx.tools.radon.models import RadonHal
 from qyx.utils import format_timestamp_headers
@@ -15,23 +15,25 @@ from qyx.utils import format_timestamp_headers
 log = logging.getLogger(__name__)
 
 
-def render(args: Namespace, project: Project, o_tool: ToolType, analysis: str) -> None:
-    if not (scan := Scan.get_most_recent(project, "radon", analysis)):
-        log.info(f"Sorry, we haven't performed a '{analysis}' measurement yet for this project.")
-        return None
+def render(args: Namespace, project: Project, o_tool: ToolType, o_dimension: ToolDimension | str) -> bool:
+    dimension = o_dimension.name if isinstance(o_dimension, ToolDimension) else o_dimension
+    if not (scan := Scan.get_latest(project, "radon", dimension)):
+        log.info(f"Sorry, we haven't performed a '{dimension}' measurement yet for this project.")
+        return False
 
-    if args.level != Rl.ALL:
+    if args.level != ReportLevel.ALL:
         # We're only running a single report..
-        method: Callable = globals().get(f"{analysis}_{args.level.lower()}")  # Lookup from below..
+        method: Callable = globals().get(f"{dimension}_{args.level.lower()}")  # Lookup from below..
         if not method:
             log.error(f"Sorry, invalid report level: '{args.level}', run qyx report --help for valid options.")
-            return
+            return False
         method(args, project=project, scan=scan)
     else:
-        for rl_ in Rl:
-            method: Callable = globals().get(f"{analysis}_{rl_.value}")  # Lookup from below..
+        for report_level in ReportLevel:
+            method: Callable = globals().get(f"{dimension}_{report_level.value}")  # Lookup from below..
             if method:
                 method(args, project=project, scan=scan)
+    return True
 
 
 ################################################################################################

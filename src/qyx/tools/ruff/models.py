@@ -9,7 +9,7 @@ from peewee import fn, JOIN
 
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
-from qyx.tools.common import get_loc, get_scans_for_project_analysis
+from qyx.tools.common import get_loc, get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -26,7 +26,7 @@ class RuffMessage(BaseModel):
     class Meta:
         """..."""
 
-        table_name = "ruff_message"
+        table_name = "tool_ruff_message"
 
 
 class RuffUrl(BaseModel):
@@ -38,7 +38,7 @@ class RuffUrl(BaseModel):
     class Meta:
         """..."""
 
-        table_name = "ruff_url"
+        table_name = "tool_ruff_url"
 
 
 class Ruff(BaseModel):
@@ -59,12 +59,12 @@ class Ruff(BaseModel):
     class Meta:
         """..."""
 
-        table_name = "ruff"
+        table_name = "tool_ruff"
         indexes = ((("scan", "directory", "filename", "line", "column", "rule_code"), True),)
 
 
 @query_cache
-def query_ruff_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_ruff_0(args: Namespace, scan: Scan, dimension: str = "ruff", context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary ruff metrics."""
     query = (
         Ruff.select(
@@ -145,7 +145,7 @@ def query_ruff_h(project: Project, last: int = None) -> Sns:
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular
     # scan. We still want the timestamp back with a Ruff count of *0*.
-    scans = get_scans_for_project_analysis(project, "ruff", last=last)
+    scans = get_scans_for_project_dimension(project, "ruff", last=last)
     rows = (
         Scan.select(
             Scan.as_of.alias("timestamp"),

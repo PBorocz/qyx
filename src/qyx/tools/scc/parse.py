@@ -25,7 +25,7 @@ def parse(scan: Scan, data: Any) -> int:
         # fmt: off
         scc = Scc(
             scan                = scan.id,
-            name                = language["Name"],
+            language            = language["Name"].lower(), # eg. python, html, etc.
             bytes               = language["Bytes"],
             code_bytes          = language["CodeBytes"],
             lines               = language["Lines"],
@@ -40,9 +40,9 @@ def parse(scan: Scan, data: Any) -> int:
         # fmt: off
 
         # Derived attributes...
+        scc.num_files = len(language.get("Files", []))
         if scc.code:
             scc.dryness = (scc.uloc / scc.code) * 100.0
-        scc.num_files = len(language.get("Files", []))
         scc.save()
         count += 1
 
@@ -56,7 +56,7 @@ def parse(scan: Scan, data: Any) -> int:
                 location            = file_info["Location"],
                 filename            = file_info["Filename"],
                 directory           = fn_path.parent,
-                extension           = file_info["Extension"],
+                language            = file_info["Language"].lower(),
                 bytes               = file_info["Bytes"],
                 lines               = file_info["Lines"],
                 code                = file_info["Code"],

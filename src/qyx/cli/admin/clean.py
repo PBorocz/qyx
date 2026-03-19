@@ -71,15 +71,14 @@ def _delete_orphaned_scans(args: Namespace) -> None:
     def __clean_scans(o_tool: ToolType) -> None:
         # First, get all the scan's id's used by models storing data for this tool/module:
         model_scan_ids = set()
-        for models in o_tool.models.values():
-            for model in models:
-                try:
-                    result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
-                    model_scan_ids.update(result_scan_ids)
-                    log.debug(f"-- Analysis: {model.__name__:16s} has {len(result_scan_ids):2d} scan(s)")
-                except AttributeError:
-                    # Not all models have the scan attribute (e.g. RuffMessage, SccFile etc.)
-                    pass
+        for model in o_tool.get_models():
+            try:
+                result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
+                model_scan_ids.update(result_scan_ids)
+                log.debug(f"-- Tool model: {model.__name__:16s} has {len(result_scan_ids):2d} scan(s)")
+            except AttributeError:
+                # Not all models have the scan attribute (e.g. RuffMessage, SccFile etc.)
+                pass
 
         log.debug(f"- {o_tool.name:6s} {len(model_scan_ids):4d} scan definitions")
 
@@ -87,7 +86,7 @@ def _delete_orphaned_scans(args: Namespace) -> None:
         scan_ids = {scan.id for scan in Scan.select().where(Scan.tool == o_tool.name)}
         log.debug(f"- {o_tool.name:6s} {len(scan_ids):4d} scan with results")
 
-        # Find any "orphaned" ones by simple set subtract (!) and delete 'em.
+        # Find any "orphaned" ones by a simple set "subtract" and delete 'em.
         scan_ids_to_delete = scan_ids - model_scan_ids
         if scan_ids_to_delete:
             Scan.delete().where(Scan.id.in_(scan_ids_to_delete)).execute()

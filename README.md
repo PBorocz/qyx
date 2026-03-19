@@ -16,24 +16,30 @@
 
 ## Tools & Metrics
 
-### CLOC (Count Lines of Code)
+### CLOC (Count lines of Code)
 - Lines of code, blank lines, comment lines
 - Code density percentage
 - Comment ratio
 - File size distribution
 
-### Ruff (Python Linting)
+### Ruff (Astral python linting)
 - Violation counts per rule and severity
 - Violations per KLOC
 - Weighted scoring by severity
 - Per-file and directory aggregation
 
-### Radon (Complexity Analysis)
+### Radon (Complexity analysis)
 Four sub-analyses providing comprehensive complexity metrics:
 - **CC** (Cyclomatic Complexity): Function and class complexity
 - **MI** (Maintainability Index): Overall maintainability score (0-100)
 - **HAL** (Halstead Metrics): Effort, difficulty, bugs prediction
 - **RAW** (Raw Metrics): Operators, operands, basic counts
+
+### Ty (Astral Type-checker)
+- Python type checker
+
+### Scc (Succint code counter)
+- Lines of code, Unique lines of code, blank lines, comment lines
 
 ### FXTD (Custom Annotation Tracker)
 Track code annotations and technical debt markers:
@@ -50,6 +56,8 @@ Track code annotations and technical debt markers:
   - `cloc`  - Count Lines of Code
   - `ruff`  - Python linter
   - `radon` - Complexity analyzer
+  - `scc`   - Count Lines of Code
+  - `ty`    - Python type checker
   - `git`   - Version control (for history analysis)
 
 ### Install QYX
@@ -81,17 +89,20 @@ uv run qyx --help
 ### Ingest Code Quality Metrics
 
 ```bash
-# Analyze current project
+# Analyze current project (will try to ingest using all tools)
 qyx ingest --name myproject --path /path/to/project
 
 # Analyze with specific tool
-qyx ingest --name myproject --path /path/to/project --analysis ruff
+qyx ingest --name myproject --path /path/to/project --tool ruff
 
-# Analyze git history (all commits)
+# Analyze git history (all commits and all tools)
 qyx ingest --name myproject --path /path/to/repo
 
+# Analyze git history (for a specific tool)
+qyx ingest --name myproject --path /path/to/repo --tool scc
+
 # Read from stdin (pipe tool output)
-ruff check --output-format=json . | qyx ingest --name myproject --stdin ruff
+ruff check --output-format=json . | qyx ingest --name myproject --stdin --tool ruff
 ```
 
 ### View Status
@@ -145,13 +156,10 @@ qyx serve --port 8080 --browser
 qyx admin clean
 
 # Remove old scan data
-qyx admin trim
+qyx admin clean
 
 # Delete specific project
-qyx admin delete
-
-# Complete database wipe (destructive!)
-qyx admin clear
+qyx admin delete --target project:5
 ```
 
 ## Interactive Mode
@@ -174,20 +182,17 @@ Default: `./config.yaml` in the project root
 ### Configuration Structure
 
 ```yaml
-# Command-line defaults
-defaults:
-  name: "my-project"
-  path: "/path/to/project"
-  log_level: "INFO"
-
-# Database configuration
-database:
-  path: "~/.config/qyx/qyx.sqlite3"
-
 # Tool-specific configurations
 tools:
   cloc:
-	code_density:
+	command:
+	  - cloc
+	  - --by-file
+	  - --include-lang=Python
+	  - --vcs=git
+	  - --json
+	  - "{absolute}"
+code_density:
 	  thresholds:
 		- {min: 10, max: 60, grade: "A", color: "#22c55e"}
 		- {min: 60, max: 70, grade: "B", color: "#84cc16"}
@@ -256,7 +261,7 @@ qyx ingest [OPTIONS]
 **Options:**
 - `--name TEXT`: Project name (required)
 - `--path PATH`: Project path (required for non-stdin)
-- `--analysis TEXT`: Specific analysis to run (cloc, ruff, radon_cc, radon_mi, radon_hal, radon_raw, fxtd)
+- `--tool TEXT`: Specific tool to run (cloc, ruff, radon, fxtd etc.)
 - `--stdin TEXT`: Read from stdin for specified tool
 - `--log-level LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR)
 
@@ -303,17 +308,9 @@ qyx serve [OPTIONS]
 
 Safe database housekeeping (removes orphaned records).
 
-#### `qyx admin clear`
-
-**DESTRUCTIVE**: Completely wipe database.
-
 #### `qyx admin delete`
 
-Delete specific project from database.
-
-#### `qyx admin trim`
-
-Remove old scan data based on retention policy.
+Delete specific project, request or scan from database. Use syntax "project:<id>", "request:<id>" or "scan:<id>" to specify the particular instance to delete.
 
 ## Web Interface
 
@@ -345,26 +342,24 @@ python-code-quality/
 │   ├── __main__.py             # Entry point
 │   ├── constants.py            # Enums and constants
 │   ├── cli/                    # CLI interface
-│   │   ├── ingest.py
-│   │   ├── report.py
-│   │   ├── status.py
+│   │   ├── ...
 │   │   └── admin/              # Admin commands
 │   ├── setup/                  # Configuration & initialization
-│   │   ├── args_cli.py
-│   │   ├── args_configuration.py
-│   │   ├── args_interactive.py
-│   │   ├── sqlite.py
-│   │   └── tools.py
+│   │   └── ...
 │   ├── tools/                  # Analysis tool integrations
-│   │   ├── base.py             # Base classes
-│   │   ├── cloc/
-│   │   ├── ruff/
-│   │   ├── radon/
-│   │   └── fxtd/
+│   │   ├── common.py
+│   │   ├── _models_/           # Base storage classes
+│   │   ├── <tool>/
+│   │   │   ├── __init__.py     # Tool configuration
+│   │   │   ├── models.py       # Tool Peewee storage model definitions
+│   │   │   ├── parse.py        # Tool logic to parse/save inbound scans
+│   │   │   ├── cli.py          # CLI interface for reporting (optional)
+│   │   │   ├── web.py          # Web interface for reporting (optional)
+│   │   │   └── templates/      # Web interface templates
+│   │   └── ...
 │   ├── web/                    # Web interface
-│   │   ├── serve.py
-│   │   ├── routes.py
-│   │   ├── home.py
+│   │   ├── ...
+│   │   ├── templates/          # Web interface base templates (not tool specific)
 │   │   └── static/
 │   └── utils/                  # Shared utilities
 │       ├── git.py
@@ -409,45 +404,15 @@ pytest --cov=qyx
 ### Adding a New Tool
 
 1. Create tool directory in `src/qyx/tools/<tool_name>/`
-2. Implement required modules:
+2. Add requisite/desired configuration to `config.yaml`
+3. Implement required modules:
    - `__init__.py` - Tool configuration
    - `models.py` - Database models
-   - `ingest.py` - Data ingestion logic
+   - `parse.py` - Data ingestion logic
+2. Implement optional modules:
    - `cli.py` - CLI rendering (if desired)
-   - `web.py` - Web rendering (if desired but at least one rendering is suggested)
-3. Add requisite/desired configuration to `config.yaml`
+   - `web.py` + templates - Web rendering (if desired but at least a summary rendering is suggested)
 
-### Tool Implementation Pattern
-
-Each tool follows a standard pattern:
-
-```python
-# __init__.py - Tool configuration
-class MyToolConfiguration(AbstractToolConfiguration):
-	tool_name = "mytool"
-	command = "mytool --json {path}"
-	report_levels = [0, 1, 2]  # Supported report levels
-
-# models.py - Data models
-class MyToolResult(BaseResultsModel):
-	# Define fields
-	pass
-
-# ingest.py - Data ingestion
-def ingest(scan: Scan, data: dict) -> None:
-	# Parse and store data
-	pass
-
-# cli.py - CLI rendering
-def render_cli(scan: Scan, level: int) -> None:
-	# Render to terminal
-	pass
-
-# web.py - Web rendering
-def render_web(scan: Scan, level: int) -> FT:
-	# Render to html with templates.
-	pass
-```
 
 ### Database Schema
 
@@ -459,43 +424,16 @@ QYX uses Peewee ORM with SQLite3.
 - `scan` - Individual tool runs
 
 **Tool-Specific Tables:**
-- `cloc` - Line counting
-- `fxtd` - Annotation tracking
-- `radon_cc` - Cyclomatic complexity
-- `radon_hal_function` - Per-function Halstead
-- `radon_hal` - Halstead metrics
-- `radon_mi` - Maintainability index
-- `radon_raw` - Raw metrics
-- `ruff` - Linting violations
-- `ty` - Type checks
-
-### Poe Tasks
-
-Quick automation tasks defined in `pyproject.toml`:
-
-```bash
-# Deploy (clean, update, push)
-poe deploy
-
-# Run QYX
-poe qyx
-
-# Start server
-poe serve
-
-# Report status
-poe status
-
-# Generate report
-poe report
-
-# Database operations
-poe clean
-poe clear
-
-# Open database in litecli
-poe sql
-```
+- `tool_cloc` - Line counting
+- `tool_fxtd` - Annotation tracking
+- `tool_radon_cc` - Cyclomatic complexity
+- `tool_radon_hal_function` - Per-function Halstead
+- `tool_radon_hal` - Halstead metrics
+- `tool_radon_mi` - Maintainability index
+- `tool_radon_raw` - Raw metrics
+- `tool_ruff` - Linting violations
+- `tool_ty` - Type checks
+- ...
 
 ## Grading System
 
@@ -522,13 +460,15 @@ thresholds:
 
 QYX provides multiple reporting levels for different perspectives:
 
-| Level | Description                                            |
-|-------|--------------------------------------------------------|
-| 0     | Project-level single metric                            |
-| 1     | Next level, usually directory-level detail             |
-| 2     | Next level, usually file-level detail                 |
-| 3     | Deep detailed metrics (function-level where available) |
-| h     | Historical trends with charts                          |
+|-------|-----------------------------------------------------------|
+| Level | Description                                               |
+|-------|-----------------------------------------------------------|
+| 0     | Project-level single metric                               |
+| 1     | Next level, usually directory-level detail                |
+| 2     | Next level, usually file-level detail                     |
+| 3     | Granual/detailed metrics (function-level where available) |
+| h     | Historical trends (with charts in web interface)          |
+|-------|-----------------------------------------------------------|
 
 ## Examples
 
@@ -606,25 +546,28 @@ Ensure external tools are installed:
 which cloc
 which radon
 which ruff
+...
 
-# Install missing tools
-pip install ruff radon
-# Install cloc via package manager (brew, apt, etc.)
+# Install missing tools (for example):
+  `uv tool install <tool>`
+or
+  `brew install <tool>`
 
-uv tool install ty
+or use your platform's package manager of choice to get the tool(s) onto your path.
+
 
 etc.
 ```
 
 ### Permission Issues
 
-Database location: `~/.config/qyx/qyx.sqlite3`
+On MacOS, database location: `~/Library/Application\ Support/qyx/db.sqlite3`
 
 Ensure write permissions:
 
 ```bash
-mkdir  -p ~/.config/qyx
-chmod 755 ~/.config/qyx
+mkdir  -p ~/Library/Application\ Support/qyx
+chmod 755 ~/Library/Application\ Support/qyx
 ```
 
 ## Contributing
@@ -655,7 +598,7 @@ Happily built with:
 - [Jinja](https://jinja.palletsprojects.com/en/stable/) - Templating engine
 - [HTMX](https://htmx.org/) - Dynamic web interactions
 - [Plotly](https://plotly.com/python/) - Elegant charts
-- [Claude](https://claude.ai/) - Coding support (<5% of the code base)
+- [Claude](https://claude.ai/) - Coding support (<5% of the code base!)
 
 ## Version
 

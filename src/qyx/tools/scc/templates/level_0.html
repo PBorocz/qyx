@@ -2,29 +2,19 @@
   <thead>
     <tr>
       <th scope="col" style="text-align: left">Metric</th>
-      {% for language in scc_0.report_languages %}
-      <th scope="col" style="text-align: right">{{ language }}</th>
+      {% for type in scc_0.types %}
+      <th scope="col" style="text-align: right">{{ type.title() }}</th>
       {% endfor %}
     </tr>
   </thead>
   <tbody>
-    {% for row in scc_0.rows %}
+    {% for attr in scc_0.attrs %}
     <tr>
-      <td style="text-align: left">{{ row.attr.title() }}</td>
-      {% for language in scc_0.report_languages %}
-      <td style="text-align: right">{{ "{:,d}".format(row.languages[language]) }}</td>
+      <td style="text-align: left">{{ attr.display }}</td>
+      {% for type in scc_0.types %}
+      <td style="text-align: right">{{ "{:,d}".format(scc_0.rows[attr.name][type]) }}</td>
       {% endfor %}
     </tr>
     {% endfor %}
   </tbody>
-  <tfoot>
-    <tr>
-      <td style="text-align: left">DRYness</td>
-      {% for language in scc_0.report_languages %}
-        <td style="text-align: right; color: var(--pico-muted-color); background-color: {{ scc_0.dryness[language].color }}">
-          {{ scc_0.dryness[language].score }}%
-        </td>
-      {% endfor %}
-    </tr>
-  </tfoot>
 </table>

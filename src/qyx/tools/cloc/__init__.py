@@ -1,34 +1,22 @@
 """Cloc Module Configuration."""
 
-from enum import Enum
-
-from qyx.constants import ReportLevel as Rl
-from qyx.tools._models_ import ToolType
+from qyx.tools._models_ import ToolDimension, ToolType
 from qyx.tools.cloc.models import Cloc
 
 
-class AnalysisType(str, Enum):
-    """Cloc analysis types."""
-
-    CLOC = "cloc"
+DIMENSIONS = [
+    ToolDimension("cloc", "Count lines of code", (Cloc,)),
+]
 
 
 class Configuration(ToolType):
     """Configure semantics associated with using the cloc tool."""
 
-    def __init__(self):
+    def __init__(self, module: str):
         """..."""
-        cli = {
-            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
-        }
-        web = {
-            "cloc": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
-        }
-
         super(Configuration, self).__init__(
-            module="cloc",
+            module=module,
             name="cloc",
-            analyses={AnalysisType.CLOC.value: "Count lines of code"},
-            models=dict(cloc=(Cloc,)),
-            reports=dict(cli=cli, web=web),
+            description="Count lines of code",
+            dimensions=DIMENSIONS,
         )

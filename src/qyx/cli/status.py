@@ -6,12 +6,12 @@ from rich.tree import Tree
 from rich import print
 
 from qyx.constants import ALL_ITEMS, StatusLevel
-from qyx.tools._models_ import Project, Request, Scan
+from qyx.tools._models_ import Project, Request, Scan, ToolDimension, ToolType
 from qyx.utils import dt_to_display
 
 
 def status(args: Namespace) -> None:
-    """Use a simple Rich terminal tree to display current db information."""
+    """Use a simple Rich terminal tree to display current db status summary."""
     tree = Tree("QYX Status")
 
     projects = Project.select()
@@ -24,7 +24,7 @@ def status(args: Namespace) -> None:
         for request in Request.select().where(Request.project == project):
             scan_tree = project_tree.add(_get_request_name(args, request))
 
-            scans_for_request = Scan.select().order_by(Scan.as_of).where(Scan.request == request)
+            scans_for_request = Scan.select().order_by(Scan.as_of.desc()).where(Scan.request == request)
             if request.is_git and args.level == StatusLevel.GROUPED:
                 scan_tree = scan_tree_summary(args, request, scans_for_request, scan_tree)
             else:
@@ -52,14 +52,6 @@ def scan_tree_detailed(args: Namespace, request, scans_for_request, scan_tree):
         scan_tree.add(s_scan)
 
 
-def _get_scan_count(args: Namespace, scan: Scan) -> str:
-    """Return the scan's result count as a str already formatted for status tree."""
-    o_tool = args.tools[scan.tool]
-    model_class = o_tool.models[scan.analysis][0]  # Only the first one is relevant
-    count = model_class.filter(model_class.scan == scan).count()
-    return f"{count:3d}"
-
-
 def _get_project_name(args: Namespace, project: Project) -> str:
     s_project = f"[red]PROJECT → {project.name}[/red]"
     if args.log_level != "info":
@@ -77,13 +69,24 @@ def _get_request_name(args: Namespace, request: Request) -> str:
 
 def _get_scan_name(args: Namespace, scan: Scan) -> str:
     s_scan_count = _get_scan_count(args, scan)
-    s_analysis = scan.analysis_display()
     s_scan = (
         f"[bright_green]SCAN[/bright_green] → "
-        f"[cyan]{s_analysis}[/cyan] "
+        f"[cyan]{scan.tool_dimension_display()}[/cyan] "
         f"[green]{s_scan_count:4s}[/green] "
         f"[grey50]{dt_to_display(scan.as_of)}[/grey50]"
     )
     if args.log_level != "info":
         s_scan += f" [{scan.id}]"
     return s_scan
+
+
+def _get_scan_count(args: Namespace, scan: Scan) -> str:
+    """Return the scan's result count as a str already formatted for status tree."""
+    o_tool = args.tools[scan.tool]
+    if o_tool.ingest_by_dimension:
+        o_dimension = o_tool.find_dimension(scan.ingest_dimension)
+        model_class = o_dimension.models[0]
+    else:
+        model_class = o_tool.dimensions[0].models[0]
+    count = model_class.filter(model_class.scan == scan).count()
+    return f"{count:3d}"

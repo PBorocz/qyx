@@ -14,13 +14,20 @@ log = logging.getLogger(__name__)
 
 
 class Request(BaseModel):
-    """A 'Request' captures the user desire to perform an analysis."""
+    """A 'Request' captures the user desire to perform an ingestion for a particular project."""
 
     id = pw.AutoField()
+
     project = pw.ForeignKeyField(Project, backref="request", on_delete="CASCADE")
-    arg_raw = pw.CharField(help_text="Project arg from user, eg '.' or '../src', '/abs/path', 'https:...').")
-    arg_normalised = pw.CharField(help_text="Arg_Normalised identifier for pathing (could be file path or git repo!)")
-    is_git = pw.BooleanField(help_text="Is this a git project?")
+
+    # Project arg from user, eg '.' or '../src', '/abs/path', 'https:...').
+    arg_raw = pw.CharField()
+
+    # Arg_Normalised identifier for pathing (could be file path or git repo!)
+    arg_normalised = pw.CharField()
+
+    # Is this a git project?
+    is_git = pw.BooleanField()
 
     class Meta:
         """Define peewee meta data."""
@@ -33,16 +40,17 @@ class Request(BaseModel):
         (name, normalised, is_git) = parse_path_arg(args.path)
 
         # Look for the most recent Request for this project based on whether or not we're using git.
-        request = Request.get(
-            Request.project == project,
-            Request.arg_normalised == normalised,
-            Request.is_git == is_git,
-        )
-        if not request:
+        try:
+            request = Request.get(
+                Request.project == project,
+                Request.arg_normalised == normalised,
+                Request.is_git == is_git,
+            )
+            log.debug(f"Found existing request {request.id=}, using it...")
+        except Request.DoesNotExist:
             log.debug("No existing request found for this project, creating a new one.")
             request = cls.factory(project, args, normalised, is_git)
-        else:
-            log.debug(f"Found existing request {request.id=}, using it...")
+
         return request
 
     @classmethod

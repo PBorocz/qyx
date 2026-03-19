@@ -17,29 +17,18 @@ def format_int_or_percentage(value: float, as_percentage: bool = False) -> str:
 
 
 ################################################################################################
-def generate_ta_pairs(args: Namespace) -> list[tuple[ToolType, str]]:
-    """Process the command-line argument and return a list of Tools and analyses to perform."""
+def generate_ta_pairs(args: Namespace) -> list[ToolType]:
+    """Process the command-line or interactive arguments and return a list of tool(s) to perform an ingest upon."""
     ################################################################################
-    # Case 1: No analysis specified -> we want to "process" everything!
+    # Case 1: No tool specified -> we want to "process" everything!
     ################################################################################
-    if not args.analysis or args.analysis == ALL_ITEMS:
-        return args.tools.tools_analyses()
+    if not args.tool or args.tool == ALL_ITEMS:
+        return args.tools.values()
 
-    # Is the arg a "tool" or an analysis?
-    if args.analysis.lower() in args.tools.keys():
-        ################################################################################
-        # Case 2: Tool only, return *all* the analyses the tool supports
-        ################################################################################
-        o_tool = args.tools[args.analysis.lower()]
-        return [(o_tool, analysis) for analysis in o_tool.analyses]
-
-    else:
-        ################################################################################
-        # Case 3: The arg is an analysis, find the matching tool for it.
-        ################################################################################
-        for o_tool in args.tools.tools():
-            for analysis_name in o_tool.analyses:
-                if args.analysis.lower() == analysis_name.lower():
-                    return [(o_tool, analysis_name)]  # Found it!
-
-    raise RuntimeError("Sorry, we already validated args.analysis but couldn't find a tool or analysis?")
+    ################################################################################
+    # Case 2: Lookup the specific tool by name.
+    ################################################################################
+    try:
+        return [args.tools[args.tool.lower()]]
+    except KeyError:
+        raise RuntimeError(f"Sorry, unable to find {args.tool.lower()}!")

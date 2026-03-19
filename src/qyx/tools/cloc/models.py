@@ -11,7 +11,7 @@ from peewee import fn
 
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
-from qyx.tools.common import get_scans_for_project_analysis
+from qyx.tools.common import get_scans_for_project_dimension
 from qyx.utils import bucket, rate_of_change_percentage
 from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
@@ -38,12 +38,12 @@ class Cloc(BaseModel):
     class Meta:
         """Define peewee meta data."""
 
-        table_name = "cloc"
+        table_name = "tool_cloc"
         indexes = ((("scan", "directory", "filename"), True),)
 
 
 @query_cache
-def query_cloc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_cloc_0(args: Namespace, scan: Scan, dimension: str = "cloc", context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -149,7 +149,7 @@ def query_cloc_2(args: Namespace, scan: Scan) -> Sns:
 
 @query_cache
 def query_cloc_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_project_analysis(project, "cloc", last=last)
+    scans = get_scans_for_project_dimension(project, "cloc", last=last)
     query = (
         Cloc.select(
             Scan.as_of.alias("timestamp"),

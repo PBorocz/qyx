@@ -2,40 +2,29 @@
 
 import gzip
 import json
-from enum import Enum
 from pathlib import Path
 
-from qyx.constants import ReportLevel as Rl
-from qyx.tools._models_ import ToolType
+from qyx.tools._models_ import ToolDimension, ToolType
 from qyx.tools.ruff.models import Ruff, RuffMessage, RuffUrl
 
 RUFF_RULES = None  # Hold as a cache after first read
 
 
-class AnalysisType(str, Enum):
-    """Ruff analysis types."""
-
-    RUFF = "ruff"
+DIMENSIONS = [
+    ToolDimension("ruff", "Astral code linter", (Ruff, RuffMessage, RuffUrl)),
+]
 
 
 class Configuration(ToolType):
     """Configure semantics associated with using the ruff tool."""
 
-    def __init__(self):
+    def __init__(self, module: str):
         """..."""
-        cli = {
-            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
-        }
-        web = {
-            "ruff": (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.HISTORY),
-        }
-
         super(Configuration, self).__init__(
-            module="ruff",
+            module=module,
             name="ruff",
-            analyses={AnalysisType.RUFF.value: "Linter"},
-            models=dict(ruff=(Ruff, RuffMessage, RuffUrl)),
-            reports=dict(cli=cli, web=web),
+            description="Astral code linter",
+            dimensions=DIMENSIONS,
             results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
 

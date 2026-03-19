@@ -1,35 +1,22 @@
 """Ty Module Configuration."""
 
-from enum import Enum
-
-from qyx.constants import ReportLevel as Rl
-from qyx.tools._models_ import ToolType
+from qyx.tools._models_ import ToolDimension, ToolType
 from qyx.tools.ty.models import Ty, TyDescription
 
-
-class AnalysisType(str, Enum):
-    """Ty analysis types."""
-
-    TY = "ty"
+DIMENSIONS = [
+    ToolDimension("ty", "Astral type checker", (Ty, TyDescription)),
+]
 
 
 class Configuration(ToolType):
     """Configure semantics associated with using the ruff tool."""
 
-    def __init__(self):
+    def __init__(self, module: str):
         """..."""
-        cli = {
-            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.HISTORY),
-        }
-        web = {
-            AnalysisType.TY.value: (Rl.SUMMARY, Rl.DIRECTORY, Rl.FILE, Rl.GRANULAR, Rl.HISTORY),
-        }
-
         super(Configuration, self).__init__(
-            module="ty",
+            module=module,
             name="ty",
-            analyses={AnalysisType.TY.value: "TypeChecker"},
-            models=dict(ty=(Ty, TyDescription)),
-            reports=dict(cli=cli, web=web),
+            description="Astral type checker",
+            dimensions=DIMENSIONS,
             results_required=False,  # In this case,  Ty Scans without data ARE valid (albeit rare?)
         )
