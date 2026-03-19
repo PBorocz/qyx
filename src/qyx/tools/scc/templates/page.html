@@ -4,7 +4,10 @@
 
 <h2>"scc" - Succint Code Counter</h2>
 
-{% include "base::_select_project.html" %}
+<fieldset class="grid">
+  {% include "base::_select_project.html" %}
+  {% include "base::_select_analysis.html" %}
+</fieldset>
 
 <div id="div_body_content">
   {% include "scc::scc.html" %}

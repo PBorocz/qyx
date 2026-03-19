@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 
 from qyx.tools._models_ import Project, Scan, State
 from qyx.tools.scc.models import query_scc_0, query_scc_1, query_scc_2, query_scc_h
-from qyx.web.page import render, render_content
+from qyx.web.page import render, render_analyses, render_content
 from qyx.web.plotly import SERIES_COLORS, custom_labels, style_figure
 
 
@@ -20,6 +20,13 @@ def view(template: str = "scc::page.html") -> str:
     """View callback to render the entire tool page: project selector, analysis selector and body content."""
     o_tool = request.app.args.tools["scc"]
     return render(o_tool, template, get_content)
+
+
+def view_analyses() -> str:
+    """View callback when project changes to render BOTH update analysis selector *AND* update body on an OOB basis."""
+    o_tool = request.app.args.tools["scc"]
+    project: str = request.query.project
+    return render_analyses(o_tool, project, get_content)
 
 
 def view_content() -> str:

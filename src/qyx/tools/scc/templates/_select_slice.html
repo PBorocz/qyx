@@ -1,0 +1,14 @@
+<div id="div_select_slice">
+  <select name="slice"
+          aria-label="Select language..."
+          hx-get="{{ hx_change_slice_url }}" {# HTMX endpoint to update body based on a new slice selection #}
+          hx-target="#div_body_content"      {# What to update on response #}
+          hx-swap="innerHTML"                {# How to update on response #}
+          hx-include="[name='project']"
+          hx-on:htmx:before-request="document.getElementById('div_body_content').innerHTML = '<p aria-busy=true>Loading...</p>'"
+  >
+    {% for option in slice_options %}
+      <option value="{{ option.value }}" {% if option.selected %}selected{% endif %} >{{ option.display}}</option>
+    {% endfor %}
+  </select>
+</div>

@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 ################################################################################################
 def render(tool: ToolType, template: str, content_method: Callable) -> str:
-    """Render the primary page layout for this tools display page."""
+    """Render the primary page layout for this a tool's primary display page."""
     project_options, project = get_project_selector(tool)
     if not project:
         return render_template("base::_no_projects_yet.html")
@@ -25,22 +25,25 @@ def render(tool: ToolType, template: str, content_method: Callable) -> str:
     if not analysis:
         return render_template("base::_no_scans_yet.html")
 
-    scan = Scan.get_most_recent(project, tool.name, analysis)
+    if tool.name == "scc":
+        scan = Scan.get_most_recent(project, tool.name, tool.name)
+    else:
+        scan = Scan.get_most_recent(project, tool.name, analysis)
     if not scan:
         return render_template("base::_no_scans_yet.html")
 
-    context: Sns = content_method(scan)  # Get the "body" content as an Sns context..
+    context: Sns = content_method(scan)  # Callback into the tool to get the "body" content as an Sns
     context.tool = tool.name
     context.analysis = analysis
     context.project_options = project_options
+    context.analysis_options = analysis_options
 
-    if len(tool.analyses) == 1:
+    if len(tool.analyses) == 1 and tool.name != "scc":
         # Single analysis case: Changing project goes immediately to populating the page
         context.hx_change_project_url = f"/{tool.name}/content"
         context.hx_change_project_target = "#div_body_content"
     else:
         # Multiple analysis case: Changing project goes instead to selecting relevant analysis..
-        context.analysis_options = analysis_options
         context.hx_change_project_url = f"/{tool.name}/analysis"
         context.hx_change_project_target = "#div_select_analysis"
 
@@ -60,6 +63,7 @@ def render_content(project: str | Project, tool: ToolType, analysis: str, conten
             return render_template("base::_no_scans_yet.html")
 
     # Find the most recent scan on behalf of this project...
+    log.error(f"{tool.name=} {analysis=}")
     scan: Scan | None = Scan.get_most_recent(project, tool.name, analysis)
     if not scan:
         return render_template("base::_no_scans_yet.html")
@@ -175,22 +179,36 @@ def get_project_selector(tool: ToolType | None = None) -> tuple[list[Option], Pr
 
 def _get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Option], str]:
     """Return a form to allow selection over all analyses for the specified tool and project."""
-    query = (
-        Scan.select(Scan.analysis)
-        .join(Request)
-        .where(Request.project == project)
-        .where(Scan.tool == tool.name)
-        .distinct()
-        .order_by(
-            Scan.analysis,
+    if tool.name == "scc":
+        scc_slices = (
+            "CSS",
+            "HTML",
+            "License",
+            "Markdown",
+            "Plain Text",
+            "Python",
+            "Shell",
+            "TOML",
+            "YAML",
         )
-    )
-    analyses = []
-    for scan_partial in query:
-        if scan_partial.analysis in tool.analyses:
-            analyses.append((scan_partial.analysis, tool.analyses[scan_partial.analysis]))
-
-    last_analysis = State.lookup("analysis")
+        analyses = [(lang, lang) for lang in scc_slices]
+        last_analysis = State.lookup("scc_slice")
+    else:
+        query = (
+            Scan.select(Scan.analysis)
+            .join(Request)
+            .where(Request.project == project)
+            .where(Scan.tool == tool.name)
+            .distinct()
+            .order_by(
+                Scan.analysis,
+            )
+        )
+        analyses = []
+        for scan_partial in query:
+            if scan_partial.analysis in tool.analyses:
+                analyses.append((scan_partial.analysis, tool.analyses[scan_partial.analysis]))
+        last_analysis = State.lookup("analysis")
 
     selected_analysis = None
     if last_analysis:
@@ -208,5 +226,7 @@ def _get_analysis_selector(tool: ToolType, project: Project) -> tuple[list[Optio
     for value, display in analyses:
         selected = value == selected_analysis
         options.append(Option(value=value, display=display, selected=selected))
+
+    from pprint import pprint as pp
 
     return options, selected_analysis

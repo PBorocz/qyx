@@ -1,4 +1,4 @@
-"""Radon Module Configuration."""
+"""Scc Module Configuration."""
 
 from enum import Enum
 
@@ -14,7 +14,7 @@ class AnalysisType(str, Enum):
 
 
 class Configuration(ToolType):
-    """Configure semantics associated with using the various Scc tools."""
+    """Configure semantics associated with using the Scc tool."""
 
     def __init__(self):
         """Class meta-definition for the Scc tool."""
