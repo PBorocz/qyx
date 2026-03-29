@@ -32,18 +32,18 @@
 
 <section>
   <div class="dashboard-grid">
-    {% for tool, analysis in analyses %}
+    {% for tool, dimension in tool_and_dimensions %}
     <article class="dashboard-card">
       <div>
-        {% if tool == analysis %}
+        {% if tool == dimension %}
 
-          <h4>{{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
+          <h4>{{ dimension.upper() }} <span class="as-of">as of {{ as_of_dates[dimension] }}</span></h4>
           {% include tool ~ "::level_0.html" %}
 
         {% else %}
 
-          <h4>{{ tool.upper() }} - {{ analysis.upper() }} <span class="as-of">as of {{ as_of_dates[analysis] }}</span></h4>
-          {% include tool ~ "::" ~ analysis ~ "_0.html" %}
+          <h4>{{ tool.upper() }} - {{ dimension.upper() }} <span class="as-of">as of {{ as_of_dates[dimension] }}</span></h4>
+          {% include tool ~ "::" ~ dimension ~ "_0.html" %}
 
         {% endif %}
 

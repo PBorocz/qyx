@@ -31,7 +31,7 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
 
     State.update(args, project=project.name)  # Remember for next instantiation!
 
-    context = Sns(as_of_dates={}, analyses=[])
+    context = Sns(as_of_dates={}, tool_and_dimensions=[])
 
     for ta_ in args.config.get("renderers.web.dashboard.dimension_order", ()):
         tool, ingest_dimension, report_dimension = (ta_.split(":") + [None, None])[:3]
@@ -64,6 +64,6 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
             context.as_of_dates[ingest_dimension] = scan.as_of_display(collapse_today=True)
 
             # Return which combinations we actually got data for!
-            context.analyses.append((tool, ingest_dimension))
+            context.tool_and_dimensions.append((tool, ingest_dimension))
 
     return render_template(template, **context.__dict__)

@@ -12,6 +12,14 @@ from qyx.constants import StatusLevel
 from qyx.tools._models_ import Project, Request, Scan, State
 from qyx.utils import dt_to_display
 
+BANNER = r"""
+   ____ __  __ _  __
+  / __ \\ \/ /| |/ /
+ / / / / \  / |   /
+/ /_/ /  / / /   |
+\___\_\ /_/ /_/|_|
+"""
+
 # fmt: off
 PROMPT_STYLE = Style([
     # These seem to be the only ones worth spending time on (there are a lot more though)
@@ -26,6 +34,7 @@ PROMPT_STYLE = Style([
 def get_args_interactively(args: Namespace, first_pass: bool) -> Namespace:
     if first_pass:
         # Only print title the first time through...
+        qprint(BANNER)
         qprint("QYX → Code Quality Analysis Tool", style="bold italic")  #  fg:darkblue")
 
     try:
@@ -269,12 +278,16 @@ def _prompt_browser() -> str:
 
 
 def _prompt_delete_entity() -> c.BaseModel:
-    choices = [Choice(title=model.value.title(), value=model.value) for model in c.BaseModel]
+    choices = [
+        Choice(title=model.value.title(), value=model.value, shortcut_key=model.value[0].lower())
+        for model in c.BaseModel
+    ]
     value = select(
         "Model:",
         choices=choices,
         style=PROMPT_STYLE,
         use_indicator=True,
+        use_shortcuts=True,
     ).unsafe_ask()
     return c.BaseModel(value)
 
