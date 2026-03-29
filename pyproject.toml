@@ -103,5 +103,5 @@ shell = """
   jj bookmark set trunk --revision 'coalesce(@-, @)'
   jj git push --bookmark trunk
 
-  uv run qyx ingest --name python-code-quality --path https://github.com/PBorocz/qyx.git
+  uv run qyx ingest --name QYX --path https://github.com/PBorocz/qyx.git
   """

@@ -133,7 +133,7 @@ def parse_path_arg(arg_path: str) -> tuple[str, str, bool]:
         arg_path: Command-line argument from user
 
     Returns:
-        tuple: (normalised, name)
+        tuple: (normalised, name, is_git)
     """
     # Check if it's a URL
     if is_git_url(arg_path):

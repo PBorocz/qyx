@@ -4,6 +4,7 @@ import logging
 from argparse import Namespace
 
 import peewee as pw
+from peewee import fn
 
 from .base import BaseModel
 from .project import Project
@@ -43,7 +44,7 @@ class Request(BaseModel):
         try:
             request = Request.get(
                 Request.project == project,
-                Request.arg_normalised == normalised,
+                fn.LOWER(Request.arg_normalised) == normalised.lower(),
                 Request.is_git == is_git,
             )
             log.debug(f"Found existing request {request.id=}, using it...")
