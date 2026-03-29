@@ -8,7 +8,6 @@ from types import SimpleNamespace as Sns
 from bottle import request
 import plotly.graph_objects as go
 
-from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import Project, Scan, State
 from qyx.tools.scc.models import query_scc_0, query_scc_1, query_scc_2, query_scc_h
 from qyx.web.page import render, render_dimensions, render_content

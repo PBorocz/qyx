@@ -248,7 +248,10 @@ def view_hal_h(args: Namespace, scan: Scan = None) -> dict[str, str]:
 # MI
 ################################################################################
 def view_mi_0(
-    args: Namespace, scan: Scan, dimension: str = "mi", context: Vc = Vc.TOOL_HOME
+    args: Namespace,
+    scan: Scan,
+    dimension: str = "mi",
+    context: Vc = Vc.TOOL_HOME,
 ) -> dict[str, float | None]:
     return rm.query_mi_0(args, scan)
 

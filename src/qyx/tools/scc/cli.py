@@ -7,7 +7,7 @@ from qyx.cli import cli_console, cli_table
 from qyx.constants import ALL_ITEMS
 from qyx.constants import ReportLevel as Rl
 from qyx.tools._models_ import Project, Scan, ToolDimension, ToolType
-from qyx.tools.scc.models import query_scc_0, query_scc_1, query_scc_2, query_scc_h, Scc
+from qyx.tools.scc.models import query_scc_0, query_scc_1, query_scc_2, query_scc_h
 from qyx.utils import format_timestamp_headers
 
 log = logging.getLogger(__name__)
