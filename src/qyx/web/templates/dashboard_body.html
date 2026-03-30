@@ -26,32 +26,18 @@
  .as-of {
    font-size: 0.7rem;
  }
-
-
 </style>
 
 <section>
   <div class="dashboard-grid">
-    {% for tool, dimension in tool_and_dimensions %}
+    {% for card in cards %}
     <article class="dashboard-card">
       <div>
-        {% if tool == dimension %}
-
-          <h4>{{ dimension.upper() }} <span class="as-of">as of {{ as_of_dates[dimension] }}</span></h4>
-          {% include tool ~ "::level_0.html" %}
-
-        {% else %}
-
-          <h4>{{ tool.upper() }} - {{ dimension.upper() }} <span class="as-of">as of {{ as_of_dates[dimension] }}</span></h4>
-          {% include tool ~ "::" ~ dimension ~ "_0.html" %}
-
-        {% endif %}
-
+        <h4>{{ card.tool.upper() }} - {{ card.ingest_dimension.upper() }} <span class="as-of">as of {{ card.as_of_date }}</span></h4>
+        {% include [card.template] %}
       </div>
     </article>
     {% endfor %}
   </div>
 
 </section>
-
-<hr />

@@ -55,17 +55,10 @@ class Configuration:
 
         # Dashboard layout of analyses..
         for tool_and_dimension in self.get("renderers.web.dashboard.dimension_order", ()):
-            try:
-                tool, ingest_dimension, report_dimension = (tool_and_dimension.split(":") + [None, None])[:3]
-                ingest_dimension = report_dimension if not ingest_dimension else ingest_dimension
-            except ValueError:
-                msg = (
-                    f"Sorry, encountered {tool_and_dimension=} in 'renderers.web.dashboard.dimension_order' ",
-                    "section that isn't correctly formatted, should be ",
-                    "'<tool>:<ingest_dimension>[:<report_dimension>]'!",
-                )
-                log.error(msg)
-                error_encountered = True
+            if ":" in tool_and_dimension:
+                tool, ingest_dimension = tool_and_dimension.split(":")
+            else:
+                tool, ingest_dimension = tool_and_dimension, tool_and_dimension
 
             if tool not in args.tools:
                 msg = (
@@ -76,10 +69,10 @@ class Configuration:
                 error_encountered = True
             else:
                 o_tool = args.tools[tool]
-                if report_dimension:
-                    if report_dimension.lower() not in [dim.name.lower() for dim in o_tool.dimensions]:
+                if ingest_dimension and ingest_dimension.lower() != tool.lower():
+                    if ingest_dimension.lower() not in [dim.name.lower() for dim in o_tool.dimensions]:
                         msg = (
-                            f"Sorry, encountered {report_dimension=} in 'renderers.web.dashboard.dimension_order' "
+                            f"Sorry, encountered {ingest_dimension=} in 'renderers.web.dashboard.dimension_order' "
                             f"section that isn't defined for {tool=}!"
                         )
                         log.error(msg)

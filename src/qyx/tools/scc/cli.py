@@ -55,8 +55,8 @@ def _render_0(args: Namespace, scan: Scan, dimension: ToolDimension | str) -> No
 
     # Render table header (and footer if available)
     table.add_column("Metric", justify="left", footer="DRYness")
-    for lang in result.types:
-        table.add_column(lang, justify="right")
+    for type_ in result.types:
+        table.add_column(type_, justify="right")
     if len(result.types) > 1:
         table.add_column("Total", justify="right")
 
@@ -65,9 +65,12 @@ def _render_0(args: Namespace, scan: Scan, dimension: ToolDimension | str) -> No
         columns = [
             f"[bold]{model_attr.display}[/bold]",
         ]
-        lang_data = result.rows[model_attr.name]
-        for lang in result.types:
-            columns.append(f"{lang_data.get(lang):,d}")
+        type_data = result.rows[model_attr.name]
+        for type_ in result.types:
+            try:
+                columns.append(f"{type_data.get(type_):,d}")
+            except TypeError:
+                columns.append(f"{type_data.get(type_).score:,d}")
 
         # Add total entry if we have >1 languages *and* it's for # metric that's meaningfully summed!
         if len(result.types) > 1 and model_attr.name not in ("complexity", "dryness"):
@@ -77,8 +80,17 @@ def _render_0(args: Namespace, scan: Scan, dimension: ToolDimension | str) -> No
         table.add_row(*columns)
 
         # Add section delimiters
-        if model_attr.name in ("blank", "num_files"):
+        if model_attr.name in ("lines", "num_files"):
             table.add_section()
+
+    # Add a row for the dryness metric grade
+    columns = [
+        "[bold]Dryness Grade[/bold]",
+    ]
+    type_data = result.rows["dryness"]
+    for type_ in result.types:
+        columns.append(f"{type_data.get(type_).grade}")
+    table.add_row(*columns)
 
     cli_console.print(table)
 

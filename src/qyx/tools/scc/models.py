@@ -12,6 +12,7 @@ from qyx.constants import ALL_ITEMS
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, ModelAttribute, Project, Scan
 from qyx.tools.common import get_scans_for_project_dimension
+from qyx.utils.scoring import score_metric
 from qyx.utils import rate_of_change_percentage
 
 
@@ -19,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class Scc(BaseModel):
-    """Scc language summary."""
+    """Scc language/file-type summary."""
 
     # fmt: off
     id                  = pw.AutoField()
@@ -45,11 +46,10 @@ class Scc(BaseModel):
         # fmt: off
         return (
             ModelAttribute("Num Files"    , "", "num_files"  , "int"),
-            ModelAttribute("Lines of Code", "", "lines"      , "int"),
-            # ModelAttribute("Code"        , "", "code"       , "int"),
             ModelAttribute("Unique Code"  , "", "uloc"       , "int"),
             ModelAttribute("Comments"     , "", "comment"    , "int"),
             ModelAttribute("Blanks"       , "", "blank"      , "int"),
+            ModelAttribute("Total Lines"  , "", "lines"      , "int"),
             ModelAttribute("Complexity"   , "", "complexity" , "int"),
             ModelAttribute("Dryness"      , "", "dryness"    , "int"),
         )
@@ -95,11 +95,17 @@ class SccFile(BaseModel):
 
 def query_scc_0(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = Scc.select().where(Scc.scan == scan).dicts()  # Default is essentially wildcard!
-    if not dimension:
-        types = args.config.get("tools.scc.settings.dashboard_report_types")
-        query = query.where(Scc.language.in_(types))
-    elif dimension != ALL_ITEMS:
+    if dimension == ALL_ITEMS:
+        # Easiest case, don't filter at all..
+        ...
+    elif dimension:
+        # We're given a specific report dimension/filetype/language; ie. "python" or "html"
         query = query.where(fn.LOWER(Scc.language) == fn.LOWER(dimension))
+    else:
+        # We're a python tool primarily so default to that..
+        o_tool = args.tools["scc"]
+        o_dimension = o_tool.find_dimension("python")
+        query = query.where(Scc.language == o_dimension.name)
 
     if not len(query):  # Make sure we got rows back
         return Sns()
@@ -117,11 +123,17 @@ def query_scc_0(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TO
     values: list[int] = [d_rows["lines"][lang] for lang in types_encountered]
     types: list[str] = [lang for lang, _ in sorted(zip(types_encountered, values), key=lambda x: x[1], reverse=True)]
 
-    # Calculate grand totals
+    # Calculate grand totals (may not be used in all views but available nonetheless)
     gt_ = defaultdict(int)
     for attr, types in d_rows.items():
         gt_[attr] = sum(types.values())
     sns_gt = Sns(**gt_)
+
+    # Replace our "dryness" with a scored "dryness" metric
+    d_dryness = dict()
+    for type_, value in d_rows["dryness"].items():
+        d_dryness[type_] = score_metric(args, "tools.ty.violations_per_kloc", value)
+    d_rows["dryness"] = d_dryness
 
     return Sns(types=types, rows=d_rows, grand_totals=sns_gt, attrs=Scc.attrs())
 

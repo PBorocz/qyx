@@ -2,10 +2,11 @@
 
 import logging
 from types import SimpleNamespace as Sns
+from typing import Callable
 
 from bottle import request
 
-from qyx.constants import ViewContext as Vc
+import qyx.constants as c
 from qyx.tools._models_ import Project, Scan, State
 from qyx.tools.common import import_method
 from qyx.web.page import get_project_selector, render_page, render_template
@@ -31,39 +32,62 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
 
     State.update(args, project=project.name)  # Remember for next instantiation!
 
-    context = Sns(as_of_dates={}, tool_and_dimensions=[])
-
+    cards = []
+    tool_context = {}
     for ta_ in args.config.get("renderers.web.dashboard.dimension_order", ()):
-        tool, ingest_dimension, report_dimension = (ta_.split(":") + [None, None])[:3]
-        report_dimension = ingest_dimension if not report_dimension else report_dimension
-        log.debug(f"dashboard: rendering {tool=} {ingest_dimension=} {report_dimension=}")
+        tool, ingest_dimension = ta_, ta_
+        if ":" in ta_:
+            tool, ingest_dimension = (ta_.split(":") + [None])[:2]
 
-        # Get the most recent scan, usually tool,dimension..
-        scan = Scan.get_latest(project, tool, ingest_dimension)
+        # Find the relevant scan
+        scan = Scan.get_latest(project, tool, ingest_dimension=ingest_dimension)
+        if not scan:
+            log.debug(f"No Scan found for {tool=} {ingest_dimension=}")
+            continue
 
-        if scan:
-            # First, lookup the appropriate *VIEW* method to use from the respective tool's web views.
-            # --> Relying upon NAMING CONVENTION's here!
-            method = import_method(f"qyx.tools.{tool}.web:view_{ingest_dimension}_0")
-            if not method:
-                # If there isn't a view method, lookup the appropriate *QUERY* method to use from the tool's models.
-                # --> Relying upon NAMING CONVENTION's here!
-                method = import_method(f"qyx.tools.{tool}.models:query_{ingest_dimension}_0")
-                if not method:
-                    log.error(f"Unable to render {ta_} for dashboard")
-                    continue
+        # Find the tool's level_0 web rendering method..
+        method = _get_level_0_rendering_method(tool, ingest_dimension)
 
-            ##################################
-            # Call it to populate our context!
-            ##################################
-            log.debug(f"dashboard: calling {method.__name__}")
-            ctx = method(args=args, scan=scan, dimension=report_dimension, context=Vc.DASHBOARD)
-            setattr(context, f"{ingest_dimension}_0", ctx)
+        # Determine the appropriate report_dimension to use to render the dashboard component.
+        report_dimension = args.tools[tool].map_ingest_dimension_to_report_dimension(ingest_dimension)
 
-            # Mark which dates we processed each dimension upon..
-            context.as_of_dates[ingest_dimension] = scan.as_of_display(collapse_today=True)
+        # Call it!
+        # The return is tricky, we want to pass each tool's data/results at the TOP-level
+        # to mimic what the underlying tools templates already expect.
+        level = f"{ingest_dimension}_0"
+        tool_context[level] = method(
+            args=args,
+            scan=scan,
+            dimension=report_dimension,
+            context=c.ViewContext.DASHBOARD,
+        )
 
-            # Return which combinations we actually got data for!
-            context.tool_and_dimensions.append((tool, ingest_dimension))
+        # Define our dashboard "card"
+        cards.append(
+            Sns(
+                tool=tool,
+                ingest_dimension=ingest_dimension,
+                template=f"{tool}::{level}.html",
+                as_of_date=scan.as_of_display(collapse_today=True),
+            ),
+        )
 
-    return render_template(template, **context.__dict__)
+    return render_template(template, cards=cards, **tool_context)
+
+
+def _get_level_0_rendering_method(tool: str, ingest_dimension: str) -> Callable | None:
+    """Lookup the appropriate *VIEW* method to use from the respective tool's web views."""
+    # --> Relying upon NAMING CONVENTION's here!
+    method = import_method(f"qyx.tools.{tool}.web:view_{ingest_dimension}_0")
+    if method:
+        return method
+
+    # Some tools are simple enough that we don't need a dedicated web view method,
+    # thus, directly call their respective level 0 MODEL-QUERY method.
+    method = import_method(f"qyx.tools.{tool}.models:query_{ingest_dimension}_0")
+    if method:
+        return method
+
+    # Well, then we're screwed.
+    log.error(f"Unable to find level_0 rendering or query method for {tool=}:{ingest_dimension=}!")
+    return None

@@ -12,7 +12,14 @@
     <tr>
       <td style="text-align: left">{{ attr.display }}</td>
       {% for type in scc_0.types %}
-      <td style="text-align: right">{{ "{:,d}".format(scc_0.rows[attr.name][type]) }}</td>
+        {% if attr.name == "dryness" %}
+          <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ scc_0.rows[attr.name][type].color }}">
+            {{ "{:.0f}".format(scc_0.rows[attr.name][type].score) }}
+            {{ scc_0.rows[attr.name][type].grade }}
+          </td>
+        {% else %}
+          <td style="text-align: right">{{ "{:,d}".format(scc_0.rows[attr.name][type]) }}</td>
+        {% endif %}
       {% endfor %}
     </tr>
     {% endfor %}

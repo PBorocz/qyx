@@ -10,11 +10,11 @@ from qyx.tools.ty.models import Ty, TyDescription
 
 
 def parse(scan: Scan, data: Any) -> int:
-    def _json_to_row(ty_result: dict) -> Ty:
+    def _json_to_row(ty_result: dict, is_git: bool) -> Ty:
         fn_path = Path(ty_result["location"]["path"])
-        fn_path = Path(os.path.relpath(fn_path, scan.cwd))
+        if not is_git:
+            fn_path = Path(os.path.relpath(fn_path, scan.cwd))
         description, _ = TyDescription.get_or_create(value=ty_result["description"])
-
         return Ty(
             directory=fn_path.parent,
             filename=fn_path.name,
@@ -27,7 +27,7 @@ def parse(scan: Scan, data: Any) -> int:
         )
 
     # Parse
-    rows = [_json_to_row(check) for check in json.loads(data)]
+    rows = [_json_to_row(check, scan.request.is_git) for check in json.loads(data)]
 
     # Save
     for row in rows:

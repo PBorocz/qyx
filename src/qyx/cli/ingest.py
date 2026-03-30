@@ -108,7 +108,8 @@ def _do_scan(args: Namespace, request: Request, o_tool: ToolType, scan_request: 
                 as_of=scan_request.as_of,
             )
         except IntegrityError:
-            rprint(f"[yellow]⚠ {scan_request.s_as_of} - Scan already exists for {display}[/yellow]")
+            if log.isEnabledFor(logging.DEBUG):
+                rprint(f"[yellow]⚠ {scan_request.s_as_of} - Scan already exists for {display}[/yellow]")
             continue
 
         ################################################################################################

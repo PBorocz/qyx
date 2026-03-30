@@ -19,8 +19,8 @@ renderers:
       tool_order: ["scc", "ruff", "radon", "fxtd", "ty", "cloc"]
     dashboard:
       # Order and content of summaries on the main/dashboard/home page:
-      # Syntax here is "<tool>:<ingest_dimension[:<report_dimension>]"
-      dimension_order: ["scc:scc:python", "fxtd:fxtd", "ruff:ruff", "ty:ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw", "cloc:cloc"]
+      # Syntax here is "<tool>[:<ingest_dimension]"
+      dimension_order: ["scc", "fxtd", "ruff", "ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw", "cloc"]
 
   cli:
     colors:
@@ -350,14 +350,14 @@ tools:
 
   scc:
     settings:
-      dashboard_report_types: # Which file types do we want to report on the dashboard?
+      dashboard_report_dimension: # Which file type do we want to report on the dashboard?
         - python
         - html
     dryness:
       thresholds:
         # Per https://github.com/boyter/scc?tab=readme-ov-file#unique-lines-of-code-uloc
-        # 75%    (High Density): Very terse, expressive code. Every line counts. (Example: Clojure, Haskell)
-        # 60-70% (Standard): A healthy balance of logic and structural ceremony. (Example: Java, Python)
+        # 75%    (High Density    ): Very terse, expressive code. Every line counts. (Example: Clojure, Haskell)
+        # 60-70% (Standard        ): A healthy balance of logic and structural ceremony. (Example: Java, Python)
         # <55%   (High Boilerplate): High repetition. Likely due to mandatory error handling, auto-generated code or verbose configuration. (Example: C#, CSS)
         - {min: 75, max: .inf, grade: "A", color: "#22c55e"}
         - {min: 70, max:   75, grade: "B", color: "#84cc16"}

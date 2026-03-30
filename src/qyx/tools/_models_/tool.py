@@ -124,6 +124,26 @@ class AbstractToolConfiguration(ABC):
                 return o_dimension
         return None
 
+    def map_ingest_dimension_to_report_dimension(self, ingest_dimension: str) -> str | None:
+        """Determine the respective report dimension from the tool's definition."""
+        #
+        # 1. Tools like radon where there are MULTIPLE ingest_dimensions, each with their associated report dimensions
+        #    -> report_dimension IS ingest_dimension
+        #
+        # 2. Tools like fxtd, cloc, ruff, ty that have a SINGLE ingest_dimension and SINGLE report_dimension:
+        #    -> report_dimension IS ingest_dimension
+        #
+        # 3. Tools like "scc" with a SINGLE ingest dimension but multiple REPORT dimensions.
+        #    -> report_dimension IS *WILDCARD* (and we let the tool determine which to show)
+        #
+        if self.ingest_by_dimension:  # ie. "radon":
+            report_dimension = ingest_dimension
+        elif len(self.dimensions) == 1:  # ie. "cloc", "ruff", ...
+            report_dimension = ingest_dimension
+        else:  # ie. "scc"
+            report_dimension = None
+        return report_dimension
+
     def get_models(self) -> list[BaseModel]:
         """Return a unique list of all storage models used by the tool."""
         model_classes = set()  # May be duplicates for report only dimension tools! (eg. scc)
