@@ -8,7 +8,6 @@ from types import SimpleNamespace as Sns
 import peewee as pw
 from peewee import fn
 
-from qyx.constants import ALL_ITEMS
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, ModelAttribute, Project, Scan
 from qyx.tools.common import get_scans_for_project_dimension
@@ -46,12 +45,13 @@ class Scc(BaseModel):
         # fmt: off
         return (
             ModelAttribute("Num Files"    , "", "num_files"  , "int"),
-            ModelAttribute("Unique Code"  , "", "uloc"       , "int"),
+            ModelAttribute("Code"         , "", "code"       , "int"),
+            ModelAttribute("Code (unique)", "", "uloc"       , "int"),
             ModelAttribute("Comments"     , "", "comment"    , "int"),
             ModelAttribute("Blanks"       , "", "blank"      , "int"),
             ModelAttribute("Total Lines"  , "", "lines"      , "int"),
             ModelAttribute("Complexity"   , "", "complexity" , "int"),
-            ModelAttribute("Dryness"      , "", "dryness"    , "int"),
+            ModelAttribute("Dryness"      , "", "dryness"    , "float"),
         )
         # fmt: off
 
@@ -94,48 +94,16 @@ class SccFile(BaseModel):
 
 
 def query_scc_0(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TOOL_HOME) -> Sns:
-    query = Scc.select().where(Scc.scan == scan).dicts()  # Default is essentially wildcard!
-    if dimension == ALL_ITEMS:
-        # Easiest case, don't filter at all..
-        ...
-    elif dimension:
-        # We're given a specific report dimension/filetype/language; ie. "python" or "html"
-        query = query.where(fn.LOWER(Scc.language) == fn.LOWER(dimension))
+    row = Scc.select().where(Scc.scan == scan, fn.LOWER(Scc.language) == fn.LOWER(dimension)).first()
+    print(f"{dimension=}")
+    print(f"{row=}")
+    # Calculate our dryness metric
+    if row.dryness:
+        row.dryness_metric = score_metric(args, "tools.ty.violations_per_kloc", row.dryness)
     else:
-        # We're a python tool primarily so default to that..
-        o_tool = args.tools["scc"]
-        o_dimension = o_tool.find_dimension("python")
-        query = query.where(Scc.language == o_dimension.name)
+        log.debug(f"{row.__dict__=}")
 
-    if not len(query):  # Make sure we got rows back
-        return Sns()
-
-    # Instead of each row being a file type, collapse so that each row has information on all types.
-    d_rows = {}
-    types_encountered = set()
-    for attr in [attr for attr in query[0].keys() if attr not in ("id", "language")]:
-        d_rows[attr] = {}
-        for row_dict in query:
-            d_rows[attr][row_dict["language"]] = int(row_dict.get(attr))
-            types_encountered.add(row_dict["language"])
-
-    # Return list of file types encountered in *sorted* order by total number of lines (thanks Claude!)
-    values: list[int] = [d_rows["lines"][lang] for lang in types_encountered]
-    types: list[str] = [lang for lang, _ in sorted(zip(types_encountered, values), key=lambda x: x[1], reverse=True)]
-
-    # Calculate grand totals (may not be used in all views but available nonetheless)
-    gt_ = defaultdict(int)
-    for attr, types in d_rows.items():
-        gt_[attr] = sum(types.values())
-    sns_gt = Sns(**gt_)
-
-    # Replace our "dryness" with a scored "dryness" metric
-    d_dryness = dict()
-    for type_, value in d_rows["dryness"].items():
-        d_dryness[type_] = score_metric(args, "tools.ty.violations_per_kloc", value)
-    d_rows["dryness"] = d_dryness
-
-    return Sns(types=types, rows=d_rows, grand_totals=sns_gt, attrs=Scc.attrs())
+    return Sns(row=row, dimension=dimension, attrs=Scc.attrs())
 
 
 def query_scc_1(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TOOL_HOME) -> Sns:

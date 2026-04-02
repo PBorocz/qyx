@@ -124,8 +124,8 @@ class AbstractToolConfiguration(ABC):
                 return o_dimension
         return None
 
-    def map_ingest_dimension_to_report_dimension(self, ingest_dimension: str) -> str | None:
-        """Determine the respective report dimension from the tool's definition."""
+    def map_ingest_dimension_to_report_dimension(self, args: Namespace, ingest_dimension: str) -> str | None:
+        """Determine the respective report dimension from the tool's definition and current configuration."""
         #
         # 1. Tools like radon where there are MULTIPLE ingest_dimensions, each with their associated report dimensions
         #    -> report_dimension IS ingest_dimension
@@ -134,14 +134,17 @@ class AbstractToolConfiguration(ABC):
         #    -> report_dimension IS ingest_dimension
         #
         # 3. Tools like "scc" with a SINGLE ingest dimension but multiple REPORT dimensions.
-        #    -> report_dimension IS *WILDCARD* (and we let the tool determine which to show)
+        #    -> report_dimension IS either based on configuration file or simply the first report dimension available.
         #
         if self.ingest_by_dimension:  # ie. "radon":
             report_dimension = ingest_dimension
         elif len(self.dimensions) == 1:  # ie. "cloc", "ruff", ...
             report_dimension = ingest_dimension
         else:  # ie. "scc"
-            report_dimension = None
+            # Do we have a setting in our configuration?
+            report_dimension = args.config.get(f"tools.{self.name}.settings.dashboard_report_dimension")
+            if not report_dimension:
+                report_dimension = self.dimensions[0].name
         return report_dimension
 
     def get_models(self) -> list[BaseModel]:

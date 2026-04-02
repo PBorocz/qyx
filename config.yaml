@@ -350,9 +350,8 @@ tools:
 
   scc:
     settings:
-      dashboard_report_dimension: # Which file type do we want to report on the dashboard?
-        - python
-        - html
+      # Which language do we want to report on the dashboard?
+      dashboard_report_dimension: python
     dryness:
       thresholds:
         # Per https://github.com/boyter/scc?tab=readme-ov-file#unique-lines-of-code-uloc

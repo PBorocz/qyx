@@ -55,42 +55,24 @@ def _render_0(args: Namespace, scan: Scan, dimension: ToolDimension | str) -> No
 
     # Render table header (and footer if available)
     table.add_column("Metric", justify="left", footer="DRYness")
-    for type_ in result.types:
-        table.add_column(type_, justify="right")
-    if len(result.types) > 1:
-        table.add_column("Total", justify="right")
+    table.add_column(dimension.description, justify="right")
 
     # Render
     for model_attr in result.attrs:
-        columns = [
-            f"[bold]{model_attr.display}[/bold]",
-        ]
-        type_data = result.rows[model_attr.name]
-        for type_ in result.types:
-            try:
-                columns.append(f"{type_data.get(type_):,d}")
-            except TypeError:
-                columns.append(f"{type_data.get(type_).score:,d}")
+        value = getattr(result.row, model_attr.name)
+        try:
+            s_value = f"{value:,d}"
+        except ValueError:
+            s_value = f"{value:.1f}"
 
-        # Add total entry if we have >1 languages *and* it's for # metric that's meaningfully summed!
-        if len(result.types) > 1 and model_attr.name not in ("complexity", "dryness"):
-            total = f"{getattr(result.grand_totals, model_attr.name):,d}"
-            columns.append(f"[bold]{total}[/bold]")  # Total Code across all languages
-
-        table.add_row(*columns)
+        table.add_row(f"[bold]{model_attr.display}[/bold]", s_value)
 
         # Add section delimiters
         if model_attr.name in ("lines", "num_files"):
             table.add_section()
 
     # Add a row for the dryness metric grade
-    columns = [
-        "[bold]Dryness Grade[/bold]",
-    ]
-    type_data = result.rows["dryness"]
-    for type_ in result.types:
-        columns.append(f"{type_data.get(type_).grade}")
-    table.add_row(*columns)
+    table.add_row("[bold]Dryness Grade[/bold]", result.row.dryness_metric.grade)
 
     cli_console.print(table)
 
@@ -102,7 +84,7 @@ def _render_1(args: Namespace, scan: Scan, dimension: ToolDimension | str, perce
 
     table = cli_table(title=f"SCC - {dimension.description} @ {scan.as_of_display()}")
     table.add_column("Directory", justify="left", footer="TOTAL")
-    for attr in ("Lines", "Code", "Unique Code", "Comments", "Blanks", "Complexity", "Dryness"):
+    for attr in ("Lines", "Code", "Code (unique)", "Comments", "Blanks", "Complexity", "Dryness"):
         table.add_column(attr, justify="right")
 
     for row in query_scc_1(args, scan, dimension.name).rows:
@@ -122,7 +104,7 @@ def _render_2(args: Namespace, scan: Scan, dimension: ToolDimension, percentage:
         return
     table = cli_table(title=f"SCC - {dimension.description} @ {scan.as_of_display()}")  # , show_footer=True)
     table.add_column("File", justify="left")
-    for attr in ("Lines", "Code", "Unique Code", "Comments", "Blanks", "Complexity", "Dryness"):
+    for attr in ("Lines", "Code", "Code (unique)", "Comments", "Blanks", "Complexity", "Dryness"):
         table.add_column(attr, justify="right")
 
     for row in query_scc_2(args, scan, dimension.name).rows:
@@ -152,11 +134,10 @@ def _render_h(args: Namespace, project: Project, scan: Scan, dimension: ToolDime
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta", justify="right")
 
-    # START HERE!!! Make metric the nicer version as above
     for desc, metric in (
         ("Lines", "lines"),
         ("Code", "code"),
-        ("Unique Code", "uloc"),
+        ("Code (unique)", "uloc"),
         ("Comments", "comment"),
         ("Blanks", "blank"),
         ("Complexity", "complexity"),

@@ -48,8 +48,9 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
         # Find the tool's level_0 web rendering method..
         method = _get_level_0_rendering_method(tool, ingest_dimension)
 
-        # Determine the appropriate report_dimension to use to render the dashboard component.
-        report_dimension = args.tools[tool].map_ingest_dimension_to_report_dimension(ingest_dimension)
+        # Determine the appropriate *report* dimension to use to render the dashboard component.
+        report_dimension = args.tools[tool].map_ingest_dimension_to_report_dimension(args, ingest_dimension)
+        log.debug(f"{tool=} {ingest_dimension=} -> {report_dimension=}")
 
         # Call it!
         # The return is tricky, we want to pass each tool's data/results at the TOP-level
@@ -67,6 +68,7 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
             Sns(
                 tool=tool,
                 ingest_dimension=ingest_dimension,
+                report_dimension=report_dimension,
                 template=f"{tool}::{level}.html",
                 as_of_date=scan.as_of_display(collapse_today=True),
             ),

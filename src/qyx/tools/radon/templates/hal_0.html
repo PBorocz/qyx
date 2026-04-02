@@ -10,8 +10,8 @@
     {% for row in hal_0 %}
     <tr>
       {% if row.grade %}
-      <td style="text-align: left"><b>{{ row.metric }}<b></td>
-      <td style="text-align: right"><b>{{ "{:.2f}".format(row.score) }}</b></td>
+      <td style="text-align: left">{{ row.metric }}</td>
+      <td style="text-align: right">{{ "{:.2f}".format(row.score) }}</td>
       <td style="text-align: center; color: var(--pico-muted-color); background-color: {{ row.color }}">{{ row.grade }}</td>
       {% else %}
       <td style="text-align: left">{{ row.metric }}</td>

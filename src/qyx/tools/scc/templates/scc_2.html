@@ -2,11 +2,11 @@
   <thead>
     <tr>
       <th scope="col" style="text-align:  left">Directory</th>
-      <th scope="col" style="text-align: right">Lines</th>
+      <th scope="col" style="text-align: right">Code</th>
+      <th scope="col" style="text-align: right">Code (unique)</th>
       <th scope="col" style="text-align: right">Blanks</th>
       <th scope="col" style="text-align: right">Comments</th>
-      <th scope="col" style="text-align: right">Code</th>
-      <th scope="col" style="text-align: right">ULOC</th>
+      <th scope="col" style="text-align: right">Lines</th>
       <th scope="col" style="text-align: right">Complexity</th>
     </tr>
   </thead>
@@ -14,11 +14,11 @@
     {% for row in scc_2.rows %}
     <tr>
       <td style="text-align:  left">{{ row.directory }}/{{ row.filename }}</td>
-      <td style="text-align: right">{{ "{:,d}".format(row.lines) }}</td>
-      <td style="text-align: right">{{ "{:,d}".format(row.blank) }}</td>
-      <td style="text-align: right">{{ "{:,d}".format(row.comment) }}</td>
       <td style="text-align: right">{{ "{:,d}".format(row.code) }}</td>
       <td style="text-align: right">{{ "{:,d}".format(row.uloc) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.blank) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.comment) }}</td>
+      <td style="text-align: right">{{ "{:,d}".format(row.lines) }}</td>
       <td style="text-align: right">{{ "{:,d}".format(row.complexity) }}</td>
     </tr>
     {% endfor %}

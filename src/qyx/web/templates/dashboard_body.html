@@ -33,7 +33,14 @@
     {% for card in cards %}
     <article class="dashboard-card">
       <div>
-        <h4>{{ card.tool.upper() }} - {{ card.ingest_dimension.upper() }} <span class="as-of">as of {{ card.as_of_date }}</span></h4>
+        <h4>
+          {% if card.tool.upper() == card.ingest_dimension.upper() %}
+          {{ card.tool.upper() }}
+          {% else %}
+          {{ card.tool.upper() }} - {{ card.ingest_dimension.upper() }}
+          {% endif %}
+          <span class="as-of">as of {{ card.as_of_date }}</span>
+        </h4>
         {% include [card.template] %}
       </div>
     </article>
