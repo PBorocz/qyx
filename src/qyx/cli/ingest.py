@@ -23,18 +23,18 @@ log = logging.getLogger(__name__)
 def ingest(args: Namespace) -> None:
     """Ingest from the specified tool, either current or from git."""
     # Lookup (or create) our Project and associated Request
-    project: Project = Project.factory(args)
-    request: Request = Request.get_or_create(args, project)
+    o_project: Project = Project.factory(args)
+    o_request: Request = Request.get_or_create(args, o_project)
 
     # Generate the tools we should evaluate.
     tools: list[ToolType] = _get_tools_from_args(args)
 
-    for scan_request in _get_scan_requests(args, request):
+    for scan_request in _get_scan_requests(args, o_request):
         for o_tool in tools:
             if scan_request.as_git:
                 git_checkout(scan_request)
             # Do the respective tool's ingestion
-            _do_scan(args, request, o_tool, scan_request)
+            _do_scan(args, o_request, o_tool, scan_request)
 
 
 ################################################################################################
@@ -51,16 +51,15 @@ def _get_tools_from_args(args: Namespace) -> list[ToolType]:
         raise RuntimeError(f"Sorry, unable to find {args.tool.lower()}!")
 
 
-def _get_scan_requests(args: Namespace, request: Request) -> Iterator[Sns]:
+def _get_scan_requests(args: Namespace, o_request: Request) -> Iterator[Sns]:
     """Iterate over ingest request(s) to perform, abstracting out git vs. direct file sources."""
     #
-    # Fundamentally, the only difference between pulling from git
-    # versus from the current status on disk is (a) the location and
-    # (b) the "as-of" date associated with the state of the code when
-    # the tool runs.
+    # Fundamentally, the only difference between pulling from git versus from the current status
+    # on disk is (a) the location and (b) the "as-of" date associated with the state of the code
+    # when the tool runs.
     #
-    if request.is_git:
-        repo_path, commits = get_git_commits(request.arg_normalised)
+    if o_request.is_git:
+        repo_path, commits = get_git_commits(o_request.arg_normalised)
         for commit in commits:
             s_as_of = f"{commit.utc_date.strftime('%Y-%m-%dT%H:%M:%S')}"
             yield Sns(
@@ -70,24 +69,29 @@ def _get_scan_requests(args: Namespace, request: Request) -> Iterator[Sns]:
                 s_as_of=s_as_of,
                 hash=commit.hash_val,
                 message=commit.message,
+                latest=commit.latest,
             )
     else:
         as_of = datetime.now(UTC).replace(microsecond=0)
         s_as_of = f"{as_of.strftime('%Y-%m-%dT%H:%M:%S')}"
         yield Sns(
             as_git=False,
-            cwd=Path(request.arg_normalised),
+            cwd=Path(o_request.arg_normalised),
             as_of=as_of,
             s_as_of=s_as_of,
             hash=None,
             message=None,
+            latest=True,  # ALWAYS True when we're getting from the file system!
         )
 
 
-def _do_scan(args: Namespace, request: Request, o_tool: ToolType, scan_request: Sns) -> tuple[int, bool]:
+def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request: Sns) -> tuple[int, bool]:
     """Ingest a tool: run the respective command(s), parse and save results!."""
     dimensions_to_ingest: list[ToolDimension | None] = o_tool.dimensions if o_tool.ingest_by_dimension else [None]
     for dimension in dimensions_to_ingest:
+        parse_method: Callable = o_tool.get_parse_method(dimension)
+        assert parse_method, f"Sorry, we couldn't find a parse/ingest method for {dimension=} obo {o_tool.name=}"
+
         if dimension:
             # Running multiple ingest commands for the tool, one for each possible dimension.
             ingest_dimension = dimension.name
@@ -99,7 +103,7 @@ def _do_scan(args: Namespace, request: Request, o_tool: ToolType, scan_request: 
         try:
             # Create the scan on whose behalf the results will be stored.
             scan = Scan.create(
-                request=request,
+                request=o_request,
                 tool=o_tool.name,
                 ingest_dimension=ingest_dimension,
                 cwd=scan_request.cwd,
@@ -115,7 +119,7 @@ def _do_scan(args: Namespace, request: Request, o_tool: ToolType, scan_request: 
         ################################################################################################
         # Run the respective tool's data collection method...
         ################################################################################################
-        datum, error = _run_tool(args, request, o_tool, scan_request, dimension)
+        datum, error = _run_tool(args, o_request, o_tool, scan_request, dimension)
         if error:
             # We ran into a problem with running the ingest, don't leave the scan hanging around
             scan.delete_instance(recursive=True)  # recursive is just in case..
@@ -125,8 +129,7 @@ def _do_scan(args: Namespace, request: Request, o_tool: ToolType, scan_request: 
         ################################################################################################
         # Parse & save the results received this time using the respective tool's ingest method
         ################################################################################################
-        parse_method: Callable = o_tool.get_parse_method(dimension)
-        result_count: int = parse_method(scan, datum)
+        result_count: int = parse_method(scan, scan_request.latest, datum)
         rprint(
             f"[green]✔ {scan_request.s_as_of} - Ingested [bold]{result_count:3d}[/bold] from {display}[/green]",
         )
@@ -134,7 +137,7 @@ def _do_scan(args: Namespace, request: Request, o_tool: ToolType, scan_request: 
 
 def _run_tool(
     args: Namespace,
-    request: Request,
+    o_request: Request,
     o_tool: ToolType,
     scan_request: Sns,
     dimension: ToolDimension = None,
@@ -151,7 +154,7 @@ def _run_tool(
         ################################################################################################
         command: list[str] = o_tool.get_ingest_command(
             args,
-            relative=str(request.arg_raw),  # eg. "." usually
+            relative=str(o_request.arg_raw),  # eg. "." usually
             absolute=str(scan_request.cwd),  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
             dimension=dimension,
         )

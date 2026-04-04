@@ -5,13 +5,13 @@ import json
 from pathlib import Path
 
 from qyx.tools._models_ import ToolDimension, ToolType
-from qyx.tools.ruff.models import Ruff, RuffMessage, RuffUrl
+from qyx.tools.ruff.models import Ruff
 
 RUFF_RULES = None  # Hold as a cache after first read
 
 
 DIMENSIONS = [
-    ToolDimension("ruff", "Astral code linter", (Ruff, RuffMessage, RuffUrl)),
+    ToolDimension("ruff", "Astral code linter", (Ruff,)),
 ]
 
 

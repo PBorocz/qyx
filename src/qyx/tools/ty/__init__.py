@@ -1,10 +1,10 @@
 """Ty Module Configuration."""
 
 from qyx.tools._models_ import ToolDimension, ToolType
-from qyx.tools.ty.models import Ty, TyDescription
+from qyx.tools.ty.models import Ty
 
 DIMENSIONS = [
-    ToolDimension("ty", "Astral type checker", (Ty, TyDescription)),
+    ToolDimension("ty", "Astral type checker", (Ty,)),
 ]
 
 

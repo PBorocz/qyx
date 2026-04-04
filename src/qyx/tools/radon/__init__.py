@@ -8,11 +8,13 @@ from qyx.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi,
 
 
 # fmt: off
+# Order here matters, when we ingest, we need to calculate summaries based on the
+# lines of code metric from "Raw", thus, do this one FIRST!
 DIMENSIONS = [
-    ToolDimension("cc" , "Cyclomatic Complexity", (RadonCc,)                  , "cc"  ),
-    ToolDimension("hal", "Halstead Metrics"     , (RadonHal, RadonHalFunction), "hal" ),
-    ToolDimension("mi" , "Maintainability Index", (RadonMi,)                  , "mi"  ),
     ToolDimension("raw", "Raw Lines of Code"    , (RadonRaw,)                 , "raw" ),
+    ToolDimension("hal", "Halstead Metrics"     , (RadonHal, RadonHalFunction), "hal" ),
+    ToolDimension("cc" , "Cyclomatic Complexity", (RadonCc,)                  , "cc"  ),
+    ToolDimension("mi" , "Maintainability Index", (RadonMi,)                  , "mi"  ),
 ]
 # fmt: on
 

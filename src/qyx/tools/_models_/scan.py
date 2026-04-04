@@ -7,6 +7,7 @@ from datetime import datetime, UTC
 from typing import TYPE_CHECKING
 
 import peewee as pw
+from playhouse.sqlite_ext import JSONField
 
 from .base import BaseModel
 from .request import Request
@@ -39,14 +40,17 @@ class Scan(BaseModel):
     # For tools that we ingest *by dimension*, this will be the "ingest" dimension (e.g. raw, hal, cc obo radon)
     ingest_dimension = pw.CharField()
 
-    # Git commit/revision hash
+    # Git commit/revision hash (only available when iterating over git revisions, not from file system)
     git_commit_hash = pw.CharField(null=True)
 
-    # Git message associated with the commit/revision hash
+    # Git message associated with the commit/revision hash (ditto from above)
     git_commit_message = pw.TextField(null=True)
 
     # GMT/UTC datetime the scan/ingest occurred"
     timestamp = pw.DateTimeField(default=lambda: datetime.now(UTC).replace(microsecond=0))
+
+    # Tool specific aggregate summary (total, overall metrics etc.)
+    summary = JSONField(null=True)  # Not meant to be null, only that we don't have this on create.
 
     class Meta:
         """Define peewee meta data."""

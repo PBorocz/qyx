@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,7 @@ from qyx.tools._models_ import Scan
 log = logging.getLogger(__name__)
 
 
-def parse_raw(scan: Scan, data: Any) -> int:
+def parse_raw(scan: Scan, latest: bool, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
@@ -31,6 +32,14 @@ def parse_raw(scan: Scan, data: Any) -> int:
             log.error(f"Unable to parse radon raw: {fn_}[{scan.git_commit_hash[:8]}] {radon_result=}")
             return None
 
+    def _get_summary(rows: list[RadonRaw]) -> dict:
+        return_ = defaultdict(int)
+        for row in rows:
+            for attr in ("loc", "lloc", "sloc", "comments", "multi", "blank", "single_comments"):
+                return_[attr] += getattr(row, attr, 0)
+        return return_
+
+    # GO!
     try:
         json_ = json.loads(data)
     except json.decoder.JSONDecodeError as exc:
@@ -38,14 +47,21 @@ def parse_raw(scan: Scan, data: Any) -> int:
         return 0
 
     rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
-    for row in rows:
-        if row:
-            row.scan = scan.id
-            row.save()
+
+    # Save summary information (always)
+    scan.summary = _get_summary(rows)
+    scan.save()
+
+    # Save detail information if this is putatively the most recent scan!
+    if latest:
+        for row in rows:
+            if row:
+                row.scan = scan.id
+                row.save()
     return len(rows)
 
 
-def parse_mi(scan: Scan, data: Any) -> int:
+def parse_mi(scan: Scan, latest: bool, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
@@ -59,6 +75,33 @@ def parse_mi(scan: Scan, data: Any) -> int:
             log.error(f"Unable to parse radon mi: {fn_}[{scan.git_commit_hash[:8]}] {radon_result=}")
             return None
 
+    def _get_summary(rows: list[RadonMi]) -> dict:
+        """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
+        # Get the number of lines of code at the moment from the latest "raw" scan..
+        raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
+        loc_per_dir_filename = defaultdict(int)
+        for raw in RadonRaw.select().where(RadonRaw.scan_id == raw_scan.id):
+            key = (raw.directory, raw.filename)
+            loc_per_dir_filename[key] += raw.loc
+        total_loc = sum(loc_per_dir_filename.values())
+
+        # Calculate the MI weighted by the lines of code in each respective file.
+        total_weighted_sum = 0.0
+        for row in rows:
+            try:
+                key = (str(row.directory), row.filename)
+                loc = loc_per_dir_filename.get(key, 0)
+                total_weighted_sum += loc * row.mi
+            except AttributeError:
+                breakpoint()
+
+                ...
+
+        weighted_avg_mi = total_weighted_sum / total_loc if total_loc else 0.0
+
+        return {"maintainability_index": weighted_avg_mi}
+
+    # GO!
     try:
         json_ = json.loads(data)
     except json.decoder.JSONDecodeError as exc:
@@ -66,14 +109,32 @@ def parse_mi(scan: Scan, data: Any) -> int:
         return 0
 
     rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
-    for row in rows:
-        if row:  # Skip the entries that had errors..
-            row.scan = scan.id
-            row.save()
+
+    # Save summary information (always)
+    scan.summary = _get_summary(rows)
+    scan.save()
+
+    # Save detail information if this is putatively the most recent scan!
+    if latest:
+        for row in rows:
+            if row:  # Skip the entries that had errors..
+                row.scan = scan.id
+                row.save()
     return len(rows)
 
 
-def parse_cc(scan: Scan, data: Any) -> int:
+def parse_cc(scan: Scan, latest: bool, data: Any) -> int:
+    def _get_summary(rows: list[RadonCc]) -> dict:
+        totals = defaultdict(float)
+        counts = defaultdict(int)
+        for row in rows:
+            totals[row.entity_type] += row.complexity
+            counts[row.entity_type] += 1
+
+        avg_complexity = {entity_type: total / counts[entity_type] for entity_type, total in totals.items()}
+
+        return {"mean_complexity": dict(avg_complexity)}
+
     rows = []
     try:
         json_ = json.loads(data)
@@ -109,13 +170,20 @@ def parse_cc(scan: Scan, data: Any) -> int:
             )
             rows.append(row)
 
-    for row in rows:
-        row.scan = scan.id
-        row.save()
+    # Save summary information (always)
+    scan.summary = _get_summary(rows)
+    scan.save()
+
+    # Save detail information if this is putatively the most recent scan!
+    if latest:
+        for row in rows:
+            row.scan = scan.id
+            row.save()
+
     return len(rows)
 
 
-def parse_hal(scan: Scan, data: Any) -> int:
+def parse_hal(scan: Scan, latest: bool, data: Any) -> int:
     # Have to do this nested to reflect json file structure:
     count = 0
     try:
@@ -124,6 +192,7 @@ def parse_hal(scan: Scan, data: Any) -> int:
         log.error(f"Unable to parse radon hal scan results (bad JSON)!: [{scan.git_commit_hash[:8]}] {exc=} {data=}")
         return 0
 
+    rows = []
     for fn_, results in json_.items():
         try:
             total = results["total"]
@@ -151,8 +220,11 @@ def parse_hal(scan: Scan, data: Any) -> int:
             time=total["time"],
             bugs=total["bugs"],
         )
-        radon_hal.save()
+        # Save detail information if this is putatively the most recent scan!
+        if latest:
+            radon_hal.save()
         count += 1
+        rows.append(radon_hal)
 
         for func_name, func_results in results.get("functions", {}).items():
             radon_hal_func = RadonHalFunction(
@@ -172,6 +244,23 @@ def parse_hal(scan: Scan, data: Any) -> int:
                 time=func_results["time"],
                 bugs=func_results["bugs"],
             )
-            radon_hal_func.save()
+            if latest:
+                radon_hal_func.save()
+
+    # Save summary information (always)
+    scan.summary = _get_summary_hal(rows)
+    scan.save()
 
     return count
+
+
+def _get_summary_hal(rows: list[RadonHal]) -> dict:
+    totals = defaultdict(float)
+    for row in rows:
+        for attr in [o_attr.name for o_attr in RadonHal.attrs()]:
+            totals[attr] += getattr(row, attr, 0)
+    return_avgs = defaultdict(float)
+    for attr in [o_attr.name for o_attr in RadonHal.attrs()]:
+        return_avgs[attr] /= len(rows)
+
+    return return_avgs

@@ -17,43 +17,19 @@ from qyx.utils.scoring import score_metric
 log = logging.getLogger(__name__)
 
 
-class RuffMessage(BaseModel):
-    """Normalise out for space savings!"""
-
-    id = pw.AutoField()
-    value = pw.CharField(unique=True, index=True)
-
-    class Meta:
-        """..."""
-
-        table_name = "tool_ruff_message"
-
-
-class RuffUrl(BaseModel):
-    """Normalise out for space savings!"""
-
-    id = pw.AutoField()
-    value = pw.CharField(unique=True, index=True)
-
-    class Meta:
-        """..."""
-
-        table_name = "tool_ruff_url"
-
-
 class Ruff(BaseModel):
     """..."""
 
     # fmt: off
-    id         = pw.AutoField()
-    scan       = pw.ForeignKeyField(Scan, on_delete="CASCADE")
-    directory  = pw.CharField(help_text="eg. src/qyx/") # Relative to project's root!
-    filename   = pw.CharField(help_text="eg. foo.py")
-    line       = pw.IntegerField()
-    column     = pw.IntegerField()
-    rule_code  = pw.CharField(help_text="Eg. E302, PLC123 etc.")
-    message    = pw.ForeignKeyField(RuffMessage, backref='ruff_message')
-    url        = pw.ForeignKeyField(RuffUrl, null=True, backref='ruff_url')
+    id        = pw.AutoField()
+    scan      = pw.ForeignKeyField(Scan, on_delete="CASCADE")
+    directory = pw.CharField() # eg. src/qyx/  (Relative to project's root!)
+    filename  = pw.CharField() # eg. foo.py
+    line      = pw.IntegerField()
+    column    = pw.IntegerField()
+    rule_code = pw.CharField() # eg. E302, PLC123 etc.
+    message   = pw.CharField()
+    url       = pw.CharField()
     # fmt: on
 
     class Meta:
@@ -112,31 +88,7 @@ def query_ruff_1(scan: Scan) -> Sns:
 
 @query_cache
 def query_ruff_2(scan: Scan) -> Sns:
-    query = (
-        Ruff.select(
-            Ruff.id,
-            Ruff.scan,
-            Ruff.directory,
-            Ruff.filename,
-            Ruff.line,
-            Ruff.column,
-            Ruff.rule_code,
-            RuffMessage.value.alias("message"),  # Explicitly select this
-            RuffUrl.value.alias("url"),
-        )
-        .join(RuffMessage)
-        .switch(Ruff)
-        .join(RuffUrl, JOIN.LEFT_OUTER)
-        .where(
-            Ruff.scan == scan,
-        )
-        .order_by(
-            Ruff.rule_code,
-            Ruff.directory,
-            Ruff.filename,
-        )
-        .dicts()
-    )
+    query = Ruff.select().order_by(Ruff.rule_code, Ruff.directory, Ruff.filename).dicts()
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 

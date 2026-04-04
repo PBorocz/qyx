@@ -17,18 +17,6 @@ from qyx.utils.scoring import score_metric
 log = logging.getLogger(__name__)
 
 
-class TyDescription(BaseModel):
-    """Normalise out for space savings!"""
-
-    id = pw.AutoField()
-    value = pw.CharField(unique=True, index=True)
-
-    class Meta:
-        """..."""
-
-        table_name = "tool_ty_description"
-
-
 class Ty(BaseModel):
     """..."""
 
@@ -40,7 +28,7 @@ class Ty(BaseModel):
     line           = pw.IntegerField()
     column         = pw.IntegerField()
     check_name     = pw.CharField() # Eg. invalid-argument-type, unresolved-attribute etc.")
-    description    = pw.ForeignKeyField(TyDescription, on_delete="CASCADE")
+    description    = pw.CharField()
     severity       = pw.CharField() # Eg. major, ... ?
     fingerprint    = pw.CharField()
     # fmt: on
@@ -119,26 +107,7 @@ def query_ty_2(scan: Scan):
 
 @query_cache
 def query_ty_3(scan: Scan) -> Sns:
-    query = (
-        Ty.select(
-            Ty.directory,
-            Ty.filename,
-            Ty.line,
-            Ty.column,
-            Ty.check_name,
-            TyDescription.value.alias("description"),
-        )
-        .join(TyDescription)
-        .where(
-            Ty.scan == scan,
-        )
-        .order_by(
-            Ty.directory,
-            Ty.filename,
-            Ty.check_name,
-        )
-        .dicts()
-    )
+    query = Ty.select().order_by(Ty.directory, Ty.filename, Ty.check_name).dicts()
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 

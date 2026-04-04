@@ -76,24 +76,31 @@ def _get_repo_cache_dir(git_url: str) -> Path:
 
 
 def _get_commits(repo_path: Path) -> list[Sns]:
-    """Get all commit hashes in chronological order (oldest to newest)."""
+    """Get all commit hashes in reverse chronological order, ie. newest to oldest."""
     result = subprocess.run(
-        ["git", "log", "--reverse", "--pretty=format:%H|%at|%s", "origin/HEAD"],  # Unix timestamp!
+        ["git", "log", "--pretty=format:%H|%at|%s", "origin/HEAD"],  # Unix timestamp!
         cwd=repo_path,
         capture_output=True,
         text=True,
         check=True,
     )
     commits = []
-    for line in result.stdout.strip().split("\n"):
-        hash_val, s_date, message = line.split("|")[0:3]
+    for idx, line in enumerate(result.stdout.strip().split("\n")):
+        hash_val, s_date, message = line.split("|", maxsplit=2)
         utc_date = datetime.fromtimestamp(int(s_date), tz=timezone.utc)
-        commits.append(Sns(hash_val=hash_val, utc_date=utc_date, message=message))
+        commits.append(
+            Sns(
+                hash_val=hash_val,
+                utc_date=utc_date,
+                message=message,
+                latest=(idx == 0),
+            ),
+        )
     return commits
 
 
 def filter_commits_by_daily_sampling(commits: list[Sns]) -> list[Sns]:
-    """Sample git commits to take only the latest commit per calendar day."""
+    """Sample git commits to take only the latest commit per calendar day, ordering oldest to newest."""
     # This algorithm works best for my style of development, specifically:
     # - A flurry of activity over a few days (many intraday commits), followed by
     # - Long periods of sporadic commits.
@@ -102,12 +109,11 @@ def filter_commits_by_daily_sampling(commits: list[Sns]) -> list[Sns]:
     if not commits:
         return []
 
-    # Sort by date, newest first
-    sorted_commits = sorted(commits, key=lambda c: c.utc_date, reverse=True)
+    # Sort oldest first so we process chronologically (and get the *last* of each day)
+    sorted_commits = sorted(commits, key=lambda c: c.utc_date)
 
     seen_days = set()
     return_: list[Sns] = []
-
     for commit in sorted_commits:
         day = commit.utc_date.date()
         if day not in seen_days:
