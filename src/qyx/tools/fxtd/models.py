@@ -110,34 +110,17 @@ def query_fxtd_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_fxtd_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_project_dimension(project, "fxtd", last=last)
-    rows = (
-        Scan.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            Fxtd.type,
-            fn.COUNT(Fxtd.id).alias("count"),
-        )
-        .join(Fxtd, JOIN.LEFT_OUTER)
-        .where(Scan.id.in_([scan.id for scan in scans]))
-        .group_by(
-            Scan.as_of,
-            Fxtd.type,
-        )
-        .order_by(Scan.as_of)
-        .objects()
-    )
-    timestamps = list({row.timestamp for row in rows if row.count})
-    messages = {row.timestamp: row.message for row in rows}
+def query_fxtd_h(project: Project, dimension: str = "fxtd", last: int = None) -> Sns:
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
 
-    ################################################################################################
-    # Transpose (to get timestamps *across* instead of down and calculate grand totals)
-    ################################################################################################
+    timestamps = [fxtd.as_of for fxtd in scans if fxtd.summary]
+    messages = {fxtd.as_of: fxtd.git_commit_message for fxtd in scans}
+
     transposed = defaultdict(dict)
-    for row in rows:
-        if row.count:
-            transposed[row.type][row.timestamp] = row.count
+    for scan in scans:
+        for type_, count in dict(scan.summary).items():
+            if count:
+                transposed[type_][scan.as_of] = count
 
     # Calculate ROC if we can..
     rocs = dict()

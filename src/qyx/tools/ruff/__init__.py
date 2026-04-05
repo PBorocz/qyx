@@ -25,7 +25,6 @@ class Configuration(ToolType):
             name="ruff",
             description="Astral code linter",
             dimensions=DIMENSIONS,
-            results_required=False,  # In this case,  Ruff Scans without data ARE valid!
         )
 
 

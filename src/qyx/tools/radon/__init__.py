@@ -32,7 +32,7 @@ class Configuration(ToolType):
             ingest_by_dimension=True,
         )
 
-    def get_parse_method(self, dimension: ToolDimension) -> Callable:
+    def get_parse_save_method(self, dimension: ToolDimension) -> Callable:
         """Return the method to parse & save the specific Radon dimension's JSON output."""
         py_parse: types.ModuleType = self.import_component("parse")  # eg. .../tools/radon/parse.py
         return getattr(py_parse, f"parse_{dimension.cli_option.lower()}")  # eg. ingest_cc()

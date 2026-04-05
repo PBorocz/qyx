@@ -56,11 +56,7 @@ def import_method(module_method: str) -> Callable + None:
 def get_scans_for_project_dimension(project: Project, dimension: str, last: int = None) -> ModelSelect:
     """Return the most recent scans for the selected project and dimension."""
     scans = (
-        Scan.select(
-            Scan.id,
-            Scan.as_of,
-            Scan.git_commit_message,
-        )
+        Scan.select()
         .join(Request)
         .where(
             Request.project == project,

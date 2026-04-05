@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 def clean(args: Namespace, vacuum: bool = True) -> None:
     """Clean out extraneous Scans that don't have data and Projects that don't have Scans."""
     _delete_superseded_requests(args)
-    _delete_orphaned_scans(args)
     _delete_orphaned_requests(args)
     _delete_orphaned_projects(args)
     if vacuum:  # This is time-consuming, only perform on formal clean request!
@@ -63,42 +62,6 @@ def _delete_superseded_requests(args: Namespace) -> None:
                 f"superseded by latest git-revision of {dt_to_display(latest_git_scan.as_of)}"
             )
         log.debug(msg)
-
-
-def _delete_orphaned_scans(args: Namespace) -> None:
-    """Delete orphaned Scan, ie. that don't have results associated with 'em."""
-
-    def __clean_scans(o_tool: ToolType) -> None:
-        # First, get all the scan's id's used by models storing data for this tool/module:
-        model_scan_ids = set()
-        for model in o_tool.get_models():
-            try:
-                result_scan_ids = [row.scan_id for row in model.select(model.scan).distinct()]
-                model_scan_ids.update(result_scan_ids)
-                log.debug(f"-- Tool model: {model.__name__:16s} has {len(result_scan_ids):2d} scan(s)")
-            except AttributeError:
-                # Not all models have the scan attribute (e.g. RuffMessage, SccFile etc.)
-                pass
-
-        log.debug(f"- {o_tool.name:6s} {len(model_scan_ids):4d} scan definitions")
-
-        # Secondly, gather all the scan's currently stored for this tool
-        scan_ids = {scan.id for scan in Scan.select().where(Scan.tool == o_tool.name)}
-        log.debug(f"- {o_tool.name:6s} {len(scan_ids):4d} scan with results")
-
-        # Find any "orphaned" ones by a simple set "subtract" and delete 'em.
-        scan_ids_to_delete = scan_ids - model_scan_ids
-        if scan_ids_to_delete:
-            Scan.delete().where(Scan.id.in_(scan_ids_to_delete)).execute()
-            log.debug(f"- Cleaned up {len(scan_ids_to_delete)} orphaned Scan(s)")
-
-    for o_tool in args.tools.tools():
-        log.debug("#" * 40)
-        log.debug(f"Cleanup {o_tool.name=}")
-        if o_tool.results_required:
-            __clean_scans(o_tool)
-        else:
-            log.debug("Nothing done (tool is allowed to have scans with no results)")
 
 
 def _delete_orphaned_requests(args: Namespace) -> None:

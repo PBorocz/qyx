@@ -141,6 +141,7 @@ def _render_h(args: Namespace, project: Project, scan: Scan, dimension: ToolDime
         ("Comments", "comment"),
         ("Blanks", "blank"),
         ("Complexity", "complexity"),
+        ("Dryness", "dryness"),
     ):
         dt_rows = result.transposed.get(metric)
         row = [desc]

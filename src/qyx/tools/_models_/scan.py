@@ -37,7 +37,7 @@ class Scan(BaseModel):
     # Dimension ingested.
     # For tools with a single dimension, this will default to tool.name (e.g. cloc, ruff, ty etc.)
     # For tools with multiple *reporting* dimensions but that we ingest once, this will also be the tool name (eg. scc)
-    # For tools that we ingest *by dimension*, this will be the "ingest" dimension (e.g. raw, hal, cc obo radon)
+    # For tools that we ingest *BY DIMENSION*, this will be the "ingest" dimension (e.g. raw, hal, cc obo radon)
     ingest_dimension = pw.CharField()
 
     # Git commit/revision hash (only available when iterating over git revisions, not from file system)

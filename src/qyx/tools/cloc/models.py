@@ -148,40 +148,42 @@ def query_cloc_2(args: Namespace, scan: Scan) -> Sns:
 
 
 @query_cache
-def query_cloc_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_project_dimension(project, "cloc", last=last)
-    query = (
-        Cloc.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            fn.SUM(Cloc.lines_code).alias("total_code"),
-            fn.SUM(Cloc.lines_comment).alias("total_comment"),
-            fn.SUM(Cloc.lines_blank).alias("total_blank"),
-        )
-        .join(Scan)
-        .where(Scan.id.in_([scan.id for scan in scans]))
-        .group_by(Scan.as_of)
-        .order_by(Scan.as_of)
-        .objects()
-    )
-    timestamps = [result.timestamp for result in query]
-    messages = {result.timestamp: result.message for result in query}
+def query_cloc_h(project: Project, dimension: str = "cloc", last: int = None) -> Sns:
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
+
+    ################################################################################################
+    # Look through to the internal summary.
+    ################################################################################################
+    rows = list()
+    for scan in scans:
+        if not scan.summary:
+            continue
+        row = Sns(timestamp=scan.as_of, git_commit_message=scan.git_commit_message)
+        for attr in ("lines_blank", "lines_code", "lines_comment", "lines_total"):
+            setattr(row, attr, scan.summary.get(attr, 0))
+        rows.append(row)
+
+    timestamps = [row.timestamp for row in rows]
+    messages = {row.timestamp: row.git_commit_message for row in rows}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
     transposed = defaultdict(lambda: defaultdict(dict))
     grand_totals = defaultdict(int)
-    for result in query:
-        transposed["Code"][result.timestamp] = result.total_code
-        transposed["Comment"][result.timestamp] = result.total_comment
-        transposed["Blank"][result.timestamp] = result.total_blank
+    for row in rows:
+        # fmt: off
+        transposed["Code"    ][row.timestamp] = row.lines_code
+        transposed["Comment" ][row.timestamp] = row.lines_comment
+        transposed["Blank"   ][row.timestamp] = row.lines_blank
+        transposed["Total"   ][row.timestamp] = row.lines_total
+        # fmt: on
 
         # Calculate grand totals for each timestamp as we go
-        grand_totals[result.timestamp] += result.total_code + result.total_comment + result.total_blank
+        grand_totals[row.timestamp] += row.lines_total
 
     roc = dict()
-    for attr in ("Code", "Comment", "Blank"):
+    for attr in ("Code", "Comment", "Blank", "Total"):
         if len(timestamps) > 1:
             roc[attr] = rate_of_change_percentage(
                 transposed[attr][timestamps[-2]],
@@ -201,15 +203,16 @@ def query_cloc_h(project: Project, last: int = None) -> Sns:
     if len(timestamps) > 1:
         days = days_between(timestamps[0], timestamps[-1])
         # fmt: off
-        adgs["total_code"   ] = (query[-1].total_code    - query[0].total_code   ) / days
-        adgs["total_comment"] = (query[-1].total_comment - query[0].total_comment) / days
-        adgs["total_blank"  ] = (query[-1].total_blank   - query[0].total_blank  ) / days
+        adgs["lines_code"   ] = (rows[-1].lines_code    - rows[0].lines_code   ) / days
+        adgs["lines_comment"] = (rows[-1].lines_comment - rows[0].lines_comment) / days
+        adgs["lines_blank"  ] = (rows[-1].lines_blank   - rows[0].lines_blank  ) / days
+        adgs["lines_total"  ] = (rows[-1].lines_total   - rows[0].lines_total  ) / days
         # fmt: on
 
     return Sns(
         timestamps=timestamps,
         messages=messages,
-        rows=query,
+        rows=rows,
         transposed=transposed,
         grand_totals=grand_totals,
         roc=roc,

@@ -269,49 +269,44 @@ def query_raw_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_raw_h(project: Project, last: int = None) -> Sns:
-    scans = get_scans_for_project_dimension(project, "raw", last=last)
-    query = (
-        RadonRaw.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            fn.SUM(RadonRaw.blank).alias("blank"),
-            fn.SUM(RadonRaw.comments).alias("comments"),
-            fn.SUM(RadonRaw.loc).alias("loc"),
-            fn.SUM(RadonRaw.multi).alias("multi"),
-            fn.SUM(RadonRaw.sloc).alias("sloc"),
-        )
-        .join(Scan)
-        .where(Scan.id.in_([scan.id for scan in scans]))
-        .group_by(Scan.as_of)
-        .order_by(Scan.as_of)
-        .objects()
-    )
-    timestamps = [result.timestamp for result in query]
-    messages = {result.timestamp: result.message for result in query}
+def query_raw_h(project: Project, dimension: str = "raw", last: int = None) -> Sns:
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
+
+    ################################################################################################
+    # Look through to the internal summary.
+    ################################################################################################
+    rows = list()
+    for scan in scans:
+        if not scan.summary:
+            continue
+        row = Sns(timestamp=scan.as_of, git_commit_message=scan.git_commit_message)
+        for attr in RadonRaw.attrs():
+            setattr(row, attr, scan.summary.get(attr, 0))
+        rows.append(row)
+    timestamps = [row.timestamp for row in rows]
+    messages = {row.timestamp: row.git_commit_message for row in rows}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    timestamps = [result.timestamp for result in query]
     transposed = defaultdict(lambda: defaultdict(dict))
-    for result in query:
+    for row in rows:
         total = 0
-        for attr_name in RadonRaw.attrs():
-            lines = int(getattr(result, attr_name))
-            transposed[attr_name][result.timestamp] = lines
+        for attr in RadonRaw.attrs():
+            lines = int(getattr(row, attr))
+            transposed[attr][row.timestamp] = lines
             total += lines  # Calculate grand totals for each timestamp as we go
 
     # Calculate rate of change of last 2 entries..
     rocs = dict()
-    for attr_name in RadonRaw.attrs():
+    for attr in RadonRaw.attrs():
         if len(timestamps) > 1:
-            rocs[attr_name] = rate_of_change_percentage(
-                transposed[attr_name][timestamps[-2]],
-                transposed[attr_name][timestamps[-1]],
+            rocs[attr] = rate_of_change_percentage(
+                transposed[attr][timestamps[-2]],
+                transposed[attr][timestamps[-1]],
             )
         else:
-            rocs[attr_name] = 0.0
+            rocs[attr] = 0.0
 
     if len(timestamps) > 1:
         roc_gt = rate_of_change_percentage(
@@ -479,43 +474,32 @@ def query_hal_3(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_hal_h(project: Project = None, last: int = None) -> Sns:
-    scans = get_scans_for_project_dimension(project, "hal", last=last)
-    query = (
-        RadonHal.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            fn.AVG(RadonHal.h1).alias("h1"),
-            fn.AVG(RadonHal.h2).alias("h2"),
-            fn.AVG(RadonHal.N1).alias("N1"),
-            fn.AVG(RadonHal.N2).alias("N2"),
-            fn.AVG(RadonHal.program_vocabulary).alias("program_vocabulary"),
-            fn.AVG(RadonHal.program_length).alias("program_length"),
-            fn.AVG(RadonHal.calculated_length).alias("calculated_length"),
-            fn.AVG(RadonHal.volume).alias("volume"),
-            fn.AVG(RadonHal.difficulty).alias("difficulty"),
-            fn.AVG(RadonHal.effort).alias("effort"),
-            fn.AVG(RadonHal.time).alias("time"),
-            fn.AVG(RadonHal.bugs).alias("bugs"),
-        )
-        .join(Scan)
-        .where(Scan.id.in_([scan.id for scan in scans]))
-        .group_by(Scan.as_of)
-        .order_by(Scan.as_of)
-        .objects()
-    )
-    timestamps = [result.timestamp for result in query]
-    messages = {result.timestamp: result.message for result in query}
+def query_hal_h(project: Project = None, dimension: str = "hal", last: int = None) -> Sns:
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
+
+    ################################################################################################
+    # Look through to the internal summary.
+    ################################################################################################
+    rows = list()
+    for scan in scans:
+        if not scan.summary:
+            continue
+        row = Sns(timestamp=scan.as_of, git_commit_message=scan.git_commit_message)
+        for o_attr in RadonHal.attrs():
+            setattr(row, o_attr.name, scan.summary.get(o_attr.name, 0))
+        rows.append(row)
+    timestamps = [row.timestamp for row in rows]
+    messages = {row.timestamp: row.git_commit_message for row in rows}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
     transposed = defaultdict(lambda: defaultdict(dict))
-    for result in query:
+    for row in rows:
         total = 0
         for attr in RadonHal.attrs():
-            value = getattr(result, attr.name)
-            transposed[attr.name][result.timestamp] = value
+            value = getattr(row, attr.name)
+            transposed[attr.name][row.timestamp] = value
             total += value  # Calculate grand totals for each timestamp as we go
 
     # Calculate rate of change of last 2 entries..
@@ -610,107 +594,34 @@ def query_mi_2(args, scan: Scan) -> Sns:
 
 
 @query_cache
-def query_mi_h_original(project, last: int = None) -> Sns:
-    assert project
+def query_mi_h(project, dimension: str = "mi", last: int = None) -> Sns:
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
 
-    scans = get_scans_for_project_dimension(project, "mi", last=last)
-    scan_ids = [scan.id for scan in scans]
-
-    # Alias for the RAW scan to make the query clearer
-    rawscan = Scan.alias()
-
-    query = (
-        RadonMi.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            (fn.SUM(RadonMi.mi * RadonRaw.loc) / fn.SUM(RadonRaw.loc)).alias("mi_weighted"),
+    ################################################################################################
+    # Look through to the internal summary.
+    ################################################################################################
+    rows = {}
+    for scan in scans:
+        if not scan.summary:
+            continue
+        rows[scan.as_of] = Sns(
+            timestamp=scan.as_of,
+            git_commit_message=scan.git_commit_message,
+            maintainability_index=scan.summary.get("maintainability_index", 0.0),
         )
-        .join(
-            Scan,
-            on=(RadonMi.scan == Scan.id),
-        )
-        .switch(RadonMi)
-        .join(
-            RadonRaw,
-            on=((RadonMi.directory == RadonRaw.directory) & (RadonMi.filename == RadonRaw.filename)),
-        )
-        .join(
-            rawscan,
-            on=(
-                (RadonRaw.scan == rawscan.id)
-                & (rawscan.request == Scan.request)
-                & (rawscan.tool == "radon")
-                & (rawscan.ingest_dimension == "raw")
-            ),
-        )
-        .where(RadonMi.scan.in_(scan_ids))
-        .group_by(Scan.as_of)
-        .order_by(Scan.as_of.desc())
-        .dicts()
-    )
-    rows = {row["timestamp"]: row["mi_weighted"] for row in query.dicts()}
-    messages = {row["timestamp"]: row["message"] for row in query.dicts()}
+    timestamps = sorted(list(rows.keys()))
+    messages = {row.timestamp: row.git_commit_message for row in rows.values()}
 
     # Calculate rate of change of last 2 entries..
-    timestamps = list(rows.keys())
     roc = 0.00
     if len(timestamps) > 1:
-        ts_penultimate, ts_last = sorted(timestamps)[-2:]
-        roc = rate_of_change_percentage(rows[ts_penultimate], rows[ts_last])
-
-    return Sns(messages=messages, rows=rows, roc=roc)
-
-
-@query_cache
-def query_mi_h(project, last: int = None) -> Sns:
-    assert project
-
-    scans = get_scans_for_project_dimension(project, "mi", last=last)
-    scan_ids = [scan.id for scan in scans]
-
-    # Alias for the RAW scan to make the query clearer
-    rawscan = Scan.alias()
-
-    query = (
-        RadonMi.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            (fn.SUM(RadonMi.mi * RadonRaw.loc) / fn.SUM(RadonRaw.loc)).alias("mi_weighted"),
+        ts_penultimate, ts_last = timestamps[-2:]
+        roc = rate_of_change_percentage(
+            rows[ts_penultimate].maintainability_index,
+            rows[ts_last].maintainability_index,
         )
-        .join(
-            Scan,
-            on=(RadonMi.scan == Scan.id),
-        )
-        .switch(RadonMi)
-        .join(
-            RadonRaw,
-            on=((RadonMi.directory == RadonRaw.directory) & (RadonMi.filename == RadonRaw.filename)),
-        )
-        .join(
-            rawscan,
-            on=(
-                (RadonRaw.scan == rawscan.id)
-                & (rawscan.request == Scan.request)
-                & (rawscan.tool == "radon")
-                & (rawscan.ingest_dimension == "raw")
-            ),
-        )
-        .where(RadonMi.scan.in_(scan_ids))
-        .group_by(Scan.as_of)
-        .order_by(Scan.as_of.desc())
-        .dicts()
-    )
-    rows = {row["timestamp"]: row["mi_weighted"] for row in query.dicts()}
-    messages = {row["timestamp"]: row["message"] for row in query.dicts()}
 
-    # Calculate rate of change of last 2 entries..
-    timestamps = list(rows.keys())
-    roc = 0.00
-    if len(timestamps) > 1:
-        ts_penultimate, ts_last = sorted(timestamps)[-2:]
-        roc = rate_of_change_percentage(rows[ts_penultimate], rows[ts_last])
-
-    return Sns(messages=messages, rows=rows, roc=roc)
+    return Sns(rows=rows, timestamps=timestamps, messages=messages, roc=roc)
 
 
 ################################################################################################
@@ -821,51 +732,23 @@ def query_cc_3(args: Namespace, scan: Scan) -> Sns:
 
 
 @query_cache
-def query_cc_h(project: Project, last: int = None) -> Sns:
-    # Step 1: Find the relevant scans for the project (potentially limited)
-    scans = get_scans_for_project_dimension(project, "cc", last=last)
-
-    # Step 2: Get aggregated complexity for those scans (fast - no join!)
-    scan_id_list = [s.id for s in scans]
-    complexity_data = (
-        RadonCc.select(
-            RadonCc.scan_id,
-            RadonCc.entity_type,
-            fn.AVG(RadonCc.complexity).alias("avg_complexity"),
-        )
-        .where(RadonCc.scan_id.in_(scan_id_list))
-        .group_by(RadonCc.scan_id, RadonCc.entity_type)
-        .dicts()
-    )
-
-    # Step 3: Combine in Python (fast - in-memory)
-    complexity_by_scan = {}
-    for row in complexity_data:
-        key = (row["scan"], row["entity_type"])
-        complexity_by_scan[key] = row["avg_complexity"]
-
-    # Step 4: Build final result
-    query = []
-    for scan in scans:
-        # Get all entity types for this scan
-        for entity_type in set(k[1] for k in complexity_by_scan.keys() if k[0] == scan.id):
-            query.append(
-                Sns(
-                    timestamp=scan.as_of,
-                    message=scan.git_commit_message,
-                    entity_type=entity_type,
-                    complexity=complexity_by_scan.get((scan.id, entity_type), 0),
-                ),
-            )
+def query_cc_h(project: Project, dimension: str = "cc", last: int = None) -> Sns:
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    timestamps = list({result.timestamp for result in query})
-    messages = {result.timestamp: result.message for result in query}
+    timestamps = [scan.as_of for scan in scans]
+    messages = {scan.as_of: scan.git_commit_message for scan in scans}
+
     transposed = defaultdict(lambda: defaultdict(dict))
-    for result in query:
-        transposed[result.entity_type][result.timestamp] = result.complexity
+    for scan in scans:
+        if not scan.summary:
+            continue
+        if not (d_mean_complexity := scan.summary.get("mean_complexity")):
+            continue
+        for entity_type, complexity in d_mean_complexity.items():
+            transposed[entity_type][scan.as_of] = complexity
 
     # Calculate rate of change of last 2 entries for each entity type
     rocs = dict()

@@ -22,7 +22,6 @@ class Configuration(ToolType):
             name="fxtd",
             description="FixMe's, ToDo's, Notes etc.",
             dimensions=DIMENSIONS,
-            results_required=False,  # In this case,  Scans without data ARE valid!
         )
 
     def get_ingest_command(

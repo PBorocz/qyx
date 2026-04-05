@@ -20,9 +20,10 @@ def report(args: Namespace) -> None:
                 )
 
 
-def _get_tools_dimensions_to_report(args: Namespace) -> list[tuple[ToolType, ToolDimension | str]]:
+def _get_tools_dimensions_to_report(args: Namespace) -> list[tuple[ToolType, ToolDimension]]:
     """Process the command-line argument and return a list of tools and dimensions to report on."""
     o_tool = args.tools[args.tool.lower()]
+
     ################################################################################
     # Case 1: Both tool and dimension are explicitly specified:
     ################################################################################
@@ -37,7 +38,7 @@ def _get_tools_dimensions_to_report(args: Namespace) -> list[tuple[ToolType, Too
     # Case 2: Dimension is wildcarded
     ################################################################################
     if args.dimension == ALL_ITEMS:
-        return [(o_tool, ALL_ITEMS)]
+        return [(o_tool, o_dim) for o_dim in o_tool.dimensions]
 
     ################################################################################
     # Case 3: Dimension specified but tool is not.

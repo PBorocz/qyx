@@ -62,15 +62,18 @@ def style_figure(fig, **kwargs):
         return {attr: value for attr, value in result.items() if value is not None}
 
     fig.update_layout(**merge_and_filter(LAYOUT_DEFAULTS, kwargs.get("layout", {})))
-
     fig.update_xaxes(**merge_and_filter(X_AXIS_DEFAULTS, kwargs.get("xaxis", {})))
-
     fig.update_yaxes(**merge_and_filter(Y_AXIS_DEFAULTS, kwargs.get("yaxis", {})))
 
     return fig
 
 
-def custom_labels(metric: str, messages: dict, x_values: list[str | None], y_values: list[str | None]) -> list[str]:
+def custom_labels(
+    metric: str,
+    messages: dict,
+    x_values: list[str | None],
+    y_values: list[str | None],
+) -> list[str]:
     """Return a list of custom hover labels based on the respective git messages."""
     labels = []
     for timestamp, value in zip(x_values, y_values):

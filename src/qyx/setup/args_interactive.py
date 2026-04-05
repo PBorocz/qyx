@@ -426,7 +426,7 @@ def _prompt_dimension(args: Namespace, message: str) -> str:
         title = f"{o_dimension.name:5s} - {o_dimension.description}"
         choices.append(Choice(title, value=o_dimension.name))
 
-    # Final choice is a "global" all
+    # Final choice is a "global" all dimensions
     choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS))
 
     # Do we have an existing value to default?

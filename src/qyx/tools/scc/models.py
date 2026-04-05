@@ -151,40 +151,30 @@ def query_scc_2(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TO
 
 
 def query_scc_h(project: Project, dimension: str, last: int = None) -> Sns:
+    # Note: we query for dimension as "scc" as we don't ingest by dimension, only REPORT by it!
     scans = get_scans_for_project_dimension(project, "scc", last=last)
+    timestamps = [scc.as_of for scc in scans]
+    messages_by_timestamp = {scc.as_of: scc.git_commit_message for scc in scans}
 
-    query = (
-        Scc.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            Scc.language,
-            Scc.lines,
-            Scc.code,
-            Scc.comment,
-            Scc.blank,
-            Scc.complexity,
-            Scc.uloc,
-            Scc.dryness,
-        )
-        .join(Scan)
-        .where(
-            Scan.id.in_([scan.id for scan in scans]),
-            fn.LOWER(Scc.language) == fn.LOWER(dimension),
-        )
-        .order_by(Scan.as_of)
-        .objects()
-    )
-    timestamps = [result.timestamp for result in query]
-    messages_by_timestamp = {result.timestamp: result.message for result in query}
+    attrs = ("lines", "code", "comment", "blank", "complexity", "uloc", "dryness")
+    ################################################################################################
+    # Look through to the requested *report* dimension (ie. language)
+    ################################################################################################
+    rows = list()
+    for scan in scans:
+        row = Sns(timestamp=scan.as_of)
+        summary = scan.summary.get(dimension.lower(), {})
+        for attr in attrs:
+            setattr(row, attr, summary.get(attr, 0))
+        rows.append(row)
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
     transposed = defaultdict(lambda: defaultdict(dict))
-    attrs = ("lines", "code", "comment", "blank", "complexity", "uloc", "dryness")
-    for row in query:
+    for row in rows:
         for attr in attrs:
-            transposed[attr][row.timestamp] = getattr(row, attr)
+            transposed[attr][row.timestamp] = getattr(row, attr, None)
 
     # Calculate rate of change (primarily for CLI reporting)
     roc = dict()
@@ -198,7 +188,7 @@ def query_scc_h(project: Project, dimension: str, last: int = None) -> Sns:
             roc[attr] = 0.00
 
     return Sns(
-        rows=query,
+        rows=rows,
         timestamps=timestamps,
         messages=messages_by_timestamp,
         transposed=transposed,

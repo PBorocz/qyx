@@ -27,7 +27,7 @@ def test_cli_rendering_methods(app_args, ingested_project, subtests, capsys):
     for o_tool in app_args.tools.tools():
         for report_level in ReportLevel:
             for o_report_dimension in o_tool.dimensions:
-                msg = f"T:{o_tool.name} D:{o_report_dimension.name} L:{report_level.value}]"
+                msg = f"T:{o_tool.name:6s} D:{o_report_dimension.name:10s} L:{report_level.value}]"
                 cases.append(
                     Namespace(
                         msg=msg,

@@ -11,13 +11,15 @@ from types import SimpleNamespace as Sns
 from typing import Any, Callable, Iterator
 
 from peewee import IntegrityError
-from rich import print as rprint
+from rich.console import Console
 
 from qyx.constants import ALL_ITEMS
 from qyx.tools._models_ import ToolDimension, ToolType, Project, Request, Scan
 from qyx.utils.git import git_checkout, get_git_commits
 
 log = logging.getLogger(__name__)
+
+console = Console()
 
 
 def ingest(args: Namespace) -> None:
@@ -30,11 +32,22 @@ def ingest(args: Namespace) -> None:
     tools: list[ToolType] = _get_tools_from_args(args)
 
     for scan_request in _get_scan_requests(args, o_request):
+        scan_results = list()
         for o_tool in tools:
             if scan_request.as_git:
                 git_checkout(scan_request)
+
             # Do the respective tool's ingestion
-            _do_scan(args, o_request, o_tool, scan_request)
+            if results := _do_scan(args, o_request, o_tool, scan_request):
+                for result in results:
+                    scan_results.append(result)
+
+        if results:
+            console.print(f"{scan_request.s_as_of} - Ingested", end="")
+            for result in scan_results:
+                console.print(result, end="")
+            console.print()
+            console.file.flush()
 
 
 ################################################################################################
@@ -85,21 +98,24 @@ def _get_scan_requests(args: Namespace, o_request: Request) -> Iterator[Sns]:
         )
 
 
-def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request: Sns) -> tuple[int, bool]:
+def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request: Sns) -> list[str]:
     """Ingest a tool: run the respective command(s), parse and save results!."""
     dimensions_to_ingest: list[ToolDimension | None] = o_tool.dimensions if o_tool.ingest_by_dimension else [None]
+
+    results = list()
     for dimension in dimensions_to_ingest:
-        parse_method: Callable = o_tool.get_parse_method(dimension)
+        parse_method: Callable = o_tool.get_parse_save_method(dimension)
         assert parse_method, f"Sorry, we couldn't find a parse/ingest method for {dimension=} obo {o_tool.name=}"
 
         if dimension:
             # Running multiple ingest commands for the tool, one for each possible dimension.
             ingest_dimension = dimension.name
-            display = f"{o_tool.name}:{dimension.name}"
+            tool_dim = f"{o_tool.name}-{dimension.name}"
         else:
             # Running a single command for the entire tool (irrespective of *REPORTING* dimensions)
             ingest_dimension = o_tool.name
-            display = o_tool.name
+            tool_dim = o_tool.name
+
         try:
             # Create the scan on whose behalf the results will be stored.
             scan = Scan.create(
@@ -113,7 +129,7 @@ def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request
             )
         except IntegrityError:
             if log.isEnabledFor(logging.DEBUG):
-                rprint(f"[yellow]⚠ {scan_request.s_as_of} - Scan already exists for {display}[/yellow]")
+                results.append(f" [yellow]{tool_dim}:⚠ (Scan already exists)[/yellow]")
             continue
 
         ################################################################################################
@@ -123,16 +139,16 @@ def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request
         if error:
             # We ran into a problem with running the ingest, don't leave the scan hanging around
             scan.delete_instance(recursive=True)  # recursive is just in case..
-            rprint(f"[red]❌ {scan_request.s_as_of} - Unable to ingest from {display}[/red]")
-            return
+            results.append(f" [red]{tool_dim}:❌[/red]")
+            continue
 
         ################################################################################################
         # Parse & save the results received this time using the respective tool's ingest method
         ################################################################################################
         result_count: int = parse_method(scan, scan_request.latest, datum)
-        rprint(
-            f"[green]✔ {scan_request.s_as_of} - Ingested [bold]{result_count:3d}[/bold] from {display}[/green]",
-        )
+        s_result_count = f"{result_count:,d}" if result_count else "✔"
+        results.append(f" [green]{tool_dim}:{s_result_count}[/green]")
+    return results
 
 
 def _run_tool(

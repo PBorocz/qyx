@@ -238,15 +238,13 @@ def hal_h(args: Namespace, project: Project, scan: Scan) -> None:
         if attr in result.rocs:
             roc = result.rocs[attr]
             t_value = ""
-            if roc > 0.01:
-                color = colors["positive"]
-                t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
-
-            elif roc < -0.01:
-                color = colors["negative"]
-                t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
-        else:
-            t_value = ""
+            if roc:
+                if roc > 0.01:
+                    color = colors["positive"]
+                    t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
+                elif roc < -0.01:
+                    color = colors["negative"]
+                    t_value = f"[{color}][bold]{roc:+.1f}%[/bold][/{color}]"
 
         t_row.append(t_value)
         table.add_row(*t_row)
@@ -306,18 +304,17 @@ def mi_2(args: Namespace, project: Project, scan: Scan) -> None:
 def mi_h(args: Namespace, project: Project, scan: Scan) -> None:
     result = rm.query_mi_h(project, last=5)
 
-    timestamps = list(result.rows.keys())
-    timestamps_formatted = format_timestamp_headers(timestamps)
+    timestamps_formatted = format_timestamp_headers(result.timestamps)
 
     table = cli_table(title="RADON-MI Results Over Time")
     table.add_column("Metric")
-    for timestamp in sorted(timestamps):
+    for timestamp in result.timestamps:
         table.add_column(timestamps_formatted[timestamp], justify="right")
     table.add_column("Delta", justify="right")
 
     row = ["Maintainability Index"]
-    for timestamp in sorted(timestamps):
-        row.append(f"{result.rows[timestamp]:.2f}")
+    for timestamp in result.timestamps:
+        row.append(f"{result.rows[timestamp].maintainability_index:.2f}")
 
     colors = args.config.get("renderers.cli.colors")
     if result.roc > 0.01:

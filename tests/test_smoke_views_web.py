@@ -35,7 +35,7 @@ def _get_granular_view_cases(app_args, ingested_project):
                         #     pytrace=False,  # optional: cleaner output without pytest internals
                         # )
 
-                msg = f"T:{o_tool.name} D:{dimension} L:{report_level.value}]"
+                msg = f"T:{o_tool.name:6s} D:{dimension:10s} L:{report_level.value}]"
                 cases.append(Sns(msg=msg, scan=scan, web_view_method=web_view_method))
     return cases
 

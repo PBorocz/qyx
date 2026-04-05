@@ -63,9 +63,6 @@ class AbstractToolConfiguration(ABC):
         # Are dimensions used during ingest? ie. do we ingest separately for each dimension?
         self.ingest_by_dimension: bool = ingest_by_dimension
 
-        # Are results "required" for a Scan to be valid? (usually yes)
-        self.results_required = True
-
         # Save any other non-required values sent in...
         for attr, value in kwargs.items():
             setattr(self, attr, value)
@@ -96,7 +93,7 @@ class AbstractToolConfiguration(ABC):
             args["dimension"] = dimension.name
         return [part.format(**args) for part in cmd_template]
 
-    def get_parse_method(self, *args, **kwargs) -> Callable:
+    def get_parse_save_method(self, *args, **kwargs) -> Callable:
         """Return the method to parse & save this tool's output (usually JSON)."""
         # NOTE:
         # - This implementation is for "single"-dimension tools (ruff, cloc etc.).

@@ -16,7 +16,7 @@ from qyx.tools._models_ import Project, Request, Scan, State
 class DebugSqliteDatabase(SqliteDatabase):
     """Instrument SQLite queries to find performance issues."""
 
-    def __init__(self, *args, slow_threshold_ms=5.0, **kwargs):
+    def __init__(self, *args, slow_threshold_ms=0.10, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
         self.slow_threshold_ms = slow_threshold_ms
@@ -25,16 +25,16 @@ class DebugSqliteDatabase(SqliteDatabase):
         """Execute SQL and log slow/inefficient queries."""
         start = time.perf_counter()
         cursor = super().execute_sql(sql, params)
-        elapsed_ms = (time.perf_counter() - start) * 1000
+        elapsed_ms = time.perf_counter() - start
 
         if elapsed_ms > self.slow_threshold_ms:
             # Show interpolated SQL for debugging
             interpolated = self._interpolate_sql(sql, params)
 
-            print(f"\n⏱️  SLOW QUERY ({elapsed_ms:.2f}ms)")
-            print(f"SQL: {interpolated}")
-            print(f"Raw: {sql}")
-            print(f"Params: {params}")
+            print(f"\n⏱️ SLOW OPERATION ({elapsed_ms:.2f}ms)")
+            print(f"SQL    : {interpolated}")
+            print(f"Raw    : {sql}")
+            print(f"Params : {params}")
 
             # Show where in code this came from
             stack = traceback.extract_stack()
@@ -46,6 +46,9 @@ class DebugSqliteDatabase(SqliteDatabase):
             # Analyze query plan
             self._analyze_query_plan(sql, params)
 
+            import sys
+
+            sys.exit(1)
         return cursor
 
     def _interpolate_sql(self, sql: str, params: tuple | None) -> str:

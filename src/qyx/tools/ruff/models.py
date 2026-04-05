@@ -93,32 +93,20 @@ def query_ruff_2(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_ruff_h(project: Project, last: int = None) -> Sns:
+def query_ruff_h(project: Project, dimension: str = "ruff", last: int = None) -> Sns:
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular
     # scan. We still want the timestamp back with a Ruff count of *0*.
-    scans = get_scans_for_project_dimension(project, "ruff", last=last)
-    rows = (
-        Scan.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            fn.COUNT(Ruff.id).alias("count"),
-        )
-        .join(Ruff, JOIN.LEFT_OUTER)
-        .where(
-            Scan.id.in_([scan.id for scan in scans]),
-        )
-        .group_by(Scan.as_of)
-        .order_by(Scan.as_of)
-        .objects()
-    )
-    timestamps = [row.timestamp for row in rows]
-    messages = {row.timestamp: row.message for row in rows}
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
+    timestamps = sorted([scan.as_of for scan in scans])
+    messages = {scan.as_of: scan.git_commit_message for scan in scans}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    transposed = {row.timestamp: row.count for row in rows}
+    transposed = dict()
+    for scan in scans:
+        transposed[scan.as_of] = dict(scan.summary).get("number_of_violations", 0)
 
     # Calculate ROC if we can..
     roc = 0.00

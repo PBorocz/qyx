@@ -52,9 +52,9 @@ def view_cloc_h(args: Namespace, project: Project) -> bytes | None:
         return None
 
     metric_titles = (
-        ("total_code", "Total Code Lines"),
-        ("total_comment", "Total Comment Lines"),
-        ("total_blank", "Total Blank Lines"),
+        ("lines_code", "Total Code Lines"),
+        ("lines_comment", "Total Comment Lines"),
+        ("lines_blank", "Total Blank Lines"),
     )
     fig = go.Figure()
     for i, (metric, title) in enumerate(metric_titles):
@@ -113,6 +113,7 @@ def view_cloc_f(args: Namespace, scan: Scan):
 
     style_figure(
         fig,
+        xaxis={"title": "Total Lines"},
         layout={
             "xaxis": None,
             "yaxis_title": "Percent of Files by Total Lines",

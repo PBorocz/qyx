@@ -76,7 +76,7 @@ def dispatch(args: Namespace) -> list[str]:
         # Get our ultimate run command and run it!
         commands.append(args.command)
         method = _get_dispatch_method(args)
-        _ = method(args)  # Don't care about return status, methods will warn if necessary.
+        method(args)  # Don't care about return status, methods will warn if necessary.
 
         # If in command-line mode, save state and we're done!
         if not interactive:

@@ -75,32 +75,6 @@ def parse_mi(scan: Scan, latest: bool, data: Any) -> int:
             log.error(f"Unable to parse radon mi: {fn_}[{scan.git_commit_hash[:8]}] {radon_result=}")
             return None
 
-    def _get_summary(rows: list[RadonMi]) -> dict:
-        """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
-        # Get the number of lines of code at the moment from the latest "raw" scan..
-        raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
-        loc_per_dir_filename = defaultdict(int)
-        for raw in RadonRaw.select().where(RadonRaw.scan_id == raw_scan.id):
-            key = (raw.directory, raw.filename)
-            loc_per_dir_filename[key] += raw.loc
-        total_loc = sum(loc_per_dir_filename.values())
-
-        # Calculate the MI weighted by the lines of code in each respective file.
-        total_weighted_sum = 0.0
-        for row in rows:
-            try:
-                key = (str(row.directory), row.filename)
-                loc = loc_per_dir_filename.get(key, 0)
-                total_weighted_sum += loc * row.mi
-            except AttributeError:
-                breakpoint()
-
-                ...
-
-        weighted_avg_mi = total_weighted_sum / total_loc if total_loc else 0.0
-
-        return {"maintainability_index": weighted_avg_mi}
-
     # GO!
     try:
         json_ = json.loads(data)
@@ -111,7 +85,7 @@ def parse_mi(scan: Scan, latest: bool, data: Any) -> int:
     rows = [_json_to_row(fn_, results) for fn_, results in json_.items()]
 
     # Save summary information (always)
-    scan.summary = _get_summary(rows)
+    scan.summary = _get_summary_mi(scan, rows)
     scan.save()
 
     # Save detail information if this is putatively the most recent scan!
@@ -121,6 +95,30 @@ def parse_mi(scan: Scan, latest: bool, data: Any) -> int:
                 row.scan = scan.id
                 row.save()
     return len(rows)
+
+
+def _get_summary_mi(scan: Scan, rows: list[RadonMi]) -> dict:
+    """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
+    # Get the number of lines of code at the moment from the latest "raw" scan..
+    raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
+    loc_per_dir_filename = defaultdict(int)
+    for raw in RadonRaw.select().where(RadonRaw.scan_id == raw_scan.id):
+        key = (raw.directory, raw.filename)
+        loc_per_dir_filename[key] += raw.loc
+    total_loc = sum(loc_per_dir_filename.values())
+
+    # Calculate the MI weighted by the lines of code in each respective file.
+    total_weighted_sum = 0.0
+    for row in rows:
+        if not row:
+            continue
+        key = (str(row.directory), row.filename)
+        loc = loc_per_dir_filename.get(key, 0)
+        total_weighted_sum += loc * row.mi
+
+    weighted_avg_mi = total_weighted_sum / total_loc if total_loc else 0.0
+
+    return {"maintainability_index": weighted_avg_mi}
 
 
 def parse_cc(scan: Scan, latest: bool, data: Any) -> int:
@@ -257,10 +255,12 @@ def parse_hal(scan: Scan, latest: bool, data: Any) -> int:
 def _get_summary_hal(rows: list[RadonHal]) -> dict:
     totals = defaultdict(float)
     for row in rows:
-        for attr in [o_attr.name for o_attr in RadonHal.attrs()]:
-            totals[attr] += getattr(row, attr, 0)
+        for o_attr in RadonHal.attrs():
+            totals[o_attr.name] += getattr(row, o_attr.name, 0)
+
     return_avgs = defaultdict(float)
-    for attr in [o_attr.name for o_attr in RadonHal.attrs()]:
-        return_avgs[attr] /= len(rows)
+    if rows:
+        for o_attr in RadonHal.attrs():
+            return_avgs[o_attr.name] = totals[o_attr.name] / len(rows)
 
     return return_avgs

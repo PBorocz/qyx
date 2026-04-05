@@ -112,33 +112,22 @@ def query_ty_3(scan: Scan) -> Sns:
 
 
 @query_cache
-def query_ty_h(project: Project, last: int = None) -> Sns:
+def query_ty_h(project: Project, dimension: str = "ty", last: int = None) -> Sns:
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ty table.
     # We do this as there are valid cases when there are NO Ty table
     # entries for a particular scan. We still want the timestamp back
     # with a Ty count of *0*.
-    scans = get_scans_for_project_dimension(project, "ty", last=last)
-    query = (
-        Scan.select(
-            Scan.as_of.alias("timestamp"),
-            Scan.git_commit_message.alias("message"),
-            fn.COUNT(Ty.id).alias("count"),
-        )
-        .join(Ty, JOIN.LEFT_OUTER)
-        .where(
-            Scan.id.in_([scan.id for scan in scans]),
-        )
-        .group_by(Scan.as_of)
-        .order_by(Scan.as_of)
-        .objects()
-    )
-    timestamps = [row.timestamp for row in query]
-    messages = {row.timestamp: row.message for row in query}
+    scans = get_scans_for_project_dimension(project, dimension, last=last)
+    timestamps = [scan.as_of for scan in scans]
+    messages = {scan.as_of: scan.git_commit_message for scan in scans}
 
     ################################################################################################
     # Transpose (to get timestamps *across* instead of down and calculate grand totals)
     ################################################################################################
-    transposed = {row.timestamp: row.count for row in query}
+    transposed = dict()
+    for scan in scans:
+        if scan.summary:
+            transposed[scan.as_of] = dict(scan.summary).get("number_of_violations", 0)
 
     # Calculate ROC if we can..
     roc = 0.00

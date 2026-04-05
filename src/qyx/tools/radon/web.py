@@ -268,7 +268,7 @@ def view_mi_h(args: Namespace, scan: Scan):
     """Render the maintainability index chart."""
     result = rm.query_mi_h(scan.request.project)
     x_values = [datetime.fromisoformat(ts_) for ts_ in result.rows.keys()]
-    y_values = [round(value, 2) for value in result.rows.values()]
+    y_values = [round(row.maintainability_index, 2) for row in result.rows.values()]
     labels = custom_labels("", result.messages, x_values, y_values)
     fig = go.Figure()
     fig.add_trace(

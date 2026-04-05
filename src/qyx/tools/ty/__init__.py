@@ -18,5 +18,4 @@ class Configuration(ToolType):
             name="ty",
             description="Astral type checker",
             dimensions=DIMENSIONS,
-            results_required=False,  # In this case,  Ty Scans without data ARE valid (albeit rare?)
         )
