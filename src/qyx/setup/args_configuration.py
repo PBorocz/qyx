@@ -7,6 +7,7 @@ from pathlib import Path
 from platformdirs import user_config_dir
 from typing import Any
 
+from qyx.constants import ConfigurationError
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +50,18 @@ class Configuration:
                 msg = (
                     f"Sorry, encountered {tool_name=} in 'renderers.web.nav.tool_order' ",
                     "section that isn't available!",
+                )
+                log.error(msg)
+                error_encountered = True
+
+        # Lines of code sources
+        for loc_source in self.get("general.lines_of_code.sources", ()):
+            try:
+                module, ingest_dimension, attr = loc_source.split(":")
+            except ValueError:
+                msg = (
+                    f"Sorry, encountered lines-of-code source: '{loc_source} in 'general.lines_of_code.sources' ",
+                    "that isn't formatted correctly (should be '<tool>:<ingest_dimension>:<attr>|<attr>')!",
                 )
                 log.error(msg)
                 error_encountered = True
@@ -101,7 +114,7 @@ def _load_config(config_path: Path | None) -> dict:
         return {}
 
     if not config_path.exists():
-        raise FileNotFoundError(f"Sorry, we couldn't find a configuration file at: {config_path}")
+        raise ConfigurationError(f"Sorry, we couldn't find a configuration file at: {config_path}")
 
     with open(config_path, "rb") as fh_:
         return yaml.safe_load(fh_)

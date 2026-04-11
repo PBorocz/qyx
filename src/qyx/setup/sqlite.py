@@ -108,10 +108,15 @@ def setup_sqlite(args: Namespace) -> None:
     if "tools" not in args:
         raise RuntimeError("Sorry, setup/tools.py must have already been run before we can setup the database!")
 
-    db_path = Path(user_data_dir("qyx")) / "db.sqlite3"  # Normal path..
-    db_path = getattr(args, "db_path", db_path)  # Override primarily used to override db path for testing!
+    # Determine database location:
+    # - First check is to direct setting in args (used for testing primarily)
+    # - Second check is if we have an explicit setting from our configuration file.
+    # - Finally, we simply use platform-specific "user_data_directory" (usual case!)
+    if not (db_path := getattr(args, "db_path", None)):
+        if not (db_path := args.config.get("general.database.path")):
+            db_path = Path(user_data_dir("qyx")) / "db.sqlite3"
 
-    # Only create parent directory for file-based databases
+    # Ensure parent directory exists for file-based database locations..
     db_path_name: str = db_path
     if db_path != ":memory:" and not str(db_path).startswith("file:"):
         db_path_name = db_path.name

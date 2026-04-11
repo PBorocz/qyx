@@ -10,8 +10,8 @@ NEW_REPO = "__repo__"
 ALL_ITEMS = "*"
 
 
-class ConfigurationError(ValueError):
-    """Raised when there's an error in configuration, specifically tool setup."""
+class ConfigurationError(Exception):
+    """Raised when there's an error in configuration, for example tool setup."""
 
     pass
 

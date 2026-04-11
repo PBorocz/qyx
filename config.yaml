@@ -12,21 +12,48 @@ command_line_defaults:
   report_level: "0"
   port: "5011"
 
+general:
+  lines_of_code:
+    # Prioritised list of sources to search/use to when calculating metrics weighted by lines-of-code.
+    # Syntax: "<tool>:<ingest_dimension>:<attribute>|<attribute>..."
+    sources: ["scc:scc:python|code", "radon:raw:sloc", "cloc:cloc:lines_code"]
+
+  database:
+    # Database location override (default is platform-specific "user-data-directory",
+    # For example, on MacOS: ~/Library/Application Support/...
+    # path = "~/.local/share/qyx/qyx.db"
+
 renderers:
   web:
     nav:
       # Order of tools on the main nav bar.
-      tool_order: ["scc", "ruff", "radon", "fxtd", "ty", "cloc"]
+      tool_order:
+        - "scc"
+        - "ruff"
+        - "radon"
+        - "fxtd"
+        - "ty"
+        - "cloc"
+
     dashboard:
       # Order and content of summaries on the main/dashboard/home page:
       # Syntax here is "<tool>[:<ingest_dimension]"
-      dimension_order: ["scc", "fxtd", "ruff", "ty", "radon:cc", "radon:hal", "radon:mi", "radon:raw", "cloc"]
+      dimension_order:
+        - "scc"
+        - "fxtd"
+        - "ruff"
+        - "ty"
+        - "radon:cc"
+        - "radon:hal"
+        - "radon:mi"
+        - "radon:raw"
+        - "cloc"
 
   cli:
     colors:
       positive: "red"
       negative: "green"
-      neutral: "white"
+      neutral:  "white"
 
 tools:
   cloc:
@@ -372,7 +399,3 @@ tools:
       - json
       - --percent
       - "{absolute}"
-
-database:
-  # Database configuration (if applicable)
-  # path = "~/.local/share/mq/mq.db"

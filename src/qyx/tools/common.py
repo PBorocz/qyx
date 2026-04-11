@@ -14,40 +14,43 @@ log = logging.getLogger(__name__)
 
 
 def get_loc(args: Namespace, project: Project) -> int | None:
-    """Return the lines of code obo the specific Project (based on the most recent scans available)."""
-    # FIXME: Add support for SCC's uloc here as well!
-    # We get LOC through either "cloc" and "Radon-Raw", try them both in order!
-    from qyx.tools.cloc.models import query_cloc_0
-    from qyx.tools.radon.models import query_raw_0
+    """Return the most recent lines of code stat for the specific Project in preference order."""
+    for loc_source in args.config.get("general.lines_of_code.sources", ()):
+        tool_module, ingest_dimension, attr_s = loc_source.split(":")
+        scan = Scan.get_latest(project, tool_module, ingest_dimension)
+        if not scan or not scan.summary:
+            continue
 
-    cloc_scan = Scan.get_latest(project, "cloc", "cloc")
-    if cloc_scan:
-        result = query_cloc_0(args, cloc_scan)
-        return result.lines_code
-
-    radon_scan = Scan.get_latest(project, "radon", "raw")
-    if radon_scan:
-        result = query_raw_0(args, radon_scan)
-        return result.sloc
-
+        # Walk down through arbitarily nested scan summary.
+        value = scan.summary
+        for key in attr_s.split("|"):
+            value = value.get(key) if isinstance(value, dict) else None
+            if value is None:
+                break
+        if value is not None:
+            return value
     return None
 
 
-def import_method(module_method: str) -> Callable + None:
+def import_method(module_method: str) -> Callable | None:
     """Wrap importlib.import_module given the number of places we use it."""
     # Takes format: <module>:<method>
-    # - <module> MUST exists
-    # - <method> CAN exist
-    (module_name, method_name) = module_method.split(":")
-    # First, look up the respective module...
-    try:
-        module: ModuleType = import_module(module_name)
-    except ImportError:
-        log.critical("Sorry, can't import module: '{module_name}'!")
-        return None
+    # - <module> MUST exist! (if it doesn't, we raise ImportError)
+    # - <method> CAN exist   (if it doesn't, we return None)
+    if ":" not in module_method:
+        raise ValueError("Sorry, format for import_method must be '<module>:<method>'")
 
-    # Followed by the method requested:
+    (module_name, method_name) = module_method.split(":", 1)
+
     try:
+        # First, look up the respective module...
+        module: ModuleType = import_module(module_name)
+    except ImportError as exc:
+        log.critical("Sorry, can't import module: '{module_name}' from {module_method=}!")
+        raise exc
+
+    try:
+        # Followed by the method requested:
         return getattr(module, method_name)
     except AttributeError:
         return None
