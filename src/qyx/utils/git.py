@@ -109,8 +109,9 @@ def filter_commits_by_daily_sampling(commits: list[Sns]) -> list[Sns]:
     if not commits:
         return []
 
-    # Sort oldest first so we process chronologically (and get the *last* of each day)
-    sorted_commits = sorted(commits, key=lambda c: c.utc_date)
+    # Sort newest to oldest so we process each day in reverse order (ie. by
+    # newest first, we'll take the commmit that occurred *last* in the day)
+    sorted_commits = sorted(commits, key=lambda c: c.utc_date, reverse=True)
 
     seen_days = set()
     return_: list[Sns] = []

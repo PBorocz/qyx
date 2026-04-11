@@ -24,7 +24,7 @@ def status(args: Namespace) -> None:
         for request in Request.select().where(Request.project == project):
             scan_tree = project_tree.add(_get_request_name(args, request))
 
-            scans_for_request = Scan.select().order_by(Scan.as_of.desc()).where(Scan.request == request)
+            scans_for_request = Scan.select().order_by(Scan.as_of.asc(), Scan.tool).where(Scan.request == request)
             if request.is_git and args.level == StatusLevel.GROUPED:
                 scan_tree = scan_tree_summary(args, request, scans_for_request, scan_tree)
             else:
