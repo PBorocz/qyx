@@ -235,9 +235,9 @@ def hal_h(args: Namespace, project: Project, scan: Scan) -> None:
         for timestamp in sorted(result.timestamps):
             t_row.append(f"{dt_rows[timestamp]:.1f}")
 
+        t_value = ""
         if attr in result.rocs:
             roc = result.rocs[attr]
-            t_value = ""
             if roc:
                 if roc > 0.01:
                     color = colors["positive"]

@@ -111,9 +111,11 @@ def query_ruff_h(project: Project, dimension: str = "ruff", last: int = None) ->
     # Calculate ROC if we can..
     roc = 0.00
     if len(timestamps) > 1:
-        value_2 = transposed.get(timestamps[-2])
-        value_1 = transposed.get(timestamps[-1])
-        if value_2 is not None and value_1 is not None:
+        l_timestamps = sorted(timestamps)
+        ts_penultimate, ts_last = l_timestamps[-2:]
+        value_2 = transposed[ts_penultimate]
+        value_1 = transposed[ts_last]
+        if value_2 and value_1:
             roc = rate_of_change_percentage(value_2, value_1)
 
     return Sns(timestamps=timestamps, messages=messages, transposed=transposed, roc=roc)

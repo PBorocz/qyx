@@ -184,17 +184,21 @@ def query_cloc_h(project: Project, dimension: str = "cloc", last: int = None) ->
 
     roc = dict()
     for attr in ("Code", "Comment", "Blank", "Total"):
-        if len(timestamps) > 1:
+        l_timestamps = sorted(transposed[attr].keys())
+        if len(l_timestamps) > 1:
+            ts_penultimate, ts_last = l_timestamps[-2:]
             roc[attr] = rate_of_change_percentage(
-                transposed[attr][timestamps[-2]],
-                transposed[attr][timestamps[-1]],
+                transposed[attr][ts_penultimate],
+                transposed[attr][ts_last],
             )
         else:
             roc[attr] = 0.00
     if len(timestamps) > 1:
+        l_timestamps = sorted(timestamps)
+        ts_penultimate, ts_last = timestamps[-2:]
         roc["grand_total"] = rate_of_change_percentage(
-            grand_totals[timestamps[-2]],
-            grand_totals[timestamps[-1]],
+            grand_totals[ts_penultimate],
+            grand_totals[ts_last],
         )
     else:
         roc["grand_total"] = 0.00

@@ -300,19 +300,16 @@ def query_raw_h(project: Project, dimension: str = "raw", last: int = None) -> S
     # Calculate rate of change of last 2 entries..
     rocs = dict()
     for attr in RadonRaw.attrs():
-        if len(timestamps) > 1:
-            rocs[attr] = rate_of_change_percentage(
-                transposed[attr][timestamps[-2]],
-                transposed[attr][timestamps[-1]],
-            )
+        l_timestamps = sorted(transposed[attr].keys())
+        if len(l_timestamps) > 1:
+            ts_penultimate, ts_last = l_timestamps[-2:]
+            rocs[attr] = rate_of_change_percentage(transposed[attr][ts_penultimate], transposed[attr][ts_last])
         else:
             rocs[attr] = 0.0
 
     if len(timestamps) > 1:
-        roc_gt = rate_of_change_percentage(
-            transposed["loc"][timestamps[-2]],
-            transposed["loc"][timestamps[-1]],
-        )
+        ts_penultimate, ts_last = sorted(timestamps)[-2:]
+        roc_gt = rate_of_change_percentage(transposed["loc"][ts_penultimate], transposed["loc"][ts_last])
     else:
         roc_gt = 0.0
 
@@ -505,10 +502,12 @@ def query_hal_h(project: Project = None, dimension: str = "hal", last: int = Non
     # Calculate rate of change of last 2 entries..
     rocs = dict()
     for attr in RadonHal.attrs():
-        if len(timestamps) > 1:
+        l_timestamps = sorted(transposed[attr.name].keys())
+        if len(l_timestamps) > 1:
+            ts_penultimate, ts_last = l_timestamps[-2:]
             rocs[attr.name] = rate_of_change_percentage(
-                transposed[attr.name][timestamps[-2]],
-                transposed[attr.name][timestamps[-1]],
+                transposed[attr.name][ts_penultimate],
+                transposed[attr.name][ts_last],
             )
         else:
             rocs[attr] = 0.00
@@ -752,11 +751,13 @@ def query_cc_h(project: Project, dimension: str = "cc", last: int = None) -> Sns
 
     # Calculate rate of change of last 2 entries for each entity type
     rocs = dict()
-    if len(timestamps) > 1:
-        for entity_type, values_by_timestamp in transposed.items():
+    for entity_type, values_by_timestamp in transposed.items():
+        l_timestamps = sorted(values_by_timestamp.keys())
+        if len(l_timestamps) > 1:
+            ts_penultimate, ts_last = l_timestamps[-2:]
             rocs[entity_type] = rate_of_change_percentage(
-                values_by_timestamp[timestamps[-2]],
-                values_by_timestamp[timestamps[-1]],
+                values_by_timestamp[ts_penultimate],
+                values_by_timestamp[ts_last],
             )
 
     return Sns(timestamps=timestamps, messages=messages, transposed=transposed, rocs=rocs)

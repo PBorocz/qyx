@@ -126,9 +126,11 @@ def query_fxtd_h(project: Project, dimension: str = "fxtd", last: int = None) ->
     rocs = dict()
     if len(timestamps) > 1:
         for type_, values_by_timestamp in transposed.items():
-            value_2 = values_by_timestamp.get(timestamps[-2])
-            value_1 = values_by_timestamp.get(timestamps[-1])
-            if value_2 is not None and value_1 is not None:
+            l_timestamps = sorted(values_by_timestamp.keys())
+            ts_penultimate, ts_last = l_timestamps[-2:]
+            value_2 = values_by_timestamp.get(ts_penultimate)
+            value_1 = values_by_timestamp.get(ts_last)
+            if value_1 and value_2:
                 rocs[type_] = rate_of_change_percentage(value_2, value_1)
 
     return Sns(timestamps=timestamps, messages=messages, transposed=transposed, rocs=rocs)
