@@ -21,7 +21,7 @@ def parse(scan: Scan, latest: bool, data: Any) -> int:
             column    = ruff_result["location"]["column"],
             rule_code = ruff_result["code"],
             message   = ruff_result["message"],
-            url       = ruff_result.get("url", "")
+            url       = ruff_result.get("url", ""),
         )
         # fmt: off
         return ruff

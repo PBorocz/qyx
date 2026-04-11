@@ -25,7 +25,7 @@ def setup_tools(args: Namespace) -> Tools:
     tools_dir: Path = Path("src/qyx/tools")
     for tool_path in tools_dir.iterdir():
         if tool_path.is_dir() and not tool_path.name.startswith("_"):
-            log.debug(f"Setting up tool {tool_path.name:6s} from {tool_path=}...")
+            log.debug(f"Setting up tool {tool_path.name:6s} from path='{str(tool_path)}'...")
 
             ################################################################################
             # Get a handle to the module itself.
@@ -57,7 +57,6 @@ def setup_tools(args: Namespace) -> Tools:
             ################################################################################
             o_tools[o_tool.name] = o_tool
 
-    log.debug(f"{len(o_tools)} tools available: {o_tools.display_names()}")
     args.tools = o_tools
 
 

@@ -35,16 +35,32 @@ class Configuration:
 
     def validate(self, args: Namespace) -> bool:
         """Return true if configuration validates."""
-        # Primarily, we're checking that any tools mentioned are VALID against the tools we have defined."""
         error_encountered = False
 
-        # Tool definitions themselves..
+        if self._validate_tool_definitions(args):
+            error_encountered = True
+
+        if self._validate_tool_order(args):
+            error_encountered = True
+
+        if self._validate_loc_sources(args):
+            error_encountered = True
+
+        if self._validate_dashboard_layout(args):
+            error_encountered = True
+
+        return not error_encountered
+
+    def _validate_tool_definitions(self, args: Namespace) -> bool:
+        error_encountered = False
         for tool_name in self.get("tools", ()):
             if tool_name not in args.tools:
                 log.error(f"Sorry, encountered {tool_name=} in 'tools' section that isn't available!")
                 error_encountered = True
+        return error_encountered
 
-        # Navbar layout of tool names..
+    def _validate_tool_order(self, args: Namespace) -> bool:
+        error_encountered = False
         for tool_name in self.get("renderers.web.nav.tool_order", ()):
             if tool_name not in args.tools:
                 msg = (
@@ -53,8 +69,10 @@ class Configuration:
                 )
                 log.error(msg)
                 error_encountered = True
+        return error_encountered
 
-        # Lines of code sources
+    def _validate_loc_sources(self, args: Namespace) -> bool:
+        error_encountered = False
         for loc_source in self.get("general.lines_of_code.sources", ()):
             try:
                 module, ingest_dimension, attr = loc_source.split(":")
@@ -65,8 +83,10 @@ class Configuration:
                 )
                 log.error(msg)
                 error_encountered = True
+        return error_encountered
 
-        # Dashboard layout of analyses..
+    def _validate_dashboard_layout(self, args: Namespace) -> bool:
+        error_encountered = False
         for tool_and_dimension in self.get("renderers.web.dashboard.dimension_order", ()):
             if ":" in tool_and_dimension:
                 tool, ingest_dimension = tool_and_dimension.split(":")
@@ -90,8 +110,7 @@ class Configuration:
                         )
                         log.error(msg)
                         error_encountered = True
-
-        return not error_encountered
+        return error_encountered
 
 
 def setup_configuration(app_name: str = "qyx") -> tuple[ArgumentParser, list[str], Configuration]:

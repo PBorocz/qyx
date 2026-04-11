@@ -6,7 +6,7 @@ from collections import defaultdict
 from types import SimpleNamespace as Sns
 
 import peewee as pw
-from peewee import fn, JOIN
+from peewee import fn
 
 from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
