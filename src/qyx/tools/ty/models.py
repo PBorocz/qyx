@@ -43,10 +43,10 @@ class Ty(BaseModel):
 @query_cache
 def query_ty_0(args: Namespace, scan: Scan, dimension: str = "ty", context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
-        Ty.select(
-            fn.COUNT(Ty.id).alias("count"),
+        Ty.select(fn.COUNT(Ty.id).alias("count"))
+        .where(
+            Ty.scan == scan,
         )
-        .where(Ty.scan == scan)
         .dicts()
         .first()
     )
@@ -107,7 +107,18 @@ def query_ty_2(scan: Scan):
 
 @query_cache
 def query_ty_3(scan: Scan) -> Sns:
-    query = Ty.select().order_by(Ty.directory, Ty.filename, Ty.check_name).dicts()
+    query = (
+        Ty.select()
+        .where(
+            Ty.scan == scan,
+        )
+        .order_by(
+            Ty.directory,
+            Ty.filename,
+            Ty.check_name,
+        )
+        .dicts()
+    )
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 

@@ -67,7 +67,6 @@ def validate_tool(args: Namespace, o_tool: ToolType) -> str | None:
     # 1: Make sure we can find an "ingest" command from our configuration file.
     # 2: Validate that the tool used in the command is actually available on our path...
     #    (we assume that the first entry of the ingest command is the actual tool executable)
-    # FIXME: The first entry is usually something like "uvx", ALSO important to check the second arg! (duh)
     ################################################################################################
     ingest_command = o_tool.get_ingest_command(args, relative="", absolute="")
     if not ingest_command:

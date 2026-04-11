@@ -72,7 +72,14 @@ def query_cloc_0(args: Namespace, scan: Scan, dimension: str = "cloc", context: 
         result.lines_total_p = None
 
     # Find the number of files
-    result.files_total = Cloc.select(fn.COUNT(Cloc.id).alias("files_total")).where(Cloc.scan == scan).get().files_total
+    result.files_total = (
+        Cloc.select(fn.COUNT(Cloc.id).alias("files_total"))
+        .where(
+            Cloc.scan == scan,
+        )
+        .get()
+        .files_total
+    )
 
     # Calculate the "Code Density"
     metric_value = (result.lines_code / (result.lines_code + result.lines_blank)) * 100.0
@@ -122,7 +129,15 @@ def query_cloc_1(args: Namespace, scan: Scan) -> Sns:
 def query_cloc_2(args: Namespace, scan: Scan) -> Sns:
     grand_total: Sns = query_cloc_0(args, scan)
 
-    query = Cloc.select().where(Cloc.scan == scan).order_by(Cloc.directory, Cloc.filename).dicts()
+    query = (
+        Cloc.select()
+        .where(Cloc.scan == scan)
+        .order_by(
+            Cloc.directory,
+            Cloc.filename,
+        )
+        .dicts()
+    )
     rows = [Sns(**row_dict) for row_dict in query]
 
     # Calculate the total for each column/attribute:

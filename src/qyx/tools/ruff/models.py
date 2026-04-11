@@ -88,7 +88,16 @@ def query_ruff_1(scan: Scan) -> Sns:
 
 @query_cache
 def query_ruff_2(scan: Scan) -> Sns:
-    query = Ruff.select().order_by(Ruff.rule_code, Ruff.directory, Ruff.filename).dicts()
+    query = (
+        Ruff.select()
+        .where(Ruff.scan == scan)
+        .order_by(
+            Ruff.rule_code,
+            Ruff.directory,
+            Ruff.filename,
+        )
+        .dicts()
+    )
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 

@@ -107,7 +107,7 @@ class RadonCc(BaseModel):
         indexes = (
             # Uniqueness criteria
             (("scan", "directory", "filename", "entity_type", "entity_name", "line_start", "line_end"), True),
-            # Optimize for joining + grouping by entity_type
+            # Optimisation for joining + grouping by entity_type
             (("scan", "entity_type"), False),
         )
 

@@ -35,9 +35,11 @@
       <div>
         <h4>
           {% if card.tool.upper() == card.ingest_dimension.upper() %}
-          {{ card.tool.upper() }}
+            <a href="/{{ card.tool }}">{{ card.tool.upper() }}</a>
           {% else %}
-          {{ card.tool.upper() }} - {{ card.ingest_dimension.upper() }}
+            <a href="/{{ card.tool }}">
+              {{ card.tool.upper() }} - {{ card.ingest_dimension.upper() }}
+            </a>
           {% endif %}
           <span class="as-of">as of {{ card.as_of_date }}</span>
         </h4>

@@ -32,23 +32,23 @@ def validate_args(args: Namespace) -> bool:
 def _validate_ingest(args: Namespace) -> list[str]:
     return_ = []
     if not args.name:
-        return_.append("[red]Sorry! [bold]-n/--name[/bold] is required to perform an ingest!")
+        return_.append("❌ [red]Sorry! [bold]-n/--name[/bold] is required to perform an ingest!")
 
     if args.path:
         if is_git_url(args.path):
             # Putative remote path, is it valid?
             is_valid, error = _validate_git_remote(args.path)
             if not is_valid:
-                return_.append(f"[red]Error: {error}[/red]")
+                return_.append(f"❌ [red]Error: {error}[/red]")
         else:
             # Putative local path (ie. not pointing to a git repo), is it valid?
             # Does it exist?
             if not Path(args.path).exists():
-                return_.append(f"[red]Path '{args.path}' [bold]doesn't exist[/bold]")
+                return_.append(f"❌ [red]Path '{args.path}' [bold]doesn't exist[/bold]")
 
             # Is is a directory?
             elif not Path(args.path).is_dir():
-                return_.append(f"[red]Path '{args.path}' exists but is [bold]not[/bold] a directory")
+                return_.append(f"❌ [red]Path '{args.path}' exists but is [bold]not[/bold] a directory")
 
             # Is it a "valid" directory (or sub-directory) of a git project?
             elif not __find_git_root(Path(args.path)):
@@ -69,21 +69,21 @@ def _validate_ingest(args: Namespace) -> list[str]:
 def _validate_report(args: Namespace) -> list[str]:
     return_ = []
     if not args.name:
-        return_.append("[red]Sorry! [bold]-n/--name[/bold] is required to report results.")
+        return_.append("❌ [red]Sorry! [bold]-n/--name[/bold] is required to report results.")
 
     if args.tool:
         if args.tool.lower() not in args.tools.names():
-            # FIXME: List the tools that ARE available!
-            return_.append(f"[red]Sorry! tool='{args.tool}' is not defined![/red]")
+            names = ", ".join(args.tools.names())
+            return_.append(f"❌ [red]Sorry! tool='{args.tool}' is not defined![/red]")
+            return_.append(f"❌ [red]Must be one of the following: {names}[/red]")
 
     if args.dimension:
-        dim_names = []
-        for o_dim in args.tools.dimensions():
-            dim_names.append(o_dim.name.lower())
-            dim_names.append(o_dim.description.lower())
+        o_tool = args.tools[args.tool.lower()]
+        dim_names = sorted([o_dim.name.lower() for o_dim in o_tool.dimensions])
+        s_dim_names = ", ".join(dim_names)
         if args.dimension != c.ALL_ITEMS and args.dimension.lower() not in dim_names:
-            # FIXME: List the dimensions that ARE available!
-            return_.append(f"[red]Sorry! dimension='{args.dimension}' isn't defined for tool='{args.tool}'![/red]")
+            return_.append(f"❌ [red]Sorry! dimension='{args.dimension}' isn't defined for tool='{args.tool}'![/red]")
+            return_.append(f"❌ [red]Must be one of the following: {s_dim_names}[/red]")
 
     return return_
 

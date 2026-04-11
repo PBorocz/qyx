@@ -22,7 +22,6 @@ def render(args: Namespace, project: Project, o_tool: ToolType, o_dimension: Too
         log.error("Sorry, we haven't performed a 'ruff' scan yet for this project.")
         return False
 
-    log.debug(f"{scan=}")
     match args.level.lower():
         case Rl.SUMMARY:
             ruff_0(args, project, scan)

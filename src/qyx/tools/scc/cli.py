@@ -15,9 +15,9 @@ log = logging.getLogger(__name__)
 
 def render(args: Namespace, project: Project, o_tool: ToolType, o_dimension: ToolDimension | str) -> bool:
     # Get most recent Scan for simple "current-state" reporting..
-    # Note: We safely can disregard whether or not the Scan was based on
+    # (we safely can disregard whether or not the Scan was based on
     # git or directly from a directory as we're searching based on "as of",
-    # thus, the most recent scan could be from either source!
+    # thus, the most recent scan could be from either source!)
     if not (scan := Scan.get_latest(project, "scc")):  # Note
         log.error("Sorry, we haven't performed a SCC measurement yet for this project.")
         return False
