@@ -1,6 +1,7 @@
 """..."""
 
 import logging
+import re
 import subprocess
 from argparse import Namespace
 from datetime import datetime, timezone
@@ -39,7 +40,7 @@ def get_git_commits(git_repo: str) -> tuple[Path, list[Sns]]:
     log.debug(f"{repo_path} has {len(commits):,d} actual commits")
 
     # Apply date-based filtering before we return (future enhancement to support other algorithms here?)
-    commits = filter_commits_by_daily_sampling(commits)
+    commits = _filter_commits_by_daily_sampling(commits)
     log.debug(f"{repo_path} has {len(commits):,d} commits after sampling")
 
     return repo_path, commits
@@ -61,16 +62,35 @@ def git_checkout(scan_request: Namespace) -> bool:
         return False
 
 
+def git_goto_head(git_repo: str) -> bool:
+    """Checkout HEAD in the git repository."""
+    repo_path = _get_repo_cache_dir(git_repo)
+    try:
+        log.debug(f"Checkout out HEAD: {git_repo=} {repo_path=}")
+        result = subprocess.run(
+            ["git", "checkout", "--force", "HEAD"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        if result.stderr:
+            log.debug(f"git checkout output: {result.stderr.strip()}")
+        return True
+    except subprocess.CalledProcessError as exc:
+        log.error(f"Unable to git checkout HEAD: -> {exc}")
+        return False
+
+
 def _get_repo_cache_dir(git_url: str) -> Path:
     """Return our *local* cache path for the specified git url."""
     # NB: Automatically handles XDG on Linux, AppData on Windows, etc.
-    cache_base = Path(user_cache_dir("qyx", "pborocz"))  # app_name, author
+    # On MacOS for example -> ~/Library/Caches/qyx/repos/...
+    cache_base = Path(user_cache_dir("qyx"), "repos")
 
-    # Extract user/repo from URL
-    parsed = urlparse(git_url)
-    path = parsed.path.strip("/").removesuffix(".git")
-
-    repo_dir = cache_base / "repos" / path
+    # Use github user & repo name from URL to get cache directory.
+    owner, repo = _parse_github_url(git_url)
+    repo_dir = cache_base / owner / repo
     repo_dir.mkdir(parents=True, exist_ok=True)
     return repo_dir
 
@@ -99,8 +119,8 @@ def _get_commits(repo_path: Path) -> list[Sns]:
     return commits
 
 
-def filter_commits_by_daily_sampling(commits: list[Sns]) -> list[Sns]:
-    """Sample git commits to take only the latest commit per calendar day, ordering oldest to newest."""
+def _filter_commits_by_daily_sampling(commits: list[Sns]) -> list[Sns]:
+    """Sample git commits to take only the latest commit per calendar day, returning oldest to newest."""
     # This algorithm works best for my style of development, specifically:
     # - A flurry of activity over a few days (many intraday commits), followed by
     # - Long periods of sporadic commits.
@@ -113,12 +133,39 @@ def filter_commits_by_daily_sampling(commits: list[Sns]) -> list[Sns]:
     # newest first, we'll take the commmit that occurred *last* in the day)
     sorted_commits = sorted(commits, key=lambda c: c.utc_date, reverse=True)
 
+    # Now, take the *last* commit of each git commit "day".
     seen_days = set()
-    return_: list[Sns] = []
+    sampled: list[Sns] = []
     for commit in sorted_commits:
         day = commit.utc_date.date()
         if day not in seen_days:
-            return_.append(commit)
+            sampled.append(commit)
             seen_days.add(day)
 
-    return return_
+    # However, return the commit in oldest -> newest order to:
+    # - Leave the repo in "HEAD" state.
+    # - Take advantage of git's easier processing for rolling "forwards" in time.
+    return sorted(sampled, key=lambda commit: commit.utc_date)
+
+
+def _parse_github_url(url: str) -> tuple[str, str]:
+    """Parse GitHub URL into (owner, repo) [thanks Claude for the re's]."""
+    url = url.strip()
+
+    # SSH: git@github.com:owner/repo.git
+    if match := re.match(r"git@github\.com:([^/]+)/(.+?)(?:\.git)?$", url):
+        return match.group(1).lower(), match.group(2).lower()
+
+    # HTTPS: add protocol if missing
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
+    parsed = urlparse(url)
+    path_parts = parsed.path.strip("/").split("/")
+
+    if len(path_parts) >= 2:
+        owner = path_parts[0].lower()
+        repo = path_parts[1].removesuffix(".git").lower()
+        return owner, repo
+
+    raise ValueError(f"Cannot parse GitHub URL: {url}")

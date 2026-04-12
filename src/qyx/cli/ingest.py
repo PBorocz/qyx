@@ -15,7 +15,7 @@ from rich.console import Console
 
 from qyx.constants import ALL_ITEMS
 from qyx.tools._models_ import ToolDimension, ToolType, Project, Request, Scan
-from qyx.utils.git import git_checkout, get_git_commits
+from qyx.utils.git import git_checkout, get_git_commits, git_goto_head
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +48,10 @@ def ingest(args: Namespace) -> None:
                 console.print(result, end="")
             console.print()
             console.file.flush()
+
+    # Always leave a git-sourced project in a "HEAD" state
+    if scan_request.as_git:
+        git_goto_head(o_request.arg_normalised)
 
 
 ################################################################################################
