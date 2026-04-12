@@ -32,20 +32,22 @@ def ingest(args: Namespace) -> None:
     tools: list[ToolType] = _get_tools_from_args(args)
 
     for scan_request in _get_scan_requests(args, o_request):
-        scan_results = list()
+        first_for_scan = True
+        printed = []
         for o_tool in tools:
+            # Some tools aren't meant to process "history" as they do so themselves (eg. ga)
+            if o_tool.ingest_latest_only and not scan_request.latest:
+                continue
+
             if scan_request.as_git:
                 git_checkout(scan_request)
 
-            # Do the respective tool's ingestion
-            if results := _do_scan(args, o_request, o_tool, scan_request):
-                for result in results:
-                    scan_results.append(result)
+            ################################################################################
+            # CORE!!: Do the respective tool's ingestion and save the activity it did.
+            ################################################################################
+            printed.append(_do_scan(args, o_request, o_tool, scan_request, first_for_scan))
 
-        if results:
-            console.print(f"{scan_request.s_as_of} - Ingested", end="")
-            for result in scan_results:
-                console.print(result, end="")
+        if any(printed):
             console.print()
             console.file.flush()
 
@@ -54,7 +56,6 @@ def ingest(args: Namespace) -> None:
         git_goto_head(o_request.arg_normalised)
 
 
-################################################################################################
 def _get_tools_from_args(args: Namespace) -> list[ToolType]:
     """Process the command-line or interactive arguments and return a list of tool(s) to perform an ingest upon."""
     # Case 1: No tool specified -> we want to "ingest" everything!
@@ -102,11 +103,17 @@ def _get_scan_requests(args: Namespace, o_request: Request) -> Iterator[Sns]:
         )
 
 
-def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request: Sns) -> list[str]:
+def _do_scan(
+    args: Namespace,
+    o_request: Request,
+    o_tool: ToolType,
+    scan_request: Sns,
+    first_for_scan: bool,
+) -> bool:
     """Ingest a tool: run the respective command(s), parse and save results!."""
     dimensions_to_ingest: list[ToolDimension | None] = o_tool.dimensions if o_tool.ingest_by_dimension else [None]
 
-    results = list()
+    printed = False
     for dimension in dimensions_to_ingest:
         parse_method: Callable = o_tool.get_parse_save_method(dimension)
         assert parse_method, f"Sorry, we couldn't find a parse/ingest method for {dimension=} obo {o_tool.name=}"
@@ -132,17 +139,21 @@ def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request
                 as_of=scan_request.as_of,
             )
         except IntegrityError:
-            results.append(f" [green]{tool_dim}:✔[/green]")
             continue
 
         ################################################################################################
         # Run the respective tool's data collection method...
         ################################################################################################
         datum, error = _run_tool(args, o_request, o_tool, scan_request, dimension)
+        log.debug(f"ran tool!: {len(datum)=}")
         if error:
             # We ran into a problem with running the ingest, don't leave the scan hanging around
             scan.delete_instance(recursive=True)  # recursive is just in case..
-            results.append(f" [red]{tool_dim}:❌[/red]")
+            if first_for_scan:
+                console.print(f"{scan_request.s_as_of} - Ingested", end="")
+                first_for_scan = False
+            console.print(f" [red]{tool_dim}:❌[/red]", end="")
+            printed = True
             continue
 
         ################################################################################################
@@ -150,8 +161,13 @@ def _do_scan(args: Namespace, o_request: Request, o_tool: ToolType, scan_request
         ################################################################################################
         result_count: int = parse_method(scan, scan_request.latest, datum)
         s_result_count = f"{result_count:,d}" if result_count else "✔"
-        results.append(f" [green]{tool_dim}:{s_result_count}[/green]")
-    return results
+        if first_for_scan:
+            console.print(f"{scan_request.s_as_of} - Ingested", end="")
+            first_for_scan = False
+            printed = True
+        console.print(f" [green]{tool_dim}:{s_result_count}[/green]", end="")
+
+    return printed
 
 
 def _run_tool(
@@ -181,12 +197,18 @@ def _run_tool(
         log.debug(f"Executing {scan_request.cwd=}")
         log.debug(f"Executing {shlex.join(command)=}")
         try:
-            result = subprocess.run(command, cwd=str(scan_request.cwd), capture_output=True, check=True)
+            result = subprocess.run(
+                command,
+                cwd=str(scan_request.cwd),
+                capture_output=True,
+                check=True,
+                text=True,
+            )
         except subprocess.CalledProcessError as exc:
-            for line in exc.stdout.decode().split("\n"):
+            for line in exc.stdout.split("\n"):
                 if line:
                     log.debug(f"STDOUT: {line}")
-            for line in exc.stderr.decode().split("\n"):
+            for line in exc.stderr.split("\n"):
                 if line:
                     log.debug(f"STDERR: {line}")
             log.debug(f"{scan_request.as_of=}")

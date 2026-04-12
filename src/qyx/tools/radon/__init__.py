@@ -9,7 +9,7 @@ from qyx.tools.radon.models import RadonCc, RadonHal, RadonHalFunction, RadonMi,
 
 # fmt: off
 # Order here matters, when we ingest, we need to calculate summaries based on the
-# lines of code metric from "Raw", thus, do this one FIRST!
+# lines of code metric from "Raw", thus, we process these in order..do RAW FIRST!
 DIMENSIONS = [
     ToolDimension("raw", "Raw Lines of Code"    , (RadonRaw,)                 , "raw" ),
     ToolDimension("hal", "Halstead Metrics"     , (RadonHal, RadonHalFunction), "hal" ),
@@ -35,4 +35,4 @@ class Configuration(ToolType):
     def get_parse_save_method(self, dimension: ToolDimension) -> Callable:
         """Return the method to parse & save the specific Radon dimension's JSON output."""
         py_parse: types.ModuleType = self.import_component("parse")  # eg. .../tools/radon/parse.py
-        return getattr(py_parse, f"parse_{dimension.cli_option.lower()}")  # eg. ingest_cc()
+        return getattr(py_parse, f"parse_save_{dimension.cli_option.lower()}")  # eg. ingest_cc()

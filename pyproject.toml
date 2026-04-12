@@ -6,6 +6,15 @@ license = {file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.11.9"
 authors = [{name = "Peter Borocz", email = "peter.borocz+qyx@gmail.com"}]
+keywords = ["code-quality", "metrics", "static-analysis", "python", "dashboard"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",  # adjust to your LICENSE file
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
     "bottle>=0.13.4",
     "jinja2>=3.1.6",

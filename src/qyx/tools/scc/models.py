@@ -95,7 +95,7 @@ class SccFile(BaseModel):
 
 def query_scc_0(args: Namespace, scan: Scan, dimension: str, context: Vc = Vc.TOOL_HOME) -> Sns:
     row = Scc.select().where(Scc.scan == scan, fn.LOWER(Scc.language) == fn.LOWER(dimension)).first()
-    # Calculate our dryness metric
+    # Score our dryness metric
     if row.dryness:
         row.dryness_metric = score_metric(args, "tools.ty.violations_per_kloc", row.dryness)
     else:

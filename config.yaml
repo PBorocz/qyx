@@ -33,13 +33,14 @@ renderers:
         - "radon"
         - "fxtd"
         - "ty"
+        - "ga"
         - "cloc"
 
     dashboard:
       # Order and content of summaries on the main/dashboard/home page:
-      # Syntax here is "<tool>[:<ingest_dimension]"
+      # Syntax here is "<tool>[:<dimension]" (could be either ingest or report dimension)
       dimension_order:
-        - "scc"
+        - "scc:python"
         - "fxtd"
         - "ruff"
         - "ty"
@@ -47,6 +48,7 @@ renderers:
         - "radon:hal"
         - "radon:mi"
         - "radon:raw"
+        - "ga:file_churn"
         - "cloc"
 
   cli:
@@ -97,6 +99,14 @@ tools:
         - {min:  750, max: 1000, color: "#ef4444"} # Very large
         - {min: 1000, max: 1500, color: "#dc2626"} # Needs splitting
         - {min: 1500,            color: "#dc2626"} # Definitely too large
+
+  ga:
+    command:
+      - git
+      - log
+      - --format=format:
+      - --name-only
+      - --since=1 year ago
 
   fxtd:
     by_type_per_kloc:

@@ -421,16 +421,22 @@ def _prompt_dimension(args: Namespace, message: str) -> str:
     if len(o_tool.dimensions) == 1:
         return o_tool.dimensions[0].name
 
-    # For tools with multiple dimensions, put an option out for each dimension and and "all" one
+    # Tool has multiple dimensions, put an option out for each one
+    values = set()
     for o_dimension in o_tool.dimensions:
         title = f"{o_dimension.name:5s} - {o_dimension.description}"
         choices.append(Choice(title, value=o_dimension.name))
+        values.add(o_dimension.name)
 
     # Final choice is a "global" all dimensions
     choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS))
+    values.add(c.ALL_ITEMS)
 
-    # Do we have an existing value to default?
+    # Do we have an existing, applicable value to default to?
     kwargs = _lookup_state_default("dimension")
+    if kwargs["default"] != values:
+        # Dimension is probably from another tool, not relevant for this one!
+        del kwargs["default"]
 
     dimension = select(
         message=message,

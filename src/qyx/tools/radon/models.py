@@ -194,7 +194,7 @@ class RadonHalFunction(BaseModel):
 # RAW
 ################################################################################################
 @query_cache
-def query_raw_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_raw_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         RadonRaw.select(
             fn.SUM(RadonRaw.blank).alias("blank"),
@@ -326,7 +326,7 @@ def query_raw_h(project: Project, dimension: str = "raw", last: int = None) -> S
 # HAL
 ################################################################################################
 @query_cache
-def query_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_hal_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         RadonHal.select(
             fn.AVG(RadonHal.h1).alias("h1"),
@@ -348,6 +348,7 @@ def query_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
         .dicts()
         .get()
     )
+    # START HERE!!!
     result: Sns = Sns(**query)
     if not result:
         return None
@@ -356,6 +357,7 @@ def query_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     # Calculate "derived" metrics based on the raws ones above.
     ################################################################################
     # Get SLOC values...
+    # FIXME: Should this use the general get_loc method instead of only using raw?
     raw = query_raw_0(args, scan=Scan.get_latest(scan.request.project, "radon", "raw"))
 
     # Score Halstead effort per 1000 source lines of code.
@@ -375,6 +377,9 @@ def query_hal_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
     effort_score = max(0, 100 - (result.effort_d.score / 1000) * 100)
     metric_value = bugs_score * 0.5 + difficulty_score * 0.3 + effort_score * 0.2
     result.composite_d = score_metric(args, "tools.radon.hal.composite", metric_value)
+
+    # Add the attrs in for easier rendering
+    result.attrs = RadonHal.attrs()
 
     return result
 
@@ -519,7 +524,7 @@ def query_hal_h(project: Project = None, dimension: str = "hal", last: int = Non
 # MI
 ################################################################################################
 @query_cache
-def query_mi_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_mi_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
     raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
     query = (
@@ -627,7 +632,7 @@ def query_mi_h(project, dimension: str = "mi", last: int = None) -> Sns:
 # CC
 ################################################################################################
 @query_cache
-def query_cc_0(args: Namespace, scan: Scan, context: Vc = Vc.TOOL_HOME) -> Sns:
+def query_cc_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate derived radon-cc metric(s)."""
     query = (
         RadonCc.select(

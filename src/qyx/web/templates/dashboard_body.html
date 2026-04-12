@@ -31,21 +31,19 @@
 <section>
   <div class="dashboard-grid">
     {% for card in cards %}
-    <article class="dashboard-card">
-      <div>
-        <h4>
-          {% if card.tool.upper() == card.ingest_dimension.upper() %}
-            <a href="/{{ card.tool }}">{{ card.tool.upper() }}</a>
-          {% else %}
-            <a href="/{{ card.tool }}">
-              {{ card.tool.upper() }} - {{ card.ingest_dimension.upper() }}
-            </a>
-          {% endif %}
-          <span class="as-of">as of {{ card.as_of_date }}</span>
-        </h4>
-        {% include [card.template] %}
-      </div>
-    </article>
+      <article class="dashboard-card">
+        <div>
+          <h4>
+            {% if card.tool.upper() == card.dimension.upper() %}
+              <a href="/{{ card.tool }}">{{ card.tool.upper() }}</a>
+            {% else %}
+              <a href="/{{ card.tool }}">{{ card.tool.upper() }} - {{ card.dimension.upper() }}</a>
+            {% endif %}
+              <span class="as-of">as of {{ card.as_of_date }}</span>
+          </h4>
+          {% include [card.template] %}
+        </div>
+      </article>
     {% endfor %}
   </div>
 

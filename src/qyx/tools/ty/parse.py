@@ -9,7 +9,7 @@ from qyx.tools._models_ import Scan
 from qyx.tools.ty.models import Ty
 
 
-def parse(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save(scan: Scan, latest: bool, data: Any) -> int:
     def _json_to_row(ty_result: dict, is_git: bool) -> Ty:
         fn_path = Path(ty_result["location"]["path"])
         if not is_git:

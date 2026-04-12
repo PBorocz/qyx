@@ -1,0 +1,123 @@
+<div class="grid">
+
+  {% if ga_0.commit_frequency %}
+  <div>
+  <table class="striped">
+    <thead>
+      <tr>
+        <th scope="col" style="text-align: center" colspan="2">Commit Frequency</th>
+      </tr>
+      <tr>
+        <th scope="col" style="text-align: left">Date/Month</th>
+        <th scope="col" style="text-align: right"># of Commits</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in ga_0.commit_frequency %}
+      <tr>
+        <td style="text-align: left">{{ row[0]}}</td>
+        <td style="text-align: right">{{ "{:,d}".format(row[1]) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+
+  {% if ga_0.file_churn %}
+  <div>
+    <table class="striped">
+      <thead>
+        <tr>
+          <th scope="col" style="text-align: center" colspan="2">File Churn</th>
+        </tr>
+        <tr>
+          <th scope="col" style="text-align: left">File</th>
+          <th scope="col" style="text-align: right">Commits</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in ga_0.file_churn %}
+        <tr>
+          <td style="text-align: left">{{ row[0]}}</td>
+          <td style="text-align: right">{{ "{:,d}".format(row[1]) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if ga_0.bug_commits %}
+  <div>
+    <table class="striped">
+      <thead>
+        <tr>
+          <th scope="col" style="text-align: center" colspan="2">Files with Most Bug Fixes</th>
+        </tr>
+        <tr>
+          <th scope="col" style="text-align: left">File</th>
+          <th scope="col" style="text-align: right">Commits</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in ga_0.bug_commits %}
+        <tr>
+          <td style="text-align: left">{{ row[0]}}</td>
+          <td style="text-align: right">{{ "{:,d}".format(row[1]) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if ga_0.emergency_commits %}
+  <div>
+    <table class="striped">
+      <thead>
+        <tr>
+          <th scope="col" style="text-align: center" colspan="2">Emergency Commits</th>
+        </tr>
+        <tr>
+          <th scope="col" style="text-align: left">File</th>
+          <th scope="col" style="text-align: right">Commits</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in ga_0.emergency_commits %}
+        <tr>
+          <td style="text-align: left">{{ row[0]}}</td>
+          <td style="text-align: right">{{ "{:,d}".format(row[1]) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if ga_0.authorship %}
+  <div>
+    <table class="striped">
+      <thead>
+        <tr>
+          <th scope="col" style="text-align: center" colspan="2">Top Committers</th>
+        </tr>
+        <tr>
+          <th scope="col" style="text-align: left">Author</th>
+          <th scope="col" style="text-align: right">Commits</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in ga_0.authorship %}
+        <tr>
+          <td style="text-align: left">{{ row[0]}}</td>
+          <td style="text-align: right">{{ "{:,d}".format(row[1]) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>

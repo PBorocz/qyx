@@ -15,8 +15,6 @@ def _get_granular_view_cases(app_args, ingested_project):
             for o_dimension in o_tool.dimensions:
                 tool, dimension = o_tool.name, o_dimension.name
 
-                scan = Scan.get_latest(ingested_project, tool, dimension)
-
                 # Lookup the correct web rendering method. Note, this could from *either*:
                 # - <tool>/web.py             (eg. ruff, cloc etc.)
                 # - <tool>/web_<dimension>.py (eg. radon with it's sub-analyses)
@@ -35,6 +33,7 @@ def _get_granular_view_cases(app_args, ingested_project):
                         #     pytrace=False,  # optional: cleaner output without pytest internals
                         # )
 
+                scan = Scan.get_latest(ingested_project, tool, dimension)
                 msg = f"T:{o_tool.name:6s} D:{dimension:10s} L:{report_level.value}]"
                 cases.append(Sns(msg=msg, scan=scan, web_view_method=web_view_method))
     return cases

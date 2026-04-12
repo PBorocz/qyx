@@ -89,10 +89,11 @@ class Configuration:
         error_encountered = False
         for tool_and_dimension in self.get("renderers.web.dashboard.dimension_order", ()):
             if ":" in tool_and_dimension:
-                tool, ingest_dimension = tool_and_dimension.split(":")
+                tool, dimension = tool_and_dimension.split(":")
             else:
-                tool, ingest_dimension = tool_and_dimension, tool_and_dimension
+                tool, dimension = tool_and_dimension, tool_and_dimension
 
+            # First, make sure the tool is valid
             if tool not in args.tools:
                 msg = (
                     f"Sorry, encountered {tool=} in 'renderers.web.dashboard.dimension_order' ",
@@ -100,16 +101,18 @@ class Configuration:
                 )
                 log.error(msg)
                 error_encountered = True
-            else:
-                o_tool = args.tools[tool]
-                if ingest_dimension and ingest_dimension.lower() != tool.lower():
-                    if ingest_dimension.lower() not in [dim.name.lower() for dim in o_tool.dimensions]:
-                        msg = (
-                            f"Sorry, encountered {ingest_dimension=} in 'renderers.web.dashboard.dimension_order' "
-                            f"section that isn't defined for {tool=}!"
-                        )
-                        log.error(msg)
-                        error_encountered = True
+                continue
+
+            # It is, now make sure the dimension is good as well..
+            o_tool = args.tools[tool]
+            if dimension and dimension.lower() != tool.lower():
+                if dimension.lower() not in [dim.name.lower() for dim in o_tool.dimensions]:
+                    msg = (
+                        f"Sorry, encountered {dimension=} in 'renderers.web.dashboard.dimension_order' "
+                        f"section that isn't defined for {o_tool.name=}!"
+                    )
+                    log.error(msg)
+                    error_encountered = True
         return error_encountered
 
 

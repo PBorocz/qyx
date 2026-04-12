@@ -12,7 +12,7 @@ from qyx.utils import dt_to_display
 
 def status(args: Namespace) -> None:
     """Use a simple Rich terminal tree to display current db status summary."""
-    tree = Tree("QYX Status")
+    tree = Tree("Status")
 
     projects = Project.select()
     if args.name and args.name != ALL_ITEMS:

@@ -10,7 +10,7 @@ from qyx.tools.cloc.models import Cloc
 from qyx.tools._models_ import Scan
 
 
-def parse(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save(scan: Scan, latest: bool, data: Any) -> int:
     def _json_to_row(fn_: str, cloc_result: dict) -> Cloc:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         return Cloc(

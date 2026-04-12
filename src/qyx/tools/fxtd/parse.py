@@ -8,7 +8,7 @@ from qyx.tools._models_ import Scan
 from qyx.tools.fxtd.models import Fxtd
 
 
-def parse(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save(scan: Scan, latest: bool, data: Any) -> int:
     def _get_summary(rows: list[Fxtd]) -> dict:
         """Calculate and return summary information."""
         return_ = defaultdict(int)
@@ -31,7 +31,7 @@ def parse(scan: Scan, latest: bool, data: Any) -> int:
 
     # Parse
     rows = []
-    for check in data.decode("utf-8").strip().split("\n"):
+    for check in data.strip().split("\n"):
         if row := _delimited_to_row(scan.cwd, check):
             rows.append(row)
 

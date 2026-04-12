@@ -43,6 +43,7 @@ class AbstractToolConfiguration(ABC):
         description: str,
         dimensions: list[ToolDimension],
         ingest_by_dimension: bool = False,
+        ingest_latest_only: bool = False,
         **kwargs,
     ) -> "AbstractToolConfiguration":
         """..."""
@@ -62,6 +63,9 @@ class AbstractToolConfiguration(ABC):
 
         # Are dimensions used during ingest? ie. do we ingest separately for each dimension?
         self.ingest_by_dimension: bool = ingest_by_dimension
+
+        # Do we ingest only the *last*/most-recent git commit available?
+        self.ingest_latest_only: bool = ingest_latest_only
 
         # Save any other non-required values sent in...
         for attr, value in kwargs.items():
@@ -99,7 +103,7 @@ class AbstractToolConfiguration(ABC):
         # - This implementation is for "single"-dimension tools (ruff, cloc etc.).
         # - For multi ingest-dimension tools (like radon), this method is *OVERRIDDEN* in their respective __init__.py.
         py_parse: ModuleType = self.import_component("parse")
-        return getattr(py_parse, "parse")
+        return getattr(py_parse, "parse_save")
 
     def _get_render_method(self, interface: str) -> tuple[ModuleType | None, Callable | None]:
         """Return the root render method for this tool and the specified interace, e.g. "web" or "cli"."""
@@ -120,6 +124,14 @@ class AbstractToolConfiguration(ABC):
             if o_dimension.name.lower() == arg_dimension.lower():
                 return o_dimension
         return None
+
+    def get_models(self) -> list[BaseModel]:
+        """Return a unique list of all storage models used by the tool."""
+        model_classes = set()  # May be duplicates for report only dimension tools! (eg. scc)
+        for o_dim in self.dimensions:
+            for model_class in o_dim.models:
+                model_classes.add(model_class)
+        return list(model_classes)
 
     def map_ingest_dimension_to_report_dimension(self, args: Namespace, ingest_dimension: str) -> str | None:
         """Determine the respective report dimension from the tool's definition and current configuration."""
@@ -143,14 +155,6 @@ class AbstractToolConfiguration(ABC):
             if not report_dimension:
                 report_dimension = self.dimensions[0].name
         return report_dimension
-
-    def get_models(self) -> list[BaseModel]:
-        """Return a unique list of all storage models used by the tool."""
-        model_classes = set()  # May be duplicates for report only dimension tools! (eg. scc)
-        for o_dim in self.dimensions:
-            for model_class in o_dim.models:
-                model_classes.add(model_class)
-        return list(model_classes)
 
 
 ToolType: TypeAlias = AbstractToolConfiguration

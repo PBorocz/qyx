@@ -13,7 +13,7 @@ from qyx.tools._models_ import Scan
 log = logging.getLogger(__name__)
 
 
-def parse_raw(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save_raw(scan: Scan, latest: bool, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
@@ -61,7 +61,7 @@ def parse_raw(scan: Scan, latest: bool, data: Any) -> int:
     return len(rows)
 
 
-def parse_mi(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save_mi(scan: Scan, latest: bool, data: Any) -> int:
     def _json_to_row(fn_: str, radon_result: dict[str, int]) -> RadonRaw | None:
         fn_path = Path(os.path.relpath(Path(fn_), scan.cwd))
         try:
@@ -121,7 +121,7 @@ def _get_summary_mi(scan: Scan, rows: list[RadonMi]) -> dict:
     return {"maintainability_index": weighted_avg_mi}
 
 
-def parse_cc(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save_cc(scan: Scan, latest: bool, data: Any) -> int:
     def _get_summary(rows: list[RadonCc]) -> dict:
         totals = defaultdict(float)
         counts = defaultdict(int)
@@ -181,7 +181,7 @@ def parse_cc(scan: Scan, latest: bool, data: Any) -> int:
     return len(rows)
 
 
-def parse_hal(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save_hal(scan: Scan, latest: bool, data: Any) -> int:
     # Have to do this nested to reflect json file structure:
     count = 0
     try:

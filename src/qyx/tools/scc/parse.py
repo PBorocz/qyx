@@ -13,7 +13,7 @@ from qyx.tools._models_ import Scan
 log = logging.getLogger(__name__)
 
 
-def parse(scan: Scan, latest: bool, data: Any) -> int:
+def parse_save(scan: Scan, latest: bool, data: Any) -> int:
     # Have to do this nested to reflect json file structure:
     try:
         json_ = json.loads(data)

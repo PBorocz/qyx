@@ -1,0 +1,16 @@
+{% extends "base::_base.html" %}
+
+{% block content %}
+
+<h2>"ga" - Git Analytics</h2>
+
+<fieldset class="grid">
+  {% include "base::_select_project.html" %}
+  {% include "base::_select_dimension.html" %}
+</fieldset>
+
+<div id="div_body_content">
+  {% include "ga::ga.html" %}
+</div>
+
+{% endblock %}

@@ -43,6 +43,10 @@ def query_cache(func: F) -> F:
         if scan is not None:
             key_parts.append(("scan", scan.id))
 
+        dimension = bound_args.arguments.get("dimension")
+        if dimension is not None:
+            key_parts.append(("dimension", dimension))
+
         # Create immutable cache key
         # Note: critical that we include the module as well since we
         # re-use query method names across modules! (eg. query_0, query_1, etc.)
