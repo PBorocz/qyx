@@ -448,9 +448,13 @@ def _prompt_report_level(args: Namespace) -> Rl:
 
     # Only render the report levels possibly available in the tool:
     choices = []
-    report_levels_available = args.tools[args.tool].report_levels
-    for rl_ in report_levels_available:
+    report_level_values = []
+    for rl_ in args.tools[args.tool].report_levels:
         choices.append(Choice(title=rl_.description, value=rl_.value, shortcut_key=rl_.value))
+        report_level_values.append(rl_.value)
+
+    # Make sure default is in the list.
+    kwargs = dict(default=last_report_level) if last_report_level in report_level_values else dict()
 
     # Do we need to add an "all" entry?
     if len(choices) > 1:
@@ -460,9 +464,9 @@ def _prompt_report_level(args: Namespace) -> Rl:
         "Report Level:",
         choices=choices,
         style=PROMPT_STYLE,
-        default=last_report_level,
         use_indicator=True,
         use_shortcuts=True,
+        **kwargs,
     ).unsafe_ask()
 
     State.update(args, report_level=value)

@@ -118,10 +118,6 @@ def dashboard_view_content(template: str = "base::dashboard_body.html") -> str:
             ),
         )
 
-    import pprint as pp
-
-    pp.pprint(cards)
-    pp.pprint(tool_context)
     return render_template(template, cards=cards, **tool_context)
 
 

@@ -18,9 +18,6 @@ def status_page(template: str = "base::pages/status.html") -> str:
     #         # Sum up the number of dimension scans done for this request
     #         query = Scan.select(
     #             Scan.
-
-    #         print(request.id)
-
     context = Sns()
     context.rows = [
         Sns(date="2026-01-01", message="A message", cloc=4, ty=0),
@@ -43,7 +40,6 @@ def status_page(template: str = "base::pages/status.html") -> str:
 # for request in Request.select().where(Request.project == project):
 #     for dimension in ("cloc", "ty"):
 #         scan = Scan.get(Scan.request == request, Scan.dimension == dimension)
-#         print(f"{scan.__dict__=}")
 
 #     counts_by_scan_dimension = dict()
 #     for scan in scans_for_request:
