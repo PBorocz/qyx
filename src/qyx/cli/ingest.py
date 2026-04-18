@@ -21,9 +21,12 @@ log = logging.getLogger(__name__)
 
 console = Console()
 
+first_for_scan: bool =
+
 
 def ingest(args: Namespace) -> None:
     """Ingest from the specified tool, either current or from git."""
+    global first_for_scan
     # Lookup (or create) our Project and associated Request
     o_project: Project = Project.factory(args)
     o_request: Request = Request.get_or_create(args, o_project)
@@ -45,7 +48,7 @@ def ingest(args: Namespace) -> None:
             ################################################################################
             # CORE!!: Do the respective tool's ingestion and save the activity it did.
             ################################################################################
-            printed.append(_do_scan(args, o_request, o_tool, scan_request, first_for_scan))
+            printed.append(_do_scan(args, o_request, o_tool, scan_request))
 
         if any(printed):
             console.print()
@@ -60,7 +63,7 @@ def _get_tools_from_args(args: Namespace) -> list[ToolType]:
     """Process the command-line or interactive arguments and return a list of tool(s) to perform an ingest upon."""
     # Case 1: No tool specified -> we want to "ingest" everything!
     if not args.tool or args.tool == ALL_ITEMS:
-        return args.tools.values()
+        return args.tools.tools()
 
     # Case 2: Lookup the specific tool by name.
     try:
@@ -108,9 +111,10 @@ def _do_scan(
     o_request: Request,
     o_tool: ToolType,
     scan_request: Sns,
-    first_for_scan: bool,
 ) -> bool:
     """Ingest a tool: run the respective command(s), parse and save results!."""
+    global first_for_scan
+
     dimensions_to_ingest: list[ToolDimension | None] = o_tool.dimensions if o_tool.ingest_by_dimension else [None]
 
     printed = False
@@ -145,7 +149,6 @@ def _do_scan(
         # Run the respective tool's data collection method...
         ################################################################################################
         datum, error = _run_tool(args, o_request, o_tool, scan_request, dimension)
-        log.debug(f"ran tool!: {len(datum)=}")
         if error:
             # We ran into a problem with running the ingest, don't leave the scan hanging around
             scan.delete_instance(recursive=True)  # recursive is just in case..

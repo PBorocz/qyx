@@ -51,11 +51,15 @@ def _validate_ingest(args: Namespace) -> list[str]:
                 return_.append(f"❌ [red]Path '{args.path}' exists but is [bold]not[/bold] a directory")
 
             # Is it a "valid" directory (or sub-directory) of a git project?
+            # Some of our commands assume that the directory IS a git project, for example:
+            # - ga_tool (duh)
+            # - cloc (uses ---vcs=git option to know what files to count)
             elif not __find_git_root(Path(args.path)):
                 return_.append(
                     f"[red]Path '{args.path}' is [bold]not[/bold] a git repository[/red] "
                     "(specify a path that is .git project root or sub-directory)",
                 )
+
     else:
         if not args.stdin:
             return_.append(

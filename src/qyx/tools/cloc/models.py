@@ -42,6 +42,7 @@ class Cloc(BaseModel):
 
 
 def query_cloc_0(args: Namespace, scan: Scan, dimension: str = "cloc", context: Vc = Vc.TOOL_HOME) -> Sns:
+    log.info(f"{scan.id=}")
     query = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
@@ -80,16 +81,25 @@ def query_cloc_0(args: Namespace, scan: Scan, dimension: str = "cloc", context: 
     )
 
     # Calculate the "Code Density"
-    metric_value = (result.lines_code / (result.lines_code + result.lines_blank)) * 100.0
-    result.code_density = score_metric(args, "tools.cloc.code_density", metric_value)
+    if result.lines_code:
+        metric_value = (result.lines_code / (result.lines_code + result.lines_blank)) * 100.0
+        result.code_density = score_metric(args, "tools.cloc.code_density", metric_value)
+    else:
+        result.code_density = None
 
     # Calculate the "Comment Ratio"
-    metric_value = result.lines_comment / (result.lines_code + result.lines_comment) * 100.0
-    result.comment_ratio = score_metric(args, "tools.cloc.comment_ratio", metric_value)
+    if result.lines_code:
+        metric_value = result.lines_comment / (result.lines_code + result.lines_comment) * 100.0
+        result.comment_ratio = score_metric(args, "tools.cloc.comment_ratio", metric_value)
+    else:
+        result.comment_ratio = None
 
     # Calculate average lines per file
-    metric_value = int(result.lines_code / result.files_total)
-    result.avg_lines_per_file = score_metric(args, "tools.cloc.avg_lines_per_file", metric_value)
+    if result.lines_code:
+        metric_value = int(result.lines_code / result.files_total)
+        result.avg_lines_per_file = score_metric(args, "tools.cloc.avg_lines_per_file", metric_value)
+    else:
+        result.avg_lines_per_file = None
 
     return result
 
