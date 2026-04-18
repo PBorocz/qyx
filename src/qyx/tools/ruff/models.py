@@ -11,7 +11,6 @@ from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
-from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 log = logging.getLogger(__name__)
@@ -39,7 +38,6 @@ class Ruff(BaseModel):
         indexes = ((("scan", "directory", "filename", "line", "column", "rule_code"), True),)
 
 
-@query_cache
 def query_ruff_0(args: Namespace, scan: Scan, dimension: str = "ruff", context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary ruff metrics."""
     query = (
@@ -59,7 +57,6 @@ def query_ruff_0(args: Namespace, scan: Scan, dimension: str = "ruff", context: 
     return result
 
 
-@query_cache
 def query_ruff_1(scan: Scan) -> Sns:
     from qyx.tools.ruff import get_ruff_rule_name
 
@@ -86,7 +83,6 @@ def query_ruff_1(scan: Scan) -> Sns:
     return Sns(rows=rows)
 
 
-@query_cache
 def query_ruff_2(scan: Scan) -> Sns:
     query = (
         Ruff.select()
@@ -101,7 +97,6 @@ def query_ruff_2(scan: Scan) -> Sns:
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 
-@query_cache
 def query_ruff_h(project: Project, dimension: str = "ruff", last: int = None) -> Sns:
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ruff table.
     # We do this as there are valid cases when there are NO Ruff table entries for a particular

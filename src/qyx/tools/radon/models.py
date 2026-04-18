@@ -12,7 +12,6 @@ from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, ModelAttribute, Project, Scan
 from qyx.tools.common import get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
-from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 
@@ -193,7 +192,6 @@ class RadonHalFunction(BaseModel):
 ################################################################################################
 # RAW
 ################################################################################################
-@query_cache
 def query_raw_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         RadonRaw.select(
@@ -221,7 +219,6 @@ def query_raw_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc 
     return result
 
 
-@query_cache
 def query_raw_1(scan: Scan) -> Sns:
     query = (
         RadonRaw.select(
@@ -247,7 +244,6 @@ def query_raw_1(scan: Scan) -> Sns:
     return Sns(rows=rows, totals=totals)
 
 
-@query_cache
 def query_raw_2(scan: Scan) -> Sns:
     query = (
         RadonRaw.select()
@@ -268,7 +264,6 @@ def query_raw_2(scan: Scan) -> Sns:
     return Sns(rows=rows, totals=totals)
 
 
-@query_cache
 def query_raw_h(project: Project, dimension: str = "raw", last: int = None) -> Sns:
     scans = get_scans_for_project_dimension(project, dimension, last=last)
 
@@ -325,7 +320,6 @@ def query_raw_h(project: Project, dimension: str = "raw", last: int = None) -> S
 ################################################################################################
 # HAL
 ################################################################################################
-@query_cache
 def query_hal_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         RadonHal.select(
@@ -384,7 +378,6 @@ def query_hal_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc 
     return result
 
 
-@query_cache
 def query_hal_1(scan: Scan) -> Sns:
     query = (
         RadonHal.select(
@@ -418,7 +411,6 @@ def query_hal_1(scan: Scan) -> Sns:
     return Sns(rows=rows, mean_means=mean_means)
 
 
-@query_cache
 def query_hal_2(scan: Scan) -> Sns:
     query = (
         RadonHal.select()
@@ -439,7 +431,6 @@ def query_hal_2(scan: Scan) -> Sns:
     return Sns(rows=rows, means=means)
 
 
-@query_cache
 def query_hal_3(scan: Scan) -> Sns:
     query = (
         RadonHalFunction.select(
@@ -475,7 +466,6 @@ def query_hal_3(scan: Scan) -> Sns:
     return Sns(rows=rows, means=means)
 
 
-@query_cache
 def query_hal_h(project: Project = None, dimension: str = "hal", last: int = None) -> Sns:
     scans = get_scans_for_project_dimension(project, dimension, last=last)
 
@@ -523,7 +513,6 @@ def query_hal_h(project: Project = None, dimension: str = "hal", last: int = Non
 ################################################################################################
 # MI
 ################################################################################################
-@query_cache
 def query_mi_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate LOC-weighted Maintainability Index (using latest loc/raw RAW scan)."""
     raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
@@ -549,7 +538,6 @@ def query_mi_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc =
     return Sns(mi_metric=score_metric(args, "tools.radon.mi.mean", mi_))
 
 
-@query_cache
 def query_mi_1(args, scan: Scan) -> Sns:
     mi_metric = query_mi_0(args, scan).mi_metric
     raw_scan = Scan.get_latest(scan.request.project, "radon", "raw")
@@ -579,7 +567,6 @@ def query_mi_1(args, scan: Scan) -> Sns:
     return Sns(mi_by_directory=mi_by_directory, mi_metric=mi_metric)
 
 
-@query_cache
 def query_mi_2(args, scan: Scan) -> Sns:
     mi_metric = query_mi_0(args, scan).mi_metric
     query = (
@@ -597,7 +584,6 @@ def query_mi_2(args, scan: Scan) -> Sns:
     return Sns(rows=rows, mi_metric=mi_metric)
 
 
-@query_cache
 def query_mi_h(project, dimension: str = "mi", last: int = None) -> Sns:
     scans = get_scans_for_project_dimension(project, dimension, last=last)
 
@@ -631,7 +617,6 @@ def query_mi_h(project, dimension: str = "mi", last: int = None) -> Sns:
 ################################################################################################
 # CC
 ################################################################################################
-@query_cache
 def query_cc_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate derived radon-cc metric(s)."""
     query = (
@@ -661,7 +646,6 @@ def query_cc_0(args: Namespace, scan: Scan, dimension: str = None, context: Vc =
     return Sns(rows=rows)
 
 
-@query_cache
 def query_cc_1(args: Namespace, scan: Scan) -> Sns:
     query = (
         RadonCc.select(
@@ -685,7 +669,6 @@ def query_cc_1(args: Namespace, scan: Scan) -> Sns:
     return Sns(rows=rows)
 
 
-@query_cache
 def query_cc_2(args: Namespace, scan: Scan) -> Sns:
     query = (
         RadonCc.select(
@@ -710,7 +693,6 @@ def query_cc_2(args: Namespace, scan: Scan) -> Sns:
     return Sns(rows=rows)
 
 
-@query_cache
 def query_cc_3(args: Namespace, scan: Scan) -> Sns:
     query = (
         RadonCc.select()
@@ -735,7 +717,6 @@ def query_cc_3(args: Namespace, scan: Scan) -> Sns:
     return Sns(rows=rows)
 
 
-@query_cache
 def query_cc_h(project: Project, dimension: str = "cc", last: int = None) -> Sns:
     scans = get_scans_for_project_dimension(project, dimension, last=last)
 

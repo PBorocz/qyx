@@ -13,7 +13,6 @@ from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
 from qyx.tools.common import get_scans_for_project_dimension
 from qyx.utils import bucket, rate_of_change_percentage
-from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 
@@ -42,7 +41,6 @@ class Cloc(BaseModel):
         indexes = ((("scan", "directory", "filename"), True),)
 
 
-@query_cache
 def query_cloc_0(args: Namespace, scan: Scan, dimension: str = "cloc", context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Cloc.select(
@@ -96,7 +94,6 @@ def query_cloc_0(args: Namespace, scan: Scan, dimension: str = "cloc", context: 
     return result
 
 
-@query_cache
 def query_cloc_1(args: Namespace, scan: Scan) -> Sns:
     grand_total: Sns = query_cloc_0(args, scan)
     query = (
@@ -125,7 +122,6 @@ def query_cloc_1(args: Namespace, scan: Scan) -> Sns:
     return Sns(rows=rows, grand_total=grand_total)
 
 
-@query_cache
 def query_cloc_2(args: Namespace, scan: Scan) -> Sns:
     grand_total: Sns = query_cloc_0(args, scan)
 
@@ -162,7 +158,6 @@ def query_cloc_2(args: Namespace, scan: Scan) -> Sns:
     )
 
 
-@query_cache
 def query_cloc_h(project: Project, dimension: str = "cloc", last: int = None) -> Sns:
     scans = get_scans_for_project_dimension(project, dimension, last=last)
 
@@ -239,7 +234,6 @@ def query_cloc_h(project: Project, dimension: str = "cloc", last: int = None) ->
     )
 
 
-@query_cache
 def query_cloc_f(args: Namespace, scan: Scan) -> list[tuple[str, int]]:
     """Calculate histogram buckets over filesize."""
     buckets = args.config.get("tools.cloc.histogram_file_size.buckets")

@@ -11,7 +11,6 @@ from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
-from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 log = logging.getLogger(__name__)
@@ -40,7 +39,6 @@ class Ty(BaseModel):
         indexes = ((("scan", "directory", "filename", "fingerprint"), True),)
 
 
-@query_cache
 def query_ty_0(args: Namespace, scan: Scan, dimension: str = "ty", context: Vc = Vc.TOOL_HOME) -> Sns:
     query = (
         Ty.select(fn.COUNT(Ty.id).alias("count"))
@@ -61,7 +59,6 @@ def query_ty_0(args: Namespace, scan: Scan, dimension: str = "ty", context: Vc =
     return result
 
 
-@query_cache
 def query_ty_1(scan: Scan) -> Sns:
     query = (
         Ty.select(
@@ -82,7 +79,6 @@ def query_ty_1(scan: Scan) -> Sns:
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 
-@query_cache
 def query_ty_2(scan: Scan):
     query = (
         Ty.select(
@@ -105,7 +101,6 @@ def query_ty_2(scan: Scan):
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 
-@query_cache
 def query_ty_3(scan: Scan) -> Sns:
     query = (
         Ty.select()
@@ -122,7 +117,6 @@ def query_ty_3(scan: Scan) -> Sns:
     return Sns(rows=[Sns(**row_dict) for row_dict in query])
 
 
-@query_cache
 def query_ty_h(project: Project, dimension: str = "ty", last: int = None) -> Sns:
     # NOTE: This seems a bit backward here as we're querying from Scan and joining the Ty table.
     # We do this as there are valid cases when there are NO Ty table

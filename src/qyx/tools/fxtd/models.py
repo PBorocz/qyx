@@ -12,7 +12,6 @@ from qyx.constants import ViewContext as Vc
 from qyx.tools._models_ import BaseModel, Project, Scan
 from qyx.tools.common import get_loc, get_scans_for_project_dimension
 from qyx.utils import rate_of_change_percentage
-from qyx.utils.caching import query_cache
 from qyx.utils.scoring import score_metric
 
 
@@ -39,7 +38,6 @@ class Fxtd(BaseModel):
         indexes = ((("scan", "directory", "filename", "line"), True),)
 
 
-@query_cache
 def query_fxtd_0(args: Namespace, scan: Scan, dimension: str = "fxtd", context: Vc = Vc.TOOL_HOME) -> Sns:
     """Calculate summary level fxtd metrics."""
     query = (
@@ -75,7 +73,6 @@ def query_fxtd_0(args: Namespace, scan: Scan, dimension: str = "fxtd", context: 
     return Sns(rows=rows, grand_total=grand_total, metric_composite_weighted=metric_composite_weighted)
 
 
-@query_cache
 def query_fxtd_1(scan: Scan) -> Sns:
     query = (
         Fxtd.select(
@@ -93,7 +90,6 @@ def query_fxtd_1(scan: Scan) -> Sns:
     return Sns(rows=rows, grand_total=grand_total)
 
 
-@query_cache
 def query_fxtd_2(scan: Scan) -> Sns:
     query = (
         Fxtd.select()
@@ -109,7 +105,6 @@ def query_fxtd_2(scan: Scan) -> Sns:
     return Sns(rows=rows)
 
 
-@query_cache
 def query_fxtd_h(project: Project, dimension: str = "fxtd", last: int = None) -> Sns:
     scans = get_scans_for_project_dimension(project, dimension, last=last)
 

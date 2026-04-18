@@ -20,7 +20,6 @@ from qyx.setup.logging import setup_logging
 from qyx.setup.sqlite import setup_sqlite
 from qyx.setup.tools import setup_tools
 from qyx.tools._models_ import State
-from qyx.utils.caching import cache_info
 from qyx.web.serve import serve
 
 
@@ -40,8 +39,6 @@ def _get_dispatch_method(args: Namespace) -> Callable:
                     return clean
                 case "delete":
                     return delete
-                case "cache_info":
-                    return cache_info
                 case _:
                     raise RuntimeError(
                         "Sorry, invalid admin option selected, must be one of 'clean' or 'delete'",
