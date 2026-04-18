@@ -5,7 +5,8 @@ import shutil
 import subprocess
 from argparse import Namespace
 from importlib import import_module
-from pathlib import Path
+from importlib.resources import files
+from importlib.resources.abc import Traversable
 from types import ModuleType
 
 from qyx.constants import ConfigurationError
@@ -22,7 +23,7 @@ def setup_tools(args: Namespace) -> Tools:
     o_tools: dict = Tools()
 
     # Iterate over /app/tools and get handles to each module
-    tools_dir: Path = Path("src/qyx/tools")
+    tools_dir: Traversable = files("qyx").joinpath("tools")
     for tool_path in tools_dir.iterdir():
         if tool_path.is_dir() and not tool_path.name.startswith("_"):
             log.debug(f"Setting up tool {tool_path.name:6s} from path='{str(tool_path)}'...")

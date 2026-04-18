@@ -114,3 +114,10 @@ shell = """
 
   uv run qyx ingest --name QYX --path https://github.com/PBorocz/qyx.git
   """
+[tool.poe.tasks.build]
+help = "Build package for distribution"
+interpreter = "fish"
+shell = """
+  uvx cleanpy --all --exclude-envs --verbose .
+  uv build
+  """

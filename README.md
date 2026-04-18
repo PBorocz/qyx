@@ -1,10 +1,10 @@
-![Alt text](kix.jpeg)
+<img src="kix.jpeg" width="50%" alt="Qyx, pronounced like the Kix cereal">
 
 # QYX - Python Code Quality Data Warehouse
 
 > A comprehensive code quality analysis and visualization platform for Python projects
 
-**QYX** (pronounced "kix" [like the cereal!]) is a proof-of-concept data warehouse that aggregates, analyzes, and reports on various code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
+**QYX** (pronounced "kix") is a proof-of-concept data warehouse that aggregates, analyzes, and reports on various code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
 
 ## Features
 
@@ -79,9 +79,7 @@ cd python-code-quality
 
 # Install with uv (recommended)
 uv sync
-
-# The qyx command will be available
-qyx --help
+uv run qyx --help
 ```
 
 ### Alternative Installation Methods
