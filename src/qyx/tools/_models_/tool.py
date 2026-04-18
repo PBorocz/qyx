@@ -10,6 +10,7 @@ from types import ModuleType
 from typing import Callable, TypeAlias
 
 from .base import BaseModel
+from qyx.constants import ReportLevel
 
 
 log = logging.getLogger(__name__)
@@ -76,9 +77,54 @@ class AbstractToolConfiguration(ABC):
         self.render_cli_module, self.render_cli_method = self._get_render_method("cli")
         self.render_web_module, self.render_web_method = self._get_render_method("web")
 
+        # Setup the report levels available for the tool based on files/methods available.
+        self.report_levels = self._get_report_levels()
+
     def import_component(self, component: str) -> ModuleType:
         """Dynamically import a component from this module."""
         return import_module(f"qyx.tools.{self.module}.{component}")
+
+    def _get_report_levels(self) -> list[str]:
+        """Determine what report levels are available for the tool (across all dimensions)."""
+        # Note, this doesn't imply that each dimension has a particular report level available!
+        report_levels = set()
+        for report_level in ReportLevel:
+            if report_level == ReportLevel.ALL:
+                continue
+
+            try:
+                models_module = self.import_component("models")
+            except ModuleNotFoundError:
+                log.warning("No 'models' module available yet for tool='{self.name}'.")
+                continue
+
+            ################################################################################
+            # Look first for simple query method by report level (covers most cases)
+            ################################################################################
+            try:
+                query_method_name = f"query_{self.name}_{report_level.value}"
+                getattr(models_module, query_method_name)
+                # log.debug(f"Found by name: {report_level.value=} -> {query_method_name=}")
+                report_levels.add(report_level)
+                continue
+            except AttributeError:
+                ...
+
+            ################################################################################
+            # Look by dimension for tools with dimension-based querying
+            ################################################################################
+            for o_dimension in self.dimensions:
+                try:
+                    query_method_name = f"query_{o_dimension.name}_{report_level.value}"
+                    getattr(models_module, query_method_name)
+                    # log.debug(f"Found by dimension: {report_level.value=} -> {query_method_name=}")
+                    report_levels.add(report_level)
+                    break
+                except AttributeError:
+                    # Not reporting, we EXPECT many of these to popup!
+                    continue
+
+        return list(report_levels)
 
     def get_ingest_command(
         self,
@@ -132,29 +178,6 @@ class AbstractToolConfiguration(ABC):
             for model_class in o_dim.models:
                 model_classes.add(model_class)
         return list(model_classes)
-
-    def map_ingest_dimension_to_report_dimension(self, args: Namespace, ingest_dimension: str) -> str | None:
-        """Determine the respective report dimension from the tool's definition and current configuration."""
-        #
-        # 1. Tools like radon where there are MULTIPLE ingest_dimensions, each with their associated report dimensions
-        #    -> report_dimension IS ingest_dimension
-        #
-        # 2. Tools like fxtd, cloc, ruff, ty that have a SINGLE ingest_dimension and SINGLE report_dimension:
-        #    -> report_dimension IS ingest_dimension
-        #
-        # 3. Tools like "scc" with a SINGLE ingest dimension but multiple REPORT dimensions.
-        #    -> report_dimension IS either based on configuration file or simply the first report dimension available.
-        #
-        if self.ingest_by_dimension:  # ie. "radon":
-            report_dimension = ingest_dimension
-        elif len(self.dimensions) == 1:  # ie. "cloc", "ruff", ...
-            report_dimension = ingest_dimension
-        else:  # ie. "scc"
-            # Do we have a setting in our configuration?
-            report_dimension = args.config.get(f"tools.{self.name}.settings.dashboard_report_dimension")
-            if not report_dimension:
-                report_dimension = self.dimensions[0].name
-        return report_dimension
 
 
 ToolType: TypeAlias = AbstractToolConfiguration

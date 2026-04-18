@@ -445,12 +445,17 @@ def _prompt_dimension(args: Namespace, message: str) -> str:
 
 def _prompt_report_level(args: Namespace) -> Rl:
     last_report_level = State.lookup("report_level", c.ALL_ITEMS)
-    choices = [
-        Choice(title=level.description, value=level.value, shortcut_key=level.value)
-        for level in Rl
-        if level.value != c.ALL_ITEMS
-    ]
-    choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS, shortcut_key="a"))
+
+    # Only render the report levels possibly available in the tool:
+    choices = []
+    report_levels_available = args.tools[args.tool].report_levels
+    for rl_ in report_levels_available:
+        choices.append(Choice(title=rl_.description, value=rl_.value, shortcut_key=rl_.value))
+
+    # Do we need to add an "all" entry?
+    if len(choices) > 1:
+        choices.append(Choice(title="─── All ───", value=c.ALL_ITEMS, shortcut_key="a"))
+
     value = select(
         "Report Level:",
         choices=choices,
