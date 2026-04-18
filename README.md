@@ -1,18 +1,20 @@
+![Alt text](kix.jpeg)
+
 # QYX - Python Code Quality Data Warehouse
 
 > A comprehensive code quality analysis and visualization platform for Python projects
 
-**QYX** (pronounced "kix" [like the cereal!]) is a proof-of-concept data warehouse that aggregates, analyzes, and reports on multiple code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
+**QYX** (pronounced "kix" [like the cereal!]) is a proof-of-concept data warehouse that aggregates, analyzes, and reports on various code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
 
 ## Features
 
-- **Multi-Tool Integration**: Aggregate metrics from tools like CLOC, Ruff, Radon, and custom analyzers.
+- **Multi-Tool Integration**: Aggregate metrics from tools like CLOC, Ruff, Radon, Ty, and custom analyzers.
 - **Persistent Storage**: SQLite database for historical tracking and trend analysis.
-- **CLI Interface**: Terminal output with detailed reports at multiple levels (Rich)
-- **Web Dashboard**: Interactive dashboard (Bottle, Jinja2 & HTMX).
-- **Git Integration**: Analyze code across commit history
-- **Configurable Grading**: Define custom thresholds and scoring for all metrics
-- **Multi-Level Reporting**: Summary, directory, file, detailed, derived, and historical views
+- **CLI Interface**: Terminal output with detailed reports at multiple levels.
+- **Web Dashboard**: Interactive dashboard.
+- **Git Integration**: Analyze code across commit history.
+- **Configurable Grading**: Define custom thresholds and scoring for all metrics.
+- **Multi-Level Reporting**: Summary, directory, file, granular and historical views.
 
 ## Tools & Metrics
 
@@ -28,15 +30,15 @@
 - Weighted scoring by severity
 - Per-file and directory aggregation
 
+### Ty (Astral Type-checker)
+- Python type checker
+
 ### Radon (Complexity analysis)
 Four sub-analyses providing comprehensive complexity metrics:
 - **CC** (Cyclomatic Complexity): Function and class complexity
 - **MI** (Maintainability Index): Overall maintainability score (0-100)
 - **HAL** (Halstead Metrics): Effort, difficulty, bugs prediction
 - **RAW** (Raw Metrics): Operators, operands, basic counts
-
-### Ty (Astral Type-checker)
-- Python type checker
 
 ### Scc (Succint code counter)
 - Lines of code, Unique lines of code, blank lines, comment lines
@@ -46,6 +48,14 @@ Track code annotations and technical debt markers:
 - FIXME, TODO, HACK, BUG, XXX, NOTE markers
 - Weighted scoring by severity
 - Per-KLOC metrics
+
+### GA (Custom Git Analytics)
+Track various git metrics:
+- Top Committers/Authors
+- Files with the most bug commits
+- Files with the most emergency commits
+- Files with the most commits (file churn)
+- Commit Frequency per month
 
 ## Installation
 
@@ -58,7 +68,7 @@ Track code annotations and technical debt markers:
   - `radon` - Complexity analyzer
   - `scc`   - Count Lines of Code
   - `ty`    - Python type checker
-  - `git`   - Version control (for history analysis)
+  - `git`   - Version control
 
 ### Install QYX
 
@@ -86,20 +96,40 @@ uv run qyx --help
 
 ## Quick Start
 
+If you run `qyx` without arguments, it enters interactive mode with guided prompts:
+
+```bash
+uv(x) run qyx
+```
+
+```
+   ____ __  __ _  __
+  / __ \\ \/ /| |/ /
+ / / / / \  / |   /
+/ /_/ /  / / /   |
+\___\_\ /_/ /_/|_|
+
+QYX → Code Quality Analysis Tool
+? Command: (Use shortcuts or arrow keys)
+ » ● s) Status
+   ○ r) Report
+   ○ i) Ingest
+   ○ v) Serve
+   ○ a) Admin
+   ────────────
+   ○ x) Exit
+```
+
+## Direct Command-Line Options
+
 ### Ingest Code Quality Metrics
 
 ```bash
-# Analyze current project (will try to ingest using all tools)
+# Analyze current project (will ingest using all available tools)
 qyx ingest --name myproject --path /path/to/project
 
-# Analyze with specific tool
+# Ingest just a specific tool
 qyx ingest --name myproject --path /path/to/project --tool ruff
-
-# Analyze git history (all commits and all tools)
-qyx ingest --name myproject --path /path/to/repo
-
-# Analyze git history (for a specific tool)
-qyx ingest --name myproject --path /path/to/repo --tool scc
 
 # Read from stdin (pipe tool output)
 ruff check --output-format=json . | qyx ingest --name myproject --stdin --tool ruff
@@ -110,12 +140,6 @@ ruff check --output-format=json . | qyx ingest --name myproject --stdin --tool r
 ```bash
 # Summary status
 qyx status
-
-# Grouped by scan
-qyx status --level g
-
-# Individual scans
-qyx status --level i
 ```
 
 ### Generate Reports
@@ -160,15 +184,6 @@ qyx admin clean
 
 # Delete specific project
 qyx admin delete --target project:5
-```
-
-## Interactive Mode
-
-If you run `qyx` without arguments, it enters interactive mode with guided prompts:
-
-```bash
-qyx
-# Follow the prompts to select command and options
 ```
 
 ## Configuration
@@ -338,102 +353,38 @@ The web dashboard provides an interactive view of all metrics.
 
 ```
 python-code-quality/
-├── src/qyx/                     # Main package
+├── src/qyx/                    # Main package
 │   ├── __main__.py             # Entry point
 │   ├── constants.py            # Enums and constants
 │   ├── cli/                    # CLI interface
-│   │   ├── ...
+│   │   ├── ingest.py           # Method(s) to ingest new data using specific tools
+│   │   ├── report.py           # Method(s) to drive interactive reporting
+│   │   ├── status.py           # Method(s) to report on database storage.
 │   │   └── admin/              # Admin commands
-│   ├── setup/                  # Configuration & initialization
+│   ├── setup/                  # Configuration & initialization methods
 │   │   └── ...
 │   ├── tools/                  # Analysis tool integrations
 │   │   ├── common.py
 │   │   ├── _models_/           # Base storage classes
 │   │   ├── <tool>/
 │   │   │   ├── __init__.py     # Tool configuration
-│   │   │   ├── models.py       # Tool Peewee storage model definitions
+│   │   │   ├── models.py       # Tool Peewee storage model & query methods
 │   │   │   ├── parse.py        # Tool logic to parse/save inbound scans
 │   │   │   ├── cli.py          # CLI interface for reporting (optional)
 │   │   │   ├── web.py          # Web interface for reporting (optional)
-│   │   │   └── templates/      # Web interface templates
+│   │   │   └── templates/      # Tool specific web interface templates
 │   │   └── ...
 │   ├── web/                    # Web interface
 │   │   ├── ...
 │   │   ├── templates/          # Web interface base templates (not tool specific)
 │   │   └── static/
 │   └── utils/                  # Shared utilities
-│       ├── git.py
-│       ├── scoring.py
-│       └── state.py
+│       └── ...
 ├── tests/                      # Test suite
 ├── config.yaml                 # Configuration
 ├── pyproject.toml              # Project metadata
 └── README.md                   # This file
 ```
-
-## Development
-
-### Dependencies
-
-**Core:**
-- peewee >= 3.18.3 (ORM)
-- python-fasthtml >= 0.12.36 (Web framework)
-- plotly >= 6.5.0 (Charts)
-- questionary >= 2.1.1 (Interactive prompts)
-- rich >= 14.2.0 (Terminal formatting)
-
-**Development:**
-- pytest >= 9.0.2 (Testing)
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run specific test file
-pytest tests/test_smoke_cli.py
-
-# Run with verbose output
-pytest -v
-
-# Run with coverage
-pytest --cov=qyx
-```
-
-### Adding a New Tool
-
-1. Create tool directory in `src/qyx/tools/<tool_name>/`
-2. Add requisite/desired configuration to `config.yaml`
-3. Implement required modules:
-   - `__init__.py` - Tool configuration
-   - `models.py` - Database models
-   - `parse.py` - Data ingestion logic
-2. Implement optional modules:
-   - `cli.py` - CLI rendering (if desired)
-   - `web.py` + templates - Web rendering (if desired but at least a summary rendering is suggested)
-
-
-### Database Schema
-
-QYX uses Peewee ORM with SQLite3.
-
-**Core Tables:**
-- `project` - Project records
-- `request` - Analysis requests
-- `scan` - Individual tool runs
-
-**Tool-Specific Tables:**
-- `tool_cloc` - Line counting
-- `tool_fxtd` - Annotation tracking
-- `tool_radon_cc` - Cyclomatic complexity
-- `tool_radon_hal_function` - Per-function Halstead
-- `tool_radon_hal` - Halstead metrics
-- `tool_radon_mi` - Maintainability index
-- `tool_radon_raw` - Raw metrics
-- `tool_ruff` - Linting violations
-- `tool_ty` - Type checks
-- ...
 
 ## Grading System
 
@@ -507,61 +458,122 @@ qyx ingest --name myproject --path https://github.org/someone/myproject
 # 1. Clone the repo and get the complete commit history
 # 2. For each commit not yet processed:
 # 3. - Will checkout the commit
-# 4. - Run analysis tools
+# 4. - Run analysis tool(s)
 # 5. - Store results with commit metadata
 
 # View historical trends
-qyx report --name myproject --level h
+qyx report --name myproject --tool ruff --level h
 ```
 
 ### Custom Analysis Pipeline
 
 ```bash
 # Run only specific tools
-qyx ingest --name myproject --path . --analysis ruff
-qyx ingest --name myproject --path . --analysis radon_cc
+qyx ingest --name myproject --path . --tool ruff
+qyx ingest --name myproject --path . --tool radon_cc
 
 # Pipe custom tool output
 my-custom-tool --json | qyx ingest --name myproject --stdin ruff
 ```
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test file
+pytest tests/test_smoke_cli.py
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage
+pytest --cov=qyx
+```
+
+### Adding a New Tool
+
+1. Create tool directory in `src/qyx/tools/<tool_name>/`
+2. Add requisite/desired configuration to `config.yaml`
+3. Implement required modules:
+   - `__init__.py` - Tool configuration
+   - `models.py` - Database models
+   - `parse.py` - Data ingestion logic
+2. Implement optional modules:
+   - `cli.py` - CLI rendering (if desired)
+   - `web.py` + templates - Web rendering (if desired but at least a summary/level 0  rendering is suggested to appear on the primary web dashboard)
+
+### Database Schema
+
+QYX uses Peewee ORM with SQLite3.
+
+**Core Tables:**
+- `project` - Project records
+- `request` - Analysis requests
+- `scan` - Individual tool runs
+
+**Tool-Specific Tables:**
+
+For example:
+- `tool_cloc` - Line counting
+- `tool_fxtd` - Annotation tracking
+- `tool_radon_cc` - Cyclomatic complexity
+- `tool_radon_hal_function` - Per-function Halstead
+- `tool_radon_hal` - Halstead metrics
+- `tool_radon_mi` - Maintainability index
+- `tool_radon_raw` - Raw metrics
+- `tool_ruff` - Linting violations
+- `tool_ty` - Type check results
+- ...
+
 
 ## Troubleshooting
 
-### Database Issues
-
-```bash
-# Clean up orphaned records
-qyx admin clean
-
-# Reset database completely
-qyx admin clear
-```
-
 ### Tool Not Found
 
-Ensure external tools are installed:
+The commands used to ingest data from each specific tool are listed in the respective tools section of config.yaml. For example, for the `cloc` tool, here are the commands/options used:
+
+```yaml
+tools:
+  cloc:
+	command:
+	  - cloc
+	  - --by-file
+	  - --include-lang=Python
+	  - --vcs=git
+	  - --json
+	  - "{absolute}"
+```
+
+Obviously, each tool must be already on your path (qyx will check each tools ability to run on startup).
+
+To check if tools are available:
 
 ```bash
-# Check if tools are available
 which cloc
 which radon
 which ruff
-...
-
+# ...
+#
 # Install missing tools (for example):
-  `uv tool install <tool>`
-or
-  `brew install <tool>`
-
-or use your platform's package manager of choice to get the tool(s) onto your path.
-
-
-etc.
+#  `uv tool install <tool>`
+# or
+#  `brew install <tool>`
+#
+# or use your platform's package manager of choice to get the tool(s) onto your path.
+#
+# etc.
 ```
 
 ### Permission Issues
 
-On MacOS, database location: `~/Library/Application\ Support/qyx/db.sqlite3`
+On MacOS, database location: `~/Library/Application\ Support/qyx/db.sqlite3`.
+
+On other platforms (albeit not tested) we use the XDG "user-data-directory".
+
+The location can be overridden in the configuration file under `general.database.path`.
 
 Ensure write permissions:
 
@@ -573,13 +585,6 @@ chmod 755 ~/Library/Application\ Support/qyx
 ## Contributing
 
 This is a proof-of-concept project. Contributions are welcome!
-
-### Areas for Enhancement
-
-- Additional tool integrations (pylint, mypy, bandit, etc.)
-- Export functionality (PDF reports, CSV data)
-- Comparison views (branch comparison, before/after)
-- CI/CD integration
 
 ## License
 
@@ -602,4 +607,4 @@ Happily built with:
 
 ## Version
 
-0.1.0 (POC)
+0.2.0 (POC)

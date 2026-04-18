@@ -81,12 +81,19 @@ def _validate_report(args: Namespace) -> list[str]:
             return_.append(f"❌ [red]Sorry! tool='{args.tool}' is not defined![/red]")
             return_.append(f"❌ [red]Must be one of the following: {names}[/red]")
 
-    if args.dimension:
-        o_tool = args.tools[args.tool.lower()]
-        dim_names = sorted([o_dim.name.lower() for o_dim in o_tool.dimensions])
-        s_dim_names = ", ".join(dim_names)
-        if args.dimension != c.ALL_ITEMS and args.dimension.lower() not in dim_names:
-            return_.append(f"❌ [red]Sorry! dimension='{args.dimension}' isn't defined for tool='{args.tool}'![/red]")
+    if args.dimension and args.dimension != c.ALL_ITEMS:
+        if not args.tool:
+            return_.append(
+                f"❌ [red]Sorry! If dimension {args.dimension=} is specified, the associated tool must be also![/red]"
+            )
+        else:
+            o_tool = args.tools[args.tool.lower()]
+            dim_names = sorted([o_dim.name.lower() for o_dim in o_tool.dimensions])
+            s_dim_names = ", ".join(dim_names)
+            if args.dimension != c.ALL_ITEMS and args.dimension.lower() not in dim_names:
+                return_.append(
+                    f"❌ [red]Sorry! dimension='{args.dimension}' isn't defined for tool='{args.tool}'![/red]"
+                )
             return_.append(f"❌ [red]Must be one of the following: {s_dim_names}[/red]")
 
     return return_

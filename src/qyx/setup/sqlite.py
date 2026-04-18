@@ -149,4 +149,4 @@ def setup_sqlite(args: Namespace) -> None:
 
     log = logging.getLogger(__name__)
     args._db = db_  # Set for subsequent use (very few places though)
-    log.info(f"...connected to {db_path_name=} with {len(models)} models defined.")
+    log.debug(f"...connected to {db_path_name=} with {len(models)} models defined.")

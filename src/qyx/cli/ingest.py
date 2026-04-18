@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 console = Console()
 
-first_for_scan: bool =
+first_for_scan: bool = None
 
 
 def ingest(args: Namespace) -> None:
