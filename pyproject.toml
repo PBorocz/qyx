@@ -1,6 +1,6 @@
 [project]
 name = "qyx"
-version = "0.2.0"
+version = "0.2.0b"
 description = "Python Code Quality Data Warehouse"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -114,10 +114,18 @@ shell = """
 
   uv run qyx ingest --name QYX --path https://github.com/PBorocz/qyx.git
   """
+
 [tool.poe.tasks.build]
 help = "Build package for distribution"
 interpreter = "fish"
 shell = """
   uvx cleanpy --all --exclude-envs --verbose .
   uv build
+  """
+
+[tool.poe.tasks.publish_test]
+help = "Release package to testpypi for distribution"
+interpreter = "fish"
+shell = """
+  uvx twine upload --repository testpypi dist/*
   """
