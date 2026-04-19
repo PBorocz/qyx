@@ -5,7 +5,7 @@ import threading
 import time
 import webbrowser
 from argparse import Namespace
-from pathlib import Path
+from importlib.resources import files
 
 from bottle import Bottle
 from bottle import static_file
@@ -21,14 +21,17 @@ def create_app(args):
     app = Bottle()
 
     # Setup prefix-based templating based on both static and dynamic tool directories:
-    # (This gives us "name-space" control of templates, eg. "cloc::page/foo.html")
-    loaders = dict(base=FileSystemLoader(str(Path(__file__).parent / "templates")))
+    # (This gives us "name-space" control of templates, eg. "cloc::foo.html")
+    # Base templates from the general web module:
+    base_templates = files("qyx.web").joinpath("templates")
+    loaders = dict(base=FileSystemLoader(str(base_templates)))
+
+    # Tool-specific templates..
     for o_tool in args.tools.tools():
-        loaders[o_tool.name] = FileSystemLoader(f"src/qyx/tools/{o_tool.name}/templates")
-    args.jinja_env = Environment(
-        loader=PrefixLoader(loaders, delimiter="::"),
-        auto_reload=True,
-    )
+        tool_templates = files("qyx.tools").joinpath(f"{o_tool.name}/templates")
+        loaders[o_tool.name] = FileSystemLoader(str(tool_templates))
+
+    args.jinja_env = Environment(loader=PrefixLoader(loaders, delimiter="::"), auto_reload=True)
 
     # Send our args into Bottle environment for availability across page routes
     app.args = args

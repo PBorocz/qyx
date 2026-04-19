@@ -72,23 +72,17 @@ Track various git metrics:
 
 ### Install QYX
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd python-code-quality
+#### From PyPI (Usual path)
 
-# Install with uv (recommended)
-uv sync
-uv run qyx --help
+```bash
+uv pip install qyx
 ```
 
-### Alternative Installation Methods
+#### Manually
 
 ```bash
-# Direct Python invocation
-python -m qyx --help
-
-# Using uv run
+git clone <repository-url>
+uv sync
 uv run qyx --help
 ```
 

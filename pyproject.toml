@@ -1,6 +1,6 @@
 [project]
 name = "qyx"
-version = "0.2.5"
+version = "0.2.6"
 description = "Python Code Quality Data Warehouse"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -101,17 +101,17 @@ cmd = "litecli \"~/Library/Application Support/qyx/db.sqlite3\""
 # Development support
 #-----------------------------------------------------------------------------------------------
 [tool.poe.tasks.push]
-help = "Push to github (NOTE: I use jujutsu & fish shell..YMMV!)"
+help = "Push to Github"
 interpreter = "fish"
 shell = """
-  uvx cleanpy --all --exclude-envs --verbose .
   uv lock
+  uvx cleanpy --all --exclude-envs --verbose .
   ruff rule   --all --output-format json > src/qyx/tools/ruff/ruff_rules.json
   jj squash -m "chore: update dependencies & ruff rules [automated]"
   jj bookmark set trunk --revision @-
   jj git push --bookmark trunk
 
-  # uv run qyx ingest --name QYX --path https://github.com/PBorocz/qyx.git
+  uv run qyx ingest --name QYX --path https://github.com/PBorocz/qyx.git
   """
 
 [tool.poe.tasks.build]
@@ -125,14 +125,16 @@ shell = """
   """
 
 [tool.poe.tasks.publish_test]
-help = "Release package to testpypi for distribution"
+help = "Publish package to testpypi for distribution"
 interpreter = "fish"
 shell = """
   uvx twine upload --repository testpypi dist/*
   """
+# To test installation from TestPyPi:
+# uv pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ qyx
 
 [tool.poe.tasks.publish_production]
-help = "Release package to *production* pypi for distribution"
+help = "Publish package to *production* pypi for distribution"
 interpreter = "fish"
 shell = """
   uvx twine upload dist/*

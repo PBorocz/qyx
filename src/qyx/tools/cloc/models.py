@@ -42,7 +42,6 @@ class Cloc(BaseModel):
 
 
 def query_cloc_0(args: Namespace, scan: Scan, dimension: str = "cloc", context: Vc = Vc.TOOL_HOME) -> Sns:
-    log.info(f"{scan.id=}")
     query = (
         Cloc.select(
             fn.SUM(Cloc.lines_blank).alias("lines_blank"),
