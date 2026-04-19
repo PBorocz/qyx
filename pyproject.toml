@@ -1,6 +1,6 @@
 [project]
 name = "qyx"
-version = "0.2.4"
+version = "0.2.5"
 description = "Python Code Quality Data Warehouse"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -107,13 +107,11 @@ shell = """
   uvx cleanpy --all --exclude-envs --verbose .
   uv lock
   ruff rule   --all --output-format json > src/qyx/tools/ruff/ruff_rules.json
-  if not jj diff --quiet
-    jj describe -m "chore: update ruff rules database [automated]"
-  end
-  jj bookmark set trunk --revision 'coalesce(@-, @)'
+  jj squash -m "chore: update dependencies & ruff rules [automated]"
+  jj bookmark set trunk --revision @-
   jj git push --bookmark trunk
 
-  uv run qyx ingest --name QYX --path https://github.com/PBorocz/qyx.git
+  # uv run qyx ingest --name QYX --path https://github.com/PBorocz/qyx.git
   """
 
 [tool.poe.tasks.build]
