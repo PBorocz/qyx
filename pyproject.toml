@@ -1,6 +1,6 @@
 [project]
 name = "qyx"
-version = "0.2.0b"
+version = "0.2.3"
 description = "Python Code Quality Data Warehouse"
 license = {file = "LICENSE"}
 readme = "README.md"

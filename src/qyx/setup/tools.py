@@ -22,12 +22,10 @@ def setup_tools(args: Namespace) -> Tools:
     """Introspect our tools directory to dynamically discover tool modules defined right now!."""
     o_tools: dict = Tools()
 
-    # Iterate over /app/tools and get handles to each module
+    # Iterate over qyx/tools and get handles to each module
     tools_dir: Traversable = files("qyx").joinpath("tools")
     for tool_path in tools_dir.iterdir():
         if tool_path.is_dir() and not tool_path.name.startswith("_"):
-            log.debug(f"Setting up tool {tool_path.name:6s} from path='{str(tool_path)}'...")
-
             ################################################################################
             # Get a handle to the module itself.
             ################################################################################
@@ -57,6 +55,7 @@ def setup_tools(args: Namespace) -> Tools:
             # Good to use!
             ################################################################################
             o_tools[o_tool.name] = o_tool
+            log.debug(f"Successfully setup tool {tool_path.name}")
 
     args.tools = o_tools
 

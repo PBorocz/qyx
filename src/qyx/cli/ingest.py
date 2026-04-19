@@ -7,6 +7,8 @@ import sys
 from argparse import Namespace
 from datetime import datetime, UTC
 from pathlib import Path
+from platformdirs import user_log_dir
+from subprocess import CalledProcessError
 from types import SimpleNamespace as Sns
 from typing import Any, Callable, Iterator
 
@@ -33,10 +35,11 @@ def ingest(args: Namespace) -> None:
 
     # Generate the tools we should evaluate.
     tools: list[ToolType] = _get_tools_from_args(args)
+    args.log_file: Path = _setup_error_logging()
 
     for scan_request in _get_scan_requests(args, o_request):
         first_for_scan = True
-        printed = []
+        printed: list[bool] = []
         for o_tool in tools:
             # Some tools aren't meant to process "history" as they do so themselves (eg. ga)
             if o_tool.ingest_latest_only and not scan_request.latest:
@@ -57,6 +60,17 @@ def ingest(args: Namespace) -> None:
     # Always leave a git-sourced project in a "HEAD" state
     if scan_request.as_git:
         git_goto_head(o_request.arg_normalised)
+
+
+def _setup_error_logging() -> Path:
+    """Setup log directory for subprocess issues."""
+    log_path = Path(user_log_dir("qyx"))
+    log_path.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = log_path / f"{timestamp}.log"
+
+    return log_file
 
 
 def _get_tools_from_args(args: Namespace) -> list[ToolType]:
@@ -192,8 +206,10 @@ def _run_tool(
         ################################################################################################
         command: list[str] = o_tool.get_ingest_command(
             args,
-            relative=str(o_request.arg_raw),  # eg. "." usually
-            absolute=str(scan_request.cwd),  # eg. /tmp/private... for git or /users/me/projects/myProject for local.
+            # "." usually
+            relative=str(o_request.arg_raw),
+            # eg. <user_cache_dir>/qyx/repos/. for git or /users/me/projects/myProject for local.
+            absolute=str(scan_request.cwd),
             dimension=dimension,
         )
 
@@ -207,18 +223,35 @@ def _run_tool(
                 check=True,
                 text=True,
             )
-        except subprocess.CalledProcessError as exc:
-            for line in exc.stdout.split("\n"):
-                if line:
-                    log.debug(f"STDOUT: {line}")
-            for line in exc.stderr.split("\n"):
-                if line:
-                    log.debug(f"STDERR: {line}")
-            log.debug(f"{scan_request.as_of=}")
-            log.debug(f"{scan_request.cwd=}")
-            log.debug(f"{shlex.join(command)=}")
+        except CalledProcessError as exc:
+            _write_error_log(args.log_file, scan_request, command, exc)
             return None, True
 
         datum = result.stdout
 
     return datum, False
+
+
+def _write_error_log(log_file: Path, scan_request: Sns, command: list[str], exc: CalledProcessError):
+    with open(log_file, "a") as fh_:
+        fh_.write("=" * 80 + "\n")
+        fh_.write(f"Command           : {shlex.join(command)}\n")
+        fh_.write(f"Working Directory : {scan_request.cwd}\n")
+        fh_.write(f"Return Code       : {exc.returncode}\n")
+        fh_.write(f"As Of             : {scan_request.as_of}\n")
+        if scan_request.as_git:
+            fh_.write(f"Git hash          : {scan_request.hash}\n")
+            fh_.write(f"Git message       : {scan_request.message}\n")
+
+        if exc.stdout:
+            fh_.write("\n" + "-" * 80 + "\n")
+            fh_.write("STDOUT:\n")
+            fh_.write("-" * 80 + "\n")
+            fh_.write(exc.stdout)
+
+        if exc.stderr:
+            fh_.write("\n" + "-" * 80 + "\n")
+            fh_.write("STDERR:\n")
+            fh_.write("-" * 80 + "\n")
+            fh_.write(exc.stderr)
+        fh_.write("\n")

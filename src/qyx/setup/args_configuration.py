@@ -3,6 +3,7 @@
 import logging
 import yaml
 from argparse import ArgumentParser, Namespace
+from importlib.resources import files
 from pathlib import Path
 from platformdirs import user_config_dir
 from typing import Any
@@ -130,18 +131,6 @@ def setup_configuration(app_name: str = "qyx") -> tuple[ArgumentParser, list[str
     return configuration_parser, remaining_args, configuration
 
 
-def _load_config(config_path: Path | None) -> dict:
-    """Load user's configuration from the specified path."""
-    if not config_path:
-        return {}
-
-    if not config_path.exists():
-        raise ConfigurationError(f"Sorry, we couldn't find a configuration file at: {config_path}")
-
-    with open(config_path, "rb") as fh_:
-        return yaml.safe_load(fh_)
-
-
 def _find_and_load_config(app_name: str, filename: str = "config.yaml") -> dict:
     """Find and load config from either of two possible locations: `cwd` and user config dir."""
     # Current directory?
@@ -154,4 +143,34 @@ def _find_and_load_config(app_name: str, filename: str = "config.yaml") -> dict:
     if config_path.exists():
         return _load_config(config_path)
 
-    return {}
+    # Not found - create from default
+    _create_default_config(app_name, filename)
+    return _load_config(config_path)
+
+
+def _create_default_config(app_name: str, filename: str):
+    """Copy default config from package to user config directory."""
+    # On MacOS, this is usually ~/Library/Application Support/qyx
+    config_dir = Path(user_config_dir(app_name))
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    config_path = config_dir / filename
+
+    # Read default config from package
+    default_config = files("qyx").joinpath("default_config.yaml")
+    config_path.write_text(default_config.read_text())
+
+    # Can't use logging here as we don't have it setup yet!
+    print(f"Created default config at {config_path=}")
+
+
+def _load_config(config_path: Path | None) -> dict:
+    """Load user's configuration from the specified path."""
+    if not config_path:
+        return {}
+
+    if not config_path.exists():
+        raise ConfigurationError(f"Sorry, we couldn't find a configuration file at: {config_path}")
+
+    with open(config_path, "rb") as fh_:
+        return yaml.safe_load(fh_)
