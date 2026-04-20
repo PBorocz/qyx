@@ -8,11 +8,11 @@
 
 ## CLI View
 
-<img src="readme_support/Screenshot-cli.png width="50%" alt="Qyx, web view">
+<img src="readme_support/screenshot-cli.png" width="50%" alt="Qyx, cli view">
 
 ## Web View
 
-<img src="readme_support/Screenshot-web.png width="50%" alt="Qyx, web view">
+<img src="readme_support/screenshot-web.png" width="50%" alt="Qyx, web view">
 
 ## Features
 
