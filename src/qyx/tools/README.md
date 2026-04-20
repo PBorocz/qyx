@@ -69,7 +69,3 @@ Files created:
 Files created:
 - `web.py`
 - `templates/*`
-
-## Notes
-
-### Create the tool's registration/configuration file (`__init__.py`)

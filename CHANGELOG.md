@@ -8,6 +8,7 @@ Format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 ### Added
 - Screenshots obo both CLI and web interfaces.
+- --version option to CLI to confirm version packaging and release.
 
 ### Changed
 - Removed right-nav hamburger until we have something real to put there!

@@ -505,9 +505,11 @@ pytest --cov=qyx
    - `cli.py` - CLI rendering (if desired)
    - `web.py` + templates - Web rendering (if desired but at least a summary/level 0  rendering is suggested to appear on the primary web dashboard)
 
+Consult the README.md in `src/qyx/tools` directory for more information.
+
 ### Database Schema
 
-QYX uses Peewee ORM with SQLite3.
+QYX uses the [Peewee](http://docs.peewee-orm.com/) ORM with storage in SQLite3.
 
 **Core Tables:**
 - `project` - Project records
@@ -517,14 +519,16 @@ QYX uses Peewee ORM with SQLite3.
 **Tool-Specific Tables:**
 
 For example:
-- `tool_cloc` - Line counting
-- `tool_fxtd` - Annotation tracking
-- `tool_radon_cc` - Cyclomatic complexity
-- `tool_radon_hal_function` - Per-function Halstead
-- `tool_radon_hal` - Halstead metrics
-- `tool_radon_mi` - Maintainability index
-- `tool_radon_raw` - Raw metrics
+- `tool_cloc` - CLOC's Line counting
+- `tool_fxtd` - Annotation tracking (custom tool)
+- `tool_ga` - Various Git metrics (custom tool)
+- `tool_radon_cc` - Radon's Cyclomatic complexity
+- `tool_radon_hal` - Radon's Halstead metrics
+- `tool_radon_hal_function` - Halstead metrics on a per-function basis
+- `tool_radon_mi` - Radon's Maintainability index
+- `tool_radon_raw` - Radon's Raw (line counting) metrics
 - `tool_ruff` - Linting violations
+- `tool_scc` - SCC's line counting
 - `tool_ty` - Type check results
 - ...
 
@@ -593,6 +597,10 @@ MIT License
 ## Author
 
 Péter Böröcz
+
+## Use of LLM's
+
+Since the development of this is purely a personal "itch-scratch", there is no delivery pressure...the challenge of writing something from scratch is value itself! Thus, the use of LLM (Claude) specifically was limited to a few small areas (and explicitly acknowledged if you `rg -i claude`).
 
 ## Acknowledgments
 
