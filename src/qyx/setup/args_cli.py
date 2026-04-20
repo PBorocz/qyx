@@ -1,6 +1,7 @@
 """."""
 
 import argparse
+from importlib.metadata import version
 
 from rich_argparse import RichHelpFormatter
 
@@ -25,6 +26,12 @@ def get_args_command_line():
     parser_root = argparse.ArgumentParser(
         add_help=False,
         parents=[configuration_parser],
+    )
+    parser_root.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"%(prog)s {version('qyx')}",
     )
     parser_root.add_argument(
         "--log-level",

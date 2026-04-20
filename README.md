@@ -1,4 +1,4 @@
-<img src="kix.jpeg" width="50%" alt="Qyx, pronounced like the Kix cereal">
+<img src="readme_support/kix.jpeg" width="50%" alt="Qyx, pronounced like the Kix cereal">
 
 # QYX - Python Code Quality Data Warehouse
 
@@ -6,10 +6,18 @@
 
 **QYX** (pronounced "kix") is a proof-of-concept data warehouse that aggregates, analyzes, and reports on various code quality metrics for Python projects. It provides both CLI and web interfaces to track code quality over time, including historical git analysis.
 
+## CLI View
+
+<img src="readme_support/Screenshot-cli.png width="50%" alt="Qyx, web view">
+
+## Web View
+
+<img src="readme_support/Screenshot-web.png width="50%" alt="Qyx, web view">
+
 ## Features
 
-- **Multi-Tool Integration**: Aggregate metrics from tools like CLOC, Ruff, Radon, Ty, and custom analyzers.
-- **Persistent Storage**: SQLite database for historical tracking and trend analysis.
+- **Multi-Tool Integration**: Aggregate metrics from tools like CLOC, Ruff, Ty, Radon, Scc, and custom analyzers.
+- **Persistent Storage**: Built-in database for historical tracking and trend analysis.
 - **CLI Interface**: Terminal output with detailed reports at multiple levels.
 - **Web Dashboard**: Interactive dashboard.
 - **Git Integration**: Analyze code across commit history.
@@ -40,10 +48,10 @@ Four sub-analyses providing comprehensive complexity metrics:
 - **HAL** (Halstead Metrics): Effort, difficulty, bugs prediction
 - **RAW** (Raw Metrics): Operators, operands, basic counts
 
-### Scc (Succint code counter)
+### Scc (Succint Code Counter)
 - Lines of code, Unique lines of code, blank lines, comment lines
 
-### FXTD (Custom Annotation Tracker)
+### FXTD (Custom annotation tracker)
 Track code annotations and technical debt markers:
 - FIXME, TODO, HACK, BUG, XXX, NOTE markers
 - Weighted scoring by severity

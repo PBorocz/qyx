@@ -1,6 +1,6 @@
 [project]
 name = "qyx"
-version = "0.2.6"
+version = "0.3.0"
 description = "Python Code Quality Data Warehouse"
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -131,7 +131,7 @@ shell = """
   uvx twine upload --repository testpypi dist/*
   """
 # To test installation from TestPyPi:
-# uv pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ qyx
+# uv pip install --refresh --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ qyx
 
 [tool.poe.tasks.publish_production]
 help = "Publish package to *production* pypi for distribution"

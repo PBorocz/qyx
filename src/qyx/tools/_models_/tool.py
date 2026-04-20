@@ -124,7 +124,7 @@ class AbstractToolConfiguration(ABC):
                     # Not reporting, we EXPECT many of these to popup!
                     continue
 
-        return list(report_levels)
+        return sorted(list(report_levels))  # Conversion from list won't keep ordering!
 
     def get_ingest_command(
         self,
